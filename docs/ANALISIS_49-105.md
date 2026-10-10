@@ -88,3 +88,17 @@ Leyenda: ✅ cubierto · 🟡 parcial · ❌ falta
 4. **Idioma de la interfaz**: español, inglés, o ambos con selector en Settings.
 5. **CategoryPreference** de patrocinadores como lista de categorías con peso.
 6. **Capa de comandos de aplicación**: añadirla de forma ligera (un único punto de entrada para las acciones del jugador), sin interfaces ni patrones adicionales (§77).
+
+## 5. Decisiones aprobadas
+
+- **CategoryPreference**: lista de categorías con peso (multiplica el pago y la disposición a firmar).
+- **Personal** (opción más completa y realista): TeamManager, TechnicalDirector, ChiefEngineer,
+  RaceEngineer (uno por piloto, el "crew chief"), ElectronicsEngineer, DataAnalyst, TireEngineer,
+  Aerodynamicist, Mechanic, Scout, Physio y RiderCoach; cada uno con habilidad, salario, experiencia,
+  reputación y contrato. Incluye los 8 roles de §51.
+- **Instalaciones** (opción más completa y realista): Factory, Dyno, WindTunnel, ElectronicsLab,
+  Simulator, RiderTrainingCenter, ScoutingCenter (las 7 de §52) más DataCenter (telemetría y
+  previsión), Academy (jóvenes) y Hospitality (patrocinadores), cada una con nivel, coste,
+  mantenimiento y beneficios concretos.
+- **Idioma**: interfaz en español e inglés con selector en Settings (por defecto, el del sistema).
+- Orden de sesiones y capa ligera de comandos: según la propuesta (sin objeciones).
