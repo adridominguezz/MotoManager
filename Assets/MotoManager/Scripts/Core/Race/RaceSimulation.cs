@@ -502,6 +502,7 @@ namespace MotoManager.Core.Race
 
             // --- machinery
             UpdateMachinery(r, seg, move, dt);
+            RecordZone(r, seg, move, dt);
             UpdateCheckpoints(r);
         }
 
@@ -712,6 +713,7 @@ namespace MotoManager.Core.Race
                 return true;
             }
 
+            r.Stats.OvertakesFailed++;
             AddEvent(RaceEventType.OvertakeFailed, r.Index, ahead.Index, r.Entry.Rider.ShortName + " tries a move on " + ahead.Entry.Rider.ShortName + " but has to back out", false);
             Delay(r, _rng.Range(0.05, 0.25), 0.4);
             if (_rng.Chance(Tuning.ContactChance * attackRisk)) Contact(r, ahead);
@@ -832,8 +834,28 @@ namespace MotoManager.Core.Race
             return CrashType.LowSide;
         }
 
+        public static TrackZone ZoneOf(TrackSegment seg)
+        {
+            if (!seg.IsCorner) return TrackZone.Straights;
+            if (seg.ReferenceSpeed < 27) return TrackZone.SlowCorners;
+            if (seg.ReferenceSpeed < 45) return TrackZone.MediumCorners;
+            return TrackZone.FastCorners;
+        }
+
+        private void RecordZone(RiderRaceState r, TrackSegment seg, double move, double dt)
+        {
+            var st = r.Stats;
+            if (r.Speed > st.TopSpeed && r.Lap >= 0) st.TopSpeed = r.Speed;
+            // Clean racing only: from lap 2, no mistake being paid for, not on the long lap loop.
+            if (r.Lap < 1 || r.DelayRemaining > 0 || r.OnLongLap || Config.TimeTrial) return;
+            int z = (int)ZoneOf(seg);
+            st.ZoneTime[z] += dt;
+            st.ZoneDistance[z] += move;
+        }
+
         private void RiderError(RiderRaceState r, TrackSegment seg, bool pressure)
         {
+            r.Stats.Errors++;
             RiderErrorType type;
             double loss;
             if (pressure && _rng.Chance(0.35))
@@ -861,6 +883,7 @@ namespace MotoManager.Core.Race
                 double gravel = _rng.Range(2.5, 7.0);
                 Delay(r, gravel, 0.65);
                 r.TargetLateral = -1.4 * Math.Sign(seg.AngleDeg == 0 ? 1 : seg.AngleDeg);
+                r.Stats.RunOffs++;
                 AddEvent(RaceEventType.RunOff, r.Index, -1, r.Entry.Rider.ShortName + " runs off at turn " + seg.CornerNumber + " (" + gravel.ToString("0.0") + "s lost)", true);
                 return;
             }
@@ -1227,6 +1250,9 @@ namespace MotoManager.Core.Race
             {
                 double lapTime = Time - r.LapStartTime;
                 r.LastLapTime = lapTime;
+                r.Stats.LapTimes.Add(lapTime);
+                r.Stats.LapPositions.Add(r.Position);
+                if (r.Lap == 1) r.Stats.PositionAfterLapOne = r.Position;
                 if (lapTime < r.BestLapTime) r.BestLapTime = lapTime;
                 if (lapTime < FastestLap && r.Lap > 1 || (Config.TimeTrial && lapTime < FastestLap))
                 {
@@ -1235,6 +1261,11 @@ namespace MotoManager.Core.Race
                     if (!Config.TimeTrial)
                         AddEvent(RaceEventType.FastestLap, r.Index, -1, "Fastest lap: " + r.Entry.Rider.ShortName + " " + MathX.FormatLapTime(lapTime), false);
                 }
+            }
+            if (r.CurrentSector == Track.SectorCount - 1 && valid)
+            {
+                r.SectorTimes[r.CurrentSector] = Time - r.SectorStartTime;
+                RecordSector(r, r.CurrentSector);
             }
             r.LapStartTime = Time;
             r.SectorStartTime = Time;
@@ -1309,13 +1340,28 @@ namespace MotoManager.Core.Race
             if (sector != r.CurrentSector && sector == r.CurrentSector + 1)
             {
                 r.SectorTimes[r.CurrentSector] = Time - r.SectorStartTime;
+                RecordSector(r, r.CurrentSector);
                 r.SectorStartTime = Time;
                 r.CurrentSector = sector;
             }
             else if (sector == 0 && r.CurrentSector == Track.SectorCount - 1)
             {
                 r.SectorTimes[r.CurrentSector] = Time - r.SectorStartTime;
+                RecordSector(r, r.CurrentSector);
             }
+        }
+
+        private void RecordSector(RiderRaceState r, int sector)
+        {
+            if (r.Lap < 1 || r.Status != RaceStatus.Racing) return;
+            var st = r.Stats;
+            if (st.BestSectors == null)
+            {
+                st.BestSectors = new double[Track.SectorCount];
+                for (int i = 0; i < st.BestSectors.Length; i++) st.BestSectors[i] = double.MaxValue;
+            }
+            double t = r.SectorTimes[sector];
+            if (t > 1 && t < st.BestSectors[sector]) st.BestSectors[sector] = t;
         }
 
         private void UpdateTiming()
@@ -1363,6 +1409,8 @@ namespace MotoManager.Core.Race
                     if (r.Progress(L) > victim.Progress(L) + 1)
                     {
                         r.Overtakes++;
+                        r.Stats.OvertakesMade++;
+                        victim.Stats.OvertakesSuffered++;
                         AddEvent(RaceEventType.Overtake, r.Index, victim.Index, r.Entry.Rider.ShortName + " passes " + victim.Entry.Rider.ShortName + " for P" + r.Position, r.Position <= 5 || r.Entry.IsPlayer || victim.Entry.IsPlayer);
                         r.AttemptTarget = -1;
                         r.AttemptSucceeds = false;

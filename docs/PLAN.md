@@ -226,6 +226,18 @@ La parte final del documento original (secciones 49–105) está analizada en
 [`docs/ANALISIS_49-105.md`](ANALISIS_49-105.md): estado de cada sección, contradicciones detectadas,
 sesiones propuestas (8.1–8.8) y decisiones que necesitan aprobación antes de programar.
 
+### Sesión 8.1 — Análisis de carrera ✅
+- Estadísticas por piloto en el motor: tiempo/velocidad limpios por zona (rectas, curvas lentas,
+  medias y rápidas), velocidad punta, mejores sectores, vueltas y posiciones por vuelta, adelantamientos
+  hechos/sufridos/abortados, errores y salidas de pista.
+- `RaceAnalysis` ("¿Por qué hemos rendido así?"): compara con la parrilla y lo traduce a segundos por
+  vuelta, km/h, caída de ritmo, desgaste, adelantamientos, defensa, errores, salida, fiabilidad y
+  sanciones; devuelve códigos para mostrarlos en cualquier idioma.
+- `TrackProfile`: rasgos del circuito derivados de su geometría (velocidad punta, frenadas, técnico,
+  rápido, rebufo, neumáticos, adelantamientos), sin tablas fijas; visible antes y después de la carrera.
+- Pantalla post-carrera completa, columna de equipo en la torre, cámara de vista de sector y primer
+  sistema de localización (`Loc`, español/inglés) usado por estas pantallas. 30 tests en verde.
+
 ## Pendiente de especificación
 
 Recibidas las secciones 49–105; ver la Fase 8.

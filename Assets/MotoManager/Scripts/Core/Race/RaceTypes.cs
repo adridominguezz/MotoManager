@@ -180,6 +180,41 @@ namespace MotoManager.Core.Race
         }
     }
 
+    /// <summary>Kinds of track used to explain where time is gained or lost.</summary>
+    public enum TrackZone
+    {
+        Straights,
+        SlowCorners,
+        MediumCorners,
+        FastCorners
+    }
+
+    /// <summary>What happened to one rider during the race (for results and post-race analysis).</summary>
+    public class RaceStats
+    {
+        public const int ZoneCount = 4;
+        /// <summary>Clean-lap time and distance per zone (laps with mistakes, pit stops or penalties excluded).</summary>
+        public readonly double[] ZoneTime = new double[ZoneCount];
+        public readonly double[] ZoneDistance = new double[ZoneCount];
+        public double TopSpeed;
+        public double[] BestSectors;
+        public readonly List<double> LapTimes = new List<double>();
+        public readonly List<int> LapPositions = new List<int>();
+        /// <summary>Moves started that had to be aborted.</summary>
+        public int OvertakesFailed;
+        public int OvertakesMade;
+        public int OvertakesSuffered;
+        public int Errors;
+        public int RunOffs;
+        public int PositionAfterLapOne;
+
+        public double ZoneSpeed(TrackZone zone)
+        {
+            int z = (int)zone;
+            return ZoneTime[z] > 1 ? ZoneDistance[z] / ZoneTime[z] : double.NaN;
+        }
+    }
+
     public class PenaltyRecord
     {
         public PenaltyType Type;
@@ -273,6 +308,8 @@ namespace MotoManager.Core.Race
         public int PositionDrop;
         public readonly List<PenaltyRecord> Penalties = new List<PenaltyRecord>();
         public bool OnLongLap;
+
+        public readonly RaceStats Stats = new RaceStats();
 
         public double Progress(double lapLength)
         {

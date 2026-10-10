@@ -6,6 +6,8 @@ namespace MotoManager.App.Race
     {
         Follow,
         Overview,
+        /// <summary>Fixed view of one sector of the circuit (watch a braking zone or a corner sequence).</summary>
+        Sector,
         Free
     }
 
@@ -56,6 +58,16 @@ namespace MotoManager.App.Race
             return rc;
         }
 
+        private Vector3 _sectorFocus;
+        private float _sectorDistance;
+
+        public void ShowSector(Vector3 focus, float distance)
+        {
+            Mode = CameraMode.Sector;
+            _sectorFocus = focus;
+            _sectorDistance = Mathf.Clamp(distance, MinDistance, MaxDistance);
+        }
+
         public void SetMode(CameraMode mode, Transform target = null)
         {
             Mode = mode;
@@ -81,6 +93,12 @@ namespace MotoManager.App.Race
                 // Rotate slowly behind the rider so corners read naturally.
                 float yaw = Target.eulerAngles.y;
                 _yaw = Mathf.LerpAngle(_yaw, yaw, 1 - Mathf.Exp(-dt * 0.8f));
+            }
+            else if (Mode == CameraMode.Sector)
+            {
+                targetFocus = _sectorFocus;
+                targetDistance = _sectorDistance;
+                _yaw = Mathf.LerpAngle(_yaw, 0, 1 - Mathf.Exp(-dt * 2));
             }
             else if (Mode == CameraMode.Overview)
             {

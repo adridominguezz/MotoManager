@@ -73,6 +73,29 @@ namespace MotoManager.App.Race
             Cam.SetMode(CameraMode.Follow, Bikes[riderIndex].transform);
         }
 
+        private int _sector = -1;
+
+        /// <summary>Cycles the fixed camera through the sectors of the circuit.</summary>
+        public void NextSectorView()
+        {
+            int count = Mathf.Max(1, Sim.Track.SectorCount);
+            _sector = (_sector + 1) % count;
+            double len = Sim.Track.Length / count;
+            double mid = len * (_sector + 0.5);
+            // Frame the sector: centre of its points, distance from its extent.
+            var min = new Vector3(float.MaxValue, 0, float.MaxValue);
+            var max = new Vector3(float.MinValue, 0, float.MinValue);
+            for (int i = 0; i <= 10; i++)
+            {
+                var p = Track.Point(len * _sector + len * i / 10, 0, 0);
+                min = Vector3.Min(min, p);
+                max = Vector3.Max(max, p);
+            }
+            var size = max - min;
+            Cam.ShowSector(Track.Point(mid, 0, 0) * 0.3f + (min + max) * 0.35f, Mathf.Max(size.x, size.z) * 1.3f + 60);
+            Hud.ShowCameraLabel(Loc.T("race.camera.sector", _sector + 1));
+        }
+
         /// <summary>Jumps to the end of the race (headless steps) - used by "skip to results".</summary>
         public void FinishInstantly()
         {

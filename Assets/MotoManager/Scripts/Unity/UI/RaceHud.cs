@@ -143,9 +143,11 @@ namespace MotoManager.App.UI
 
             // Camera buttons
             var overview = UiFactory.Button("Overview", _root, "Circuit", () => _view.Cam.SetMode(CameraMode.Overview), Theme.PanelLight, Theme.FontSmall);
-            UiFactory.Place((RectTransform)overview.transform, 0.005f, 0.13f, 0.1f, 0.19f);
+            UiFactory.Place((RectTransform)overview.transform, 0.005f, 0.13f, 0.07f, 0.19f);
             var follow = UiFactory.Button("Follow", _root, "Follow", () => _view.Select(_view.SelectedRider), Theme.PanelLight, Theme.FontSmall);
-            UiFactory.Place((RectTransform)follow.transform, 0.11f, 0.13f, 0.215f, 0.19f);
+            UiFactory.Place((RectTransform)follow.transform, 0.075f, 0.13f, 0.14f, 0.19f);
+            var sector = UiFactory.Button("Sector", _root, Loc.T("race.tower.sector"), () => _view.NextSectorView(), Theme.PanelLight, Theme.FontSmall);
+            UiFactory.Place((RectTransform)sector.transform, 0.145f, 0.13f, 0.215f, 0.19f);
 
             // Event feed
             var feedBg = UiFactory.Panel("Feed", _root, new Color(0.06f, 0.07f, 0.09f, 0.7f));
@@ -233,6 +235,7 @@ namespace MotoManager.App.UI
             }
             if (sim.Events.Count != _feedCount) RefreshFeed();
             UpdateTags();
+            if (_cameraLabel != null && _cameraLabel.enabled && Time.unscaledTime > _cameraLabelUntil) _cameraLabel.enabled = false;
         }
 
         private void UpdateFlag(RaceSimulation sim)
@@ -262,7 +265,9 @@ namespace MotoManager.App.UI
                 var team = r.Entry.Team;
                 row.Position.text = (p + 1).ToString();
                 row.TeamBar.color = UiFactory.ParseColor(team != null ? team.Colors.Primary : null, Color.gray);
-                row.Name.text = r.Entry.Rider.Code + (r.PendingLongLaps > 0 ? " <color=#F0B428>LL</color>" : "");
+                string teamName = team != null ? (team.ShortName ?? team.Name) : "";
+                if (teamName.Length > 10) teamName = teamName.Substring(0, 10);
+                row.Name.text = r.Entry.Rider.Code + " <size=" + (Theme.FontSmall - 6) + "><color=#9AA4B2>" + teamName + "</color></size>" + (r.PendingLongLaps > 0 ? " <color=#F0B428>LL</color>" : "");
                 row.Name.supportRichText = true;
                 row.Name.color = r.Entry.IsPlayer ? Theme.Warning : Theme.Text;
                 row.Gap.text = GapText(sim, r, p);
@@ -330,32 +335,26 @@ namespace MotoManager.App.UI
             }
         }
 
+        private Text _cameraLabel;
+        private float _cameraLabelUntil;
+
+        public void ShowCameraLabel(string text)
+        {
+            if (_cameraLabel == null)
+            {
+                _cameraLabel = UiFactory.Label("CameraLabel", _root, "", Theme.FontLarge, TextAnchor.MiddleCenter, Theme.Text);
+                UiFactory.Place(_cameraLabel.rectTransform, 0.35f, 0.82f, 0.65f, 0.9f);
+                _cameraLabel.gameObject.AddComponent<Outline>().effectColor = Color.black;
+            }
+            _cameraLabel.text = text;
+            _cameraLabel.enabled = true;
+            _cameraLabelUntil = Time.unscaledTime + 2f;
+        }
+
         public void ShowResults()
         {
             if (_results != null) return;
-            var sim = _view.Sim;
-            var panel = UiFactory.Panel("Results", _root, new Color(0.06f, 0.07f, 0.09f, 0.95f));
-            _results = panel.rectTransform;
-            UiFactory.Place(_results, 0.25f, 0.06f, 0.75f, 0.9f);
-            var title = UiFactory.Label("Title", _results, sim.Config.SessionName + " - Results", Theme.FontLarge, TextAnchor.MiddleCenter);
-            UiFactory.Place(title.rectTransform, 0, 0.9f, 1, 1);
-            var list = UiFactory.ScrollList("List", _results);
-            UiFactory.Place((RectTransform)list.parent.parent, 0.03f, 0.12f, 0.97f, 0.89f);
-            foreach (var e in sim.GetClassification())
-            {
-                var r = FindRider(sim, e.RiderId);
-                var row = UiFactory.Row(list, 40);
-                string time = e.Status == ResultStatus.Finished ? (e.Position == 1 ? MathX.FormatLapTime(e.TotalTime) : MathX.FormatGap(e.GapToWinner)) : e.Status + (e.Note != null ? " (" + e.Note + ")" : "");
-                var label = UiFactory.Label("Row", row, e.Position + ".  " + r.Entry.Rider.FullName + "  <color=#9AA4B2>" + (r.Entry.Team != null ? r.Entry.Team.ShortName ?? r.Entry.Team.Name : "") + "</color>", Theme.FontSmall, TextAnchor.MiddleLeft, r.Entry.IsPlayer ? Theme.Warning : Theme.Text);
-                label.supportRichText = true;
-                UiFactory.Place(label.rectTransform, 0, 0, 0.72f, 1);
-                var t = UiFactory.Label("Time", row, time, Theme.FontSmall, TextAnchor.MiddleRight, Theme.TextDim);
-                UiFactory.Place(t.rectTransform, 0.72f, 0, 1, 1);
-            }
-            var replay = UiFactory.Button("Replay", _results, "Watch replay", () => _view.StartReplay(), Theme.PanelLight);
-            UiFactory.Place((RectTransform)replay.transform, 0.05f, 0.02f, 0.45f, 0.1f);
-            var cont = UiFactory.Button("Continue", _results, "Continue", () => _view.Close(), Theme.Accent);
-            UiFactory.Place((RectTransform)cont.transform, 0.55f, 0.02f, 0.95f, 0.1f);
+            _results = PostRacePanel.Build(_view.Sim, _root, () => _view.StartReplay(), () => _view.Close());
         }
 
         public void EnterReplay()

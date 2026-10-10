@@ -54,8 +54,13 @@ namespace MotoManager.App.UI
             UiFactory.Place(title.rectTransform, 0.02f, 0.88f, 0.98f, 0.98f);
             string conditions = (weather.InitialWetness > 0.35 ? "Wet track" : "Dry track") + ", air " + model.AirTemp.ToString("0") + "°C, track " + model.TrackTemp.ToString("0") +
                                 "°C\nEngineer's forecast: " + (rain * 100).ToString("0") + "% chance of rain during the race";
+            var profile = TrackProfile.Compute(TrackModel.Get(w.Circuit));
+            var traits = new List<string>();
+            foreach (var t in profile.Traits) traits.Add(Loc.T("trait." + t));
+            if (traits.Count == 0) traits.Add(Loc.T("trait.Balanced"));
+            conditions += "\n" + Loc.T("post.profile", string.Join(", ", traits.ToArray()));
             var cond = UiFactory.Label("Conditions", p, conditions, Theme.FontNormal, TextAnchor.MiddleCenter, Theme.TextDim);
-            UiFactory.Place(cond.rectTransform, 0.02f, 0.74f, 0.98f, 0.88f);
+            UiFactory.Place(cond.rectTransform, 0.02f, 0.72f, 0.98f, 0.88f);
 
             var players = new List<RaceEntry>();
             foreach (var e in w.Entries) if (e.IsPlayer) players.Add(e);
