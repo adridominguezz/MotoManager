@@ -515,6 +515,19 @@ que se quedan en pista, modelos toscos y opción de entrar a boxes (en motos no 
   sigue sin dependencias y la app le enchufa las traducciones. Nombres de eventos traducidos.
 - `SimRunner news` con `SIM_LANG=es` muestra noticias y eventos en español. 74 tests en verde.
 
+### Segunda prueba en Unity — pantallas sin desplazamiento, menú, selección, cámara y velocidad visual ✅
+- Cada pantalla cabe sin desplazarse (salvo tablas largas): selector de piloto en Equipo, vistas "Plantilla /
+  Contratar", "Nuevo proyecto / En curso / Historial" (proyectos por componente), "Contratos / Ofertas", "Resumen /
+  Productos / Catálogo", mercado en tabla paginada, negociación y producto de la tienda a pantalla completa, columnas
+  en Inicio, Moto, Instalaciones, Finanzas y Mánager. Lienzo ajustado a la altura (1080) en horizontal.
+- Botón "Menú" (guarda y vuelve al inicio sin recargar datos).
+- Selección: las filas de botones ya no pintan el primero; opciones con estado (`UiFactory.Option`) y acción
+  principal (`UiFactory.Primary`). Modo de cámara resaltado. Orden estable del calendario.
+- Cámara de seguimiento: no se queda atrás a 4x/8x, un toque no la pasa a libre, cambia de piloto si el seguido
+  queda fuera.
+- Velocidad visual: el cierre del trazado reparte la corrección entre longitudes y ángulos de todo el circuito; las
+  longitudes dibujadas quedan entre 0,8 y 1,3 de las reales (antes 0,35–10).
+
 ## Pendiente de especificación
 
 Recibidas las secciones 49–105; ver la Fase 8.

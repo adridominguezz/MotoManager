@@ -100,12 +100,14 @@ namespace MotoManager.App.UI.Screens
             UiFactory.Place(logo.rectTransform, 0, 0, 0.14f, 1);
             _header = UiFactory.Label("Team", header.transform, "", Theme.FontNormal + 2, TextAnchor.LowerLeft);
             _header.supportRichText = true;
-            UiFactory.Place(_header.rectTransform, 0.155f, 0.48f, 0.66f, 0.96f);
+            UiFactory.Place(_header.rectTransform, 0.155f, 0.48f, 0.56f, 0.96f);
             _subHeader = UiFactory.Label("Date", header.transform, "", Theme.FontSmall - 2, TextAnchor.UpperLeft, Theme.TextDim);
             _subHeader.supportRichText = true;
-            UiFactory.Place(_subHeader.rectTransform, 0.155f, 0.04f, 0.66f, 0.48f);
+            UiFactory.Place(_subHeader.rectTransform, 0.155f, 0.04f, 0.56f, 0.48f);
             _busy = UiFactory.Label("Busy", header.transform, "", Theme.FontSmall, TextAnchor.MiddleRight, Theme.Warning);
-            UiFactory.Place(_busy.rectTransform, 0.4f, 0, 0.66f, 1);
+            UiFactory.Place(_busy.rectTransform, 0.3f, 0, 0.56f, 1);
+            var menu = UiFactory.Button("Menu", header.transform, Loc.T("shell.menu"), ExitToMenu, Theme.PanelLight, Theme.FontSmall);
+            UiFactory.Place((RectTransform)menu.transform, 0.57f, 0.16f, 0.665f, 0.84f, 4);
             var save = UiFactory.Button("Save", header.transform, Loc.T("shell.save"), () => { Session.Save(); Toast(Loc.T("shell.saved")); }, Theme.PanelLight, Theme.FontSmall);
             UiFactory.Place((RectTransform)save.transform, 0.67f, 0.16f, 0.77f, 0.84f, 4);
             var go = UiFactory.Button("Continue", header.transform, "", Continue, Theme.Accent, Theme.FontNormal);
@@ -213,6 +215,14 @@ namespace MotoManager.App.UI.Screens
             }
             UiFactory.Clear(_content);
             _section.Pages[Mathf.Clamp(_section.Current, 0, _section.Pages.Count - 1)].Build(_content);
+        }
+
+        /// <summary>Saves and goes back to the start screen (continue, new career, language).</summary>
+        public void ExitToMenu()
+        {
+            Session.Save();
+            BootScreen.Create(Session);
+            Destroy(gameObject);
         }
 
         // ------------------------------------------------------------------ main action

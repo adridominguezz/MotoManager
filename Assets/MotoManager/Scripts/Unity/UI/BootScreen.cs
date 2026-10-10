@@ -52,7 +52,9 @@ namespace MotoManager.App.UI
             _session.DataLoaded += ShowMainMenu;
             _session.GameChanged += ShowCareer;
             Loc.LanguageChanged += OnLanguageChanged;
-            _session.LoadData();
+            // Coming back from a career: the data is already loaded.
+            if (_session.Db != null) ShowMainMenu();
+            else _session.LoadData();
         }
 
         private void OnDestroy()

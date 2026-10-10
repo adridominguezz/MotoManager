@@ -47,7 +47,7 @@ namespace MotoManager.App.UI.Screens
                     var r = world.GetRider(rows[i].Id);
                     var team = r != null ? world.GetTeam(r.TeamId) : null;
                     bool mine = team != null && team.Id == playerTeam;
-                    UiFactory.TableRow(card, 44, widths, new[]
+                    UiFactory.TableRow(card, 36, widths, new[]
                     {
                         (i + 1).ToString(), r != null ? "<b>" + r.FullName + "</b> " + Theme.Dim(r.Nationality) : rows[i].Id,
                         team != null ? team.ShortName ?? team.Name : "-", "<b>" + rows[i].Points.ToString("0") + "</b>", rows[i].Wins.ToString(), rows[i].Podiums.ToString(), rows[i].Poles.ToString()
@@ -65,7 +65,7 @@ namespace MotoManager.App.UI.Screens
                     if (_table == 1) { var t = world.GetTeam(name); if (t != null) name = t.Name; }
                     else { var m = world.GetManufacturer(name); if (m != null) name = m.Name; }
                     bool mine = _table == 1 && rows[i].Id == playerTeam;
-                    UiFactory.TableRow(card, 44, widths, new[] { (i + 1).ToString(), name, "<b>" + rows[i].Points.ToString("0") + "</b>", rows[i].Wins.ToString() }, false, mine ? Mine : (Color?)null);
+                    UiFactory.TableRow(card, 36, widths, new[] { (i + 1).ToString(), name, "<b>" + rows[i].Points.ToString("0") + "</b>", rows[i].Wins.ToString() }, false, mine ? Mine : (Color?)null);
                 }
             }
         }
@@ -85,7 +85,11 @@ namespace MotoManager.App.UI.Screens
             if (keys.Count == 0) return;
             // The player's championship first.
             var team = world.PlayerTeam;
-            keys.Sort((a, b) => Owns(b, team).CompareTo(Owns(a, team)));
+            keys.Sort((a, b) =>
+            {
+                int c = Owns(b, team).CompareTo(Owns(a, team));
+                return c != 0 ? c : string.CompareOrdinal(a, b);
+            });
             var labels = new List<string>();
             foreach (var k in keys) labels.Add(Game.Db.Championships.ContainsKey(k) ? Game.Db.Championships[k].Name : k);
             _championship = Mathf.Clamp(_championship, 0, keys.Count - 1);
@@ -107,7 +111,7 @@ namespace MotoManager.App.UI.Screens
                 var circuit = Game.Db.GetCircuit(r.CircuitId);
                 string winner = i < next ? Winner(world, topCat, r.Round) : "";
                 Color? bg = i == next ? new Color(0.94f, 0.7f, 0.16f, 0.18f) : (Color?)null;
-                UiFactory.TableRow(card, 44, widths, new[] { r.Round.ToString(), r.Date.ToString("dd MMM", Loc.Culture), (i == next ? "<b>" + Loc.Round(r.Name) + "</b>" : Loc.Round(r.Name)), circuit != null ? circuit.ShortName : r.CircuitId, winner }, false, bg,
+                UiFactory.TableRow(card, 36, widths, new[] { r.Round.ToString(), r.Date.ToString("dd MMM", Loc.Culture), (i == next ? "<b>" + Loc.Round(r.Name) + "</b>" : Loc.Round(r.Name)), circuit != null ? circuit.ShortName : r.CircuitId, winner }, false, bg,
                     i < next ? Theme.TextDim : Theme.Text);
             }
         }
@@ -159,7 +163,7 @@ namespace MotoManager.App.UI.Screens
                 for (int i = champs.Count - 1; i >= 0; i--)
                 {
                     var c = champs[i];
-                    UiFactory.TableRow(card, 42, widths, new[] { c.Season.ToString(), "<b>" + c.RiderName + "</b>", c.TeamName ?? "", c.Points.ToString("0") });
+                    UiFactory.TableRow(card, 36, widths, new[] { c.Season.ToString(), "<b>" + c.RiderName + "</b>", c.TeamName ?? "", c.Points.ToString("0") });
                 }
             }
 

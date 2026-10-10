@@ -8,57 +8,69 @@ using UnityEngine;
 namespace MotoManager.App.UI.Screens
 {
     /// <summary>
-    /// Home: what comes next and the one button to get there, the team at a glance, what needs the manager's
-    /// attention (with a shortcut to each) and the latest news. Everything else lives in its own section.
+    /// Home, laid out to fit one screen: on the left what comes next and the team; on the right the last result,
+    /// what needs a decision (with shortcuts) and the latest headlines.
     /// </summary>
     public class HubScreen : ScreenBase
     {
         public override string Title { get { return Loc.T("nav.home"); } }
+        private const int MaxTodo = 4;
+        private const int MaxNews = 4;
 
         public override void Build(RectTransform content)
         {
             var list = Page(content);
             var world = Game.World;
             var team = world.PlayerTeam;
-            var next = Game.PeekNextEvent();
+            RectTransform left, right;
+            Ui.Columns(list, out left, out right);
+
+            NextEventCard(left, world, team);
+            if (team != null) TeamCard(left, world, team);
 
             if (!string.IsNullOrEmpty(Shell.LastResult))
             {
-                var last = Ui.Card(list, Loc.T("home.last"));
-                UiFactory.Paragraph(last, Shell.LastResult, Theme.FontSmall + 2);
+                var last = Ui.Card(right, Loc.T("home.last"));
+                UiFactory.Paragraph(last, FirstLines(Shell.LastResult, 4), Theme.FontSmall);
             }
+            if (team != null) TodoCard(right, world, team);
+            NewsCard(right, world);
+        }
 
-            // Next event and the main action.
-            if (next != null)
+        private static string FirstLines(string text, int lines)
+        {
+            var parts = text.TrimEnd('\n').Split('\n');
+            if (parts.Length <= lines) return string.Join("\n", parts);
+            return string.Join("\n", parts, 0, lines) + "\n…";
+        }
+
+        private void NextEventCard(Transform parent, WorldState world, Team team)
+        {
+            var next = Game.PeekNextEvent();
+            if (next == null)
             {
-                var circuit = Game.Db.GetCircuit(next.Round.CircuitId);
-                var cats = new List<string>();
-                foreach (var c in next.Categories) cats.Add(Game.Db.GetCategory(c).ShortName);
-                bool racing = team != null && next.Categories.Contains(team.CategoryId);
-                var card = Ui.Card(list, Loc.Round(next.Round.Name),
-                    circuit.Name + " · " + circuit.Country + " · " + next.Round.Date.ToString("d MMMM", Loc.Culture) + "  ·  " + string.Join(", ", cats.ToArray()));
-                if (!racing) Ui.Note(card, Loc.T("home.notRacing"));
-                if (racing)
-                    UiFactory.ButtonRow(card, 76, UiFactory.Act(Loc.T("shell.goRace"), Shell.Play), UiFactory.Act(Loc.T("home.simulateEvent"), Shell.SimulateEvent));
-                else
-                    UiFactory.ButtonRow(card, 76, UiFactory.Act(Loc.T("shell.simulate"), Shell.SimulateEvent), UiFactory.Act(Loc.T("home.simulateSeason"), Shell.SimulateSeason));
-                if (racing)
-                    Ui.Expander(card, "home.more", Loc.T("home.more"), c => UiFactory.ButtonRow(c, 60, UiFactory.Act(Loc.T("home.simulateSeason"), Shell.SimulateSeason)), Shell.Refresh);
+                var over = Ui.Card(parent, Loc.T("home.seasonOver", world.Season), Loc.T("home.seasonOverInfo"));
+                UiFactory.ButtonRow(over, 72, UiFactory.Primary(Loc.T("shell.closeSeason"), Shell.CloseSeason));
+                return;
             }
+            var circuit = Game.Db.GetCircuit(next.Round.CircuitId);
+            var cats = new List<string>();
+            foreach (var c in next.Categories) cats.Add(Game.Db.GetCategory(c).ShortName);
+            bool racing = team != null && next.Categories.Contains(team.CategoryId);
+            var card = Ui.Card(parent, Loc.Round(next.Round.Name),
+                circuit.Name + " · " + next.Round.Date.ToString("d MMMM", Loc.Culture) + " · " + string.Join(", ", cats.ToArray()));
+            if (racing)
+                UiFactory.ButtonRow(card, 72,
+                    UiFactory.Primary(Loc.T("shell.goRace"), Shell.Play),
+                    UiFactory.Act(Loc.T("home.simulateEvent"), Shell.SimulateEvent),
+                    UiFactory.Act(Loc.T("home.simulateSeasonShort"), Shell.SimulateSeason));
             else
             {
-                var card = Ui.Card(list, Loc.T("home.seasonOver", world.Season), Loc.T("home.seasonOverInfo"));
-                UiFactory.ButtonRow(card, 76, UiFactory.Act(Loc.T("shell.closeSeason"), Shell.CloseSeason));
+                Ui.Note(card, Loc.T("home.notRacing"));
+                UiFactory.ButtonRow(card, 72,
+                    UiFactory.Primary(Loc.T("shell.simulate"), Shell.SimulateEvent),
+                    UiFactory.Act(Loc.T("home.simulateSeasonShort"), Shell.SimulateSeason));
             }
-
-            RectTransform left, right;
-            Ui.Columns(list, out left, out right);
-            if (team != null)
-            {
-                TeamCard(left, world, team);
-                TodoCard(right, world, team);
-            }
-            NewsCard(list, world);
         }
 
         private void TeamCard(Transform parent, WorldState world, Team team)
@@ -85,88 +97,57 @@ namespace MotoManager.App.UI.Screens
             }
         }
 
-        /// <summary>Things that need a decision, each with a shortcut.</summary>
+        /// <summary>Things that need a decision, most urgent first, each with a shortcut.</summary>
         private void TodoCard(Transform parent, WorldState world, Team team)
         {
-            var card = Ui.Card(parent, Loc.T("home.todo"));
-            int items = 0;
-            var go = Loc.T("home.open");
-
-            var offers = SponsorMarket.OffersFor(world, team);
-            if (offers.Count > 0)
-            {
-                items++;
-                Ui.Item(card, Loc.T("home.todo.sponsors", offers.Count), Loc.T("home.todo.sponsorsInfo"), null, UiFactory.Act(go, () => Shell.Show<SponsorsPage>()));
-            }
+            var todo = new List<KeyValuePair<string, Action>>();
+            double left = team.SeasonBudget - Accounts.SpentThisSeason(world, team);
+            if (left < 0) todo.Add(Pair(Theme.BadText(Loc.T("home.todo.budget")), () => Shell.Show<FinanceScreen>()));
             int bids = world.TransferOffers.FindAll(o => o.FromTeamId == team.Id).Count;
-            if (bids > 0)
-            {
-                items++;
-                Ui.Item(card, Loc.T("home.todo.bids", bids), Loc.T("home.todo.bidsInfo"), null, UiFactory.Act(go, () => Shell.Show<RidersPage>()));
-            }
-            var expiring = new List<string>();
+            if (bids > 0) todo.Add(Pair(Loc.T("home.todo.bids", bids), () => Shell.Show<RidersPage>()));
+            var offers = SponsorMarket.OffersFor(world, team);
+            if (offers.Count > 0) todo.Add(Pair(Loc.T("home.todo.sponsors", offers.Count), () => Shell.Show<SponsorsPage>()));
+            int expiring = 0;
             foreach (var id in team.RiderIds)
             {
                 var r = world.GetRider(id);
-                if (r != null && r.Contract != null && r.Contract.EndSeason <= world.Season && r.FutureContract == null) expiring.Add(r.ShortName);
+                if (r != null && r.Contract != null && r.Contract.EndSeason <= world.Season && r.FutureContract == null) expiring++;
             }
-            if (expiring.Count > 0)
-            {
-                items++;
-                Ui.Item(card, Loc.T("home.todo.contracts", expiring.Count), string.Join(", ", expiring.ToArray()), null, UiFactory.Act(go, () => Shell.Show<RidersPage>()));
-            }
+            if (expiring > 0) todo.Add(Pair(Loc.T("home.todo.contracts", expiring), () => Shell.Show<RidersPage>()));
             int seats = ContractService.SeatsFreeNextSeason(world, Game.Db, team);
-            if (seats > 0)
-            {
-                items++;
-                Ui.Item(card, Loc.T("home.todo.seats", seats, world.Season + 1), Loc.T("home.todo.seatsInfo"), null, UiFactory.Act(go, () => Shell.Show<MarketScreen>()));
-            }
+            if (seats > 0) todo.Add(Pair(Loc.T("home.todo.seats", seats, world.Season + 1), () => Shell.Show<MarketScreen>()));
             int staffEnding = 0;
             foreach (var id in team.StaffIds)
             {
                 StaffMember s;
                 if (world.Staff.TryGetValue(id, out s) && s.ContractEndSeason <= world.Season) staffEnding++;
             }
-            if (staffEnding > 0)
-            {
-                items++;
-                Ui.Item(card, Loc.T("home.todo.staff", staffEnding), Loc.T("home.todo.staffInfo"), null, UiFactory.Act(go, () => Shell.Show<StaffPage>()));
-            }
+            if (staffEnding > 0) todo.Add(Pair(Loc.T("home.todo.staff", staffEnding), () => Shell.Show<StaffPage>()));
             int running = world.Projects.FindAll(p => p.TeamId == team.Id && p.Status == ProjectStatus.InProgress).Count;
             if (running < TeamCapabilities.ProjectCapacity(team) && DevelopmentService.AvailableProjects(world, Game.Db, team).Count > 0)
-            {
-                items++;
-                Ui.Item(card, Loc.T("home.todo.rnd", TeamCapabilities.ProjectCapacity(team) - running), Loc.T("home.todo.rndInfo"), null, UiFactory.Act(go, () => Shell.Show<ProjectsPage>()));
-            }
-            double left = team.SeasonBudget - Accounts.SpentThisSeason(world, team);
-            if (left < 0)
-            {
-                items++;
-                Ui.Item(card, Theme.BadText(Loc.T("home.todo.budget")), Loc.T("home.todo.budgetInfo", Core.Common.MathX.FormatMoney(-left)), null, UiFactory.Act(go, () => Shell.Show<FinanceScreen>()));
-            }
-            if (items == 0) Ui.Note(card, Loc.T("home.todo.none"));
+                todo.Add(Pair(Loc.T("home.todo.rnd", TeamCapabilities.ProjectCapacity(team) - running), () => Shell.Show<ProjectsPage>()));
+
+            var card = Ui.Card(parent, Loc.T("home.todo"));
+            for (int i = 0; i < todo.Count && i < MaxTodo; i++)
+                Ui.Item(card, todo[i].Key, null, null, UiFactory.Primary(Loc.T("home.open"), todo[i].Value));
+            if (todo.Count > MaxTodo) Ui.Note(card, Loc.T("home.todo.more", todo.Count - MaxTodo));
+            if (todo.Count == 0) Ui.Note(card, Loc.T("home.todo.none"));
         }
 
-        private void NewsCard(Transform list, WorldState world)
+        private static KeyValuePair<string, Action> Pair(string text, Action go)
         {
-            var card = Ui.Card(list, Loc.T("home.news"));
-            int shown = 0;
-            foreach (var n in world.News)
+            return new KeyValuePair<string, Action>(text, go);
+        }
+
+        private void NewsCard(Transform parent, WorldState world)
+        {
+            var card = Ui.Card(parent, Loc.T("home.news"));
+            for (int i = 0; i < world.News.Count && i < MaxNews; i++)
             {
-                if (shown++ >= 6) break;
-                NewsLine(card, n);
+                var n = world.News[i];
+                UiFactory.Paragraph(card, Theme.Dim(n.Date.ToString("dd MMM", Loc.Culture)) + "   " + (n.Important ? "<b>" + n.Headline + "</b>" : n.Headline), Theme.FontSmall);
             }
             if (world.News.Count == 0) Ui.Note(card, Loc.T("home.noNews"));
-            if (world.News.Count > 6)
-                Ui.Expander(card, "home.allNews", Loc.T("home.moreNews"), c =>
-                {
-                    for (int i = 6; i < world.News.Count && i < 40; i++) NewsLine(c, world.News[i]);
-                }, Shell.Refresh);
-        }
-
-        private static void NewsLine(Transform parent, NewsItem n)
-        {
-            UiFactory.Paragraph(parent, Theme.Dim(n.Date.ToString("dd MMM", Loc.Culture)) + "   " + (n.Important ? "<b>" + n.Headline + "</b>" : n.Headline), Theme.FontSmall);
         }
     }
 }

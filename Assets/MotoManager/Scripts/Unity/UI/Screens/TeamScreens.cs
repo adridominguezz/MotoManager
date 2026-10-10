@@ -62,12 +62,17 @@ namespace MotoManager.App.UI.Screens
         }
     }
 
-    /// <summary>The team's riders: form and key qualities first, every attribute and the contract on demand.</summary>
+    /// <summary>
+    /// The team's riders, one at a time (a selector on top, nothing hidden below): form and key qualities on the
+    /// left, every attribute and the contract on the right. Bids from other teams have their own tab; a
+    /// negotiation takes the whole page.
+    /// </summary>
     public class RidersPage : ScreenBase
     {
         public override string Title { get { return Loc.T("tab.riders"); } }
         private NegotiationState _neg;
         private string _confirmRelease;
+        private int _view;
 
         private static readonly string[] KeyAttributes = { "RaceSkill", "QualifyingSkill", "Consistency", "WetSkill", "Overtaking", "TireManagement" };
 
@@ -77,85 +82,93 @@ namespace MotoManager.App.UI.Screens
             var world = Game.World;
             var team = world.PlayerTeam;
             if (team == null) return;
+            if (_neg != null)
+            {
+                NegotiationPanel.Build(list, Game, _neg, Shell.Refresh, () => _neg = null);
+                return;
+            }
+
+            var riders = new List<Rider>();
+            foreach (var id in team.RiderIds) { var r = world.GetRider(id); if (r != null) riders.Add(r); }
+            int bids = world.TransferOffers.FindAll(o => o.FromTeamId == team.Id).Count;
+            var labels = new List<string>();
+            foreach (var r in riders) labels.Add("#" + r.Number + " " + r.ShortName);
+            if (riders.Count < 2) labels.Add(Loc.T("rider.freeSeatShort"));
+            if (bids > 0) labels.Add(Loc.T("rider.bids", bids));
+            _view = Mathf.Clamp(_view, 0, labels.Count - 1);
+            Ui.Chips(list, labels, _view, i => { _view = i; _confirmRelease = null; Shell.Refresh(); });
+
+            if (_view < riders.Count) RiderView(list, world, team, riders[_view]);
+            else if (riders.Count < 2 && _view == riders.Count)
+            {
+                var card = Ui.Card(list, Loc.T("rider.freeSeat"), Loc.T("rider.freeSeatInfo"));
+                UiFactory.ButtonRow(card, 64, UiFactory.Primary(Loc.T("rider.toMarket"), () => Shell.Show<MarketScreen>()));
+            }
+            else NegotiationPanel.Bids(list, Game, Shell.Refresh);
+        }
+
+        private void RiderView(RectTransform list, WorldState world, Team team, Rider r)
+        {
             var date = world.CurrentDate;
-            NegotiationPanel.Bids(list, Game, Shell.Refresh);
+            RectTransform leftCol, rightCol;
+            Ui.Columns(list, out leftCol, out rightCol);
 
-            foreach (var id in team.RiderIds)
+            var card = Ui.Card(leftCol, r.FullName, r.Nationality + " · " + Loc.T("rider.age", r.AgeOn(date)) + " · " + Loc.T("rider.style", Fmt.Styles(r)));
+            Ui.Kpis(card,
+                Ui.Kpi(Fmt.Rating(r.Attributes.Overall), Loc.T("rider.overall")),
+                Ui.Kpi(Fmt.Rating(r.Morale), Loc.T("rider.morale")),
+                Ui.Kpi(r.Contract != null ? r.Contract.EndSeason.ToString() : "-", Loc.T("rider.until")));
+            foreach (var a in KeyAttributes)
             {
-                var r = world.GetRider(id);
-                if (r == null) continue;
-                var rider = r;
-                var card = Ui.Card(list, "#" + r.Number + "  " + r.FullName,
-                    r.Nationality + " · " + Loc.T("rider.age", r.AgeOn(date)) + " · " + Loc.T("rider.style", Fmt.Styles(r)));
-                Ui.Kpis(card,
-                    Ui.Kpi(Fmt.Rating(r.Attributes.Overall), Loc.T("rider.overall")),
-                    Ui.Kpi(Fmt.Rating(r.Morale), Loc.T("rider.morale")),
-                    Ui.Kpi(r.Contract != null ? r.Contract.EndSeason.ToString() : "-", Loc.T("rider.until")),
-                    Ui.Kpi(r.Contract != null ? MathX.FormatMoney(r.Contract.SalaryPerSeason) : "-", Loc.T("rider.salary")));
-                foreach (var a in KeyAttributes)
-                {
-                    double v = Fmt.Estimate(world, team.Id, r, a);
-                    Ui.Bar(card, Loc.T("attr." + a), v / 100.0, Fmt.Attr(world, team.Id, r, a), Ui.RatingColor(v), 34);
-                }
-                Ui.Expander(card, "rider.attrs." + r.Id, Loc.T("rider.allAttributes"), c =>
-                {
-                    var names = RiderAttributes.Names;
-                    var widths = new[] { 3f, 1f, 3f, 1f, 3f, 1f };
-                    for (int i = 0; i < names.Length; i += 3)
-                    {
-                        var cells = new string[6];
-                        for (int k = 0; k < 3 && i + k < names.Length; k++)
-                        {
-                            cells[k * 2] = Theme.Dim(Loc.T("attr." + names[i + k]));
-                            cells[k * 2 + 1] = Fmt.Attr(world, team.Id, rider, names[i + k]);
-                        }
-                        UiFactory.TableRow(c, 34, widths, cells);
-                    }
-                    if (!string.IsNullOrEmpty(rider.RealHistory)) Ui.Note(c, rider.RealHistory);
-                }, Shell.Refresh);
-                Ui.Expander(card, "rider.contract." + r.Id, Loc.T("rider.contract"), c =>
-                {
-                    UiFactory.Paragraph(c, NegotiationPanel.Terms(rider.Contract) + (rider.FutureContract != null ? "\n" + Theme.Dim(Loc.T("terms.next", rider.FutureContract.EndSeason)) : ""), Theme.FontSmall);
-                }, Shell.Refresh);
+                double v = Fmt.Estimate(world, team.Id, r, a);
+                Ui.Bar(card, Loc.T("attr." + a), v / 100.0, Fmt.Attr(world, team.Id, r, a), Ui.RatingColor(v), 34);
+            }
 
-                var acts = new List<KeyValuePair<string, Action>>();
-                if (r.FutureContract == null) acts.Add(UiFactory.Act(Loc.T("team.renew"), () => { _neg = new NegotiationState { RiderId = rider.Id }; Shell.Refresh(); }));
-                var option = r.Contract != null ? r.Contract.Clause(ClauseType.TeamOption) : null;
-                if (option != null && !option.Exercised && r.Contract.EndSeason == world.Season)
-                    acts.Add(UiFactory.Act(Loc.T("team.option"), () => { ContractService.ExerciseOption(world, team, rider); Shell.Refresh(); }));
-                double cost = Contracts.TerminationCost(world, Game.Db, r);
-                bool confirm = _confirmRelease == r.Id;
-                acts.Add(UiFactory.Act(Loc.T(confirm ? "team.releaseConfirm" : "team.release", MathX.FormatMoney(cost)), () =>
-                {
-                    if (_confirmRelease == rider.Id)
-                    {
-                        Contracts.Terminate(world, Game.Db, team, rider);
-                        _confirmRelease = null;
-                    }
-                    else _confirmRelease = rider.Id;
-                    Shell.Refresh();
-                }));
-                UiFactory.ButtonRow(card, 58, acts.ToArray());
-                if (_neg != null && _neg.RiderId == r.Id)
-                {
-                    var neg = Ui.Card(list, null, null, Theme.PanelLight);
-                    NegotiationPanel.Build(neg, Game, _neg, Shell.Refresh, () => _neg = null);
-                }
-            }
-            if (team.RiderIds.Count < 2)
+            var attrs = Ui.Card(rightCol, Loc.T("rider.allAttributes"));
+            var names = RiderAttributes.Names;
+            var widths = new[] { 3f, 1f, 3f, 1f };
+            for (int i = 0; i < names.Length; i += 2)
             {
-                var card = Ui.Card(list, Loc.T("rider.freeSeat"));
-                UiFactory.ButtonRow(card, 60, UiFactory.Act(Loc.T("rider.toMarket"), () => Shell.Show<MarketScreen>()));
+                var cells = new string[4];
+                for (int k = 0; k < 2 && i + k < names.Length; k++)
+                {
+                    cells[k * 2] = Theme.Dim(Loc.T("attr." + names[i + k]));
+                    cells[k * 2 + 1] = Fmt.Attr(world, team.Id, r, names[i + k]);
+                }
+                UiFactory.TableRow(attrs, 30, widths, cells);
             }
+
+            var contract = Ui.Card(rightCol, Loc.T("rider.contract"));
+            UiFactory.Paragraph(contract, NegotiationPanel.Terms(r.Contract) + (r.FutureContract != null ? "\n" + Theme.Dim(Loc.T("terms.next", r.FutureContract.EndSeason)) : ""), Theme.FontSmall - 2);
+            var rider = r;
+            var acts = new List<UiAct>();
+            if (r.FutureContract == null) acts.Add(UiFactory.Primary(Loc.T("team.renew"), () => { _neg = new NegotiationState { RiderId = rider.Id }; Shell.Refresh(); }));
+            var option = r.Contract != null ? r.Contract.Clause(ClauseType.TeamOption) : null;
+            if (option != null && !option.Exercised && r.Contract.EndSeason == world.Season)
+                acts.Add(UiFactory.Act(Loc.T("team.option"), () => { ContractService.ExerciseOption(world, team, rider); Shell.Refresh(); }));
+            double cost = Contracts.TerminationCost(world, Game.Db, r);
+            bool confirm = _confirmRelease == r.Id;
+            acts.Add(UiFactory.Option(Loc.T(confirm ? "team.releaseConfirm" : "team.release", MathX.FormatMoney(cost)), confirm, () =>
+            {
+                if (_confirmRelease == rider.Id)
+                {
+                    Contracts.Terminate(world, Game.Db, team, rider);
+                    _confirmRelease = null;
+                }
+                else _confirmRelease = rider.Id;
+                Shell.Refresh();
+            }));
+            UiFactory.ButtonRow(contract, 58, acts.ToArray());
         }
     }
 
-    /// <summary>Staff: who works for the team, contracts, and hiring by role.</summary>
+    /// <summary>Staff: the current people (a table) or hiring by role, as two views of the page.</summary>
     public class StaffPage : ScreenBase
     {
         public override string Title { get { return Loc.T("tab.staff"); } }
-        private StaffRole? _hiringRole;
+        private StaffRole _hiringRole = StaffRole.RaceEngineer;
         private string _confirmFire;
+        private int _view;
 
         public override void Build(RectTransform content)
         {
@@ -171,67 +184,79 @@ namespace MotoManager.App.UI.Screens
                 if (world.Staff.TryGetValue(id, out s)) staff.Add(s);
             }
             staff.Sort((a, b) => a.Role.CompareTo(b.Role));
+            Ui.Chips(list, new[] { Loc.T("staff.viewTeam", staff.Count), Loc.T("staff.viewHire") }, _view, i => { _view = i; Shell.Refresh(); });
+            if (_view == 0) Current(list, world, team, staff);
+            else Hire(list, world, team);
+        }
+
+        private void Current(RectTransform list, WorldState world, Team team, List<StaffMember> staff)
+        {
             double payroll = 0;
             foreach (var s in staff) payroll += s.Salary;
-
-            var card = Ui.Card(list, Loc.T("staff.title"), Loc.T("staff.summary", staff.Count, MathX.FormatMoney(payroll)));
+            var card = Ui.Card(list, null);
+            Ui.Note(card, Loc.T("staff.summary", staff.Count, MathX.FormatMoney(payroll)) + " · " + Loc.T("staff.noteShort"));
+            var w = new[] { 3.2f, 3.6f, 1f, 1.6f, 1.4f, 3.2f };
+            UiFactory.TableRow(card, 34, w, new[] { Loc.T("staff.role"), Loc.T("staff.name"), Loc.T("staff.skill"), Loc.T("staff.salary"), Loc.T("staff.untilCol"), "" }, true);
             foreach (var s in staff)
             {
                 var member = s;
                 var rider = s.AssignedRiderId != null ? world.GetRider(s.AssignedRiderId) : null;
                 bool expiring = s.ContractEndSeason <= world.Season;
-                string detail = Loc.T("staff.line", s.Experience, MathX.FormatMoney(s.Salary)) + "  ·  " +
-                                (expiring ? Theme.WarnText(Loc.T("staff.until", s.ContractEndSeason)) : Loc.T("staff.until", s.ContractEndSeason)) +
-                                (rider != null ? "  ·  " + Loc.T("staff.with", rider.ShortName) : "");
+                var row = UiFactory.TableRow(card, 46, w, new[]
+                {
+                    Loc.T("role." + s.Role) + (rider != null ? " " + Theme.Dim(rider.ShortName) : ""),
+                    s.FullName, Fmt.Rating(s.Skill), MathX.FormatMoney(s.Salary),
+                    expiring ? Theme.WarnText(s.ContractEndSeason.ToString()) : s.ContractEndSeason.ToString(), ""
+                });
                 double severance = StaffMarket.SeveranceCost(world, s);
                 bool confirm = _confirmFire == s.Id;
-                Ui.Item(card, Loc.T("role." + s.Role) + "  ·  " + s.FullName, detail, Fmt.Rating(s.Skill),
-                    UiFactory.Act(Loc.T("staff.renew"), () =>
+                var renew = UiFactory.Button("Renew", row, Loc.T("staff.renew"), () =>
+                {
+                    StaffMarket.Extend(world, Game.Db, team, member, 2);
+                    Shell.Toast(Loc.T("staff.renewed", member.FullName, member.ContractEndSeason, MathX.FormatMoney(member.Salary)));
+                    Shell.Refresh();
+                }, Theme.PanelLight, Theme.FontSmall - 6);
+                UiFactory.Place((RectTransform)renew.transform, 0.775f, 0.06f, 0.885f, 0.94f, 2);
+                var fire = UiFactory.Button("Fire", row, confirm ? Loc.T("staff.fireConfirm", MathX.FormatMoney(severance)) : Loc.T("staff.fire"), () =>
+                {
+                    if (_confirmFire == member.Id)
                     {
-                        StaffMarket.Extend(world, Game.Db, team, member, 2);
-                        Shell.Toast(Loc.T("staff.renewed", member.FullName, member.ContractEndSeason, MathX.FormatMoney(member.Salary)));
-                        Shell.Refresh();
-                    }),
-                    UiFactory.Act(confirm ? Loc.T("staff.fireConfirm", MathX.FormatMoney(severance)) : Loc.T("staff.fire"), () =>
-                    {
-                        if (_confirmFire == member.Id)
-                        {
-                            StaffMarket.Fire(world, team, member.Id);
-                            _confirmFire = null;
-                            Shell.Toast(Loc.T("staff.released", member.FullName, MathX.FormatMoney(severance)));
-                        }
-                        else _confirmFire = member.Id;
-                        Shell.Refresh();
-                    }));
+                        StaffMarket.Fire(world, team, member.Id);
+                        _confirmFire = null;
+                        Shell.Toast(Loc.T("staff.released", member.FullName, MathX.FormatMoney(severance)));
+                    }
+                    else _confirmFire = member.Id;
+                    Shell.Refresh();
+                }, confirm ? Theme.Accent : Theme.PanelLight, Theme.FontSmall - 6);
+                UiFactory.Place((RectTransform)fire.transform, 0.89f, 0.06f, 1f, 0.94f, 2);
             }
-            Ui.Note(card, Loc.T("staff.note"));
+        }
 
-            var hire = Ui.Card(list, Loc.T("staff.hire"), Loc.T("staff.hireInfo"));
+        private void Hire(RectTransform list, WorldState world, Team team)
+        {
             var roles = new List<StaffRole>();
             foreach (StaffRole role in Enum.GetValues(typeof(StaffRole))) if (role != StaffRole.TeamManager) roles.Add(role);
-            for (int row = 0; row < roles.Count; row += 4)
+            var card = Ui.Card(list, null);
+            for (int row = 0; row < roles.Count; row += 6)
             {
                 var labels = new List<string>();
                 int selected = -1;
-                for (int i = row; i < roles.Count && i < row + 4; i++)
+                for (int i = row; i < roles.Count && i < row + 6; i++)
                 {
                     labels.Add(Loc.T("role." + roles[i]));
                     if (_hiringRole == roles[i]) selected = i - row;
                 }
                 int start = row;
-                Ui.Chips(hire, labels, selected, idx =>
-                {
-                    _hiringRole = roles[start + idx];
-                    Shell.Refresh();
-                }, 52);
+                Ui.Chips(card, labels, selected, idx => { _hiringRole = roles[start + idx]; Shell.Refresh(); }, 50);
             }
-            if (!_hiringRole.HasValue) return;
-            Ui.Note(hire, Loc.T("roleinfo." + _hiringRole.Value));
-            foreach (var c in StaffMarket.Candidates(world, Game.Db, team, _hiringRole.Value))
+            Ui.Note(card, Loc.T("roleinfo." + _hiringRole));
+            int shown = 0;
+            foreach (var c in StaffMarket.Candidates(world, Game.Db, team, _hiringRole))
             {
+                if (shown++ >= 5) break;
                 var cand = c;
-                Ui.Item(hire, c.FullName + "  " + Theme.Dim(c.Nationality), Loc.T("staff.line", c.Experience, MathX.FormatMoney(c.Salary)), Fmt.Rating(c.Skill),
-                    UiFactory.Act(Loc.T("staff.hireButton"), () =>
+                Ui.Item(card, c.FullName + "  " + Theme.Dim(c.Nationality), Loc.T("staff.line", c.Experience, MathX.FormatMoney(c.Salary)), Fmt.Rating(c.Skill),
+                    UiFactory.Primary(Loc.T("staff.hireButton"), () =>
                     {
                         StaffMarket.Hire(world, team, cand);
                         Shell.Toast(Loc.T("staff.hired", cand.FullName, Loc.T("role." + cand.Role)));
@@ -248,10 +273,12 @@ namespace MotoManager.App.UI.Screens
 
         public override void Build(RectTransform content)
         {
-            var list = Page(content);
+            var page = Page(content);
             var world = Game.World;
             var team = world.PlayerTeam;
             var me = world.PlayerManager;
+            RectTransform list, rightCol;
+            Ui.Columns(page, out list, out rightCol);
             if (me != null)
             {
                 var card = Ui.Card(list, me.FullName, Loc.T("manager.subtitle"));
@@ -278,7 +305,7 @@ namespace MotoManager.App.UI.Screens
                     Ui.Line(card, Loc.T("objective.last", Loc.T("objective." + pers.LastObjective), pers.LastPosition),
                         pers.LastObjectiveMet ? Theme.GoodText(Loc.T("objective.met")) : Theme.BadText(Loc.T("objective.missed")));
             }
-            var orgCard = Ui.Card(list, Loc.T("manager.structure"));
+            var orgCard = Ui.Card(rightCol, Loc.T("manager.structure"));
             var o = world.OrganisationOf(team);
             Ui.Line(orgCard, Loc.T("manager.team"), team.Name);
             if (o != null)

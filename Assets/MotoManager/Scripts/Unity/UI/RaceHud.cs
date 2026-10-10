@@ -27,6 +27,7 @@ namespace MotoManager.App.UI
         private readonly List<TowerRow> _rows = new List<TowerRow>();
         private readonly List<Text> _tags = new List<Text>();
         private readonly List<Image> _speedButtons = new List<Image>();
+        private Button _camCircuit, _camFollow, _camSector;
         private RectTransform _tagLayer;
         private RectTransform _results;
         private RectTransform _commandArea;
@@ -142,11 +143,11 @@ namespace MotoManager.App.UI
             }
 
             // Camera buttons
-            var overview = UiFactory.Button("Overview", _root, Loc.T("race.cam.circuit"), () => _view.Cam.SetMode(CameraMode.Overview), Theme.PanelLight, Theme.FontSmall);
+            var overview = _camCircuit = UiFactory.Button("Overview", _root, Loc.T("race.cam.circuit"), () => _view.Cam.SetMode(CameraMode.Overview), Theme.PanelLight, Theme.FontSmall);
             UiFactory.Place((RectTransform)overview.transform, 0.005f, 0.13f, 0.07f, 0.19f);
-            var follow = UiFactory.Button("Follow", _root, Loc.T("race.cam.follow"), () => _view.Select(_view.SelectedRider), Theme.PanelLight, Theme.FontSmall);
+            var follow = _camFollow = UiFactory.Button("Follow", _root, Loc.T("race.cam.follow"), () => _view.Select(_view.SelectedRider), Theme.PanelLight, Theme.FontSmall);
             UiFactory.Place((RectTransform)follow.transform, 0.075f, 0.13f, 0.14f, 0.19f);
-            var sector = UiFactory.Button("Sector", _root, Loc.T("race.tower.sector"), () => _view.NextSectorView(), Theme.PanelLight, Theme.FontSmall);
+            var sector = _camSector = UiFactory.Button("Sector", _root, Loc.T("race.tower.sector"), () => _view.NextSectorView(), Theme.PanelLight, Theme.FontSmall);
             UiFactory.Place((RectTransform)sector.transform, 0.145f, 0.13f, 0.215f, 0.19f);
 
             // Event feed
@@ -219,6 +220,10 @@ namespace MotoManager.App.UI
 
             for (int i = 0; i < _speedButtons.Count; i++)
                 _speedButtons[i].color = Mathf.Approximately(RaceView.Speeds[i], _view.Speed) ? Theme.Accent : Theme.PanelLight;
+            var mode = _view.Cam.Mode;
+            _camCircuit.image.color = mode == CameraMode.Overview ? Theme.Accent : Theme.PanelLight;
+            _camFollow.image.color = mode == CameraMode.Follow ? Theme.Accent : Theme.PanelLight;
+            _camSector.image.color = mode == CameraMode.Sector ? Theme.Accent : Theme.PanelLight;
 
             _towerTimer -= Time.unscaledDeltaTime;
             if (_towerTimer <= 0)

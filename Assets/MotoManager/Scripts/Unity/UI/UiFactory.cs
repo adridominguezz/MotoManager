@@ -43,6 +43,17 @@ namespace MotoManager.App.UI
         }
     }
 
+    /// <summary>A button in a row: its label, what it does, and whether it is the main action or the selected option.</summary>
+    public struct UiAct
+    {
+        public string Key;
+        public Action Value;
+        public bool Primary;
+        public bool Selected;
+
+        public Color Color { get { return Primary || Selected ? Theme.Accent : Theme.PanelLight; } }
+    }
+
     /// <summary>
     /// Builds uGUI hierarchies from code (no prefabs or scenes to merge). Layout is anchor based and the canvas
     /// scales with the screen, so phones and tablets get the same proportions.
@@ -75,7 +86,9 @@ namespace MotoManager.App.UI
             var scaler = go.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920, 1080);
-            scaler.matchWidthOrHeight = 0.5f;
+            // Landscape phones: the height is always 1080 units and the width follows the screen, so every page
+            // can be laid out to fit without scrolling.
+            scaler.matchWidthOrHeight = 1f;
             go.AddComponent<GraphicRaycaster>();
             EnsureEventSystem();
             return canvas;
@@ -291,12 +304,13 @@ namespace MotoManager.App.UI
         }
 
         /// <summary>A row of buttons sharing the width.</summary>
-        public static void ButtonRow(Transform list, float height, params KeyValuePair<string, Action>[] buttons)
+        public static void ButtonRow(Transform list, float height, params UiAct[] buttons)
         {
             var row = Row(list, height);
             for (int i = 0; i < buttons.Length; i++)
             {
-                var b = Button("Button", row, buttons[i].Key, buttons[i].Value, i == 0 && buttons.Length > 1 ? Theme.Accent : Theme.PanelLight, Theme.FontSmall + 2);
+                var b = Button("Button", row, buttons[i].Key, buttons[i].Value, buttons[i].Color, Theme.FontSmall + 2);
+                if (buttons[i].Primary || buttons[i].Selected) b.GetComponentInChildren<Text>().fontStyle = FontStyle.Bold;
                 Place((RectTransform)b.transform, (float)i / buttons.Length, 0, (float)(i + 1) / buttons.Length, 1, 4);
             }
         }
@@ -323,9 +337,21 @@ namespace MotoManager.App.UI
             return field;
         }
 
-        public static KeyValuePair<string, Action> Act(string label, Action action)
+        public static UiAct Act(string label, Action action)
         {
-            return new KeyValuePair<string, Action>(label, action);
+            return new UiAct { Key = label, Value = action };
+        }
+
+        /// <summary>The main action of a row (highlighted).</summary>
+        public static UiAct Primary(string label, Action action)
+        {
+            return new UiAct { Key = label, Value = action, Primary = true };
+        }
+
+        /// <summary>One option of a group; highlighted when it is the current choice.</summary>
+        public static UiAct Option(string label, bool selected, Action action)
+        {
+            return new UiAct { Key = label, Value = action, Selected = selected };
         }
 
         public static void Clear(Transform t)

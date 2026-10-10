@@ -1,7 +1,9 @@
+using System;
 using System.Collections.Generic;
 using MotoManager.Core.Career;
 using MotoManager.Core.Common;
 using MotoManager.Core.World;
+using UnityEngine.UI;
 using UnityEngine;
 
 namespace MotoManager.App.UI.Screens
@@ -16,7 +18,8 @@ namespace MotoManager.App.UI.Screens
         private string _category;
         private int _filter;
         private NegotiationState _neg;
-        private const int PageSize = 30;
+        private const int PageSize = 12;
+        private int _page;
 
         public override void Build(RectTransform content)
         {
@@ -25,8 +28,13 @@ namespace MotoManager.App.UI.Screens
             var team = world.PlayerTeam;
             if (team == null) return;
             if (_category == null) _category = team.CategoryId;
+            if (_neg != null)
+            {
+                NegotiationPanel.Build(list, Game, _neg, Shell.Refresh, () => _neg = null);
+                return;
+            }
 
-            var head = Ui.Card(list, Loc.T("market.title"), Loc.T("market.seats", world.Season + 1, ContractService.SeatsFreeNextSeason(world, Game.Db, team), ContractService.SeatsFreeNow(world, Game.Db, team)));
+            var head = Ui.Card(list, null);
             var cats = Game.Db.CategoriesOrdered();
             var labels = new List<string>();
             int selected = 0;
@@ -35,15 +43,8 @@ namespace MotoManager.App.UI.Screens
                 labels.Add(cats[i].ShortName);
                 if (cats[i].Id == _category) selected = i;
             }
-            Ui.Chips(head, labels, selected, i => { _category = cats[i].Id; Shell.Refresh(); });
-            Ui.Chips(head, new[] { Loc.T("market.filter.ending"), Loc.T("market.filter.all"), Loc.T("market.filter.scouted") }, _filter, i => { _filter = i; Shell.Refresh(); }, 50);
-
-            NegotiationPanel.Bids(list, Game, Shell.Refresh);
-            if (_neg != null)
-            {
-                var neg = Ui.Card(list, null, null, Theme.PanelLight);
-                NegotiationPanel.Build(neg, Game, _neg, Shell.Refresh, () => _neg = null);
-            }
+            Ui.Chips(head, labels, selected, i => { _category = cats[i].Id; _page = 0; Shell.Refresh(); }, 50);
+            Ui.Chips(head, new[] { Loc.T("market.filter.ending"), Loc.T("market.filter.all"), Loc.T("market.filter.scouted") }, _filter, i => { _filter = i; _page = 0; Shell.Refresh(); }, 46);
 
             var date = world.CurrentDate;
             var riders = new List<Rider>();
@@ -57,31 +58,46 @@ namespace MotoManager.App.UI.Screens
             }
             riders.Sort((a, b) => Fmt.Estimate(world, team.Id, b, "RaceSkill").CompareTo(Fmt.Estimate(world, team.Id, a, "RaceSkill")));
 
-            var card = Ui.Card(list, Loc.T("market.riders", riders.Count), Loc.T("market.ridersInfo"));
+            int pages = Math.Max(1, (riders.Count + PageSize - 1) / PageSize);
+            _page = Math.Max(0, Math.Min(_page, pages - 1));
+            var card = Ui.Card(list, null);
+            var bar = UiFactory.Row(card, 46);
+            var info = UiFactory.Label("Info", bar, Loc.T("market.seats", world.Season + 1, ContractService.SeatsFreeNextSeason(world, Game.Db, team), ContractService.SeatsFreeNow(world, Game.Db, team)) +
+                "   " + Theme.Dim(Loc.T("market.page", _page + 1, pages, riders.Count)), Theme.FontSmall - 2, TextAnchor.MiddleLeft, Theme.TextDim);
+            info.supportRichText = true;
+            UiFactory.Place(info.rectTransform, 0.01f, 0, 0.8f, 1);
+            var prev = UiFactory.Button("Prev", bar, "◄", () => { _page--; Shell.Refresh(); }, Theme.PanelLight, Theme.FontSmall);
+            UiFactory.Place((RectTransform)prev.transform, 0.81f, 0, 0.9f, 1, 3);
+            prev.interactable = _page > 0;
+            var next = UiFactory.Button("Next", bar, "►", () => { _page++; Shell.Refresh(); }, Theme.PanelLight, Theme.FontSmall);
+            UiFactory.Place((RectTransform)next.transform, 0.91f, 0, 1f, 1, 3);
+            next.interactable = _page < pages - 1;
+
+            var w = new[] { 4.2f, 0.9f, 3f, 1.2f, 1.3f, 1.3f, 1.2f, 3.2f };
+            UiFactory.TableRow(card, 34, w, new[] { Loc.T("col.rider"), Loc.T("col.age"), Loc.T("col.team"), Loc.T("col.until"), Loc.T("col.level"), Loc.T("col.potential"), Loc.T("col.known"), "" }, true);
             var levels = TransferMarket.CategoryLevels(world, Game.Db);
-            int shown = 0;
-            foreach (var r in riders)
+            for (int i = _page * PageSize; i < riders.Count && i < (_page + 1) * PageSize; i++)
             {
-                if (shown++ >= PageSize) break;
+                var r = riders[i];
                 var rider = r;
                 var t = world.GetTeam(r.TeamId);
-                bool scouted = world.Scouting.Exists(s => s.TeamId == team.Id && s.RiderId == r.Id);
-                var parts = new List<string>
+                bool scouted = world.Scouting.Exists(sc => sc.TeamId == team.Id && sc.RiderId == r.Id);
+                string name = "<b>" + r.FullName + "</b> " + Theme.Dim(r.Nationality);
+                if (TransferMarket.NeedsToPay(world, Game.Db, team, r, levels)) name += " " + Theme.GoodText(Loc.T("market.bringsMoney", MathX.FormatMoney(r.PersonalBacking)));
+                if (r.FutureContract != null) name += " " + Theme.WarnText(Loc.T("market.signedShort"));
+                var row = UiFactory.TableRow(card, 46, w, new[]
                 {
-                    Loc.T("rider.age", r.AgeOn(date)) + " · " + r.Nationality,
-                    t != null ? (t.ShortName ?? t.Name) + " · " + Loc.T("rider.untilShort", r.Contract != null ? r.Contract.EndSeason : world.Season) : Theme.GoodText(Loc.T("market.free")),
-                    Loc.T("market.known", (world.GetKnowledge(team.Id, r.Id) * 100).ToString("0"))
-                };
-                if (TransferMarket.NeedsToPay(world, Game.Db, team, r, levels)) parts.Add(Theme.GoodText(Loc.T("market.bringsMoney", MathX.FormatMoney(r.PersonalBacking))));
-                if (r.FutureContract != null) parts.Add(Theme.WarnText(Loc.T("market.signed")));
-                string value = Loc.T("market.level", Fmt.Rating(Fmt.Estimate(world, team.Id, r, "RaceSkill"))) + "\n" +
-                               Theme.Dim(Loc.T("market.potential", Fmt.Attr(world, team.Id, r, "Potential")));
-                Ui.Item(card, r.FullName, string.Join("  ·  ", parts.ToArray()), value,
-                    UiFactory.Act(Loc.T("market.offer"), () => { _neg = new NegotiationState { RiderId = rider.Id }; Shell.Refresh(); }),
-                    UiFactory.Act(scouted ? Loc.T("market.scouting") : Loc.T("market.scout"), () => ToggleScout(rider)));
+                    name, r.AgeOn(date).ToString(), t != null ? (t.ShortName ?? t.Name) : Theme.GoodText(Loc.T("market.free")),
+                    r.Contract != null ? r.Contract.EndSeason.ToString() : "-",
+                    Fmt.Rating(Fmt.Estimate(world, team.Id, r, "RaceSkill")), Fmt.Attr(world, team.Id, r, "Potential"),
+                    (world.GetKnowledge(team.Id, r.Id) * 100).ToString("0") + "%", ""
+                });
+                var scout = UiFactory.Button("Scout", row, scouted ? Loc.T("market.scouting") : Loc.T("market.scout"), () => ToggleScout(rider), scouted ? Theme.Good : Theme.PanelLight, Theme.FontSmall - 6);
+                UiFactory.Place((RectTransform)scout.transform, 0.795f, 0.06f, 0.895f, 0.94f, 2);
+                var offer = UiFactory.Button("Offer", row, Loc.T("market.offer"), () => { _neg = new NegotiationState { RiderId = rider.Id }; Shell.Refresh(); }, Theme.Accent, Theme.FontSmall - 6);
+                UiFactory.Place((RectTransform)offer.transform, 0.9f, 0.06f, 1f, 0.94f, 2);
             }
             if (riders.Count == 0) Ui.Note(card, Loc.T("market.empty"));
-            else if (riders.Count > PageSize) Ui.Note(card, Loc.T("market.more", riders.Count - PageSize));
         }
 
         private void ToggleScout(Rider r)

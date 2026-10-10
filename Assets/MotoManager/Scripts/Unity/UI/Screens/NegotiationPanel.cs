@@ -30,6 +30,7 @@ namespace MotoManager.App.UI.Screens
             return Theme.Money(v);
         }
 
+        /// <summary>Full-page negotiation in two columns: the terms on the left, cost and answer on the right.</summary>
         public static void Build(RectTransform list, GameController game, NegotiationState s, Action refresh, Action close)
         {
             var world = game.World;
@@ -42,10 +43,11 @@ namespace MotoManager.App.UI.Screens
             bool renewal = r.TeamId == team.Id;
             var owner = world.GetTeam(r.TeamId);
 
-            UiFactory.Heading(list, Loc.T("neg.title", r.FullName));
+            RectTransform leftCol, rightCol;
+            Ui.Columns(list, out leftCol, out rightCol);
             string status = owner == null ? Loc.T("neg.free") :
                 Loc.T("neg.contract", owner.Name, r.Contract != null ? r.Contract.EndSeason : world.Season, MathX.FormatMoney(r.Contract != null ? r.Contract.SalaryPerSeason : 0));
-            UiFactory.Paragraph(list, status + "  <color=#9AA4B2>" + Loc.T("neg.asks", MathX.FormatMoney(ContractService.AskingSalary(world, db, team, r))) + "</color>", Theme.FontSmall);
+            var left = Ui.Card(leftCol, Loc.T("neg.title", r.FullName), status + " · " + Loc.T("neg.asks", MathX.FormatMoney(ContractService.AskingSalary(world, db, team, r))));
 
             // Route: is a fee needed for the requested start?
             if (!renewal)
@@ -53,9 +55,9 @@ namespace MotoManager.App.UI.Screens
                 double fee = ContractService.FeeNeeded(world, db, team, r, p.StartNow);
                 if (fee < 0)
                 {
-                    UiFactory.Paragraph(list, "<color=#F0B428>" + Loc.T("neg.needAgreement", owner != null ? owner.Name : "") + "</color>", Theme.FontSmall);
+                    Ui.Note(left, Theme.WarnText(Loc.T("neg.needAgreement", owner != null ? owner.Name : "")));
                     double baseFee = s.TransferAsking > 0 ? s.TransferAsking : Contracts.TransferValue(world, db, r, p.StartNow ? world.Season : world.Season + 1) * (p.StartNow ? 1.25 : 1);
-                    var acts = new List<KeyValuePair<string, Action>>();
+                    var acts = new List<UiAct>();
                     foreach (double f in new[] { 0.7, 0.9, 1.0, 1.2 })
                     {
                         double amount = Math.Round(baseFee * f / 1000) * 1000;
@@ -67,24 +69,28 @@ namespace MotoManager.App.UI.Screens
                             refresh();
                         }));
                     }
-                    UiFactory.ButtonRow(list, 52, acts.ToArray());
+                    UiFactory.ButtonRow(left, 52, acts.ToArray());
                 }
-                else if (fee > 0) UiFactory.Paragraph(list, Loc.T("neg.fee", MathX.FormatMoney(fee)), Theme.FontSmall);
+                else if (fee > 0) Ui.Note(left, Loc.T("neg.fee", MathX.FormatMoney(fee)));
             }
 
-            // Terms.
-            var w = new[] { 3f, 4f };
-            UiFactory.TableRow(list, 40, w, new[] { Loc.T("neg.salary"), MathX.FormatMoney(p.Salary) });
-            UiFactory.ButtonRow(list, 48,
+            Ui.Line(left, Loc.T("neg.salary"), "<b>" + MathX.FormatMoney(p.Salary) + "</b>");
+            UiFactory.ButtonRow(left, 50,
                 UiFactory.Act("-10%", () => { p.Salary = Math.Round(p.Salary * 0.9 / 1000) * 1000; refresh(); }),
                 UiFactory.Act("-5%", () => { p.Salary = Math.Round(p.Salary * 0.95 / 1000) * 1000; refresh(); }),
                 UiFactory.Act("+5%", () => { p.Salary = Math.Round(p.Salary * 1.05 / 1000) * 1000; refresh(); }),
                 UiFactory.Act("+10%", () => { p.Salary = Math.Round(p.Salary * 1.1 / 1000) * 1000; refresh(); }));
-            UiFactory.ButtonRow(list, 48,
-                UiFactory.Act(Loc.T("neg.seasons", p.Seasons), () => { p.Seasons = p.Seasons % 4 + 1; refresh(); }),
-                UiFactory.Act(renewal ? Loc.T("neg.nextSeason") : (p.StartNow ? Loc.T("neg.startNow") : Loc.T("neg.nextSeason")), () => { if (!renewal) p.StartNow = !p.StartNow; refresh(); }),
-                UiFactory.Act(Loc.T("neg.signing", MathX.FormatMoney(p.SigningBonus)), () => { p.SigningBonus = p.SigningBonus <= 0 ? Math.Round(p.Salary * 0.1 / 1000) * 1000 : p.SigningBonus < p.Salary * 0.15 ? Math.Round(p.Salary * 0.25 / 1000) * 1000 : 0; refresh(); }));
-            UiFactory.ButtonRow(list, 48,
+            UiFactory.ButtonRow(left, 50,
+                UiFactory.Option(Loc.T("neg.seasonsN", 1), p.Seasons == 1, () => { p.Seasons = 1; refresh(); }),
+                UiFactory.Option(Loc.T("neg.seasonsN", 2), p.Seasons == 2, () => { p.Seasons = 2; refresh(); }),
+                UiFactory.Option(Loc.T("neg.seasonsN", 3), p.Seasons == 3, () => { p.Seasons = 3; refresh(); }),
+                UiFactory.Option(Loc.T("neg.seasonsN", 4), p.Seasons == 4, () => { p.Seasons = 4; refresh(); }));
+            if (!renewal)
+                UiFactory.ButtonRow(left, 50,
+                    UiFactory.Option(Loc.T("neg.startNow"), p.StartNow, () => { p.StartNow = true; refresh(); }),
+                    UiFactory.Option(Loc.T("neg.nextSeason"), !p.StartNow, () => { p.StartNow = false; refresh(); }));
+            UiFactory.ButtonRow(left, 50,
+                UiFactory.Act(Loc.T("neg.signing", MathX.FormatMoney(p.SigningBonus)), () => { p.SigningBonus = p.SigningBonus <= 0 ? Math.Round(p.Salary * 0.1 / 1000) * 1000 : p.SigningBonus < p.Salary * 0.15 ? Math.Round(p.Salary * 0.25 / 1000) * 1000 : 0; refresh(); }),
                 UiFactory.Act(Loc.T("neg.bonuses", MathX.FormatMoney(p.WinBonus), MathX.FormatMoney(p.PodiumBonus)), () =>
                 {
                     double level = p.WinBonus / Math.Max(1, p.Salary);
@@ -99,24 +105,23 @@ namespace MotoManager.App.UI.Screens
                     p.ReleaseClause = p.ReleaseClause <= 0 ? Math.Round(p.Salary * p.Seasons * 1.5 / 1000) * 1000 : ratio < 2 ? Math.Round(p.Salary * p.Seasons * 4 / 1000) * 1000 : 0;
                     refresh();
                 }));
-            UiFactory.ButtonRow(list, 48,
-                UiFactory.Act((p.TeamOption ? "● " : "") + Loc.T("neg.teamOption"), () => { p.TeamOption = !p.TeamOption; refresh(); }),
-                UiFactory.Act((p.PerformanceExtensionTopN > 0 ? "● " : "") + Loc.T("neg.perf", p.PerformanceExtensionTopN > 0 ? p.PerformanceExtensionTopN : 5), () => { p.PerformanceExtensionTopN = p.PerformanceExtensionTopN > 0 ? 0 : 5; refresh(); }),
-                UiFactory.Act((p.ExitForHigherCategory ? "● " : "") + Loc.T("neg.exit"), () => { p.ExitForHigherCategory = !p.ExitForHigherCategory; refresh(); }));
+            UiFactory.ButtonRow(left, 50,
+                UiFactory.Option(Loc.T("neg.teamOption"), p.TeamOption, () => { p.TeamOption = !p.TeamOption; refresh(); }),
+                UiFactory.Option(Loc.T("neg.perf", p.PerformanceExtensionTopN > 0 ? p.PerformanceExtensionTopN : 5), p.PerformanceExtensionTopN > 0, () => { p.PerformanceExtensionTopN = p.PerformanceExtensionTopN > 0 ? 0 : 5; refresh(); }),
+                UiFactory.Option(Loc.T("neg.exit"), p.ExitForHigherCategory, () => { p.ExitForHigherCategory = !p.ExitForHigherCategory; refresh(); }));
 
-            // What it costs, before confirming.
+            // What it costs, before confirming, and the rider's answer.
             var c = ContractService.Cost(world, db, team, r, p);
-            UiFactory.TableRow(list, 38, w, new[] { Loc.T("neg.cost.title", c.FirstSeason, c.LastSeason), "" }, true);
-            UiFactory.TableRow(list, 38, w, new[] { Loc.T("neg.cost.guaranteed"), MathX.FormatMoney(c.GuaranteedTotal) });
-            UiFactory.TableRow(list, 38, w, new[] { Loc.T("neg.cost.bonuses"), "≈ " + MathX.FormatMoney(c.ExpectedBonusesPerSeason) + " / " + Loc.T("neg.season") });
-            if (c.SigningBonus > 0) UiFactory.TableRow(list, 38, w, new[] { Loc.T("neg.cost.signing"), MathX.FormatMoney(c.SigningBonus) });
-            if (c.TransferFee > 0) UiFactory.TableRow(list, 38, w, new[] { Loc.T("neg.cost.fee"), MathX.FormatMoney(c.TransferFee) });
-            UiFactory.TableRow(list, 38, w, new[] { Loc.T("neg.cost.cashAfter"), Money(c.CashAfter) });
-
-            if (!string.IsNullOrEmpty(s.Message)) UiFactory.Paragraph(list, "<b>" + s.Message + "</b>", Theme.FontSmall + 2);
-            var buttons = new List<KeyValuePair<string, Action>>
+            var right = Ui.Card(rightCol, Loc.T("neg.cost.title", c.FirstSeason, c.LastSeason));
+            Ui.Line(right, Loc.T("neg.cost.guaranteed"), MathX.FormatMoney(c.GuaranteedTotal));
+            Ui.Line(right, Loc.T("neg.cost.bonuses"), "≈ " + MathX.FormatMoney(c.ExpectedBonusesPerSeason) + " / " + Loc.T("neg.season"));
+            if (c.SigningBonus > 0) Ui.Line(right, Loc.T("neg.cost.signing"), MathX.FormatMoney(c.SigningBonus));
+            if (c.TransferFee > 0) Ui.Line(right, Loc.T("neg.cost.fee"), MathX.FormatMoney(c.TransferFee));
+            Ui.Line(right, Loc.T("neg.cost.cashAfter"), Money(c.CashAfter), true);
+            if (!string.IsNullOrEmpty(s.Message)) UiFactory.Paragraph(right, "<b>" + s.Message + "</b>", Theme.FontSmall + 2);
+            var buttons = new List<UiAct>
             {
-                UiFactory.Act(Loc.T("neg.propose"), () =>
+                UiFactory.Primary(Loc.T("neg.propose"), () =>
                 {
                     var res = ContractService.Propose(world, db, team, r, p);
                     s.Message = res.Message;
@@ -126,8 +131,8 @@ namespace MotoManager.App.UI.Screens
                 })
             };
             if (s.Counter != null) buttons.Add(UiFactory.Act(Loc.T("neg.useCounter", MathX.FormatMoney(s.Counter.Salary)), () => { s.Proposal = s.Counter; s.Counter = null; refresh(); }));
-            buttons.Add(UiFactory.Act(Loc.T("neg.close"), () => { close(); refresh(); }));
-            UiFactory.ButtonRow(list, 56, buttons.ToArray());
+            UiFactory.ButtonRow(right, 64, buttons.ToArray());
+            UiFactory.ButtonRow(right, 56, UiFactory.Act(Loc.T("neg.close"), () => { close(); refresh(); }));
         }
 
         /// <summary>Offers from AI teams for the player's riders.</summary>

@@ -98,7 +98,7 @@ namespace MotoManager.App.UI
         /// A list entry: bold title, dimmed detail line, a value on the right and up to three buttons.
         /// The detail can be several lines.
         /// </summary>
-        public static RectTransform Item(Transform list, string title, string detail, string value = null, params KeyValuePair<string, Action>[] actions)
+        public static RectTransform Item(Transform list, string title, string detail, string value = null, params UiAct[] actions)
         {
             var row = UiFactory.Rect("Item", list);
             var bg = row.gameObject.AddComponent<Image>();
@@ -134,7 +134,7 @@ namespace MotoManager.App.UI
             }
             for (int i = 0; i < actions.Length; i++)
             {
-                var b = UiFactory.Button("Action", row, actions[i].Key, actions[i].Value, i == 0 ? Theme.Accent : Theme.PanelLight, Theme.FontSmall - 4);
+                var b = UiFactory.Button("Action", row, actions[i].Key, actions[i].Value, actions[i].Color, Theme.FontSmall - 4);
                 var bl = b.gameObject.AddComponent<LayoutElement>();
                 bl.preferredWidth = 190;
                 bl.minWidth = 140;

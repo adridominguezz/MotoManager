@@ -92,7 +92,7 @@ namespace MotoManager.App.UI
                 UiFactory.Place((RectTransform)button.transform, 0.86f, 0.1f, 1f, 0.9f);
                 UiFactory.Paragraph(_list, "<color=#9AA4B2>" + Loc.T("background." + bg.Id + ".desc") + "</color>", Theme.FontSmall - 2);
             }
-            UiFactory.ButtonRow(_list, 64, UiFactory.Act(Loc.T("career.next"), () =>
+            UiFactory.ButtonRow(_list, 64, UiFactory.Primary(Loc.T("career.next"), () =>
             {
                 _manager = CareerService.CreatePlayer(World, _game.Db, _first, _last, _nation, _background);
                 _step = Step.Path;
@@ -107,9 +107,9 @@ namespace MotoManager.App.UI
             _status.text = _manager.FullName + "\n" + Loc.T("career.wealthNow", MathX.FormatMoney(_manager.PersonalWealth));
             UiFactory.Heading(_list, Loc.T("career.path"));
             UiFactory.Paragraph(_list, Loc.T("career.path.employed"), Theme.FontSmall);
-            UiFactory.ButtonRow(_list, 64, UiFactory.Act(Loc.T("career.findJob"), () => { _step = Step.Jobs; Render(); }));
+            UiFactory.ButtonRow(_list, 64, UiFactory.Primary(Loc.T("career.findJob"), () => { _step = Step.Jobs; Render(); }));
             UiFactory.Paragraph(_list, Loc.T("career.path.found"), Theme.FontSmall);
-            UiFactory.ButtonRow(_list, 64, UiFactory.Act(Loc.T("career.foundTeam"), () =>
+            UiFactory.ButtonRow(_list, 64, UiFactory.Primary(Loc.T("career.foundTeam"), () =>
             {
                 CareerService.FoundingSponsorOffers(World, _game.Db, _manager, World.Rng.Fork("founding-sponsors"));
                 _step = Step.Founding;
@@ -163,14 +163,14 @@ namespace MotoManager.App.UI
 
             UiFactory.Heading(_list, Loc.T("career.capital"));
             UiFactory.ButtonRow(_list, 52,
-                UiFactory.Act(Loc.T("career.invest", "25%"), () => { _investShare = 0.25; Render(); }),
-                UiFactory.Act(Loc.T("career.invest", "50%"), () => { _investShare = 0.5; Render(); }),
-                UiFactory.Act(Loc.T("career.invest", "75%"), () => { _investShare = 0.75; Render(); }),
-                UiFactory.Act(Loc.T("career.invest", "100%"), () => { _investShare = 1; Render(); }));
+                UiFactory.Option(Loc.T("career.invest", "25%"), _investShare == 0.25, () => { _investShare = 0.25; Render(); }),
+                UiFactory.Option(Loc.T("career.invest", "50%"), _investShare == 0.5, () => { _investShare = 0.5; Render(); }),
+                UiFactory.Option(Loc.T("career.invest", "75%"), _investShare == 0.75, () => { _investShare = 0.75; Render(); }),
+                UiFactory.Option(Loc.T("career.invest", "100%"), _investShare == 1, () => { _investShare = 1; Render(); }));
             UiFactory.ButtonRow(_list, 52,
-                UiFactory.Act(Loc.T("career.loanNone"), () => { _loanShare = 0; Render(); }),
-                UiFactory.Act(Loc.T("career.loanHalf"), () => { _loanShare = 0.5; Render(); }),
-                UiFactory.Act(Loc.T("career.loanMax"), () => { _loanShare = 1; Render(); }));
+                UiFactory.Option(Loc.T("career.loanNone"), _loanShare == 0, () => { _loanShare = 0; Render(); }),
+                UiFactory.Option(Loc.T("career.loanHalf"), _loanShare == 0.5, () => { _loanShare = 0.5; Render(); }),
+                UiFactory.Option(Loc.T("career.loanMax"), _loanShare == 1, () => { _loanShare = 1; Render(); }));
             var w2 = new[] { 5f, 3f };
             UiFactory.TableRow(_list, 40, w2, new[] { Loc.T("career.ownMoney"), MathX.FormatMoney(invest) + " / " + MathX.FormatMoney(wealth) });
             UiFactory.TableRow(_list, 40, w2, new[] { Loc.T("career.loan"), MathX.FormatMoney(loan) + "  <color=#9AA4B2>" + Loc.T("career.loanTerms", MathX.FormatMoney(terms.MaxAmount), (terms.Rate * 100).ToString("0.0"), terms.Seasons) + "</color>" });
@@ -223,11 +223,11 @@ namespace MotoManager.App.UI
                 var cat = db.GetCategory(_category);
                 UiFactory.Heading(_list, Loc.T("career.supplier", cat.Name));
                 var suppliers = CareerService.Suppliers(World, _category);
-                var acts = new List<KeyValuePair<string, Action>>();
+                var acts = new List<UiAct>();
                 foreach (var m in suppliers)
                 {
                     var maker = m;
-                    acts.Add(UiFactory.Act((_supplier == m.Id ? "● " : "") + m.Name, () => { _supplier = maker.Id; Render(); }));
+                    acts.Add(UiFactory.Option(m.Name, _supplier == m.Id, () => { _supplier = maker.Id; Render(); }));
                 }
                 UiFactory.ButtonRow(_list, 52, acts.ToArray());
                 UiFactory.Input(_list, Loc.T("career.teamName"), _teamName, v => _teamName = v);
@@ -244,7 +244,7 @@ namespace MotoManager.App.UI
                         MathX.FormatMoney(report.EndCashConfirmed), MathX.FormatMoney(report.EndCashProbable)), Theme.FontSmall);
                     if (report.Verdict == Viability.Risky)
                         UiFactory.Paragraph(_list, "<color=#F0B428>" + Loc.T("career.riskyWarning") + "</color>", Theme.FontSmall);
-                    UiFactory.ButtonRow(_list, 64, UiFactory.Act(Loc.T("career.confirmFound"), () =>
+                    UiFactory.ButtonRow(_list, 64, UiFactory.Primary(Loc.T("career.confirmFound"), () =>
                     {
                         string name = string.IsNullOrEmpty(_teamName.Trim()) ? _manager.LastName + " Racing" : _teamName.Trim();
                         var res = CareerService.Found(World, db, _manager, new FoundingPlan { CategoryId = _category, ManufacturerId = _supplier, TeamName = name, Investment = invest, Loan = loan });

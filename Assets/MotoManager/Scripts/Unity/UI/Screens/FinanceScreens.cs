@@ -12,6 +12,7 @@ namespace MotoManager.App.UI.Screens
     public class FinanceScreen : ScreenBase
     {
         public override string Title { get { return Loc.T("tab.summary"); } }
+        private int _view;
 
         public override void Build(RectTransform content)
         {
@@ -24,63 +25,72 @@ namespace MotoManager.App.UI.Screens
             double left = team.SeasonBudget - spent;
             CashflowForecast fc = org != null ? CashflowForecast.ForOrganisation(world, Game.Db, org) : null;
 
-            var top = Ui.Card(list, org != null ? org.Name : team.Name, org != null ? Loc.T("owner." + org.Owner) : null);
+            RectTransform leftCol, rightCol;
+            Ui.Columns(list, out leftCol, out rightCol);
+            var top = Ui.Card(leftCol, org != null ? org.Name : team.Name, org != null ? Loc.T("owner." + org.Owner) : null);
             Ui.Kpis(top,
                 Ui.Kpi(Theme.Money(org != null ? org.Cash : Accounts.Cash(world, team)), Loc.T("finance.cash")),
-                Ui.Kpi(Theme.Money(left), Loc.T("finance.remaining")),
-                Ui.Kpi(fc != null ? Theme.Money(fc.EndProbable) : "-", Loc.T("finance.endOfSeason")));
+                Ui.Kpi(Theme.Money(left), Loc.T("finance.remaining")));
+            Ui.Kpis(top, Ui.Kpi(fc != null ? Theme.Money(fc.EndProbable) : "-", Loc.T("finance.endOfSeason")));
             double used = team.SeasonBudget > 0 ? spent / team.SeasonBudget : 0;
             Ui.Bar(top, Loc.T("finance.budgetUsed"), used, MathX.FormatMoney(spent) + Theme.Dim(" / " + MathX.FormatMoney(team.SeasonBudget)),
                 used > 1 ? Theme.Bad : used > 0.85 ? Theme.Warning : Theme.Good, 40);
             if (fc != null && fc.MinConfirmed < 0) Ui.Note(top, Theme.WarnText(Loc.T("finance.cashWarning", MathX.FormatMoney(fc.MinConfirmed))));
-
-            var detail = Ui.Card(list, Loc.T("finance.detail"));
-            if (fc != null)
-                Ui.Expander(detail, "fin.forecast", Loc.T("forecast.title"), c =>
-                {
-                    Ui.Line(c, Loc.T("forecast.confirmedIncome"), MathX.FormatMoney(fc.ConfirmedIncome));
-                    Ui.Line(c, Loc.T("forecast.probableIncome"), MathX.FormatMoney(fc.ProbableIncome));
-                    Ui.Line(c, Loc.T("forecast.costs"), "-" + MathX.FormatMoney(fc.Costs));
-                    Ui.Line(c, Loc.T("forecast.lowest"), Theme.Money(fc.MinConfirmed));
-                    Ui.Line(c, Loc.T("forecast.endConfirmed"), Theme.Money(fc.EndConfirmed));
-                    Ui.Line(c, Loc.T("forecast.endProbable"), Theme.Money(fc.EndProbable), true);
-                    Ui.Note(c, Loc.T("forecast.note"));
-                }, Shell.Refresh);
-
-            var totals = Accounts.TotalsFor(world, team.OrganisationId, world.Season, team.Id);
-            if (totals.Count > 0)
-                Ui.Expander(detail, "fin.actual", Loc.T("finance.actual", world.Season), c =>
-                {
-                    var kinds = new List<LedgerKind>(totals.Keys);
-                    kinds.Sort();
-                    double sum = 0;
-                    foreach (var k in kinds)
-                    {
-                        double v = totals[k].Cash;
-                        sum += v;
-                        Ui.Line(c, Loc.T("ledger." + k), Theme.Money(v));
-                    }
-                    Ui.Line(c, Loc.T("finance.net"), Theme.Money(sum), true);
-                }, Shell.Refresh);
-
-            var f = FinanceService.SeasonForecast(world, Game.Db, team, Game.RoundsInSeason(team.CategoryId));
-            Ui.Expander(detail, "fin.season", Loc.T("finance.seasonPlan"), c =>
-            {
-                Ui.Line(c, Loc.T("finance.plan.sponsors"), MathX.FormatMoney(f.SponsorIncome));
-                Ui.Line(c, Loc.T("finance.plan.participation"), MathX.FormatMoney(f.ParticipationIncome));
-                Ui.Line(c, Loc.T("finance.plan.riders"), "-" + MathX.FormatMoney(f.RiderSalaries));
-                Ui.Line(c, Loc.T("finance.plan.staff"), "-" + MathX.FormatMoney(f.StaffSalaries));
-                Ui.Line(c, Loc.T("finance.plan.facilities"), "-" + MathX.FormatMoney(f.FacilityUpkeep));
-                Ui.Line(c, Loc.T("finance.plan.bikes"), "-" + MathX.FormatMoney(f.BikeLease));
-                Ui.Line(c, Loc.T("finance.plan.licences"), "-" + MathX.FormatMoney(f.Licences));
-                Ui.Line(c, Loc.T("finance.plan.travel"), "-" + MathX.FormatMoney(f.Travel));
-                Ui.Line(c, Loc.T("finance.plan.balance"), Theme.Money(f.Balance), true);
-            }, Shell.Refresh);
             if (org != null && org.TeamIds.Count > 1)
             {
                 var names = new List<string>();
                 foreach (var id in org.TeamIds) { var t = world.GetTeam(id); if (t != null) names.Add(t.Name); }
-                Ui.Note(detail, Loc.T("finance.teams") + ": " + string.Join(", ", names.ToArray()));
+                Ui.Note(top, Loc.T("finance.teams") + ": " + string.Join(", ", names.ToArray()));
+            }
+
+            var detail = Ui.Card(rightCol, null);
+            Ui.Chips(detail, new[] { Loc.T("finance.view.forecast"), Loc.T("finance.view.actual"), Loc.T("finance.view.plan") }, _view, i => { _view = i; Shell.Refresh(); }, 52);
+            if (_view == 0 && fc != null)
+            {
+                Ui.Line(detail, Loc.T("forecast.confirmedIncome"), MathX.FormatMoney(fc.ConfirmedIncome));
+                Ui.Line(detail, Loc.T("forecast.probableIncome"), MathX.FormatMoney(fc.ProbableIncome));
+                Ui.Line(detail, Loc.T("forecast.costs"), "-" + MathX.FormatMoney(fc.Costs));
+                Ui.Line(detail, Loc.T("forecast.lowest"), Theme.Money(fc.MinConfirmed));
+                Ui.Line(detail, Loc.T("forecast.endConfirmed"), Theme.Money(fc.EndConfirmed));
+                Ui.Line(detail, Loc.T("forecast.endProbable"), Theme.Money(fc.EndProbable), true);
+                Ui.Note(detail, Loc.T("forecast.note"));
+            }
+            else if (_view == 1)
+            {
+                var totals = Accounts.TotalsFor(world, team.OrganisationId, world.Season, team.Id);
+                var kinds = new List<LedgerKind>(totals.Keys);
+                kinds.Sort();
+                double sum = 0;
+                var w = new[] { 3f, 1.6f, 3f, 1.6f };
+                // Two columns of concepts so a full season fits on screen.
+                for (int i = 0; i < kinds.Count; i += 2)
+                {
+                    var cells = new string[4];
+                    for (int k = 0; k < 2 && i + k < kinds.Count; k++)
+                    {
+                        double v = totals[kinds[i + k]].Cash;
+                        sum += v;
+                        cells[k * 2] = Theme.Dim(Loc.T("ledger." + kinds[i + k]));
+                        cells[k * 2 + 1] = Theme.Money(v);
+                    }
+                    UiFactory.TableRow(detail, 34, w, cells);
+                }
+                if (kinds.Count == 0) Ui.Note(detail, Loc.T("finance.noMovements"));
+                else Ui.Line(detail, Loc.T("finance.net"), Theme.Money(sum), true);
+            }
+            else
+            {
+                var f = FinanceService.SeasonForecast(world, Game.Db, team, Game.RoundsInSeason(team.CategoryId));
+                Ui.Line(detail, Loc.T("finance.plan.sponsors"), MathX.FormatMoney(f.SponsorIncome));
+                Ui.Line(detail, Loc.T("finance.plan.participation"), MathX.FormatMoney(f.ParticipationIncome));
+                Ui.Line(detail, Loc.T("finance.plan.riders"), "-" + MathX.FormatMoney(f.RiderSalaries));
+                Ui.Line(detail, Loc.T("finance.plan.staff"), "-" + MathX.FormatMoney(f.StaffSalaries));
+                Ui.Line(detail, Loc.T("finance.plan.facilities"), "-" + MathX.FormatMoney(f.FacilityUpkeep));
+                Ui.Line(detail, Loc.T("finance.plan.bikes"), "-" + MathX.FormatMoney(f.BikeLease));
+                Ui.Line(detail, Loc.T("finance.plan.licences"), "-" + MathX.FormatMoney(f.Licences));
+                Ui.Line(detail, Loc.T("finance.plan.travel"), "-" + MathX.FormatMoney(f.Travel));
+                Ui.Line(detail, Loc.T("finance.plan.balance"), Theme.Money(f.Balance), true);
+                Ui.Note(detail, Loc.T("finance.seasonPlan"));
             }
         }
     }
@@ -89,6 +99,7 @@ namespace MotoManager.App.UI.Screens
     public class SponsorsPage : ScreenBase
     {
         public override string Title { get { return Loc.T("tab.sponsors"); } }
+        private int _view = -1;
 
         public override void Build(RectTransform content)
         {
@@ -98,7 +109,15 @@ namespace MotoManager.App.UI.Screens
             if (team == null) return;
 
             var offers = SponsorMarket.OffersFor(world, team);
-            var oc = Ui.Card(list, Loc.T("sponsor.offersTitle", offers.Count), Loc.T("sponsor.offersInfo"));
+            if (_view < 0) _view = offers.Count > 0 ? 1 : 0;
+            Ui.Chips(list, new[] { Loc.T("sponsor.deals", SponsorService.DealsIn(team, world.Season), SponsorService.Slots(Game.Db, team, world.Season)), Loc.T("sponsor.offersTitle", offers.Count) }, _view, i => { _view = i; Shell.Refresh(); });
+            if (_view == 0)
+            {
+                Deals(list, world, team);
+                return;
+            }
+            var oc = Ui.Card(list, null, null);
+            Ui.Note(oc, Loc.T("sponsor.offersInfo"));
             if (offers.Count == 0) Ui.Note(oc, Loc.T("sponsor.noOffers"));
             foreach (var o in offers)
             {
@@ -113,12 +132,16 @@ namespace MotoManager.App.UI.Screens
                 string detail = Industry(o.Industry) + (o.Renewal ? " · " + Loc.T("sponsor.renewal") : "") + "\n" + string.Join(" · ", extra.ToArray()) +
                                 (terms.Length > 0 ? "\n" + terms : "");
                 Ui.Item(oc, o.Name, detail, MathX.FormatMoney(o.PaymentPerSeason) + Theme.Dim("/" + Loc.T("unit.season")),
-                    UiFactory.Act(Loc.T("sponsor.accept"), () => { Shell.Toast(SponsorMarket.Accept(world, Game.Db, offer.Id).Message); Shell.Refresh(); }),
+                    UiFactory.Primary(Loc.T("sponsor.accept"), () => { Shell.Toast(SponsorMarket.Accept(world, Game.Db, offer.Id).Message); Shell.Refresh(); }),
                     UiFactory.Act(Loc.T("sponsor.counter"), () => { Shell.Toast(SponsorMarket.Counter(world, Game.Db, offer.Id, 0.1).Message); Shell.Refresh(); }),
                     UiFactory.Act(Loc.T("sponsor.reject"), () => { Shell.Toast(SponsorMarket.Reject(world, offer.Id).Message); Shell.Refresh(); }));
             }
 
-            var dc = Ui.Card(list, Loc.T("sponsor.deals", SponsorService.DealsIn(team, world.Season), SponsorService.Slots(Game.Db, team, world.Season)));
+        }
+
+        private void Deals(RectTransform list, WorldState world, Team team)
+        {
+            var dc = Ui.Card(list, null);
             foreach (var d in team.Sponsors)
             {
                 string status = d.StartSeason > world.Season ? Loc.T("sponsor.fromSeason", d.StartSeason)
