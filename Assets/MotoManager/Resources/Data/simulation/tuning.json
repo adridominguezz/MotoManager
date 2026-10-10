@@ -35,6 +35,6 @@
   "SlipstreamRange": 35.0,
   "MinFollowGap": 6.0,
   "OvertakeBaseChance": 0.25,
-  "BaseFailureRatePerHour": 0.035,
+  "BaseFailureRatePerHour": 0.07,
   "JumpStartChance": 0.002
 }

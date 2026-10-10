@@ -116,20 +116,26 @@ namespace MotoManager.Core.Race
 
             if (!config.TimeTrial)
             {
-                foreach (var r in Riders) r.ReferenceLap = EstimateLap(config, r.Entry);
+                foreach (var r in Riders)
+                {
+                    double known;
+                    r.ReferenceLap = config.ReferenceLaps != null && config.ReferenceLaps.TryGetValue(r.Entry.Rider.Id, out known)
+                        ? known
+                        : EstimateLap(config, r.Entry);
+                }
                 SetupStart();
             }
         }
 
         /// <summary>One clean flying lap on the race tires, used for relative pace (overtaking decisions, AI).</summary>
-        public static double EstimateLap(RaceConfig config, RaceEntry entry)
+        public static double EstimateLap(RaceConfig config, RaceEntry entry, SessionType sessionType = SessionType.Practice)
         {
             var cfg = new RaceConfig
             {
                 Rules = config.Rules,
                 Circuit = config.Circuit,
                 Tuning = config.Tuning,
-                SessionType = SessionType.Practice,
+                SessionType = sessionType,
                 Laps = 1,
                 Seed = config.Seed,
                 TimeStep = 0.2,
@@ -593,6 +599,8 @@ namespace MotoManager.Core.Race
                 limit = Math.Min(limit, vc);
             }
             double look = v * v / (2 * aBrake) + 30;
+            // Brake one step early so the result does not depend on the time step (background vs visual races).
+            double stepAhead = v * Config.TimeStep;
             double dist = seg.End - r.Distance;
             int idx = seg.Index;
             for (int guard = 0; guard < 12 && dist < look; guard++)
@@ -602,7 +610,7 @@ namespace MotoManager.Core.Race
                 if (s.IsCorner)
                 {
                     double vc = CornerSpeed(r, s, gf, gr, usage);
-                    double allowed = Math.Sqrt(vc * vc + 2 * aBrake * Math.Max(0, dist));
+                    double allowed = Math.Sqrt(vc * vc + 2 * aBrake * Math.Max(0, dist - stepAhead));
                     if (allowed < limit) limit = allowed;
                 }
                 dist += s.Length;
@@ -951,7 +959,7 @@ namespace MotoManager.Core.Race
             {
                 r.Status = RaceStatus.Racing;
                 r.RemountAt = -1;
-                r.Speed = 0;
+                    r.Speed = 0;
                 r.LeanDeg = 0;
                 r.TargetLateral = 0;
                 r.PowerLoss += _rng.Range(0.0, 0.02);
@@ -1159,7 +1167,7 @@ namespace MotoManager.Core.Race
             if (!Config.TimeTrial)
             {
                 double rel = bike[PerfAttr.Reliability];
-                double hazard = Tuning.BaseFailureRatePerHour / 3600.0 * Math.Max(0.15, 1 + (50 - rel) / 25.0) * (r.Pace == PaceMode.Push ? 1.3 : 1.0) * dt;
+                double hazard = Tuning.BaseFailureRatePerHour / 3600.0 * Math.Exp((50 - rel) / 30.0) * (r.Pace == PaceMode.Push ? 1.3 : 1.0) * dt;
                 if (_rng.Chance(hazard)) MechanicalProblem(r);
             }
         }

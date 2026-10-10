@@ -81,6 +81,8 @@ namespace MotoManager.Core.Race
         public double TrackEvolution;
         /// <summary>Single rider time trial (practice / qualifying). Disables the start procedure and traffic.</summary>
         public bool TimeTrial;
+        /// <summary>Known clean-air lap per rider id (skips the per-race estimate when provided).</summary>
+        public Dictionary<string, double> ReferenceLaps;
         /// <summary>Hard limit on simulated time (safety net).</summary>
         public double MaxDurationS = 4 * 3600;
     }

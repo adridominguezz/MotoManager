@@ -47,8 +47,8 @@ namespace MotoManager.Core.Career
             else if (years > 3) baseGrowth = 1.6;
             else if (years > 0) baseGrowth = 0.8;
             else if (years > -3) baseGrowth = 0.0;
-            else if (years > -6) baseGrowth = -0.9;
-            else baseGrowth = -1.8 + (years + 6) * 0.25;
+            else if (years > -6) baseGrowth = -1.4;
+            else baseGrowth = -2.4 + (years + 6) * 0.3;
 
             foreach (var name in Skills)
             {

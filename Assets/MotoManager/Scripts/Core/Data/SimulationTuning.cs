@@ -61,7 +61,7 @@ namespace MotoManager.Core.Data
         public double OvertakeBaseChance = 0.25;
 
         // --- Reliability: failures per bike per race hour at Reliability 50
-        public double BaseFailureRatePerHour = 0.035;
+        public double BaseFailureRatePerHour = 0.07;
 
         // --- Start
         public double JumpStartChance = 0.002;

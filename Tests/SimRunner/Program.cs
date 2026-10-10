@@ -22,6 +22,7 @@ namespace MotoManager.Tools
             if (mode == "calibrate") return Calibrate(db, root, args);
             if (mode == "season") return Season(db, args);
             if (mode == "bikes") return Bikes(db, args);
+            if (mode == "profile") return Profile(db);
             if (mode == "dump-tuning")
             {
                 var path = System.IO.Path.Combine(root, "simulation", "tuning.json");
@@ -176,6 +177,24 @@ namespace MotoManager.Tools
                 var summary = game.EndSeason();
                 Console.WriteLine($"  -> retired {summary.Retired.Count}, market moves {summary.Market.Moves.Count(m => !m.Renewal)}, generated {summary.Market.GeneratedRiders}, youth {summary.YouthIntake}");
             }
+            if (years > 1)
+            {
+                Console.WriteLine("== Champions");
+                foreach (var cat in db.CategoriesOrdered().Where(c => c.Simulated))
+                {
+                    var list = game.World.Champions.Where(c => c.CategoryId == cat.Id).OrderBy(c => c.Season).ToList();
+                    Console.WriteLine($"  {cat.ShortName,-9} " + string.Join(", ", list.Select(c => c.Season % 100 + ":" + c.RiderName.Split(' ').Last() + "/" + c.ManufacturerId)));
+                }
+                var date = new DateTime(game.World.Season, 3, 1);
+                Console.WriteLine("== Grid levels (overall / age / real riders still racing)");
+                foreach (var cat in db.CategoriesOrdered())
+                {
+                    var rs = game.World.Riders.Values.Where(r => !r.IsRetired && r.CategoryId == cat.Id && (r.TeamId != null || !cat.Simulated)).ToList();
+                    if (rs.Count == 0) continue;
+                    Console.WriteLine($"  {cat.ShortName,-11} {rs.Count,3} riders  overall {rs.Average(r => r.Attributes.Overall):0.0}  age {rs.Average(r => r.AgeOn(date)):0.0}  real {rs.Count(r => !r.Generated)}");
+                }
+                Console.WriteLine($"  active riders {game.World.Riders.Values.Count(r => !r.IsRetired)}, retired {game.World.Riders.Values.Count(r => r.IsRetired)}");
+            }
             var json = SaveSystem.Serialize(game.World);
             var back = SaveSystem.Deserialize(json);
             Console.WriteLine($"save {json.Length / 1024} KB, reload ok: {SaveSystem.Serialize(back) == json}");
@@ -237,12 +256,41 @@ namespace MotoManager.Tools
             return 0;
         }
 
+        static int Profile(GameDatabase db)
+        {
+            var game = GameController.NewGame(db, new NewGameOptions { Seed = 5 });
+            var times = new Dictionary<string, double>();
+            var perEvent = new List<double>();
+            for (int e = 0; e < 10; e++)
+            {
+                var evWatch = System.Diagnostics.Stopwatch.StartNew();
+                var ev = game.BeginNextEvent();
+                foreach (var kv in ev.Weekends)
+                {
+                    var w = kv.Value;
+                    while (!w.IsComplete)
+                    {
+                        string key = kv.Key + ":" + w.CurrentSession.Type;
+                        var sw = System.Diagnostics.Stopwatch.StartNew();
+                        w.RunCurrentHeadless();
+                        times[key] = (times.ContainsKey(key) ? times[key] : 0) + sw.Elapsed.TotalMilliseconds;
+                    }
+                }
+                game.CompleteEvent(ev);
+                perEvent.Add(evWatch.Elapsed.TotalMilliseconds);
+                Console.WriteLine($"event {e + 1} {ev.Plan.Round.Name,-28} {string.Join(",", ev.Weekends.Keys),-24} {evWatch.Elapsed.TotalMilliseconds,6:0} ms");
+            }
+            foreach (var kv in times.OrderByDescending(k => k.Value)) Console.WriteLine($"{kv.Key,-28} {kv.Value,8:0} ms");
+            Console.WriteLine($"total {times.Values.Sum():0} ms for 10 events; average of events 3-10: {perEvent.Skip(2).Average():0} ms");
+            return 0;
+        }
+
         static int RaceTest(GameDatabase db, string[] args)
         {
             var rules = db.Rules[args.Length > 1 ? args[1] : "motogp_2026"];
             var c = db.Circuits[args.Length > 2 ? args[2] : "mugello"];
             ulong seed = args.Length > 3 ? ulong.Parse(args[3]) : 1;
-            var cfg = new RaceConfig { Rules = rules, Circuit = c, Tuning = db.Tuning, Seed = seed, TimeStep = 0.05 };
+            var cfg = new RaceConfig { Rules = rules, Circuit = c, Tuning = db.Tuning, Seed = seed, TimeStep = double.Parse(Environment.GetEnvironmentVariable("SIM_DT") ?? "0.05", System.Globalization.CultureInfo.InvariantCulture) };
             cfg.Laps = (int)Math.Round(rules.RaceDistanceKm * 1000 / c.LengthM);
             cfg.FuelLimitLitres = rules.Fuel.TankLimitLitres;
             cfg.Weather.AirTemp = c.AverageAirTempC;

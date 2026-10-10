@@ -43,6 +43,7 @@ namespace MotoManager.Core.Season
         private List<string> _qualifyingOrder = new List<string>();
         private readonly Dictionary<string, List<ResultEntry>> _raceResults = new Dictionary<string, List<ResultEntry>>();
         private double _trackEvolution;
+        private readonly Dictionary<string, double> _cleanLaps = new Dictionary<string, double>();
 
         public WeekendSimulation(WorldState world, GameDatabase db, string categoryId, CalendarRound round)
         {
@@ -176,7 +177,7 @@ namespace MotoManager.Core.Season
         private SessionResult RunPractice(SessionDefinition s)
         {
             var weather = SessionWeather[s.Id];
-            var runs = QualifyingSimulator.RunSession(Entries, Rules, Circuit, Db.Tuning, weather, _rng.NextULong(), SessionType.Practice, 1, 2, _trackEvolution, 0.1);
+            var runs = QualifyingSimulator.RunSession(Entries, Rules, Circuit, Db.Tuning, weather, _rng.NextULong(), SessionType.Practice, 1, 4, _trackEvolution);
             _trackEvolution += 0.002;
             // Practice improves the set-up: better feedback and crew chiefs converge faster.
             foreach (var e in Entries)
@@ -209,16 +210,16 @@ namespace MotoManager.Core.Season
                 if (practice != null) ordered.Sort((a, b) => practice.IndexOf(a.Rider.Id).CompareTo(practice.IndexOf(b.Rider.Id)));
                 for (int i = 0; i < ordered.Count; i++)
                     (i < q.DirectToFinal ? direct : first).Add(ordered[i]);
-                var q1 = QualifyingSimulator.RunSession(first, Rules, Circuit, Db.Tuning, weather, _rng.NextULong(), SessionType.Qualifying, q.Runs, q.FlyingLapsPerRun, _trackEvolution, 0.1);
+                var q1 = QualifyingSimulator.RunSession(first, Rules, Circuit, Db.Tuning, weather, _rng.NextULong(), SessionType.Qualifying, q.Runs, q.FlyingLapsPerRun, _trackEvolution);
                 var finalists = new List<RaceEntry>(direct);
                 for (int i = 0; i < q.AdvanceFromFirst && i < q1.Count; i++) finalists.Add(q1[i].Entry);
-                var q2 = QualifyingSimulator.RunSession(finalists, Rules, Circuit, Db.Tuning, weather, _rng.NextULong(), SessionType.Qualifying, q.Runs, q.FlyingLapsPerRun, _trackEvolution + 0.002, 0.1);
+                var q2 = QualifyingSimulator.RunSession(finalists, Rules, Circuit, Db.Tuning, weather, _rng.NextULong(), SessionType.Qualifying, q.Runs, q.FlyingLapsPerRun, _trackEvolution + 0.002);
                 final = new List<LapRun>(q2);
                 for (int i = q.AdvanceFromFirst; i < q1.Count; i++) final.Add(q1[i]);
             }
             else
             {
-                final = QualifyingSimulator.RunSession(Entries, Rules, Circuit, Db.Tuning, weather, _rng.NextULong(), SessionType.Qualifying, q.Runs, q.FlyingLapsPerRun, _trackEvolution, 0.1);
+                final = QualifyingSimulator.RunSession(Entries, Rules, Circuit, Db.Tuning, weather, _rng.NextULong(), SessionType.Qualifying, q.Runs, q.FlyingLapsPerRun, _trackEvolution);
             }
             _trackEvolution += 0.003;
             _qualifyingOrder = new List<string>();
@@ -285,6 +286,10 @@ namespace MotoManager.Core.Season
                 FuelLimitLitres = s.Type == SessionType.Sprint && Rules.Fuel.SprintTankLimitLitres > 0 ? Rules.Fuel.SprintTankLimitLitres : Rules.Fuel.TankLimitLitres
             };
             var grid = GridOrder(s);
+            cfg.ReferenceLaps = new Dictionary<string, double>();
+            bool wetStart = weather.InitialWetness > 0.35;
+            foreach (var e in grid)
+                cfg.ReferenceLaps[e.Rider.Id] = QualifyingSimulator.CleanLap(e, Rules, Circuit, Db.Tuning, weather, SessionType.Practice, 0, wetStart, _cleanLaps);
             var weatherModel = new WeatherModel(weather, Db.Tuning, cfg.Seed);
             for (int i = 0; i < grid.Count; i++)
             {

@@ -290,6 +290,8 @@ namespace MotoManager.Core.Career
             }
 
             if (cat.Pyramid == Pyramid.GrandPrix && age > 32) score -= (age - 32) * 1.5;
+            // Feeder categories are for riders on the way up.
+            if (cat.Tier >= 2 && age > 26) score -= (age - 26) * 1.2;
             if (cat.Pyramid == Pyramid.Superbike && age > 35) score -= (age - 35) * 1.5;
 
             var from2 = db.GetCategory(r.CategoryId);

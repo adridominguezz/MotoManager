@@ -16,102 +16,94 @@ namespace MotoManager.Core.Season
     }
 
     /// <summary>
-    /// Time-attack sessions (practice, qualifying, Superpole). Each rider's runs are simulated with the same micro
-    /// physics as the race (tires, weather, errors and crashes), then traffic and tows are applied: a lap can be
-    /// ruined by a slow rider or improved by following a faster one. Track rubber improves grip during the session.
+    /// Time-attack sessions (practice, qualifying, Superpole).
+    ///
+    /// Every rider's clean lap is simulated once with the full race physics (bike, rider, tires, track temperature,
+    /// wetness, track evolution). Each attempt in the session then varies around that lap: lap-to-lap consistency,
+    /// traffic that ruins a lap, a tow that improves it (stronger where the slipstream matters), mistakes and crashes
+    /// whose odds rise when pushing on a wet or cold track. This keeps qualifying a consequence of the simulation
+    /// while costing a fraction of simulating every out-lap.
     /// </summary>
     public static class QualifyingSimulator
     {
         public static List<LapRun> RunSession(List<RaceEntry> entries, CategoryRules rules, CircuitDefinition circuit,
             SimulationTuning tuning, WeatherSetup weather, ulong seed, SessionType type, int runs, int flyingLapsPerRun,
-            double baseEvolution, double timeStep)
+            double evolution, Dictionary<string, double> cleanLapCache = null)
         {
             var results = new List<LapRun>();
-            var rng = new DeterministicRandom(seed);
+            var track = TrackModel.Get(circuit);
+            int corners = Math.Max(1, track.CornerCount);
+            bool wet = weather.InitialWetness > 0.35 || (weather.RainEvents.Count > 0 && weather.RainEvents[0].StartTime < 0);
             foreach (var entry in entries)
             {
                 var run = new LapRun { Entry = entry };
-                var riderRng = new DeterministicRandom(DeterministicRandom.Combine(seed, DeterministicRandom.Hash(entry.Rider.Id)));
+                var rng = new DeterministicRandom(DeterministicRandom.Combine(seed, DeterministicRandom.Hash(entry.Rider.Id)));
+                double clean = CleanLap(entry, rules, circuit, tuning, weather, type, evolution, wet, cleanLapCache);
+                var a = entry.Rider.Attributes;
+                double sd = tuning.ConsistencyNoise * (1.6 - a.Consistency / 100.0) * (wet ? 1.6 : 1.0);
+                double push = type == SessionType.Qualifying ? 1.0 : 0.6;
+                double risk = (0.7 + a.Aggression / 100.0 * 0.6) * (1.5 - a.RiskManagement / 100.0) * (wet ? tuning.WetCrashMultiplier : 1.0) * push;
+                double crashPerLap = tuning.BaseCrashChance * corners * 0.8 * risk * (type == SessionType.Qualifying ? tuning.PushRisk : 1.0);
+                double errorPerLap = tuning.BaseErrorChance * corners * 0.5 * Math.Pow(risk, 0.6) * (1.5 - a.Consistency / 100.0);
+
                 for (int k = 0; k < runs && !run.Crashed; k++)
                 {
-                    double evolution = baseEvolution + 0.004 * k;
-                    var cfg = new RaceConfig
+                    double runEvolution = 1 - 0.0025 * k; // the track keeps rubbering in
+                    for (int lap = 0; lap < flyingLapsPerRun; lap++)
                     {
-                        Rules = rules,
-                        Circuit = circuit,
-                        Tuning = tuning,
-                        SessionType = type,
-                        SessionName = type.ToString(),
-                        Laps = flyingLapsPerRun,
-                        Seed = riderRng.NextULong(),
-                        TimeStep = timeStep,
-                        Weather = weather,
-                        TimeTrial = true,
-                        TrackEvolution = evolution
-                    };
-                    var e = Clone(entry);
-                    e.GridPosition = 1;
-                    // Time attack on the softest dry compound (or wets when the track is wet).
-                    if (weather.InitialWetness > 0.35 || weather.RainEvents.Count > 0 && weather.RainEvents[0].StartTime < 0)
-                    {
-                        e.FrontCompound = rules.Tires.Has(TireCompound.Rain) ? TireCompound.Rain : TireCompound.Intermediate;
-                        e.RearCompound = e.FrontCompound;
-                    }
-                    else
-                    {
-                        e.FrontCompound = rules.Qualifying.PreferredCompound;
-                        e.RearCompound = rules.Qualifying.PreferredCompound;
-                        if (type == SessionType.Practice)
+                        run.Laps++;
+                        if (rng.Chance(crashPerLap))
                         {
-                            e.FrontCompound = rules.Tires.Has(TireCompound.Medium) ? TireCompound.Medium : e.FrontCompound;
-                            e.RearCompound = e.FrontCompound;
+                            run.Crashed = true;
+                            run.Note = "Crashed";
+                            break;
                         }
-                    }
-                    cfg.Entries.Add(e);
-                    var sim = new RaceSimulation(cfg);
-                    sim.RunToEnd();
-                    var st = sim.Riders[0];
-                    run.Laps += Math.Max(0, st.Lap);
-                    if (st.Status == RaceStatus.Retired)
-                    {
-                        run.Crashed = true;
-                        run.Note = "Crashed";
-                    }
-                    if (st.BestLapTime < double.MaxValue)
-                    {
-                        double lap = st.BestLapTime;
-                        // Traffic / tow
+                        double t = clean * runEvolution * (1 + Math.Abs(rng.Gaussian(0, sd)));
+                        if (rng.Chance(errorPerLap)) t += rng.Range(0.3, 1.5);
                         double roll = rng.NextDouble();
-                        if (roll < 0.2) lap += rng.Range(0.15, 0.9);
-                        else if (roll < 0.2 + 0.15 * rules.SlipstreamFactor) lap -= rng.Range(0.03, 0.12) * rules.SlipstreamFactor;
-                        if (lap < run.BestLap) run.BestLap = lap;
+                        if (roll < 0.18) t += rng.Range(0.15, 0.9);
+                        else if (roll < 0.18 + 0.15 * rules.SlipstreamFactor) t -= rng.Range(0.03, 0.12) * rules.SlipstreamFactor;
+                        // Tires peak on the first flying lap.
+                        if (lap > 0) t += 0.08 * lap;
+                        if (t < run.BestLap) run.BestLap = t;
                     }
                 }
                 results.Add(run);
             }
-            results.Sort((a, b) =>
+            results.Sort((x, y) =>
             {
-                int c = a.BestLap.CompareTo(b.BestLap);
-                return c != 0 ? c : string.CompareOrdinal(a.Entry.Rider.Id, b.Entry.Rider.Id);
+                int c = x.BestLap.CompareTo(y.BestLap);
+                return c != 0 ? c : string.CompareOrdinal(x.Entry.Rider.Id, y.Entry.Rider.Id);
             });
             return results;
         }
 
-        private static RaceEntry Clone(RaceEntry e)
+        public static double CleanLap(RaceEntry entry, CategoryRules rules, CircuitDefinition circuit, SimulationTuning tuning,
+            WeatherSetup weather, SessionType type, double evolution, bool wet, Dictionary<string, double> cache)
         {
-            return new RaceEntry
+            string key = entry.Rider.Id + "|" + type + "|" + (wet ? "wet" : "dry") + "|" + Math.Round(evolution, 4);
+            double lap;
+            if (cache != null && cache.TryGetValue(key, out lap)) return lap;
+            var e = new RaceEntry
             {
-                Rider = e.Rider,
-                Team = e.Team,
-                Bike = e.Bike,
-                ManufacturerId = e.ManufacturerId,
-                FrontCompound = e.FrontCompound,
-                RearCompound = e.RearCompound,
-                SetupQuality = e.SetupQuality,
-                Form = e.Form,
-                IsPlayer = e.IsPlayer,
-                AutoManaged = true
+                Rider = entry.Rider, Team = entry.Team, Bike = entry.Bike, ManufacturerId = entry.ManufacturerId,
+                SetupQuality = entry.SetupQuality, Form = entry.Form, GridPosition = 1
             };
+            if (wet)
+            {
+                e.FrontCompound = rules.Tires.Has(TireCompound.Rain) ? TireCompound.Rain : TireCompound.Intermediate;
+                e.RearCompound = e.FrontCompound;
+            }
+            else
+            {
+                var compound = type == SessionType.Practice && rules.Tires.Has(TireCompound.Medium) ? TireCompound.Medium : rules.Qualifying.PreferredCompound;
+                e.FrontCompound = compound;
+                e.RearCompound = compound;
+            }
+            var cfg = new RaceConfig { Rules = rules, Circuit = circuit, Tuning = tuning, Weather = weather, TrackEvolution = evolution };
+            lap = RaceSimulation.EstimateLap(cfg, e, type);
+            if (cache != null) cache[key] = lap;
+            return lap;
         }
     }
 }

@@ -258,7 +258,11 @@ namespace MotoManager.Core.Economy
                     if (bike == null) continue;
                     var rules = db.GetRules(kv.Key, world.Season);
                     bool concessions = rules.Development.Concessions && m.HasConcessions;
+                    // The group budget mostly funds the top-class programme; feeder programmes are far closer.
+                    var catDef = db.GetCategory(kv.Key);
                     double money = MathX.Clamp(m.DevelopmentBudget / 30000000.0, 0.2, 1.6);
+                    if (catDef != null && catDef.Tier > 1) money = 0.85 + 0.15 * money;
+                    double cap = rules.Development.SeasonGainCap > 0 ? rules.Development.SeasonGainCap * 0.6 : double.MaxValue;
                     foreach (var comp in new List<string>(bike.Components.Keys))
                     {
                         bool frozen = comp == "Engine" && rules.Engine.DevelopmentFrozen && !concessions;
@@ -266,6 +270,7 @@ namespace MotoManager.Core.Economy
                         double level = bike.Components[comp];
                         double gain = rng.Gaussian(1.2, 1.2) * (m.EngineeringStrength / 70.0) * money * (100 - level) / 30.0;
                         if (concessions) gain += rng.Range(0.5, 2.0);
+                        gain = Math.Min(gain, cap);
                         bike.Components[comp] = MathX.Clamp(level + gain, 1, 99);
                     }
                     bike.Year = world.Season + 1;

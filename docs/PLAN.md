@@ -106,7 +106,7 @@ Convenciones que se mantienen en todas las fases:
 > Nota: los datos reales se basan en conocimiento hasta mediados de 2026. Conviene que revises
 > las alineaciones de Moto2/Moto3/WSSP; todo lo dudoso irá marcado con `dataConfidence`.
 
-## Fase 3 — Tests y equilibrio (1–2 sesiones)
+## Fase 3 — Tests y equilibrio (1–2 sesiones) ✅
 
 - Proyecto xUnit `Tests/Core.Tests`: determinismo (misma semilla + comandos = mismo resultado),
   replays, cierre de geometría de todos los circuitos, tiempos de vuelta vs referencia, tasas de
@@ -115,6 +115,18 @@ Convenciones que se mantienen en todas las fases:
 - Ajuste de `tuning.json` con `SimRunner` (estadísticas de muchas carreras).
 - **Hecho cuando** `dotnet test` en verde y 20 temporadas simuladas sin errores ni degeneraciones
   (parrillas llenas, distribución de talento estable, varios fabricantes ganadores).
+- Resultado (sesión 3.1): 19 tests en verde (determinismo, replay desde el log de órdenes,
+  independencia del paso de tiempo, cierre y calibración de los 27 circuitos, tasas de caídas
+  ~3.7/carrera y averías, desgaste y combustible, clima gradual y previsiones, cambio de moto solo
+  si las reglas lo permiten, flag-to-flag con lluvia, salidas en falso penalizadas, tablas de puntos).
+- Rendimiento: entrenamientos/clasificación derivados de una vuelta limpia simulada por piloto;
+  frenada corregida para que la vuelta no dependa del paso de tiempo (0,05 s visual = 0,2 s fondo).
+  Coste estable ~0,45 s por evento en escritorio (antes ~0,72 s). En el juego, las demás categorías
+  se simularán en un hilo de fondo mientras el jugador ve su carrera (Fase 5).
+- Equilibrio en 10 temporadas reales: declive por edad más marcado, cantera para jóvenes en
+  categorías de formación, el presupuesto del grupo no infla los programas inferiores y límite de
+  desarrollo invernal en categorías con tope. Resultado: relevo generacional (Márquez → Acosta y
+  nuevos talentos), varios fabricantes campeones en cada categoría, niveles y edades estables.
 
 ## Fase 4 — Proyecto Unity base (1 sesión)
 
