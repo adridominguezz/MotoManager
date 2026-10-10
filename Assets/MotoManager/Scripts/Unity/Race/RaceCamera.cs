@@ -8,7 +8,9 @@ namespace MotoManager.App.Race
         Overview,
         /// <summary>Fixed view of one sector of the circuit (watch a braking zone or a corner sequence).</summary>
         Sector,
-        Free
+        Free,
+        /// <summary>Slow orbit over the whole circuit before the start.</summary>
+        Intro
     }
 
     /// <summary>
@@ -28,6 +30,8 @@ namespace MotoManager.App.Race
         private Vector3 _focus;
         private float _distance = 400;
         private float _yaw;
+        private float _pitch = 34f;
+        private float _followTarget = 70f;
         private Bounds _trackBounds;
         private Vector2 _lastPointer;
         private Vector2 _pressStart;
@@ -75,7 +79,7 @@ namespace MotoManager.App.Race
         {
             Mode = mode;
             if (target != null) Target = target;
-            if (mode == CameraMode.Follow) _distance = FollowDistance;
+            if (mode == CameraMode.Follow) _followTarget = FollowDistance; // eased in, so the intro descends smoothly
         }
 
         private float OverviewDistance()
@@ -93,6 +97,7 @@ namespace MotoManager.App.Race
             if (Mode == CameraMode.Follow && Target != null)
             {
                 targetFocus = Target.position;
+                targetDistance = _followTarget;
                 // Rotate slowly behind the rider so corners read naturally.
                 float yaw = Target.eulerAngles.y;
                 _yaw = Mathf.LerpAngle(_yaw, yaw, 1 - Mathf.Exp(-dt * 0.8f));
@@ -102,6 +107,12 @@ namespace MotoManager.App.Race
                 targetFocus = _sectorFocus;
                 targetDistance = _sectorDistance;
                 _yaw = Mathf.LerpAngle(_yaw, 0, 1 - Mathf.Exp(-dt * 2));
+            }
+            else if (Mode == CameraMode.Intro)
+            {
+                targetFocus = _trackBounds.center;
+                targetDistance = OverviewDistance() * 0.8f;
+                _yaw += dt * 14f;
             }
             else if (Mode == CameraMode.Overview)
             {
@@ -118,7 +129,8 @@ namespace MotoManager.App.Race
                 if (off.magnitude > maxOff) _focus = targetFocus + off.normalized * maxOff;
             }
             _distance = Mathf.Lerp(_distance, targetDistance, 1 - Mathf.Exp(-dt * 4));
-            var rot = Quaternion.Euler(Pitch, _yaw, 0);
+            _pitch = Mathf.Lerp(_pitch, Mode == CameraMode.Intro ? 34f : Pitch, 1 - Mathf.Exp(-dt * 2));
+            var rot = Quaternion.Euler(_pitch, _yaw, 0);
             transform.position = _focus - rot * Vector3.forward * _distance;
             transform.rotation = rot;
         }
@@ -135,6 +147,7 @@ namespace MotoManager.App.Race
                 else if (_lastPinch > 0)
                 {
                     _distance = Mathf.Clamp(_distance * _lastPinch / Mathf.Max(1, d), MinDistance, MaxDistance);
+                    _followTarget = _distance;
                     _lastPinch = d;
                     if (Mode == CameraMode.Overview) Mode = CameraMode.Free;
                 }
@@ -147,6 +160,7 @@ namespace MotoManager.App.Race
             if (Mathf.Abs(wheel) > 0.01f)
             {
                 _distance = Mathf.Clamp(_distance * (1 - wheel * 0.1f), MinDistance, MaxDistance);
+                _followTarget = _distance;
                 if (Mode == CameraMode.Overview) Mode = CameraMode.Free;
             }
 

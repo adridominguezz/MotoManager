@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using MotoManager.Core.Race;
 using UnityEngine;
@@ -139,8 +140,12 @@ namespace MotoManager.App.Race
 
             BuildPitLane(details);
             BuildGrandstands(details);
+            BuildBoards(details);
+            var scenery = new MeshBuilder();
+            BuildScenery(scenery);
 
             ground.ToObject("Ground", transform);
+            scenery.ToObject("Scenery", transform);
             asphalt.ToObject("Tarmac", transform);
             details.ToObject("Details", transform);
         }
@@ -213,6 +218,166 @@ namespace MotoManager.App.Race
             }
         }
 
+        private static readonly Color32[] CrowdColors =
+        {
+            new Color32(230, 60, 60, 255), new Color32(250, 210, 60, 255), new Color32(60, 140, 230, 255), new Color32(240, 240, 240, 255),
+            new Color32(70, 190, 110, 255), new Color32(240, 130, 40, 255), new Color32(40, 40, 50, 255), new Color32(180, 80, 200, 255)
+        };
+
+        /// <summary>Spectators: small coloured blocks in rows on top of a stand.</summary>
+        private void Crowd(MeshBuilder mb, double d, double lateral, float height)
+        {
+            var rng = new System.Random((int)(d * 7919) ^ (int)(lateral * 131));
+            float heading = HeadingDeg(d);
+            for (int row = 0; row < 3; row++)
+                for (int k = 0; k < 9; k++)
+                {
+                    double along = d + (k - 4) * 2.0;
+                    double lat = lateral + Math.Sign(lateral) * (row * 2.0 - 2.0);
+                    var c = CrowdColors[rng.Next(CrowdColors.Length)];
+                    mb.Box(Point(along, lat, height + row * 0.6f), new Vector3(1.1f, 1.0f, 1.3f), c, Quaternion.Euler(0, heading, 0));
+                }
+        }
+
+        private static readonly Color32[] BoardColors =
+        {
+            new Color32(225, 40, 40, 255), new Color32(30, 90, 200, 255), new Color32(250, 200, 30, 255), new Color32(30, 160, 90, 255),
+            new Color32(240, 240, 240, 255), new Color32(120, 60, 180, 255), new Color32(240, 120, 30, 255), new Color32(20, 30, 50, 255)
+        };
+
+        /// <summary>Advertising boards along the track: close on the straights, behind the gravel at corners.</summary>
+        private void BuildBoards(MeshBuilder mb)
+        {
+            foreach (var seg in Track.Segments)
+            {
+                int outside = seg.AngleDeg > 0 ? -1 : 1;
+                double runoff = seg.IsCorner ? 1.3 + 8 + 10 * seg.BrakingIntensity + 1.5 : 4.5;
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    // Keep the pit side of the main straight clear (pit wall and garages are there).
+                    double lat = seg.IsCorner ? (side == outside ? runoff : 3.5) : 4.5;
+                    double from = seg.Start, to = seg.End;
+                    for (double d = from; d < to - 0.5; d += 6)
+                    {
+                        double e = Math.Min(to, d + 6);
+                        if (side == PitSide && InPitZone(d)) continue;
+                        int panel = (int)(d / 12) + (side > 0 ? 3 : 0);
+                        var col = BoardColors[((panel % BoardColors.Length) + BoardColors.Length) % BoardColors.Length];
+                        var a0 = Point(d, side * (HalfWidth + lat), 0);
+                        var a1 = Point(e, side * (HalfWidth + lat), 0);
+                        var up = Vector3.up * 1.1f;
+                        mb.Quad(a0, a0 + up, a1 + up, a1, col);
+                        mb.Quad(a1, a1 + up, a0 + up, a0, col);
+                    }
+                }
+            }
+        }
+
+        private bool InPitZone(double d)
+        {
+            double entry = Track.PitEntry, exit = Track.PitExit;
+            return d >= entry - 20 || d <= exit + 20;
+        }
+
+        /// <summary>
+        /// Woods, buildings and houses around the circuit, kept clear of the track, run-offs and stands. Generated from
+        /// the circuit id, so every visit to a circuit looks the same.
+        /// </summary>
+        private void BuildScenery(MeshBuilder mb)
+        {
+            // Coarse grid of centre-line samples for "how far from the track" checks.
+            const float cell = 40f;
+            var grid = new Dictionary<long, List<Vector2>>();
+            for (double g = 0; g < Geometry.GeometricLength; g += 8)
+            {
+                var p = PointGeo(g, 0, 0);
+                long key = Key(Mathf.FloorToInt(p.x / cell), Mathf.FloorToInt(p.z / cell));
+                List<Vector2> l;
+                if (!grid.TryGetValue(key, out l)) grid[key] = l = new List<Vector2>();
+                l.Add(new Vector2(p.x, p.z));
+            }
+            Func<float, float, float> distance = (x, z) =>
+            {
+                int cx = Mathf.FloorToInt(x / cell), cz = Mathf.FloorToInt(z / cell);
+                float best = float.MaxValue;
+                for (int dx = -2; dx <= 2; dx++)
+                    for (int dz = -2; dz <= 2; dz++)
+                    {
+                        List<Vector2> l;
+                        if (!grid.TryGetValue(Key(cx + dx, cz + dz), out l)) continue;
+                        foreach (var q in l) best = Math.Min(best, (q - new Vector2(x, z)).sqrMagnitude);
+                    }
+                return best == float.MaxValue ? 999f : Mathf.Sqrt(best);
+            };
+
+            var rng = new System.Random((int)(Core.Common.DeterministicRandom.Hash(Track.CircuitId) & 0x7FFFFFFF));
+            float minX = (float)Geometry.MinX - 260, maxX = (float)Geometry.MaxX + 260;
+            float minZ = (float)Geometry.MinY - 260, maxZ = (float)Geometry.MaxY + 260;
+            Func<float> u = () => (float)rng.NextDouble();
+
+            // Woods: clusters of trees.
+            int clusters = Mathf.Clamp((int)((maxX - minX) * (maxZ - minZ) / 40000f), 25, 110);
+            int trees = 0;
+            for (int c = 0; c < clusters && trees < 1100; c++)
+            {
+                float cx = Mathf.Lerp(minX, maxX, u()), cz = Mathf.Lerp(minZ, maxZ, u());
+                int n = 6 + rng.Next(16);
+                for (int k = 0; k < n; k++)
+                {
+                    float x = cx + (u() + u() + u() - 1.5f) * 40f, z = cz + (u() + u() + u() - 1.5f) * 40f;
+                    if (distance(x, z) < 52) continue;
+                    Tree(mb, new Vector3(x, 0, z), 0.7f + u() * 0.8f, u());
+                    trees++;
+                }
+            }
+
+            // Buildings and houses further out.
+            for (int b = 0; b < 40; b++)
+            {
+                float x = Mathf.Lerp(minX, maxX, u()), z = Mathf.Lerp(minZ, maxZ, u());
+                if (distance(x, z) < 95) continue;
+                float yaw = u() * 90;
+                if (u() < 0.3f)
+                {
+                    float w = 14 + u() * 18, d = 14 + u() * 18, h = 10 + u() * 26;
+                    var wall = Color32.Lerp(new Color32(200, 205, 215, 255), new Color32(120, 160, 205, 255), u());
+                    mb.Box(new Vector3(x, h / 2, z), new Vector3(w, h, d), wall, Quaternion.Euler(0, yaw, 0));
+                    mb.Box(new Vector3(x, h + 0.4f, z), new Vector3(w * 0.9f, 0.8f, d * 0.9f), new Color32(235, 235, 240, 255), Quaternion.Euler(0, yaw, 0));
+                }
+                else
+                {
+                    // A few houses together: white walls, red roofs.
+                    for (int hsi = 0; hsi < 3 + rng.Next(4); hsi++)
+                    {
+                        var pos = new Vector3(x + (u() - 0.5f) * 40, 0, z + (u() - 0.5f) * 40);
+                        if (distance(pos.x, pos.z) < 80) continue;
+                        float hy = yaw + (u() - 0.5f) * 20;
+                        mb.Box(pos + Vector3.up * 2.5f, new Vector3(7, 5, 9), new Color32(238, 236, 228, 255), Quaternion.Euler(0, hy, 0));
+                        mb.Box(pos + Vector3.up * 5.6f, new Vector3(7.6f, 1.4f, 9.6f), new Color32(205, 90, 70, 255), Quaternion.Euler(0, hy, 0));
+                    }
+                }
+            }
+        }
+
+        private static long Key(int x, int z)
+        {
+            return ((long)x << 32) ^ (uint)z;
+        }
+
+        private static void Tree(MeshBuilder mb, Vector3 at, float size, float tint)
+        {
+            var trunk = new Color32(95, 70, 50, 255);
+            Color32 leaves = Color32.Lerp(new Color32(40, 100, 45, 255), new Color32(85, 135, 55, 255), tint);
+            mb.Box(at + Vector3.up * 1.4f * size, new Vector3(0.7f, 2.8f, 0.7f) * size, trunk);
+            mb.Loft(new[]
+            {
+                new MeshBuilder.Section(2.0f * size, 0, 3.2f * size, 3.2f * size, leaves),
+                new MeshBuilder.Section(5.0f * size, 0, 2.3f * size, 2.3f * size, leaves),
+                new MeshBuilder.Section(8.0f * size, 0, 1.1f * size, 1.1f * size, leaves),
+                new MeshBuilder.Section(9.6f * size, 0, 0.05f, 0.05f, leaves)
+            }, 7, Quaternion.Euler(-90, 0, 0), at);
+        }
+
         /// <summary>Lateral distance of the pit lane centre from the track centre for a pit-lane progress 0..1.</summary>
         public static double PitLateral(double t)
         {
@@ -229,6 +394,7 @@ namespace MotoManager.App.Race
             {
                 double dist = (d + Track.Length) % Track.Length;
                 mb.Box(Point(dist, -PitSide * (HalfWidth + 22), 4), new Vector3(8, 8, 19), Stand, Quaternion.Euler(-12 * -PitSide, HeadingDeg(dist), 0));
+                Crowd(mb, dist, -PitSide * (HalfWidth + 22), 8.2f);
             }
             foreach (var seg in Track.Segments)
             {
@@ -236,7 +402,10 @@ namespace MotoManager.App.Race
                 int outside = seg.AngleDeg > 0 ? -1 : 1;
                 double runoff = 8 + 10 * seg.BrakingIntensity;
                 for (double d = seg.Start - 40; d < seg.Start + 20; d += 20)
+                {
                     mb.Box(Point(d, outside * (HalfWidth + runoff + 12), 3), new Vector3(7, 6, 19), Stand, Quaternion.Euler(0, HeadingDeg(d), 0));
+                    Crowd(mb, d, outside * (HalfWidth + runoff + 12), 6.2f);
+                }
             }
         }
     }

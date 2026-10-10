@@ -126,6 +126,7 @@ namespace MotoManager.App
             _onDone = onDone;
             _onError = onError;
             _task = BackgroundTask.Run(label, work);
+            _taskStarted = Time.unscaledTime;
             return true;
         }
 
@@ -135,9 +136,15 @@ namespace MotoManager.App
             if (GameChanged != null) GameChanged();
         }
 
+        private float _taskStarted;
+
         private void Update()
         {
+            // Loading screen for anything that takes a moment (saving runs quietly).
+            if (_task != null && !_task.IsDone && _task.Label != UI.Loc.T("busy.saving") && Time.unscaledTime - _taskStarted > 0.25f && !UI.LoadingOverlay.IsShown)
+                UI.LoadingOverlay.Show(_task.Label);
             if (_task == null || !_task.IsDone) return;
+            UI.LoadingOverlay.Hide();
             var task = _task;
             var done = _onDone;
             var error = _onError;

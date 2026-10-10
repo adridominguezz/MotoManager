@@ -150,6 +150,7 @@ namespace MotoManager.App.UI.Screens
                 _navButtons.Add(b.GetComponent<Image>());
             }
             Show(_sections[0]);
+            Assistant.Show("home", new[] { "tut.home.1", "tut.home.2", "tut.home.3", "tut.home.4", "tut.home.5" });
         }
 
         public void Show(Section section)

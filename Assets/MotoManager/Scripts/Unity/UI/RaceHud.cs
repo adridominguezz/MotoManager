@@ -26,6 +26,14 @@ namespace MotoManager.App.UI
         private Text _feed;
         private readonly List<TowerRow> _rows = new List<TowerRow>();
         private readonly List<Text> _tags = new List<Text>();
+        private readonly List<Image> _plates = new List<Image>();
+        private readonly List<Text> _dotNumbers = new List<Text>();
+        private RectTransform _tower;
+        private Button _towerButton;
+        private RectTransform _leftCard;
+        private Text _banner;
+        private Image _bannerBg;
+        private const string TowerPref = "MotoManager.RaceTower";
         private readonly List<Image> _speedButtons = new List<Image>();
         private Button _camCircuit, _camFollow, _camSector;
         private RectTransform _tagLayer;
@@ -80,13 +88,27 @@ namespace MotoManager.App.UI
             UiFactory.Stretch(_tagLayer);
             foreach (var r in sim.Riders)
             {
-                var t = UiFactory.Label("Tag", _tagLayer, r.Entry.Rider.Number + " " + r.Entry.Rider.Code, Theme.FontSmall - 2, TextAnchor.MiddleCenter);
-                t.rectTransform.sizeDelta = new Vector2(120, 30);
-                t.rectTransform.anchorMin = t.rectTransform.anchorMax = Vector2.zero;
-                var outline = t.gameObject.AddComponent<Outline>();
-                outline.effectColor = new Color(0, 0, 0, 0.9f);
-                if (r.Entry.IsPlayer) t.color = Theme.Warning;
+                // Plate over the bike (close view): position, name, tyre and gap.
+                var plate = UiFactory.Panel("Plate", _tagLayer, new Color(0.93f, 0.95f, 0.97f, 0.95f));
+                plate.rectTransform.sizeDelta = new Vector2(330, 38);
+                plate.rectTransform.anchorMin = plate.rectTransform.anchorMax = Vector2.zero;
+                plate.rectTransform.pivot = new Vector2(0.5f, 0);
+                plate.raycastTarget = false;
+                var bar = UiFactory.Panel("Team", plate.transform, UiFactory.ParseColor(r.Entry.Team != null ? r.Entry.Team.Colors.Primary : null, Color.gray));
+                bar.raycastTarget = false;
+                UiFactory.Place(bar.rectTransform, 0.1f, 0.1f, 0.115f, 0.9f);
+                var t = UiFactory.Label("Text", plate.transform, "", Theme.FontSmall - 2, TextAnchor.MiddleLeft, new Color32(20, 28, 44, 255));
+                t.supportRichText = true;
+                UiFactory.Place(t.rectTransform, 0.02f, 0, 0.99f, 1);
+                _plates.Add(plate);
                 _tags.Add(t);
+                // Number inside the far-view dot.
+                var n = UiFactory.Label("DotNumber", _tagLayer, "", Theme.FontSmall - 4, TextAnchor.MiddleCenter, Color.white);
+                n.fontStyle = FontStyle.Bold;
+                n.rectTransform.sizeDelta = new Vector2(48, 30);
+                n.rectTransform.anchorMin = n.rectTransform.anchorMax = Vector2.zero;
+                n.gameObject.AddComponent<Outline>().effectColor = new Color(0, 0, 0, 0.85f);
+                _dotNumbers.Add(n);
             }
 
             // Top bar
@@ -116,8 +138,9 @@ namespace MotoManager.App.UI
             UiFactory.Place((RectTransform)skip.transform, 0.957f, 0.1f, 0.995f, 0.9f);
 
             // Timing tower
-            var tower = UiFactory.Panel("Tower", _root, new Color(0.043f, 0.075f, 0.125f, 0.8f));
-            UiFactory.Place(tower.rectTransform, 0.005f, 0.2f, 0.215f, 0.92f);
+            var tower = UiFactory.Panel("Tower", _root, new Color(0.043f, 0.075f, 0.125f, 0.9f), true);
+            UiFactory.Place(tower.rectTransform, 0.005f, 0.005f, 0.22f, 0.855f);
+            _tower = tower.rectTransform;
             float rowH = 1f / Mathf.Max(sim.Riders.Count, 18);
             for (int i = 0; i < sim.Riders.Count; i++)
             {
@@ -144,16 +167,18 @@ namespace MotoManager.App.UI
 
             // Camera buttons
             var overview = _camCircuit = UiFactory.Button("Overview", _root, Loc.T("race.cam.circuit"), () => _view.Cam.SetMode(CameraMode.Overview), Theme.PanelLight, Theme.FontSmall);
-            UiFactory.Place((RectTransform)overview.transform, 0.005f, 0.13f, 0.07f, 0.19f);
+            UiFactory.Place((RectTransform)overview.transform, 0.775f, 0.865f, 0.85f, 0.925f, 3);
             var follow = _camFollow = UiFactory.Button("Follow", _root, Loc.T("race.cam.follow"), () => _view.Select(_view.SelectedRider), Theme.PanelLight, Theme.FontSmall);
-            UiFactory.Place((RectTransform)follow.transform, 0.075f, 0.13f, 0.14f, 0.19f);
+            UiFactory.Place((RectTransform)follow.transform, 0.85f, 0.865f, 0.925f, 0.925f, 3);
             var sector = _camSector = UiFactory.Button("Sector", _root, Loc.T("race.tower.sector"), () => _view.NextSectorView(), Theme.PanelLight, Theme.FontSmall);
-            UiFactory.Place((RectTransform)sector.transform, 0.145f, 0.13f, 0.215f, 0.19f);
+            UiFactory.Place((RectTransform)sector.transform, 0.925f, 0.865f, 0.995f, 0.925f, 3);
+            _towerButton = UiFactory.Button("TowerToggle", _root, Loc.T("race.standings"), () => SetTower(!_tower.gameObject.activeSelf), Theme.PanelLight, Theme.FontSmall);
+            UiFactory.Place((RectTransform)_towerButton.transform, 0.005f, 0.865f, 0.14f, 0.925f, 3);
 
             // Event feed
             var feedBg = UiFactory.Panel("Feed", _root, new Color(0.043f, 0.075f, 0.125f, 0.7f));
-            UiFactory.Place(feedBg.rectTransform, 0.005f, 0.005f, 0.45f, 0.12f);
-            _feed = UiFactory.Label("FeedText", feedBg.transform, "", Theme.FontSmall - 2, TextAnchor.LowerLeft);
+            UiFactory.Place(feedBg.rectTransform, 0.26f, 0.005f, 0.74f, 0.11f);
+            _feed = UiFactory.Label("FeedText", feedBg.transform, "", Theme.FontSmall - 2, TextAnchor.LowerCenter);
             UiFactory.Place(_feed.rectTransform, 0.01f, 0.02f, 0.99f, 0.98f);
             _feed.supportRichText = true;
 
@@ -164,11 +189,17 @@ namespace MotoManager.App.UI
             UiFactory.Stretch(_commandArea);
             if (players.Count > 0)
             {
-                float h = 0.44f / players.Count;
+                // First rider bottom left, the others bottom right.
                 for (int i = 0; i < players.Count; i++)
                 {
                     var area = UiFactory.Rect("Command" + i, _commandArea);
-                    UiFactory.Place(area, 0.7f, 0.005f + h * (players.Count - 1 - i), 0.995f, 0.005f + h * (players.Count - i) - 0.006f);
+                    if (i == 0) UiFactory.Place(area, 0.005f, 0.005f, 0.25f, 0.55f);
+                    else
+                    {
+                        float h = 0.55f / (players.Count - 1);
+                        UiFactory.Place(area, 0.75f, 0.005f + h * (players.Count - 1 - i), 0.995f, 0.005f + h * (players.Count - i) - 0.006f);
+                    }
+                    if (i == 0) _leftCard = area;
                     _panels.Add(new RiderCommandPanel(_view, players[i], area));
                 }
                 var session = GameSession.Instance;
@@ -176,7 +207,43 @@ namespace MotoManager.App.UI
                     _forecasterSkill = Core.Economy.TeamCapabilities.ForecastSkill(session.Game.World, session.Game.World.PlayerTeam);
             }
 
+            // Race-day banner shown while the camera presents the circuit.
+            _bannerBg = UiFactory.Panel("Banner", _root, new Color(0, 0, 0, 0));
+            _bannerBg.raycastTarget = false;
+            UiFactory.Place(_bannerBg.rectTransform, 0.02f, 0.1f, 0.6f, 0.3f);
+            var tag = UiFactory.Panel("RaceDay", _bannerBg.transform, new Color32(150, 80, 200, 235), true);
+            UiFactory.Place(tag.rectTransform, 0, 0.55f, 0.36f, 0.95f);
+            var tagText = UiFactory.Label("Text", tag.transform, Loc.T("race.day"), Theme.FontNormal, TextAnchor.MiddleCenter);
+            tagText.fontStyle = FontStyle.Bold;
+            UiFactory.Stretch(tagText.rectTransform);
+            _banner = UiFactory.Label("Circuit", _bannerBg.transform, "", Theme.FontTitle - 6, TextAnchor.MiddleLeft);
+            _banner.fontStyle = FontStyle.Bold;
+            _banner.gameObject.AddComponent<Outline>().effectColor = new Color(0, 0, 0, 0.8f);
+            UiFactory.Place(_banner.rectTransform, 0, 0, 1, 0.55f);
+            _bannerBg.gameObject.SetActive(false);
+
+            bool towerOn = false;
+            try { towerOn = PlayerPrefs.GetInt(TowerPref, 0) == 1; } catch (System.Exception) { }
+            SetTower(towerOn);
             RefreshTower();
+        }
+
+        /// <summary>Shows or hides the full classification (remembered); the left rider card makes room for it.</summary>
+        public void SetTower(bool on)
+        {
+            _tower.gameObject.SetActive(on);
+            if (_leftCard != null) _leftCard.gameObject.SetActive(!on);
+            _towerButton.image.color = on ? Theme.Accent : Theme.PanelLight;
+            try { PlayerPrefs.SetInt(TowerPref, on ? 1 : 0); } catch (System.Exception) { }
+        }
+
+        /// <summary>Banner and HUD state while the camera presents the circuit before the start.</summary>
+        public void ShowIntro(string circuit, string country, bool on)
+        {
+            _bannerBg.gameObject.SetActive(on);
+            _banner.text = (string.IsNullOrEmpty(country) ? "" : country.ToUpperInvariant() + " · ") + circuit.ToUpperInvariant();
+            _commandArea.gameObject.SetActive(!on);
+            _tagLayer.gameObject.SetActive(!on);
         }
 
         private void UpdateAdvice()
@@ -326,20 +393,35 @@ namespace MotoManager.App.UI
         {
             var cam = _view.Cam.Camera;
             if (cam == null) return;
+            var sim = _view.Sim;
             var canvasRect = _root.rect;
             float sx = canvasRect.width / Screen.width, sy = canvasRect.height / Screen.height;
+            var leader = sim.RiderAtPosition(1);
             for (int i = 0; i < _tags.Count; i++)
             {
                 var bike = _view.Bikes[i];
                 var r = bike.State;
-                // Far view: only the player's riders and the followed one keep a label (the dots carry the colours).
-                bool wanted = bike.Visible && (!bike.ShowingMarker || r.Entry.IsPlayer || i == _view.SelectedRider);
-                var screen = cam.WorldToScreenPoint(bike.transform.position + Vector3.up * (bike.ShowingMarker ? 0f : 3f * bike.transform.localScale.y));
-                bool visible = wanted && screen.z > 0;
-                if (_tags[i].enabled != visible) _tags[i].enabled = visible;
-                if (!visible) continue;
-                // Screen -> canvas units (the canvas scales with the screen).
-                _tags[i].rectTransform.anchoredPosition = new Vector2(screen.x * sx, screen.y * sy + (bike.ShowingMarker ? 30 : 14));
+                var screen = cam.WorldToScreenPoint(bike.transform.position + Vector3.up * (bike.ShowingMarker ? 0f : 2.2f * bike.transform.localScale.y));
+                bool onScreen = bike.Visible && screen.z > 0;
+
+                // Far view: every dot carries its position.
+                bool dot = onScreen && bike.ShowingMarker;
+                if (_dotNumbers[i].enabled != dot) _dotNumbers[i].enabled = dot;
+                if (dot)
+                {
+                    _dotNumbers[i].text = r.Position.ToString();
+                    _dotNumbers[i].rectTransform.anchoredPosition = new Vector2(screen.x * sx, screen.y * sy);
+                }
+
+                // Plates for the followed rider, the player's riders and the leader.
+                bool wanted = onScreen && (i == _view.SelectedRider || r.Entry.IsPlayer || (leader != null && leader.Index == i));
+                if (_plates[i].gameObject.activeSelf != wanted) _plates[i].gameObject.SetActive(wanted);
+                if (!wanted) continue;
+                string tyre = CompoundLetter(r.Rear.Compound) + " " + ((1 - r.Rear.Wear) * 100).ToString("0") + "%";
+                string gap = r.Position == 1 ? Loc.T("tower.leader").ToUpperInvariant() : GapText(sim, r, r.Position - 1);
+                _tags[i].text = "<b>" + r.Position + "</b>      <b>" + r.Entry.Rider.ShortName.ToUpperInvariant() + "</b>   " + tyre + "   " + gap;
+                _plates[i].color = r.Entry.IsPlayer ? new Color(1f, 0.93f, 0.7f, 0.96f) : new Color(0.93f, 0.95f, 0.97f, 0.95f);
+                _plates[i].rectTransform.anchoredPosition = new Vector2(screen.x * sx, screen.y * sy + (bike.ShowingMarker ? 26 : 18));
             }
         }
 
@@ -391,6 +473,7 @@ namespace MotoManager.App.UI
         {
             if (_replayBar != null) _replayBar.gameObject.SetActive(false);
             _commandArea.gameObject.SetActive(true);
+            SetTower(_tower.gameObject.activeSelf);
             if (_results != null) _results.gameObject.SetActive(true);
             _feedCount = -1;
         }

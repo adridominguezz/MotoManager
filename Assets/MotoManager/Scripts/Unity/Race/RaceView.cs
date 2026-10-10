@@ -57,15 +57,58 @@ namespace MotoManager.App.Race
                     view.SelectedRider = i;
                     break;
                 }
-            view.Cam.SetMode(CameraMode.Follow, view.Bikes[view.SelectedRider].transform);
             view.Hud = RaceHud.Create(view, title);
-            view.Speed = 1;
+            if (sim.Tick == 0) view.StartIntro();
+            else
+            {
+                view.Cam.SetMode(CameraMode.Follow, view.Bikes[view.SelectedRider].transform);
+                view.Speed = 1;
+            }
             return view;
         }
 
         public void SetSpeed(float speed)
         {
+            if (InIntro) EndIntro();
             Speed = speed;
+        }
+
+        // ------------------------------------------------------------------ race-day presentation
+
+        public const float IntroOrbit = 5f, IntroDescent = 2.5f;
+        private float _introTime = -1;
+        public bool InIntro { get { return _introTime >= 0; } }
+
+        /// <summary>Orbit over the circuit with the race-day banner, then down to the grid. A tap skips it.</summary>
+        public void StartIntro()
+        {
+            _introTime = 0;
+            Speed = 0;
+            Cam.SetMode(CameraMode.Intro);
+            var c = Sim.Config.Circuit;
+            Hud.ShowIntro(c != null ? c.Name : Sim.Track.CircuitId, c != null ? c.Country : "", true);
+        }
+
+        public void EndIntro()
+        {
+            if (!InIntro) return;
+            _introTime = -1;
+            Hud.ShowIntro("", "", false);
+            Cam.SetMode(CameraMode.Follow, Bikes[SelectedRider].transform);
+            Speed = 1;
+            if (!Assistant.Seen("race"))
+            {
+                Speed = 0;
+                Assistant.Show("race", new[] { "tut.race.1", "tut.race.2", "tut.race.3", "tut.race.4" }, () => Speed = 1);
+            }
+        }
+
+        private void UpdateIntro(float dt)
+        {
+            _introTime += dt;
+            if (_introTime > IntroOrbit && Cam.Mode == CameraMode.Intro) Cam.SetMode(CameraMode.Follow, Bikes[SelectedRider].transform);
+            bool tap = Input.GetMouseButtonDown(0) || (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began);
+            if (_introTime > IntroOrbit + IntroDescent || (tap && _introTime > 0.4f)) EndIntro();
         }
 
         public void Select(int riderIndex)
@@ -107,6 +150,7 @@ namespace MotoManager.App.Race
         private void Update()
         {
             float dt = Time.deltaTime;
+            if (InIntro) UpdateIntro(dt);
             double step = Sim.Config.TimeStep;
             if (!Sim.IsFinished && Speed > 0)
             {
