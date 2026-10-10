@@ -572,6 +572,20 @@ que se quedan en pista, modelos toscos y opción de entrar a boxes (en motos no 
 - La IA aplica las mismas reglas (productos de sus estrellas, ediciones tras ganar, campañas solo si salen a
   cuenta). 92 tests en verde.
 
+### Sesión E6 — Expansión y reestructuración ✅
+- Ampliar: la organización del jugador abre otro equipo entre temporadas en una categoría donde no tenga, pagado con
+  su caja (y un préstamo opcional) y solo si la viabilidad, que cuenta sus otros equipos, lo permite. El equipo nace
+  vacío y lo dirige un manager que el dueño puede cambiar (delegación); el manager contrata un personal básico.
+- Cambio de categoría al final de temporada: el campeonato recompra la plaza actual, se compra la nueva (o se paga la
+  inscripción) y motos nuevas; los pilotos con contrato y el personal van con el equipo.
+- Vender: nuevos propietarios compran el equipo por su valor (plaza, instalaciones, material, stock y marca) y sigue
+  compitiendo. Cerrar: se pagan los contratos de pilotos y personal y se recupera parte de la plaza.
+- Una organización sin equipos se liquida: se devuelven los préstamos y el resto pasa al dinero del dueño.
+- Crisis de caja: aviso en Inicio y en Mi organización; préstamo de urgencia (uno, más caro), aportar dinero propio o
+  vender en cualquier momento a precio de saldo. Si sigue en negativo al final de la temporada se venden equipos a la
+  fuerza; si no basta, quiebra con un golpe fuerte a la reputación. La partida continúa.
+- Las plazas vacías de cualquier equipo se completan antes de cada evento. 96 tests en verde.
+
 ## Pendiente de especificación
 
 Recibidas las secciones 49–105; ver la Fase 8.

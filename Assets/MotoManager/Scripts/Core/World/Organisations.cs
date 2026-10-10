@@ -78,6 +78,8 @@ namespace MotoManager.Core.World
         /// <summary>Keeps every ledger line (organisations the player works for or owns); others keep totals only.</summary>
         public bool DetailedLedger;
         public List<Loan> Loans = new List<Loan>();
+        /// <summary>Events in a row the organisation has ended with negative cash (player organisations).</summary>
+        public int InsolventEvents;
         /// <summary>Units of each product ordered this season by all the organisation's teams (shared production: volume discounts).</summary>
         public Dictionary<string, int> MerchOrdered = new Dictionary<string, int>();
         public string DataConfidence = "generated";
@@ -171,6 +173,9 @@ namespace MotoManager.Core.World
         public string ManagerId;
         /// <summary>Official shop and fan base.</summary>
         public TeamShop Shop = new TeamShop();
+        /// <summary>Category the team moves to at the end of the season (null = stays), and its bike supplier there.</summary>
+        public string PendingCategoryId;
+        public string PendingSupplierId;
 
         public int Facility(FacilityType type)
         {

@@ -39,6 +39,7 @@ namespace MotoManager.Core.Career
             TeamAI.SeasonReview(world, db, rng);
             summary.PlayerReview = SeasonReviewService.Build(world, db);
             ManagerCareer.SeasonEnd(world, db, summary.PlayerReview);
+            OrganisationService.SeasonEnd(world, db);
             ManagerMarket.SeasonEnd(world, db, rng.Fork("managers"));
             Contracts.PaySeasonBonuses(world, db);
             SponsorsAndReputation(world, db, rng);
@@ -72,6 +73,7 @@ namespace MotoManager.Core.Career
             Contracts.EvaluateSeasonEnd(world, db, rng);
             DevelopmentService.ManufacturerSeasonReview(world, db, rng);
             DevelopmentService.WinterDevelopment(world, db, rng);
+            OrganisationService.ApplyCategoryChanges(world, db);
             summary.Market = TransferMarket.Run(world, db, rng);
             // Personnel: experience, reputation and contracts (after the riders are settled for next season).
             StaffService.SeasonEnd(world, db, rng);

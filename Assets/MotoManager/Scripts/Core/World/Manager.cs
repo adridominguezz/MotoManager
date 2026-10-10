@@ -130,6 +130,8 @@ namespace MotoManager.Core.World
         public double Rate;
         public int Seasons;
         public int StartSeason;
+        /// <summary>Taken to survive a cash crisis (one at a time, dearer).</summary>
+        public bool Emergency;
     }
 
     /// <summary>A team that would hire the player as its manager.</summary>

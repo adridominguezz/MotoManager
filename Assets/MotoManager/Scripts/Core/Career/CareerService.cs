@@ -402,50 +402,8 @@ namespace MotoManager.Core.Career
             Accounts.Post(world, org, null, LedgerKind.OwnerInvestment, plan.Investment, m.FullName, true, false);
             if (plan.Loan > 0) TakeLoan(world, org, plan.Loan, terms.Rate, terms.Seasons);
 
-            // A place on the grid.
-            if (rules.Economy.EntryModel == EntryModel.SlotPurchase)
-            {
-                var seller = Seller(world, db, cat.Id);
-                if (seller == null) return Fail(Txt.F("career.e.noSeller", "No team is willing to sell its place."));
-                Accounts.Post(world, org, null, LedgerKind.SlotPurchase, -rules.Economy.SlotPrice, seller.Name, true, false);
-                var sellerOrg = world.OrganisationOf(seller);
-                if (sellerOrg != null) Accounts.Post(world, sellerOrg, seller.Id, LedgerKind.SlotSale, rules.Economy.SlotPrice, plan.TeamName, true, false);
-                Withdraw(world, db, seller);
-            }
-            else
-            {
-                Accounts.Post(world, org, null, LedgerKind.EntryFee, -rules.Economy.EntryFee, cat.Name);
-            }
-
-            // The team.
-            var baseBike = world.GetBike(baseBikeId);
-            var team = new Team
-            {
-                Id = world.NewId("team"),
-                Name = plan.TeamName,
-                ShortName = string.IsNullOrEmpty(plan.ShortName) ? plan.TeamName : plan.ShortName,
-                ManufacturerId = supplier.Id,
-                CategoryId = cat.Id,
-                Status = TeamStatus.Independent,
-                Country = m.Nationality,
-                Reputation = NewTeamReputation(m),
-                SeasonBudget = Math.Round(report.OperatingCost / 1000) * 1000,
-                OrganisationId = org.Id,
-                DataConfidence = "player"
-            };
-            team.Colors.Primary = plan.PrimaryColor;
-            team.Colors.Secondary = string.IsNullOrEmpty(plan.SecondaryColor) ? "#FFFFFF" : plan.SecondaryColor;
-            foreach (FacilityType f in Enum.GetValues(typeof(FacilityType))) team.Facilities[f] = 1;
-            var bike = baseBike.Clone("bike_" + team.Id);
-            world.Bikes[bike.Id] = bike;
-            team.BikeId = bike.Id;
-            world.Teams[team.Id] = team;
-            org.TeamIds.Add(team.Id);
-            team.Personality = TeamAI.Generate(world, db, team);
-            double offset = TeamAI.SpecOffset(team);
-            foreach (var comp in new List<string>(bike.Components.Keys)) bike.Components[comp] = MathX.Clamp(bike.Components[comp] - offset, 1, 99);
-            Accounts.Post(world, team, LedgerKind.Equipment, -rules.Economy.StartupEquipmentCost, null, true, false);
-            Accounts.Post(world, team, LedgerKind.BikePurchase, -rules.Economy.BikePurchasePerRider * rules.RidersPerTeam, null, true, false);
+            var team = EnterTeam(world, db, org, cat, supplier, plan.TeamName, plan.ShortName, plan.PrimaryColor, plan.SecondaryColor, NewTeamReputation(m), report.OperatingCost, m.Nationality);
+            if (team == null) return Fail(Txt.F("career.e.noSeller", "No team is willing to sell its place."));
 
             // People: the owner runs it; riders and staff are the owner's to hire (the team starts empty).
             if (m.Job != null)
@@ -478,8 +436,67 @@ namespace MotoManager.Core.Career
             return new CareerResult { Ok = true, Team = team, Viability = report, Message = Txt.F("career.r.born", "{0} is born.", team.Name) };
         }
 
+        /// <summary>
+        /// A new team of an organisation enters a category: the grid place (bought from the weakest private team in a
+        /// closed grid, an entry fee in an open one), equipment and bikes, all posted to the organisation. The team
+        /// starts without riders or staff. Null if no place can be bought.
+        /// </summary>
+        public static Team EnterTeam(WorldState world, GameDatabase db, Organisation org, ChampionshipCategory cat, Manufacturer supplier, string name, string shortName,
+            string primary, string secondary, double reputation, double operatingCost, string country = null)
+        {
+            var rules = db.GetRules(cat.Id, world.Season);
+            string baseBikeId = supplier.Programs[cat.Id];
+            // A place on the grid.
+            if (rules.Economy.EntryModel == EntryModel.SlotPurchase)
+            {
+                var seller = Seller(world, db, cat.Id);
+                if (seller == null) return null;
+                Accounts.Post(world, org, null, LedgerKind.SlotPurchase, -rules.Economy.SlotPrice, seller.Name, true, false);
+                var sellerOrg = world.OrganisationOf(seller);
+                if (sellerOrg != null) Accounts.Post(world, sellerOrg, seller.Id, LedgerKind.SlotSale, rules.Economy.SlotPrice, name, true, false);
+                Withdraw(world, db, seller);
+            }
+            else
+            {
+                Accounts.Post(world, org, null, LedgerKind.EntryFee, -rules.Economy.EntryFee, cat.Name);
+            }
+
+            // The team.
+            var baseBike = world.GetBike(baseBikeId);
+            var team = new Team
+            {
+                Id = world.NewId("team"),
+                Name = name,
+                ShortName = string.IsNullOrEmpty(shortName) ? name : shortName,
+                ManufacturerId = supplier.Id,
+                CategoryId = cat.Id,
+                Status = TeamStatus.Independent,
+                Country = country,
+                Reputation = reputation,
+                SeasonBudget = Math.Round(operatingCost / 1000) * 1000,
+                OrganisationId = org.Id,
+                DataConfidence = "player"
+            };
+            team.Colors.Primary = primary;
+            team.Colors.Secondary = string.IsNullOrEmpty(secondary) ? "#FFFFFF" : secondary;
+            foreach (FacilityType f in Enum.GetValues(typeof(FacilityType))) team.Facilities[f] = 1;
+            var bike = baseBike.Clone("bike_" + team.Id);
+            world.Bikes[bike.Id] = bike;
+            team.BikeId = bike.Id;
+            world.Teams[team.Id] = team;
+            org.TeamIds.Add(team.Id);
+            team.Personality = TeamAI.Generate(world, db, team);
+            double offset = TeamAI.SpecOffset(team);
+            foreach (var comp in new List<string>(bike.Components.Keys)) bike.Components[comp] = MathX.Clamp(bike.Components[comp] - offset, 1, 99);
+            Accounts.Post(world, team, LedgerKind.Equipment, -rules.Economy.StartupEquipmentCost, null, true, false);
+            Accounts.Post(world, team, LedgerKind.BikePurchase, -rules.Economy.BikePurchasePerRider * rules.RidersPerTeam, null, true, false);
+
+            team.Shop.Fans = MerchService.FansTarget(world, db, team);
+            return team;
+        }
+
         /// <summary>The team that sells its grid place: the weakest private team that is not part of a larger structure if possible.</summary>
-        private static Team Seller(WorldState world, GameDatabase db, string categoryId)
+        public static Team Seller(WorldState world, GameDatabase db, string categoryId)
         {
             Team best = null;
             double bestScore = double.MaxValue;

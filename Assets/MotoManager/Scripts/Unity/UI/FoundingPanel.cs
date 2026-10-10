@@ -131,7 +131,7 @@ namespace MotoManager.App.UI
             if (!string.IsNullOrEmpty(st.Message)) UiFactory.Paragraph(id, Theme.WarnText(st.Message), Theme.FontSmall);
         }
 
-        private static void Swatches(Transform card, string label, string selected, Action<string> pick)
+        public static void Swatches(Transform card, string label, string selected, Action<string> pick)
         {
             var row = UiFactory.Row(card, 48);
             var l = UiFactory.Label("Label", row, label, Theme.FontSmall - 2, TextAnchor.MiddleLeft, Theme.TextDim);

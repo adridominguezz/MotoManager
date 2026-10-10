@@ -110,6 +110,10 @@ namespace MotoManager.App.UI.Screens
         {
             var todo = new List<KeyValuePair<string, Action>>();
             int emptyNow = ContractService.SeatsFreeNow(world, Game.Db, team);
+            var ownOrg = ManagerCareer.OwnedOrganisation(world);
+            var alert = OrganisationService.Alert(world, Game.Db, ownOrg);
+            if (alert == CashAlert.Insolvent) todo.Add(Pair(Theme.BadText(Loc.T("home.todo.insolvent")), () => Shell.Show<CareerOrgPage>()));
+            else if (alert == CashAlert.Low) todo.Add(Pair(Theme.WarnText(Loc.T("home.todo.lowCash")), () => Shell.Show<CareerOrgPage>()));
             if (emptyNow > 0) todo.Add(Pair(Theme.BadText(Loc.T("home.todo.emptySeats", emptyNow)), () => Shell.Show<MarketScreen>()));
             var job = world.PlayerManager != null ? world.PlayerManager.Job : null;
             if (job != null && job.Role == ManagerRole.TeamManager && job.EndSeason <= world.Season)

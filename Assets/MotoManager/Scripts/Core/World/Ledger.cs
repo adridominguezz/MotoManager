@@ -54,7 +54,11 @@ namespace MotoManager.Core.World
         /// <summary>Riders' share of the sales of products with their name (image rights).</summary>
         RiderImageRights,
         /// <summary>Marketing campaigns for the shop.</summary>
-        MerchMarketing
+        MerchMarketing,
+        /// <summary>A team sold to another organisation (price received or paid).</summary>
+        TeamSale,
+        /// <summary>Money the owner takes out of the organisation (when it is wound up).</summary>
+        OwnerWithdrawal
     }
 
     /// <summary>One movement of money. Cash entries change the organisation's cash; P&amp;L entries count as income/expense.</summary>
