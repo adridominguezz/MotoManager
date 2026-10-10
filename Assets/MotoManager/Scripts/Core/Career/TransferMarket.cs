@@ -231,6 +231,9 @@ namespace MotoManager.Core.Career
                 var currentTeam = world.GetTeam(r.TeamId);
                 if (currentTeam != null && currentTeam.IsPlayer) return false;
             }
+            // Talent-pool riders need a stepping stone before a top category, unless already at that level.
+            var origin = db.GetCategory(r.CategoryId);
+            if (cat.Tier == 1 && origin != null && !origin.Simulated && r.Attributes.Overall < 40 + cat.Prestige * 0.42 - 5) return false;
             if (cat.IsCup)
             {
                 // Cups recruit youngsters from the talent pool / their own grid.

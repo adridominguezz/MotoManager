@@ -88,7 +88,8 @@ namespace MotoManager.Core.Career
             if (gridLevel <= 0) gridLevel = 40 + cat.Prestige * 0.42;
             double target = gridLevel - rng.Range(3, 8);
             double gap = target - r.Attributes.Overall;
-            if (gap > 0)
+            // Unknown newcomers start below the established level of the grid (never above it).
+            if (gap > 0 || r.Attributes.Overall > gridLevel - 1)
             {
                 foreach (var name in Attr)
                     if (name != "Aggression" && name != "Experience") r.Attributes.Set(name, r.Attributes.Get(name) + gap);

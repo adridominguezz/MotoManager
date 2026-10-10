@@ -92,6 +92,8 @@ namespace MotoManager.Core.Data
         public double MinTeamReputation;
         public List<Pyramid> Pyramids = new List<Pyramid>();
         public List<string> PreferredNationalities = new List<string>();
+        /// <summary>Teams this sponsor backs in the 2026 snapshot (signed first, unavailable to others while signed).</summary>
+        public List<string> HomeTeams = new List<string>();
         public List<SponsorObjective> Objectives = new List<SponsorObjective>();
         public int ContractSeasons = 2;
     }

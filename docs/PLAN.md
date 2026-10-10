@@ -90,11 +90,18 @@ Convenciones que se mantienen en todas las fases:
 - Equilibrio: forma del fin de semana + afinidad piloto/circuito + moral. Temporada de prueba:
   M. Márquez campeón con 13 victorias de 22 (antes ganaba las 22).
 
-### Sesión 2.3 — Calendarios, nombres, patrocinadores, personal y plantillas de desarrollo
+### Sesión 2.3 — Calendarios, nombres, patrocinadores, personal y plantillas de desarrollo ✅
 - `calendar/` 2026 GP (22 rondas, Rookies en su subconjunto) y SBK; `names/` por nacionalidad con
   pesos por pirámide; `sponsors/`; `staff/`; `development/` (plantillas por clase de moto);
   `simulation/tuning.json`.
 - **Hecho cuando** `GameDatabase.Validate()` devuelve 0 errores.
+- Resultado: 22 nacionalidades con nombres y peso de cantera por pirámide (España/Italia en GP,
+  Reino Unido/Italia en SBK...), 33 patrocinadores reales con importes y objetivos inventados
+  (los patrocinios principales de 2026 se asignan a su equipo), 14 personas reales del paddock
+  (resto del personal generado), 75 plantillas de desarrollo (incremental / nueva especificación /
+  experimental, con compensaciones) por tipo de moto, y `simulation/tuning.json` editable.
+- Ajustes: los pilotos generados empiezan por debajo del nivel de su parrilla y desde las canteras
+  no se salta a una categoría reina sin nivel suficiente.
 
 > Nota: los datos reales se basan en conocimiento hasta mediados de 2026. Conviene que revises
 > las alineaciones de Moto2/Moto3/WSSP; todo lo dudoso irá marcado con `dataConfidence`.

@@ -97,14 +97,27 @@ namespace MotoManager.Core.Economy
         public static void EnsureSponsors(WorldState world, GameDatabase db, Team team, ChampionshipCategory category, DeterministicRandom rng)
         {
             if (team.Sponsors.Count > 0 || category == null || category.IsCup) return;
+            var home = new List<SponsorTemplate>();
+            foreach (var s in db.Sponsors.Values)
+                if (s.HomeTeams.Contains(team.Id) && !IsTaken(world, s.Id)) home.Add(s);
+            home.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));
+            foreach (var s in home) Sign(world, team, s, category, rng);
             var options = Available(world, db, team, category);
-            int slots = category.Tier == 1 ? 3 : 2;
+            int slots = (category.Tier == 1 ? 3 : 2) - home.Count;
             for (int i = 0; i < slots && options.Count > 0; i++)
             {
                 var pick = rng.PickWeighted(options, s => 1.0 / s.Tier);
                 options.Remove(pick);
                 Sign(world, team, pick, category, rng);
             }
+        }
+
+        private static bool IsTaken(WorldState world, string sponsorId)
+        {
+            foreach (var t in world.Teams.Values)
+                foreach (var d in t.Sponsors)
+                    if (d.SponsorId == sponsorId) return true;
+            return false;
         }
 
         public static List<SponsorTemplate> Available(WorldState world, GameDatabase db, Team team, ChampionshipCategory category)
@@ -116,6 +129,7 @@ namespace MotoManager.Core.Economy
             foreach (var s in db.Sponsors.Values)
             {
                 if (taken.Contains(s.Id)) continue;
+                if (s.HomeTeams.Count > 0 && !s.HomeTeams.Contains(team.Id) && world.ArchivedChampionships.Count == 0) continue;
                 if (s.MinTeamReputation > team.Reputation) continue;
                 if (s.Pyramids.Count > 0 && !s.Pyramids.Contains(category.Pyramid)) continue;
                 list.Add(s);

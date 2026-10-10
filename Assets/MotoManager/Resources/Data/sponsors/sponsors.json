@@ -1,0 +1,823 @@
+[
+  {
+    "id": "lenovo",
+    "name": "Lenovo",
+    "industry": "Technology",
+    "tier": 1,
+    "paymentPerSeason": 9000000.0,
+    "minTeamReputation": 85,
+    "pyramids": [
+      "GrandPrix"
+    ],
+    "homeTeams": [
+      "ducati_lenovo"
+    ],
+    "preferredNationalities": [],
+    "objectives": [
+      {
+        "type": "Wins",
+        "target": 1,
+        "bonusPerOccurrence": 250000,
+        "seasonBonus": 0
+      },
+      {
+        "type": "ChampionshipPositionTopN",
+        "target": 1,
+        "bonusPerOccurrence": 0,
+        "seasonBonus": 3000000.0
+      }
+    ],
+    "contractSeasons": 3,
+    "dataConfidence": "real brands, invented amounts and objectives"
+  },
+  {
+    "id": "monster",
+    "name": "Monster Energy",
+    "industry": "Energy drink",
+    "tier": 1,
+    "paymentPerSeason": 10000000.0,
+    "minTeamReputation": 80,
+    "pyramids": [],
+    "homeTeams": [
+      "yamaha_factory"
+    ],
+    "preferredNationalities": [],
+    "objectives": [
+      {
+        "type": "Podiums",
+        "target": 1,
+        "bonusPerOccurrence": 150000,
+        "seasonBonus": 0
+      },
+      {
+        "type": "ChampionshipPositionTopN",
+        "target": 3,
+        "bonusPerOccurrence": 0,
+        "seasonBonus": 2000000.0
+      }
+    ],
+    "contractSeasons": 3,
+    "dataConfidence": "real brands, invented amounts and objectives"
+  },
+  {
+    "id": "redbull",
+    "name": "Red Bull",
+    "industry": "Energy drink",
+    "tier": 1,
+    "paymentPerSeason": 11000000.0,
+    "minTeamReputation": 75,
+    "pyramids": [],
+    "homeTeams": [
+      "ktm_factory"
+    ],
+    "preferredNationalities": [],
+    "objectives": [
+      {
+        "type": "Wins",
+        "target": 1,
+        "bonusPerOccurrence": 200000,
+        "seasonBonus": 0
+      },
+      {
+        "type": "SeasonPoints",
+        "target": 250,
+        "bonusPerOccurrence": 0,
+        "seasonBonus": 1500000.0
+      }
+    ],
+    "contractSeasons": 3,
+    "dataConfidence": "real brands, invented amounts and objectives"
+  },
+  {
+    "id": "castrol",
+    "name": "Castrol",
+    "industry": "Lubricants",
+    "tier": 1,
+    "paymentPerSeason": 7000000.0,
+    "minTeamReputation": 80,
+    "pyramids": [
+      "GrandPrix"
+    ],
+    "homeTeams": [
+      "honda_hrc"
+    ],
+    "preferredNationalities": [],
+    "objectives": [
+      {
+        "type": "RaceFinishTopN",
+        "target": 5,
+        "bonusPerOccurrence": 80000,
+        "seasonBonus": 0
+      }
+    ],
+    "contractSeasons": 2,
+    "dataConfidence": "real brands, invented amounts and objectives"
+  },
+  {
+    "id": "pertamina",
+    "name": "Pertamina",
+    "industry": "Energy",
+    "tier": 1,
+    "paymentPerSeason": 6000000.0,
+    "minTeamReputation": 70,
+    "pyramids": [
+      "GrandPrix"
+    ],
+    "homeTeams": [
+      "vr46_motogp"
+    ],
+    "preferredNationalities": [
+      "ID"
+    ],
+    "objectives": [
+      {
+        "type": "RaceFinishTopN",
+        "target": 5,
+        "bonusPerOccurrence": 70000,
+        "seasonBonus": 0
+      }
+    ],
+    "contractSeasons": 2,
+    "dataConfidence": "real brands, invented amounts and objectives"
+  },
+  {
+    "id": "aruba",
+    "name": "Aruba.it",
+    "industry": "Cloud services",
+    "tier": 1,
+    "paymentPerSeason": 5000000.0,
+    "minTeamReputation": 80,
+    "pyramids": [
+      "Superbike"
+    ],
+    "homeTeams": [
+      "aruba_ducati"
+    ],
+    "preferredNationalities": [
+      "IT"
+    ],
+    "objectives": [
+      {
+        "type": "Wins",
+        "target": 1,
+        "bonusPerOccurrence": 100000,
+        "seasonBonus": 0
+      },
+      {
+        "type": "ChampionshipPositionTopN",
+        "target": 1,
+        "bonusPerOccurrence": 0,
+        "seasonBonus": 1000000.0
+      }
+    ],
+    "contractSeasons": 3,
+    "dataConfidence": "real brands, invented amounts and objectives"
+  },
+  {
+    "id": "rokit",
+    "name": "ROKiT",
+    "industry": "Telecommunications",
+    "tier": 2,
+    "paymentPerSeason": 3000000.0,
+    "minTeamReputation": 70,
+    "pyramids": [
+      "Superbike"
+    ],
+    "homeTeams": [
+      "bmw_sbk"
+    ],
+    "preferredNationalities": [],
+    "objectives": [
+      {
+        "type": "Podiums",
+        "target": 1,
+        "bonusPerOccurrence": 60000,
+        "seasonBonus": 0
+      }
+    ],
+    "contractSeasons": 2,
+    "dataConfidence": "real brands, invented amounts and objectives"
+  },
+  {
+    "id": "pata",
+    "name": "Pata",
+    "industry": "Food",
+    "tier": 2,
+    "paymentPerSeason": 2500000.0,
+    "minTeamReputation": 60,
+    "pyramids": [
+      "Superbike"
+    ],
+    "homeTeams": [
+      "yamaha_sbk"
+    ],
+    "preferredNationalities": [
+      "IT"
+    ],
+    "objectives": [
+      {
+        "type": "Podiums",
+        "target": 1,
+        "bonusPerOccurrence": 50000,
+        "seasonBonus": 0
+      }
+    ],
+    "contractSeasons": 2,
+    "dataConfidence": "real brands, invented amounts and objectives"
+  },
+  {
+    "id": "prima",
+    "name": "Prima Assicurazioni",
+    "industry": "Insurance",
+    "tier": 2,
+    "paymentPerSeason": 4000000.0,
+    "minTeamReputation": 60,
+    "pyramids": [
+      "GrandPrix"
+    ],
+    "homeTeams": [
+      "pramac_motogp"
+    ],
+    "preferredNationalities": [
+      "IT"
+    ],
+    "objectives": [
+      {
+        "type": "RaceFinishTopN",
+        "target": 10,
+        "bonusPerOccurrence": 40000,
+        "seasonBonus": 0
+      }
+    ],
+    "contractSeasons": 2,
+    "dataConfidence": "real brands, invented amounts and objectives"
+  },
+  {
+    "id": "bk8",
+    "name": "BK8",
+    "industry": "Entertainment",
+    "tier": 2,
+    "paymentPerSeason": 3000000.0,
+    "minTeamReputation": 60,
+    "pyramids": [
+      "GrandPrix"
+    ],
+    "homeTeams": [
+      "gresini_motogp"
+    ],
+    "preferredNationalities": [],
+    "objectives": [
+      {
+        "type": "RaceFinishTopN",
+        "target": 10,
+        "bonusPerOccurrence": 40000,
+        "seasonBonus": 0
+      }
+    ],
+    "contractSeasons": 2,
+    "dataConfidence": "real brands, invented amounts and objectives"
+  },
+  {
+    "id": "liquimoly",
+    "name": "Liqui Moly",
+    "industry": "Lubricants",
+    "tier": 2,
+    "paymentPerSeason": 2000000.0,
+    "minTeamReputation": 50,
+    "pyramids": [],
+    "homeTeams": [
+      "intact_moto2"
+    ],
+    "preferredNationalities": [
+      "DE"
+    ],
+    "objectives": [
+      {
+        "type": "RaceFinishTopN",
+        "target": 5,
+        "bonusPerOccurrence": 30000,
+        "seasonBonus": 0
+      }
+    ],
+    "contractSeasons": 2,
+    "dataConfidence": "real brands, invented amounts and objectives"
+  },
+  {
+    "id": "elf",
+    "name": "ELF",
+    "industry": "Lubricants",
+    "tier": 2,
+    "paymentPerSeason": 2000000.0,
+    "minTeamReputation": 55,
+    "pyramids": [],
+    "homeTeams": [
+      "marcvds_moto2"
+    ],
+    "preferredNationalities": [
+      "FR",
+      "BE"
+    ],
+    "objectives": [
+      {
+        "type": "Podiums",
+        "target": 1,
+        "bonusPerOccurrence": 40000,
+        "seasonBonus": 0
+      }
+    ],
+    "contractSeasons": 2,
+    "dataConfidence": "real brands, invented amounts and objectives"
+  },
+  {
+    "id": "cfmoto_sp",
+    "name": "CFMoto",
+    "industry": "Motorcycles",
+    "tier": 2,
+    "paymentPerSeason": 2500000.0,
+    "minTeamReputation": 50,
+    "pyramids": [
+      "GrandPrix"
+    ],
+    "homeTeams": [
+      "aspar_moto2"
+    ],
+    "preferredNationalities": [
+      "CN"
+    ],
+    "objectives": [
+      {
+        "type": "RaceFinishTopN",
+        "target": 5,
+        "bonusPerOccurrence": 30000,
+        "seasonBonus": 0
+      }
+    ],
+    "contractSeasons": 2,
+    "dataConfidence": "real brands, invented amounts and objectives"
+  },
+  {
+    "id": "bluecru",
+    "name": "Yamaha bLU cRU",
+    "industry": "Racing programme",
+    "tier": 2,
+    "paymentPerSeason": 1500000.0,
+    "minTeamReputation": 40,
+    "pyramids": [],
+    "homeTeams": [
+      "pramac_moto2"
+    ],
+    "preferredNationalities": [],
+    "objectives": [
+      {
+        "type": "RaceFinishTopN",
+        "target": 10,
+        "bonusPerOccurrence": 20000,
+        "seasonBonus": 0
+      }
+    ],
+    "contractSeasons": 2,
+    "dataConfidence": "real brands, invented amounts and objectives"
+  },
+  {
+    "id": "idemitsu",
+    "name": "Idemitsu",
+    "industry": "Lubricants",
+    "tier": 2,
+    "paymentPerSeason": 1800000.0,
+    "minTeamReputation": 40,
+    "pyramids": [],
+    "homeTeams": [
+      "asia_moto2"
+    ],
+    "preferredNationalities": [
+      "JP",
+      "TH",
+      "ID",
+      "MY"
+    ],
+    "objectives": [
+      {
+        "type": "RaceFinishTopN",
+        "target": 10,
+        "bonusPerOccurrence": 20000,
+        "seasonBonus": 0
+      }
+    ],
+    "contractSeasons": 2,
+    "dataConfidence": "real brands, invented amounts and objectives"
+  },
+  {
+    "id": "onlyfans",
+    "name": "OnlyFans",
+    "industry": "Media",
+    "tier": 2,
+    "paymentPerSeason": 1500000.0,
+    "minTeamReputation": 40,
+    "pyramids": [
+      "GrandPrix"
+    ],
+    "homeTeams": [
+      "american_moto2"
+    ],
+    "preferredNationalities": [],
+    "objectives": [
+      {
+        "type": "RaceFinishTopN",
+        "target": 10,
+        "bonusPerOccurrence": 20000,
+        "seasonBonus": 0
+      }
+    ],
+    "contractSeasons": 2,
+    "dataConfidence": "real brands, invented amounts and objectives"
+  },
+  {
+    "id": "rivacold",
+    "name": "Rivacold",
+    "industry": "Refrigeration",
+    "tier": 3,
+    "paymentPerSeason": 600000.0,
+    "minTeamReputation": 30,
+    "pyramids": [
+      "GrandPrix"
+    ],
+    "homeTeams": [
+      "snipers_moto3"
+    ],
+    "preferredNationalities": [
+      "IT"
+    ],
+    "objectives": [
+      {
+        "type": "RaceFinishTopN",
+        "target": 10,
+        "bonusPerOccurrence": 10000,
+        "seasonBonus": 0
+      }
+    ],
+    "contractSeasons": 2,
+    "dataConfidence": "real brands, invented amounts and objectives"
+  },
+  {
+    "id": "motul",
+    "name": "Motul",
+    "industry": "Lubricants",
+    "tier": 2,
+    "paymentPerSeason": 2500000.0,
+    "minTeamReputation": 55,
+    "pyramids": [],
+    "homeTeams": [],
+    "preferredNationalities": [],
+    "objectives": [
+      {
+        "type": "RaceFinishTopN",
+        "target": 8,
+        "bonusPerOccurrence": 40000,
+        "seasonBonus": 0
+      },
+      {
+        "type": "SeasonPoints",
+        "target": 100,
+        "bonusPerOccurrence": 0,
+        "seasonBonus": 300000
+      }
+    ],
+    "contractSeasons": 2,
+    "dataConfidence": "real brands, invented amounts and objectives"
+  },
+  {
+    "id": "repsol",
+    "name": "Repsol",
+    "industry": "Energy",
+    "tier": 1,
+    "paymentPerSeason": 6000000.0,
+    "minTeamReputation": 75,
+    "pyramids": [],
+    "homeTeams": [],
+    "preferredNationalities": [
+      "ES"
+    ],
+    "objectives": [
+      {
+        "type": "Wins",
+        "target": 1,
+        "bonusPerOccurrence": 150000,
+        "seasonBonus": 0
+      },
+      {
+        "type": "ChampionshipPositionTopN",
+        "target": 3,
+        "bonusPerOccurrence": 0,
+        "seasonBonus": 1000000.0
+      }
+    ],
+    "contractSeasons": 3,
+    "dataConfidence": "real brands, invented amounts and objectives"
+  },
+  {
+    "id": "petronas",
+    "name": "Petronas",
+    "industry": "Energy",
+    "tier": 1,
+    "paymentPerSeason": 6000000.0,
+    "minTeamReputation": 72,
+    "pyramids": [],
+    "homeTeams": [],
+    "preferredNationalities": [
+      "MY"
+    ],
+    "objectives": [
+      {
+        "type": "Podiums",
+        "target": 1,
+        "bonusPerOccurrence": 100000,
+        "seasonBonus": 0
+      },
+      {
+        "type": "SeasonPoints",
+        "target": 200,
+        "bonusPerOccurrence": 0,
+        "seasonBonus": 800000
+      }
+    ],
+    "contractSeasons": 3,
+    "dataConfidence": "real brands, invented amounts and objectives"
+  },
+  {
+    "id": "estrella",
+    "name": "Estrella Galicia 0,0",
+    "industry": "Beverages",
+    "tier": 2,
+    "paymentPerSeason": 2000000.0,
+    "minTeamReputation": 50,
+    "pyramids": [
+      "GrandPrix"
+    ],
+    "homeTeams": [],
+    "preferredNationalities": [
+      "ES"
+    ],
+    "objectives": [
+      {
+        "type": "RaceFinishTopN",
+        "target": 5,
+        "bonusPerOccurrence": 40000,
+        "seasonBonus": 0
+      }
+    ],
+    "contractSeasons": 2,
+    "dataConfidence": "real brands, invented amounts and objectives"
+  },
+  {
+    "id": "tissot",
+    "name": "Tissot",
+    "industry": "Watches",
+    "tier": 2,
+    "paymentPerSeason": 2000000.0,
+    "minTeamReputation": 65,
+    "pyramids": [],
+    "homeTeams": [],
+    "preferredNationalities": [],
+    "objectives": [
+      {
+        "type": "ChampionshipPositionTopN",
+        "target": 5,
+        "bonusPerOccurrence": 0,
+        "seasonBonus": 500000
+      }
+    ],
+    "contractSeasons": 2,
+    "dataConfidence": "real brands, invented amounts and objectives"
+  },
+  {
+    "id": "dhl",
+    "name": "DHL",
+    "industry": "Logistics",
+    "tier": 2,
+    "paymentPerSeason": 2500000.0,
+    "minTeamReputation": 60,
+    "pyramids": [],
+    "homeTeams": [],
+    "preferredNationalities": [],
+    "objectives": [
+      {
+        "type": "SeasonPoints",
+        "target": 150,
+        "bonusPerOccurrence": 0,
+        "seasonBonus": 500000
+      }
+    ],
+    "contractSeasons": 2,
+    "dataConfidence": "real brands, invented amounts and objectives"
+  },
+  {
+    "id": "dainese",
+    "name": "Dainese",
+    "industry": "Riding gear",
+    "tier": 3,
+    "paymentPerSeason": 800000.0,
+    "minTeamReputation": 40,
+    "pyramids": [],
+    "homeTeams": [],
+    "preferredNationalities": [],
+    "objectives": [
+      {
+        "type": "RaceFinishTopN",
+        "target": 10,
+        "bonusPerOccurrence": 15000,
+        "seasonBonus": 0
+      }
+    ],
+    "contractSeasons": 2,
+    "dataConfidence": "real brands, invented amounts and objectives"
+  },
+  {
+    "id": "alpinestars",
+    "name": "Alpinestars",
+    "industry": "Riding gear",
+    "tier": 3,
+    "paymentPerSeason": 800000.0,
+    "minTeamReputation": 40,
+    "pyramids": [],
+    "homeTeams": [],
+    "preferredNationalities": [],
+    "objectives": [
+      {
+        "type": "RaceFinishTopN",
+        "target": 10,
+        "bonusPerOccurrence": 15000,
+        "seasonBonus": 0
+      }
+    ],
+    "contractSeasons": 2,
+    "dataConfidence": "real brands, invented amounts and objectives"
+  },
+  {
+    "id": "brembo",
+    "name": "Brembo",
+    "industry": "Brakes",
+    "tier": 3,
+    "paymentPerSeason": 1000000.0,
+    "minTeamReputation": 50,
+    "pyramids": [],
+    "homeTeams": [],
+    "preferredNationalities": [],
+    "objectives": [
+      {
+        "type": "Podiums",
+        "target": 1,
+        "bonusPerOccurrence": 25000,
+        "seasonBonus": 0
+      }
+    ],
+    "contractSeasons": 2,
+    "dataConfidence": "real brands, invented amounts and objectives"
+  },
+  {
+    "id": "ohlins",
+    "name": "Öhlins",
+    "industry": "Suspension",
+    "tier": 3,
+    "paymentPerSeason": 700000.0,
+    "minTeamReputation": 45,
+    "pyramids": [],
+    "homeTeams": [],
+    "preferredNationalities": [],
+    "objectives": [
+      {
+        "type": "RaceFinishTopN",
+        "target": 8,
+        "bonusPerOccurrence": 15000,
+        "seasonBonus": 0
+      }
+    ],
+    "contractSeasons": 2,
+    "dataConfidence": "real brands, invented amounts and objectives"
+  },
+  {
+    "id": "akrapovic",
+    "name": "Akrapovič",
+    "industry": "Exhausts",
+    "tier": 3,
+    "paymentPerSeason": 600000.0,
+    "minTeamReputation": 40,
+    "pyramids": [],
+    "homeTeams": [],
+    "preferredNationalities": [],
+    "objectives": [
+      {
+        "type": "RaceFinishTopN",
+        "target": 10,
+        "bonusPerOccurrence": 12000,
+        "seasonBonus": 0
+      }
+    ],
+    "contractSeasons": 2,
+    "dataConfidence": "real brands, invented amounts and objectives"
+  },
+  {
+    "id": "gopro",
+    "name": "GoPro",
+    "industry": "Electronics",
+    "tier": 3,
+    "paymentPerSeason": 600000.0,
+    "minTeamReputation": 35,
+    "pyramids": [],
+    "homeTeams": [],
+    "preferredNationalities": [],
+    "objectives": [
+      {
+        "type": "Podiums",
+        "target": 1,
+        "bonusPerOccurrence": 20000,
+        "seasonBonus": 0
+      }
+    ],
+    "contractSeasons": 2,
+    "dataConfidence": "real brands, invented amounts and objectives"
+  },
+  {
+    "id": "snipes",
+    "name": "Snipes",
+    "industry": "Fashion",
+    "tier": 3,
+    "paymentPerSeason": 500000.0,
+    "minTeamReputation": 30,
+    "pyramids": [],
+    "homeTeams": [],
+    "preferredNationalities": [],
+    "objectives": [
+      {
+        "type": "RaceFinishTopN",
+        "target": 15,
+        "bonusPerOccurrence": 8000,
+        "seasonBonus": 0
+      }
+    ],
+    "contractSeasons": 2,
+    "dataConfidence": "real brands, invented amounts and objectives"
+  },
+  {
+    "id": "local_bank",
+    "name": "Banca Locale",
+    "industry": "Banking",
+    "tier": 3,
+    "paymentPerSeason": 400000.0,
+    "minTeamReputation": 10,
+    "pyramids": [],
+    "homeTeams": [],
+    "preferredNationalities": [],
+    "objectives": [
+      {
+        "type": "RaceFinishTopN",
+        "target": 15,
+        "bonusPerOccurrence": 6000,
+        "seasonBonus": 0
+      }
+    ],
+    "contractSeasons": 2,
+    "dataConfidence": "real brands, invented amounts and objectives"
+  },
+  {
+    "id": "voltcharge",
+    "name": "VoltCharge",
+    "industry": "Energy drink",
+    "tier": 3,
+    "paymentPerSeason": 350000.0,
+    "minTeamReputation": 10,
+    "pyramids": [],
+    "homeTeams": [],
+    "preferredNationalities": [],
+    "objectives": [
+      {
+        "type": "RaceFinishTopN",
+        "target": 15,
+        "bonusPerOccurrence": 5000,
+        "seasonBonus": 0
+      }
+    ],
+    "contractSeasons": 1,
+    "dataConfidence": "real brands, invented amounts and objectives"
+  },
+  {
+    "id": "apex_helmets",
+    "name": "Apex Helmets",
+    "industry": "Riding gear",
+    "tier": 3,
+    "paymentPerSeason": 300000.0,
+    "minTeamReputation": 5,
+    "pyramids": [],
+    "homeTeams": [],
+    "preferredNationalities": [],
+    "objectives": [
+      {
+        "type": "RaceFinishTopN",
+        "target": 15,
+        "bonusPerOccurrence": 5000,
+        "seasonBonus": 0
+      }
+    ],
+    "contractSeasons": 1,
+    "dataConfidence": "real brands, invented amounts and objectives"
+  }
+]

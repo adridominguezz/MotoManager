@@ -1,0 +1,1191 @@
+[
+  {
+    "id": "gp_engine_inc",
+    "name": "Engine: incremental update",
+    "component": "Engine",
+    "bikeClasses": [
+      "prototype_gp"
+    ],
+    "effects": {
+      "Engine": 1.5
+    },
+    "baseCost": 350000.0,
+    "durationDays": 21,
+    "risk": 0.1,
+    "description": "Small, safe step."
+  },
+  {
+    "id": "gp_engine_major",
+    "name": "Engine: new specification",
+    "component": "Engine",
+    "bikeClasses": [
+      "prototype_gp"
+    ],
+    "effects": {
+      "Engine": 4.0,
+      "Reliability": -2.0
+    },
+    "baseCost": 1200000.0,
+    "durationDays": 45,
+    "risk": 0.3,
+    "description": "Clear gain with a trade-off."
+  },
+  {
+    "id": "gp_engine_exp",
+    "name": "Engine: experimental concept",
+    "component": "Engine",
+    "bikeClasses": [
+      "prototype_gp"
+    ],
+    "effects": {
+      "Engine": 7.0,
+      "Reliability": -3.0
+    },
+    "baseCost": 2500000.0,
+    "durationDays": 70,
+    "risk": 0.55,
+    "description": "Big potential, may fail."
+  },
+  {
+    "id": "gp_chassis_inc",
+    "name": "Chassis: incremental update",
+    "component": "Chassis",
+    "bikeClasses": [
+      "prototype_gp"
+    ],
+    "effects": {
+      "Chassis": 1.5
+    },
+    "baseCost": 350000.0,
+    "durationDays": 21,
+    "risk": 0.1,
+    "description": "Small, safe step."
+  },
+  {
+    "id": "gp_chassis_major",
+    "name": "Chassis: new specification",
+    "component": "Chassis",
+    "bikeClasses": [
+      "prototype_gp"
+    ],
+    "effects": {
+      "Chassis": 4.0,
+      "Suspension": -0.5
+    },
+    "baseCost": 1200000.0,
+    "durationDays": 45,
+    "risk": 0.3,
+    "description": "Clear gain with a trade-off."
+  },
+  {
+    "id": "gp_chassis_exp",
+    "name": "Chassis: experimental concept",
+    "component": "Chassis",
+    "bikeClasses": [
+      "prototype_gp"
+    ],
+    "effects": {
+      "Chassis": 7.0,
+      "Suspension": -0.75
+    },
+    "baseCost": 2500000.0,
+    "durationDays": 70,
+    "risk": 0.55,
+    "description": "Big potential, may fail."
+  },
+  {
+    "id": "gp_aero_inc",
+    "name": "Aerodynamics: incremental update",
+    "component": "Aerodynamics",
+    "bikeClasses": [
+      "prototype_gp"
+    ],
+    "effects": {
+      "Aerodynamics": 1.5
+    },
+    "baseCost": 350000.0,
+    "durationDays": 21,
+    "risk": 0.1,
+    "description": "Small, safe step."
+  },
+  {
+    "id": "gp_aero_major",
+    "name": "Aerodynamics: new specification",
+    "component": "Aerodynamics",
+    "bikeClasses": [
+      "prototype_gp"
+    ],
+    "effects": {
+      "Aerodynamics": 4.0,
+      "Cooling": -1.0
+    },
+    "baseCost": 1200000.0,
+    "durationDays": 45,
+    "risk": 0.3,
+    "description": "Clear gain with a trade-off."
+  },
+  {
+    "id": "gp_aero_exp",
+    "name": "Aerodynamics: experimental concept",
+    "component": "Aerodynamics",
+    "bikeClasses": [
+      "prototype_gp"
+    ],
+    "effects": {
+      "Aerodynamics": 7.0,
+      "Cooling": -1.5
+    },
+    "baseCost": 2500000.0,
+    "durationDays": 70,
+    "risk": 0.55,
+    "description": "Big potential, may fail."
+  },
+  {
+    "id": "gp_elec_inc",
+    "name": "Electronics: incremental update",
+    "component": "Electronics",
+    "bikeClasses": [
+      "prototype_gp"
+    ],
+    "effects": {
+      "Electronics": 1.5
+    },
+    "baseCost": 350000.0,
+    "durationDays": 21,
+    "risk": 0.1,
+    "description": "Small, safe step."
+  },
+  {
+    "id": "gp_elec_major",
+    "name": "Electronics: new specification",
+    "component": "Electronics",
+    "bikeClasses": [
+      "prototype_gp"
+    ],
+    "effects": {
+      "Electronics": 4.0,
+      "Reliability": -0.5
+    },
+    "baseCost": 1200000.0,
+    "durationDays": 45,
+    "risk": 0.3,
+    "description": "Clear gain with a trade-off."
+  },
+  {
+    "id": "gp_elec_exp",
+    "name": "Electronics: experimental concept",
+    "component": "Electronics",
+    "bikeClasses": [
+      "prototype_gp"
+    ],
+    "effects": {
+      "Electronics": 7.0,
+      "Reliability": -0.75
+    },
+    "baseCost": 2500000.0,
+    "durationDays": 70,
+    "risk": 0.55,
+    "description": "Big potential, may fail."
+  },
+  {
+    "id": "gp_susp_inc",
+    "name": "Suspension: incremental update",
+    "component": "Suspension",
+    "bikeClasses": [
+      "prototype_gp"
+    ],
+    "effects": {
+      "Suspension": 1.5
+    },
+    "baseCost": 350000.0,
+    "durationDays": 21,
+    "risk": 0.1,
+    "description": "Small, safe step."
+  },
+  {
+    "id": "gp_susp_major",
+    "name": "Suspension: new specification",
+    "component": "Suspension",
+    "bikeClasses": [
+      "prototype_gp"
+    ],
+    "effects": {
+      "Suspension": 4.0,
+      "Brakes": -0.5
+    },
+    "baseCost": 1200000.0,
+    "durationDays": 45,
+    "risk": 0.3,
+    "description": "Clear gain with a trade-off."
+  },
+  {
+    "id": "gp_susp_exp",
+    "name": "Suspension: experimental concept",
+    "component": "Suspension",
+    "bikeClasses": [
+      "prototype_gp"
+    ],
+    "effects": {
+      "Suspension": 7.0,
+      "Brakes": -0.75
+    },
+    "baseCost": 2500000.0,
+    "durationDays": 70,
+    "risk": 0.55,
+    "description": "Big potential, may fail."
+  },
+  {
+    "id": "gp_brakes_inc",
+    "name": "Brakes: incremental update",
+    "component": "Brakes",
+    "bikeClasses": [
+      "prototype_gp"
+    ],
+    "effects": {
+      "Brakes": 1.5
+    },
+    "baseCost": 350000.0,
+    "durationDays": 21,
+    "risk": 0.1,
+    "description": "Small, safe step."
+  },
+  {
+    "id": "gp_brakes_major",
+    "name": "Brakes: new specification",
+    "component": "Brakes",
+    "bikeClasses": [
+      "prototype_gp"
+    ],
+    "effects": {
+      "Brakes": 4.0,
+      "Cooling": -0.5
+    },
+    "baseCost": 1200000.0,
+    "durationDays": 45,
+    "risk": 0.3,
+    "description": "Clear gain with a trade-off."
+  },
+  {
+    "id": "gp_brakes_exp",
+    "name": "Brakes: experimental concept",
+    "component": "Brakes",
+    "bikeClasses": [
+      "prototype_gp"
+    ],
+    "effects": {
+      "Brakes": 7.0,
+      "Cooling": -0.75
+    },
+    "baseCost": 2500000.0,
+    "durationDays": 70,
+    "risk": 0.55,
+    "description": "Big potential, may fail."
+  },
+  {
+    "id": "gp_cool_inc",
+    "name": "Cooling: incremental update",
+    "component": "Cooling",
+    "bikeClasses": [
+      "prototype_gp"
+    ],
+    "effects": {
+      "Cooling": 1.5
+    },
+    "baseCost": 350000.0,
+    "durationDays": 21,
+    "risk": 0.1,
+    "description": "Small, safe step."
+  },
+  {
+    "id": "gp_cool_major",
+    "name": "Cooling: new specification",
+    "component": "Cooling",
+    "bikeClasses": [
+      "prototype_gp"
+    ],
+    "effects": {
+      "Cooling": 4.0,
+      "Aerodynamics": -0.5
+    },
+    "baseCost": 1200000.0,
+    "durationDays": 45,
+    "risk": 0.3,
+    "description": "Clear gain with a trade-off."
+  },
+  {
+    "id": "gp_cool_exp",
+    "name": "Cooling: experimental concept",
+    "component": "Cooling",
+    "bikeClasses": [
+      "prototype_gp"
+    ],
+    "effects": {
+      "Cooling": 7.0,
+      "Aerodynamics": -0.75
+    },
+    "baseCost": 2500000.0,
+    "durationDays": 70,
+    "risk": 0.55,
+    "description": "Big potential, may fail."
+  },
+  {
+    "id": "gp_rel_inc",
+    "name": "Reliability programme: incremental update",
+    "component": "Reliability",
+    "bikeClasses": [
+      "prototype_gp"
+    ],
+    "effects": {
+      "Reliability": 1.5
+    },
+    "baseCost": 350000.0,
+    "durationDays": 21,
+    "risk": 0.1,
+    "description": "Small, safe step."
+  },
+  {
+    "id": "gp_rel_major",
+    "name": "Reliability programme: new specification",
+    "component": "Reliability",
+    "bikeClasses": [
+      "prototype_gp"
+    ],
+    "effects": {
+      "Reliability": 4.0,
+      "Engine": -0.5
+    },
+    "baseCost": 1200000.0,
+    "durationDays": 45,
+    "risk": 0.3,
+    "description": "Clear gain with a trade-off."
+  },
+  {
+    "id": "gp_rel_exp",
+    "name": "Reliability programme: experimental concept",
+    "component": "Reliability",
+    "bikeClasses": [
+      "prototype_gp"
+    ],
+    "effects": {
+      "Reliability": 7.0,
+      "Engine": -0.75
+    },
+    "baseCost": 2500000.0,
+    "durationDays": 70,
+    "risk": 0.55,
+    "description": "Big potential, may fail."
+  },
+  {
+    "id": "sbk_engine_inc",
+    "name": "Engine tuning (within homologation): incremental update",
+    "component": "ProductionEngine",
+    "bikeClasses": [
+      "production_sbk",
+      "production_ssp"
+    ],
+    "effects": {
+      "ProductionEngine": 1.5
+    },
+    "baseCost": 210000.0,
+    "durationDays": 21,
+    "risk": 0.1,
+    "description": "Small, safe step."
+  },
+  {
+    "id": "sbk_engine_major",
+    "name": "Engine tuning (within homologation): new specification",
+    "component": "ProductionEngine",
+    "bikeClasses": [
+      "production_sbk",
+      "production_ssp"
+    ],
+    "effects": {
+      "ProductionEngine": 4.0,
+      "Reliability": -2.0
+    },
+    "baseCost": 720000.0,
+    "durationDays": 45,
+    "risk": 0.3,
+    "description": "Clear gain with a trade-off."
+  },
+  {
+    "id": "sbk_engine_exp",
+    "name": "Engine tuning (within homologation): experimental concept",
+    "component": "ProductionEngine",
+    "bikeClasses": [
+      "production_sbk",
+      "production_ssp"
+    ],
+    "effects": {
+      "ProductionEngine": 7.0,
+      "Reliability": -3.0
+    },
+    "baseCost": 1500000.0,
+    "durationDays": 70,
+    "risk": 0.55,
+    "description": "Big potential, may fail."
+  },
+  {
+    "id": "sbk_chassis_inc",
+    "name": "Chassis set-up parts: incremental update",
+    "component": "Chassis",
+    "bikeClasses": [
+      "production_sbk",
+      "production_ssp"
+    ],
+    "effects": {
+      "Chassis": 1.5
+    },
+    "baseCost": 210000.0,
+    "durationDays": 21,
+    "risk": 0.1,
+    "description": "Small, safe step."
+  },
+  {
+    "id": "sbk_chassis_major",
+    "name": "Chassis set-up parts: new specification",
+    "component": "Chassis",
+    "bikeClasses": [
+      "production_sbk",
+      "production_ssp"
+    ],
+    "effects": {
+      "Chassis": 4.0,
+      "Suspension": -0.5
+    },
+    "baseCost": 720000.0,
+    "durationDays": 45,
+    "risk": 0.3,
+    "description": "Clear gain with a trade-off."
+  },
+  {
+    "id": "sbk_chassis_exp",
+    "name": "Chassis set-up parts: experimental concept",
+    "component": "Chassis",
+    "bikeClasses": [
+      "production_sbk",
+      "production_ssp"
+    ],
+    "effects": {
+      "Chassis": 7.0,
+      "Suspension": -0.75
+    },
+    "baseCost": 1500000.0,
+    "durationDays": 70,
+    "risk": 0.55,
+    "description": "Big potential, may fail."
+  },
+  {
+    "id": "sbk_elec_inc",
+    "name": "Electronics strategy: incremental update",
+    "component": "Electronics",
+    "bikeClasses": [
+      "production_sbk",
+      "production_ssp"
+    ],
+    "effects": {
+      "Electronics": 1.5
+    },
+    "baseCost": 210000.0,
+    "durationDays": 21,
+    "risk": 0.1,
+    "description": "Small, safe step."
+  },
+  {
+    "id": "sbk_elec_major",
+    "name": "Electronics strategy: new specification",
+    "component": "Electronics",
+    "bikeClasses": [
+      "production_sbk",
+      "production_ssp"
+    ],
+    "effects": {
+      "Electronics": 4.0,
+      "Reliability": -0.5
+    },
+    "baseCost": 720000.0,
+    "durationDays": 45,
+    "risk": 0.3,
+    "description": "Clear gain with a trade-off."
+  },
+  {
+    "id": "sbk_elec_exp",
+    "name": "Electronics strategy: experimental concept",
+    "component": "Electronics",
+    "bikeClasses": [
+      "production_sbk",
+      "production_ssp"
+    ],
+    "effects": {
+      "Electronics": 7.0,
+      "Reliability": -0.75
+    },
+    "baseCost": 1500000.0,
+    "durationDays": 70,
+    "risk": 0.55,
+    "description": "Big potential, may fail."
+  },
+  {
+    "id": "sbk_aero_inc",
+    "name": "Aero kit: incremental update",
+    "component": "Aerodynamics",
+    "bikeClasses": [
+      "production_sbk"
+    ],
+    "effects": {
+      "Aerodynamics": 1.5
+    },
+    "baseCost": 210000.0,
+    "durationDays": 21,
+    "risk": 0.1,
+    "description": "Small, safe step."
+  },
+  {
+    "id": "sbk_aero_major",
+    "name": "Aero kit: new specification",
+    "component": "Aerodynamics",
+    "bikeClasses": [
+      "production_sbk"
+    ],
+    "effects": {
+      "Aerodynamics": 4.0,
+      "Chassis": -0.5
+    },
+    "baseCost": 720000.0,
+    "durationDays": 45,
+    "risk": 0.3,
+    "description": "Clear gain with a trade-off."
+  },
+  {
+    "id": "sbk_aero_exp",
+    "name": "Aero kit: experimental concept",
+    "component": "Aerodynamics",
+    "bikeClasses": [
+      "production_sbk"
+    ],
+    "effects": {
+      "Aerodynamics": 7.0,
+      "Chassis": -0.75
+    },
+    "baseCost": 1500000.0,
+    "durationDays": 70,
+    "risk": 0.55,
+    "description": "Big potential, may fail."
+  },
+  {
+    "id": "sbk_susp_inc",
+    "name": "Suspension: incremental update",
+    "component": "Suspension",
+    "bikeClasses": [
+      "production_sbk",
+      "production_ssp"
+    ],
+    "effects": {
+      "Suspension": 1.5
+    },
+    "baseCost": 210000.0,
+    "durationDays": 21,
+    "risk": 0.1,
+    "description": "Small, safe step."
+  },
+  {
+    "id": "sbk_susp_major",
+    "name": "Suspension: new specification",
+    "component": "Suspension",
+    "bikeClasses": [
+      "production_sbk",
+      "production_ssp"
+    ],
+    "effects": {
+      "Suspension": 4.0,
+      "Brakes": -0.3
+    },
+    "baseCost": 720000.0,
+    "durationDays": 45,
+    "risk": 0.3,
+    "description": "Clear gain with a trade-off."
+  },
+  {
+    "id": "sbk_susp_exp",
+    "name": "Suspension: experimental concept",
+    "component": "Suspension",
+    "bikeClasses": [
+      "production_sbk",
+      "production_ssp"
+    ],
+    "effects": {
+      "Suspension": 7.0,
+      "Brakes": -0.44999999999999996
+    },
+    "baseCost": 1500000.0,
+    "durationDays": 70,
+    "risk": 0.55,
+    "description": "Big potential, may fail."
+  },
+  {
+    "id": "sbk_brakes_inc",
+    "name": "Brakes: incremental update",
+    "component": "Brakes",
+    "bikeClasses": [
+      "production_sbk",
+      "production_ssp"
+    ],
+    "effects": {
+      "Brakes": 1.5
+    },
+    "baseCost": 210000.0,
+    "durationDays": 21,
+    "risk": 0.1,
+    "description": "Small, safe step."
+  },
+  {
+    "id": "sbk_brakes_major",
+    "name": "Brakes: new specification",
+    "component": "Brakes",
+    "bikeClasses": [
+      "production_sbk",
+      "production_ssp"
+    ],
+    "effects": {
+      "Brakes": 4.0,
+      "Chassis": -0.3
+    },
+    "baseCost": 720000.0,
+    "durationDays": 45,
+    "risk": 0.3,
+    "description": "Clear gain with a trade-off."
+  },
+  {
+    "id": "sbk_brakes_exp",
+    "name": "Brakes: experimental concept",
+    "component": "Brakes",
+    "bikeClasses": [
+      "production_sbk",
+      "production_ssp"
+    ],
+    "effects": {
+      "Brakes": 7.0,
+      "Chassis": -0.44999999999999996
+    },
+    "baseCost": 1500000.0,
+    "durationDays": 70,
+    "risk": 0.55,
+    "description": "Big potential, may fail."
+  },
+  {
+    "id": "sbk_rel_inc",
+    "name": "Reliability programme: incremental update",
+    "component": "Reliability",
+    "bikeClasses": [
+      "production_sbk",
+      "production_ssp"
+    ],
+    "effects": {
+      "Reliability": 1.5
+    },
+    "baseCost": 210000.0,
+    "durationDays": 21,
+    "risk": 0.1,
+    "description": "Small, safe step."
+  },
+  {
+    "id": "sbk_rel_major",
+    "name": "Reliability programme: new specification",
+    "component": "Reliability",
+    "bikeClasses": [
+      "production_sbk",
+      "production_ssp"
+    ],
+    "effects": {
+      "Reliability": 4.0,
+      "ProductionEngine": -0.5
+    },
+    "baseCost": 720000.0,
+    "durationDays": 45,
+    "risk": 0.3,
+    "description": "Clear gain with a trade-off."
+  },
+  {
+    "id": "sbk_rel_exp",
+    "name": "Reliability programme: experimental concept",
+    "component": "Reliability",
+    "bikeClasses": [
+      "production_sbk",
+      "production_ssp"
+    ],
+    "effects": {
+      "Reliability": 7.0,
+      "ProductionEngine": -0.75
+    },
+    "baseCost": 1500000.0,
+    "durationDays": 70,
+    "risk": 0.55,
+    "description": "Big potential, may fail."
+  },
+  {
+    "id": "m2_chassis_inc",
+    "name": "Chassis: incremental update",
+    "component": "Chassis",
+    "bikeClasses": [
+      "spec_moto2"
+    ],
+    "effects": {
+      "Chassis": 1.5
+    },
+    "baseCost": 175000.0,
+    "durationDays": 21,
+    "risk": 0.1,
+    "description": "Small, safe step."
+  },
+  {
+    "id": "m2_chassis_major",
+    "name": "Chassis: new specification",
+    "component": "Chassis",
+    "bikeClasses": [
+      "spec_moto2"
+    ],
+    "effects": {
+      "Chassis": 4.0,
+      "Suspension": -0.5
+    },
+    "baseCost": 600000.0,
+    "durationDays": 45,
+    "risk": 0.3,
+    "description": "Clear gain with a trade-off."
+  },
+  {
+    "id": "m2_chassis_exp",
+    "name": "Chassis: experimental concept",
+    "component": "Chassis",
+    "bikeClasses": [
+      "spec_moto2"
+    ],
+    "effects": {
+      "Chassis": 7.0,
+      "Suspension": -0.75
+    },
+    "baseCost": 1250000.0,
+    "durationDays": 70,
+    "risk": 0.55,
+    "description": "Big potential, may fail."
+  },
+  {
+    "id": "m2_susp_inc",
+    "name": "Suspension: incremental update",
+    "component": "Suspension",
+    "bikeClasses": [
+      "spec_moto2"
+    ],
+    "effects": {
+      "Suspension": 1.5
+    },
+    "baseCost": 175000.0,
+    "durationDays": 21,
+    "risk": 0.1,
+    "description": "Small, safe step."
+  },
+  {
+    "id": "m2_susp_major",
+    "name": "Suspension: new specification",
+    "component": "Suspension",
+    "bikeClasses": [
+      "spec_moto2"
+    ],
+    "effects": {
+      "Suspension": 4.0,
+      "Brakes": -0.3
+    },
+    "baseCost": 600000.0,
+    "durationDays": 45,
+    "risk": 0.3,
+    "description": "Clear gain with a trade-off."
+  },
+  {
+    "id": "m2_susp_exp",
+    "name": "Suspension: experimental concept",
+    "component": "Suspension",
+    "bikeClasses": [
+      "spec_moto2"
+    ],
+    "effects": {
+      "Suspension": 7.0,
+      "Brakes": -0.44999999999999996
+    },
+    "baseCost": 1250000.0,
+    "durationDays": 70,
+    "risk": 0.55,
+    "description": "Big potential, may fail."
+  },
+  {
+    "id": "m2_brakes_inc",
+    "name": "Brakes: incremental update",
+    "component": "Brakes",
+    "bikeClasses": [
+      "spec_moto2"
+    ],
+    "effects": {
+      "Brakes": 1.5
+    },
+    "baseCost": 175000.0,
+    "durationDays": 21,
+    "risk": 0.1,
+    "description": "Small, safe step."
+  },
+  {
+    "id": "m2_brakes_major",
+    "name": "Brakes: new specification",
+    "component": "Brakes",
+    "bikeClasses": [
+      "spec_moto2"
+    ],
+    "effects": {
+      "Brakes": 4.0,
+      "Chassis": -0.3
+    },
+    "baseCost": 600000.0,
+    "durationDays": 45,
+    "risk": 0.3,
+    "description": "Clear gain with a trade-off."
+  },
+  {
+    "id": "m2_brakes_exp",
+    "name": "Brakes: experimental concept",
+    "component": "Brakes",
+    "bikeClasses": [
+      "spec_moto2"
+    ],
+    "effects": {
+      "Brakes": 7.0,
+      "Chassis": -0.44999999999999996
+    },
+    "baseCost": 1250000.0,
+    "durationDays": 70,
+    "risk": 0.55,
+    "description": "Big potential, may fail."
+  },
+  {
+    "id": "m2_aero_inc",
+    "name": "Fairing: incremental update",
+    "component": "Aerodynamics",
+    "bikeClasses": [
+      "spec_moto2"
+    ],
+    "effects": {
+      "Aerodynamics": 1.5
+    },
+    "baseCost": 175000.0,
+    "durationDays": 21,
+    "risk": 0.1,
+    "description": "Small, safe step."
+  },
+  {
+    "id": "m2_aero_major",
+    "name": "Fairing: new specification",
+    "component": "Aerodynamics",
+    "bikeClasses": [
+      "spec_moto2"
+    ],
+    "effects": {
+      "Aerodynamics": 4.0,
+      "Chassis": -0.3
+    },
+    "baseCost": 600000.0,
+    "durationDays": 45,
+    "risk": 0.3,
+    "description": "Clear gain with a trade-off."
+  },
+  {
+    "id": "m2_aero_exp",
+    "name": "Fairing: experimental concept",
+    "component": "Aerodynamics",
+    "bikeClasses": [
+      "spec_moto2"
+    ],
+    "effects": {
+      "Aerodynamics": 7.0,
+      "Chassis": -0.44999999999999996
+    },
+    "baseCost": 1250000.0,
+    "durationDays": 70,
+    "risk": 0.55,
+    "description": "Big potential, may fail."
+  },
+  {
+    "id": "m2_rel_inc",
+    "name": "Reliability programme: incremental update",
+    "component": "Reliability",
+    "bikeClasses": [
+      "spec_moto2"
+    ],
+    "effects": {
+      "Reliability": 1.5
+    },
+    "baseCost": 175000.0,
+    "durationDays": 21,
+    "risk": 0.1,
+    "description": "Small, safe step."
+  },
+  {
+    "id": "m2_rel_major",
+    "name": "Reliability programme: new specification",
+    "component": "Reliability",
+    "bikeClasses": [
+      "spec_moto2"
+    ],
+    "effects": {
+      "Reliability": 4.0
+    },
+    "baseCost": 600000.0,
+    "durationDays": 45,
+    "risk": 0.3,
+    "description": "Clear gain with a trade-off."
+  },
+  {
+    "id": "m2_rel_exp",
+    "name": "Reliability programme: experimental concept",
+    "component": "Reliability",
+    "bikeClasses": [
+      "spec_moto2"
+    ],
+    "effects": {
+      "Reliability": 7.0
+    },
+    "baseCost": 1250000.0,
+    "durationDays": 70,
+    "risk": 0.55,
+    "description": "Big potential, may fail."
+  },
+  {
+    "id": "m3_engine_inc",
+    "name": "Engine: incremental update",
+    "component": "Engine",
+    "bikeClasses": [
+      "lightweight_moto3"
+    ],
+    "effects": {
+      "Engine": 1.5
+    },
+    "baseCost": 140000.0,
+    "durationDays": 21,
+    "risk": 0.1,
+    "description": "Small, safe step."
+  },
+  {
+    "id": "m3_engine_major",
+    "name": "Engine: new specification",
+    "component": "Engine",
+    "bikeClasses": [
+      "lightweight_moto3"
+    ],
+    "effects": {
+      "Engine": 4.0,
+      "Reliability": -1.5
+    },
+    "baseCost": 480000.0,
+    "durationDays": 45,
+    "risk": 0.3,
+    "description": "Clear gain with a trade-off."
+  },
+  {
+    "id": "m3_engine_exp",
+    "name": "Engine: experimental concept",
+    "component": "Engine",
+    "bikeClasses": [
+      "lightweight_moto3"
+    ],
+    "effects": {
+      "Engine": 7.0,
+      "Reliability": -2.25
+    },
+    "baseCost": 1000000.0,
+    "durationDays": 70,
+    "risk": 0.55,
+    "description": "Big potential, may fail."
+  },
+  {
+    "id": "m3_chassis_inc",
+    "name": "Chassis: incremental update",
+    "component": "Chassis",
+    "bikeClasses": [
+      "lightweight_moto3"
+    ],
+    "effects": {
+      "Chassis": 1.5
+    },
+    "baseCost": 140000.0,
+    "durationDays": 21,
+    "risk": 0.1,
+    "description": "Small, safe step."
+  },
+  {
+    "id": "m3_chassis_major",
+    "name": "Chassis: new specification",
+    "component": "Chassis",
+    "bikeClasses": [
+      "lightweight_moto3"
+    ],
+    "effects": {
+      "Chassis": 4.0,
+      "Suspension": -0.5
+    },
+    "baseCost": 480000.0,
+    "durationDays": 45,
+    "risk": 0.3,
+    "description": "Clear gain with a trade-off."
+  },
+  {
+    "id": "m3_chassis_exp",
+    "name": "Chassis: experimental concept",
+    "component": "Chassis",
+    "bikeClasses": [
+      "lightweight_moto3"
+    ],
+    "effects": {
+      "Chassis": 7.0,
+      "Suspension": -0.75
+    },
+    "baseCost": 1000000.0,
+    "durationDays": 70,
+    "risk": 0.55,
+    "description": "Big potential, may fail."
+  },
+  {
+    "id": "m3_susp_inc",
+    "name": "Suspension: incremental update",
+    "component": "Suspension",
+    "bikeClasses": [
+      "lightweight_moto3"
+    ],
+    "effects": {
+      "Suspension": 1.5
+    },
+    "baseCost": 140000.0,
+    "durationDays": 21,
+    "risk": 0.1,
+    "description": "Small, safe step."
+  },
+  {
+    "id": "m3_susp_major",
+    "name": "Suspension: new specification",
+    "component": "Suspension",
+    "bikeClasses": [
+      "lightweight_moto3"
+    ],
+    "effects": {
+      "Suspension": 4.0,
+      "Chassis": -0.3
+    },
+    "baseCost": 480000.0,
+    "durationDays": 45,
+    "risk": 0.3,
+    "description": "Clear gain with a trade-off."
+  },
+  {
+    "id": "m3_susp_exp",
+    "name": "Suspension: experimental concept",
+    "component": "Suspension",
+    "bikeClasses": [
+      "lightweight_moto3"
+    ],
+    "effects": {
+      "Suspension": 7.0,
+      "Chassis": -0.44999999999999996
+    },
+    "baseCost": 1000000.0,
+    "durationDays": 70,
+    "risk": 0.55,
+    "description": "Big potential, may fail."
+  },
+  {
+    "id": "m3_aero_inc",
+    "name": "Fairing: incremental update",
+    "component": "Aerodynamics",
+    "bikeClasses": [
+      "lightweight_moto3"
+    ],
+    "effects": {
+      "Aerodynamics": 1.5
+    },
+    "baseCost": 140000.0,
+    "durationDays": 21,
+    "risk": 0.1,
+    "description": "Small, safe step."
+  },
+  {
+    "id": "m3_aero_major",
+    "name": "Fairing: new specification",
+    "component": "Aerodynamics",
+    "bikeClasses": [
+      "lightweight_moto3"
+    ],
+    "effects": {
+      "Aerodynamics": 4.0,
+      "Chassis": -0.3
+    },
+    "baseCost": 480000.0,
+    "durationDays": 45,
+    "risk": 0.3,
+    "description": "Clear gain with a trade-off."
+  },
+  {
+    "id": "m3_aero_exp",
+    "name": "Fairing: experimental concept",
+    "component": "Aerodynamics",
+    "bikeClasses": [
+      "lightweight_moto3"
+    ],
+    "effects": {
+      "Aerodynamics": 7.0,
+      "Chassis": -0.44999999999999996
+    },
+    "baseCost": 1000000.0,
+    "durationDays": 70,
+    "risk": 0.55,
+    "description": "Big potential, may fail."
+  },
+  {
+    "id": "m3_rel_inc",
+    "name": "Reliability programme: incremental update",
+    "component": "Reliability",
+    "bikeClasses": [
+      "lightweight_moto3"
+    ],
+    "effects": {
+      "Reliability": 1.5
+    },
+    "baseCost": 140000.0,
+    "durationDays": 21,
+    "risk": 0.1,
+    "description": "Small, safe step."
+  },
+  {
+    "id": "m3_rel_major",
+    "name": "Reliability programme: new specification",
+    "component": "Reliability",
+    "bikeClasses": [
+      "lightweight_moto3"
+    ],
+    "effects": {
+      "Reliability": 4.0
+    },
+    "baseCost": 480000.0,
+    "durationDays": 45,
+    "risk": 0.3,
+    "description": "Clear gain with a trade-off."
+  },
+  {
+    "id": "m3_rel_exp",
+    "name": "Reliability programme: experimental concept",
+    "component": "Reliability",
+    "bikeClasses": [
+      "lightweight_moto3"
+    ],
+    "effects": {
+      "Reliability": 7.0
+    },
+    "baseCost": 1000000.0,
+    "durationDays": 70,
+    "risk": 0.55,
+    "description": "Big potential, may fail."
+  }
+]

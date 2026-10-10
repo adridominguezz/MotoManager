@@ -22,6 +22,13 @@ namespace MotoManager.Tools
             if (mode == "calibrate") return Calibrate(db, root, args);
             if (mode == "season") return Season(db, args);
             if (mode == "bikes") return Bikes(db, args);
+            if (mode == "dump-tuning")
+            {
+                var path = System.IO.Path.Combine(root, "simulation", "tuning.json");
+                System.IO.File.WriteAllText(path, JsonSettings.Serialize(new SimulationTuning(), true) + "\n");
+                Console.WriteLine("wrote " + path);
+                return 0;
+            }
             Console.WriteLine("usage: laps <rules> [circuit] | race <rules> <circuit> [seed]");
             return 1;
         }

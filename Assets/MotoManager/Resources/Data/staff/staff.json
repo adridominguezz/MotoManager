@@ -1,0 +1,156 @@
+[
+  {
+    "id": "dall_igna",
+    "firstName": "Gigi",
+    "lastName": "Dall'Igna",
+    "role": "ChiefEngineer",
+    "nationality": "IT",
+    "birthYear": 1966,
+    "skill": 96,
+    "salary": 2500000.0,
+    "teamId": "ducati_lenovo"
+  },
+  {
+    "id": "tardozzi",
+    "firstName": "Davide",
+    "lastName": "Tardozzi",
+    "role": "TeamManager",
+    "nationality": "IT",
+    "birthYear": 1959,
+    "skill": 88,
+    "salary": 800000,
+    "teamId": "ducati_lenovo"
+  },
+  {
+    "id": "gabarrini",
+    "firstName": "Cristian",
+    "lastName": "Gabarrini",
+    "role": "CrewChief",
+    "nationality": "IT",
+    "birthYear": 1974,
+    "skill": 92,
+    "salary": 600000,
+    "teamId": "ducati_lenovo"
+  },
+  {
+    "id": "rigamonti",
+    "firstName": "Marco",
+    "lastName": "Rigamonti",
+    "role": "CrewChief",
+    "nationality": "IT",
+    "birthYear": 1975,
+    "skill": 90,
+    "salary": 550000,
+    "teamId": "ducati_lenovo"
+  },
+  {
+    "id": "padovani",
+    "firstName": "Nadia",
+    "lastName": "Padovani",
+    "role": "TeamManager",
+    "nationality": "IT",
+    "birthYear": 1960,
+    "skill": 78,
+    "salary": 300000,
+    "teamId": "gresini_motogp"
+  },
+  {
+    "id": "pablo_nieto",
+    "firstName": "Pablo",
+    "lastName": "Nieto",
+    "role": "TeamManager",
+    "nationality": "ES",
+    "birthYear": 1980,
+    "skill": 80,
+    "salary": 350000,
+    "teamId": "vr46_motogp"
+  },
+  {
+    "id": "rivola",
+    "firstName": "Massimo",
+    "lastName": "Rivola",
+    "role": "TeamManager",
+    "nationality": "IT",
+    "birthYear": 1971,
+    "skill": 85,
+    "salary": 900000,
+    "teamId": "aprilia_racing"
+  },
+  {
+    "id": "brivio",
+    "firstName": "Davide",
+    "lastName": "Brivio",
+    "role": "TeamManager",
+    "nationality": "IT",
+    "birthYear": 1964,
+    "skill": 90,
+    "salary": 900000,
+    "teamId": "trackhouse_motogp"
+  },
+  {
+    "id": "ajo",
+    "firstName": "Aki",
+    "lastName": "Ajo",
+    "role": "TeamManager",
+    "nationality": "FI",
+    "birthYear": 1968,
+    "skill": 88,
+    "salary": 700000,
+    "teamId": "ktm_factory"
+  },
+  {
+    "id": "meregalli",
+    "firstName": "Massimo",
+    "lastName": "Meregalli",
+    "role": "TeamManager",
+    "nationality": "IT",
+    "birthYear": 1965,
+    "skill": 80,
+    "salary": 600000,
+    "teamId": "yamaha_factory"
+  },
+  {
+    "id": "bartolini",
+    "firstName": "Max",
+    "lastName": "Bartolini",
+    "role": "ChiefEngineer",
+    "nationality": "IT",
+    "birthYear": 1975,
+    "skill": 86,
+    "salary": 1500000.0,
+    "teamId": "yamaha_factory"
+  },
+  {
+    "id": "borsoi",
+    "firstName": "Gino",
+    "lastName": "Borsoi",
+    "role": "TeamManager",
+    "nationality": "IT",
+    "birthYear": 1974,
+    "skill": 82,
+    "salary": 400000,
+    "teamId": "pramac_motogp"
+  },
+  {
+    "id": "albesiano",
+    "firstName": "Romano",
+    "lastName": "Albesiano",
+    "role": "ChiefEngineer",
+    "nationality": "IT",
+    "birthYear": 1966,
+    "skill": 88,
+    "salary": 1600000.0,
+    "teamId": "honda_hrc"
+  },
+  {
+    "id": "cecchinello",
+    "firstName": "Lucio",
+    "lastName": "Cecchinello",
+    "role": "TeamManager",
+    "nationality": "IT",
+    "birthYear": 1969,
+    "skill": 80,
+    "salary": 350000,
+    "teamId": "lcr_motogp"
+  }
+]
