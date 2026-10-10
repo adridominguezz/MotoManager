@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using MotoManager.Core.Career;
 using MotoManager.Core.Economy;
 using MotoManager.Core.World;
+using MotoManager.Core.Data;
 using UnityEngine;
 
 namespace MotoManager.App.UI.Screens
@@ -25,6 +26,13 @@ namespace MotoManager.App.UI.Screens
             RectTransform left, right;
             Ui.Columns(list, out left, out right);
 
+            if (team == null)
+            {
+                var none = Ui.Card(left, Loc.T("home.noTeam"), Loc.T("home.noTeamInfo"));
+                UiFactory.ButtonRow(none, 64,
+                    UiFactory.Primary(Loc.T("mycareer.seeOffers"), () => Shell.Show<CareerOffersPage>()),
+                    UiFactory.Act(Loc.T("mycareer.found"), () => Shell.Show<CareerFoundPage>()));
+            }
             NextEventCard(left, world, team);
             if (team != null) TeamCard(left, world, team);
 
@@ -101,6 +109,20 @@ namespace MotoManager.App.UI.Screens
         private void TodoCard(Transform parent, WorldState world, Team team)
         {
             var todo = new List<KeyValuePair<string, Action>>();
+            int emptyNow = ContractService.SeatsFreeNow(world, Game.Db, team);
+            if (emptyNow > 0) todo.Add(Pair(Theme.BadText(Loc.T("home.todo.emptySeats", emptyNow)), () => Shell.Show<MarketScreen>()));
+            var job = world.PlayerManager != null ? world.PlayerManager.Job : null;
+            if (job != null && job.Role == ManagerRole.TeamManager && job.EndSeason <= world.Season)
+                todo.Add(Pair(Theme.WarnText(Loc.T("home.todo.myContract")), () => Shell.Show<CareerSummaryPage>()));
+            int missingStaff = 0;
+            foreach (StaffRole role in Enum.GetValues(typeof(StaffRole)))
+            {
+                if (role == StaffRole.TeamManager) continue;
+                double best;
+                int count;
+                if (StaffService.Coverage(world, Game.Db, team, role, out best, out count) == RoleCoverage.Missing) missingStaff++;
+            }
+            if (missingStaff > 0) todo.Add(Pair(Loc.T("home.todo.missingStaff", missingStaff), () => Shell.Show<StaffPage>()));
             double left = team.SeasonBudget - Accounts.SpentThisSeason(world, team);
             if (left < 0) todo.Add(Pair(Theme.BadText(Loc.T("home.todo.budget")), () => Shell.Show<FinanceScreen>()));
             int bids = world.TransferOffers.FindAll(o => o.FromTeamId == team.Id).Count;

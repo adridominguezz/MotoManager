@@ -27,6 +27,7 @@ namespace MotoManager.App.UI
 
         private void Build(Transform root)
         {
+            Theme.SetTeamColors(null, null);
             // Outside a career the accent is the brand red.
             Theme.SetAccent(Theme.Accent);
             var bg = UiFactory.Panel("Background", root, Theme.Background);

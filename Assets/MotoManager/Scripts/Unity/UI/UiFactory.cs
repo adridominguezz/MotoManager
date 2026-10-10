@@ -13,7 +13,10 @@ namespace MotoManager.App.UI
         public static readonly Color Panel = new Color32(18, 28, 46, 255);        // rails, header, lists
         public static readonly Color Card = new Color32(23, 35, 57, 255);         // content cards
         public static readonly Color PanelLight = new Color32(32, 47, 74, 255);   // buttons, tiles
-        public static readonly Color Accent = new Color32(229, 56, 59, 255);
+        /// <summary>Brand red of the game (start screen, loading).</summary>
+        public static readonly Color Brand = new Color32(229, 56, 59, 255);
+        /// <summary>Main action colour: the player's team colour while managing a team, the brand red otherwise.</summary>
+        public static Color Accent { get; private set; } = Brand;
         public static readonly Color Text = new Color32(238, 242, 247, 255);
         public static readonly Color TextDim = new Color32(142, 154, 176, 255);
         public static readonly Color Good = new Color32(60, 200, 120, 255);
@@ -61,8 +64,34 @@ namespace MotoManager.App.UI
                 case "nav.finance": return AccentFinance;
                 case "nav.market": return AccentMarket;
                 case "nav.competition": return AccentCompetition;
+                case "nav.career": return AccentCareer;
                 default: return Accent;
             }
+        }
+
+        public static readonly Color AccentCareer = new Color32(26, 178, 196, 255);        // teal
+
+        /// <summary>
+        /// The interface takes the player's team colours: the primary (or the secondary when the primary is too grey)
+        /// brought into a readable range becomes the main accent. Null colours restore the brand red.
+        /// </summary>
+        public static void SetTeamColors(string primary, string secondary)
+        {
+            Color c;
+            if (!Readable(primary, out c) && !Readable(secondary, out c)) c = Brand;
+            Accent = c;
+        }
+
+        private static bool Readable(string hex, out Color c)
+        {
+            c = Brand;
+            Color raw;
+            if (string.IsNullOrEmpty(hex) || !ColorUtility.TryParseHtmlString(hex, out raw)) return false;
+            float h, s, v;
+            Color.RGBToHSV(raw, out h, out s, out v);
+            if (s < 0.25f) return false; // white, black, greys: not a usable accent
+            c = Color.HSVToRGB(h, Mathf.Clamp(s, 0.55f, 0.9f), Mathf.Clamp(v, 0.62f, 0.9f));
+            return true;
         }
 
         /// <summary>Makes <paramref name="c"/> the accent used by cards, chips and tables built from now on.</summary>

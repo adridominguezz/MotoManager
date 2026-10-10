@@ -74,6 +74,8 @@ namespace MotoManager.App.UI.Screens
 
         public static ManagementShell Create(GameSession session)
         {
+            var t = session.Game != null ? session.Game.World.PlayerTeam : null;
+            Theme.SetTeamColors(t != null ? t.Colors.Primary : null, t != null ? t.Colors.Secondary : null);
             var canvas = UiFactory.CreateCanvas("Management", 5);
             var shell = canvas.gameObject.AddComponent<ManagementShell>();
             shell.Session = session;
@@ -200,6 +202,7 @@ namespace MotoManager.App.UI.Screens
             Add("nav.finance", new FinanceScreen(), new SponsorsPage(), new ShopScreen());
             Add("nav.market", new MarketScreen());
             Add("nav.competition", new StandingsScreen(), new CalendarScreen(), new HistoryScreen());
+            Add("nav.career", new CareerSummaryPage(), new CareerOffersPage(), new CareerFoundPage());
 
             foreach (var s in _sections)
             {
@@ -279,8 +282,11 @@ namespace MotoManager.App.UI.Screens
             if (game == null) return;
             var world = game.World;
             var team = world.PlayerTeam;
+            // The interface wears the team's colours (brand red without a team).
+            Theme.SetTeamColors(team != null ? team.Colors.Primary : null, team != null ? team.Colors.Secondary : null);
+            if (_section != null) Theme.SetAccent(Theme.SectionAccent(_section.TitleKey));
             var next = NextOwnEvent();
-            _header.text = "<b>" + (team != null ? team.Name : Loc.T("shell.spectator")) + "</b>" +
+            _header.text = "<b>" + (team != null ? team.Name : Loc.T("shell.noTeam")) + "</b>" +
                            (team != null ? "    " + Theme.Money(Accounts.Cash(world, team)) : "");
             _subHeader.text = world.CurrentDate.ToString("d MMM yyyy", Loc.Culture) + "  ·  " + Loc.T("shell.season", world.Season) +
                               (next != null ? "  ·  " + Loc.T("shell.next", Loc.Round(next.Round.Name)) : "");
@@ -344,6 +350,7 @@ namespace MotoManager.App.UI.Screens
 
         private string ContinueLabel()
         {
+            if (Session.Game.World.PlayerTeam == null) return Session.Game.IsSeasonOver ? Loc.T("shell.closeSeason") : Loc.T("shell.simulate");
             if (NextOwnEvent() != null) return Loc.T("shell.goRace");
             return Session.Game.IsSeasonOver ? Loc.T("shell.closeSeason") : Loc.T("shell.finishSeason");
         }
@@ -355,6 +362,13 @@ namespace MotoManager.App.UI.Screens
         public void Continue()
         {
             var game = Session.Game;
+            if (game.World.PlayerTeam == null)
+            {
+                // Without a team the season goes on event by event while the manager looks for a job.
+                if (game.IsSeasonOver) CloseSeason();
+                else SimulateEvent();
+                return;
+            }
             if (NextOwnEvent() == null)
             {
                 if (game.IsSeasonOver) CloseSeason();

@@ -15,3 +15,6 @@
 # .NET tooling
 Tests/**/bin/
 Tests/**/obj/
+
+# Claude Code local state
+.claude/worktrees/
