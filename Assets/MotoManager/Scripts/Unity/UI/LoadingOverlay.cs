@@ -43,44 +43,67 @@ namespace MotoManager.App.UI
         private void Build(RectTransform root)
         {
             _start = Time.unscaledTime;
-            var bg = UiFactory.Panel("Background", root, new Color32(222, 228, 240, 255));
+            // Carbon background with a faint weave, lighter at the top.
+            var bg = UiFactory.Panel("Background", root, Theme.Background);
             UiFactory.Stretch(bg.rectTransform);
-            UiFactory.Gradient(bg, 1.06f, 0.9f);
-            // Diagonal colour bands on the right, like a livery.
-            for (int i = 0; i < 4; i++)
-            {
-                var band = UiFactory.Panel("Band", root, i % 2 == 0 ? new Color32(60, 70, 200, 255) : new Color32(90, 120, 230, 255));
-                band.rectTransform.anchorMin = band.rectTransform.anchorMax = new Vector2(0.78f + i * 0.08f, 0.5f);
-                band.rectTransform.sizeDelta = new Vector2(150 - i * 20, 2600);
-                band.rectTransform.localRotation = Quaternion.Euler(0, 0, -28);
-            }
-            var title = UiFactory.Label("Title", root, "<b>MOTORCYCLE</b>\n<size=" + (Theme.FontTitle + 30) + "><b>MOTORSPORT</b></size>\n<color=#E5383B><b>MANAGER</b></color>",
-                Theme.FontLarge, TextAnchor.MiddleCenter, new Color32(18, 36, 80, 255));
+            UiFactory.Gradient(bg, 1.35f, 0.85f);
+            var weave = UiFactory.Pattern("Carbon", root, UiFactory.CarbonSprite, new Color(1, 1, 1, 0.03f), 10);
+            UiFactory.Stretch(weave.rectTransform);
+            // A chequered flag band sweeping diagonally across the right side, with a thin accent line beside it.
+            var flag = UiFactory.Pattern("Chequered", root, UiFactory.CheckerSprite, new Color(1, 1, 1, 0.9f), 56);
+            flag.rectTransform.anchorMin = flag.rectTransform.anchorMax = new Vector2(0.84f, 0.55f);
+            flag.rectTransform.sizeDelta = new Vector2(168, 2600);
+            flag.rectTransform.localRotation = Quaternion.Euler(0, 0, -24);
+            UiFactory.Gradient(flag, new Color(1, 1, 1, 0.35f), Color.white);
+            var line = UiFactory.Decor("AccentLine", root, Theme.Accent);
+            line.rectTransform.anchorMin = line.rectTransform.anchorMax = new Vector2(0.84f, 0.55f);
+            line.rectTransform.sizeDelta = new Vector2(10, 2600);
+            line.rectTransform.anchoredPosition = new Vector2(-120, 0);
+            line.rectTransform.localRotation = Quaternion.Euler(0, 0, -24);
+            var title = UiFactory.Label("Title", root, "<b>MOTORCYCLE</b>\n<size=" + (Theme.FontTitle + 30) + "><b>MOTORSPORT</b></size>\n<color=#" +
+                ColorUtility.ToHtmlStringRGB(Theme.Accent) + "><b>MANAGER</b></color>",
+                Theme.FontLarge, TextAnchor.MiddleLeft, Theme.Text);
             title.supportRichText = true;
-            var lift = UiFactory.DropShadow(title, 0.18f, 4);
+            title.fontStyle = FontStyle.Italic;
+            var lift = UiFactory.DropShadow(title, 0.6f, 4);
             lift.effectDistance = new Vector2(3, -4);
-            UiFactory.Place(title.rectTransform, 0.05f, 0.35f, 0.6f, 0.85f);
+            UiFactory.Place(title.rectTransform, 0.06f, 0.35f, 0.66f, 0.85f);
+            // Thin rule under the wordmark, fading to the right.
+            var rule = UiFactory.Decor("Rule", root, new Color(1, 1, 1, 0.25f));
+            UiFactory.Place(rule.rectTransform, 0.06f, 0.33f, 0.5f, 0.33f);
+            rule.rectTransform.offsetMax = new Vector2(0, 2);
+            UiFactory.Gradient(rule, Color.white, new Color(1, 1, 1, 0), true);
 
-            var bar = UiFactory.Panel("Bar", root, new Color32(18, 36, 80, 235));
+            var bar = UiFactory.Panel("Bar", root, new Color(0.02f, 0.02f, 0.025f, 0.96f));
             UiFactory.Place(bar.rectTransform, 0, 0, 1, 0.16f);
-            UiFactory.Gradient(bar, 1.35f, 0.85f);
+            UiFactory.Gradient(bar, 1.2f, 0.9f);
             var rim = UiFactory.Decor("Rim", bar.transform, Theme.Accent);
             rim.rectTransform.anchorMin = new Vector2(0, 1);
             rim.rectTransform.anchorMax = new Vector2(1, 1);
-            rim.rectTransform.offsetMin = new Vector2(0, -5);
+            rim.rectTransform.offsetMin = new Vector2(0, -3);
             rim.rectTransform.offsetMax = Vector2.zero;
             _message = UiFactory.Label("Message", bar.transform, "", Theme.FontNormal, TextAnchor.MiddleCenter, Color.white);
-            _message.fontStyle = FontStyle.Bold;
+            _message.fontStyle = FontStyle.BoldAndItalic;
             UiFactory.Place(_message.rectTransform, 0.1f, 0.45f, 0.82f, 0.95f);
-            _percent = UiFactory.Label("Percent", bar.transform, "", Theme.FontNormal, TextAnchor.MiddleRight, Color.white);
-            _percent.fontStyle = FontStyle.Bold;
+            // The percentage in timing-screen yellow.
+            _percent = UiFactory.Label("Percent", bar.transform, "", Theme.FontNormal, TextAnchor.MiddleRight, Theme.Timing);
+            _percent.fontStyle = FontStyle.BoldAndItalic;
             UiFactory.Place(_percent.rectTransform, 0.82f, 0.45f, 0.95f, 0.95f);
-            var back = UiFactory.Panel("Track", bar.transform, new Color(1, 1, 1, 0.15f), true);
+            var back = UiFactory.Panel("Track", bar.transform, new Color(1, 1, 1, 0.1f));
             UiFactory.Place(back.rectTransform, 0.05f, 0.28f, 0.95f, 0.36f);
-            _fill = UiFactory.Panel("Fill", back.transform, new Color32(250, 210, 40, 255), true);
-            UiFactory.Gradient(_fill, 1.25f, 0.8f);
+            _fill = UiFactory.Panel("Fill", back.transform, Theme.Accent);
+            UiFactory.Gradient(_fill, new Color(0.75f, 0.75f, 0.75f, 1), Color.white, true);
             _fill.rectTransform.anchorMin = Vector2.zero;
             _fill.rectTransform.offsetMin = _fill.rectTransform.offsetMax = Vector2.zero;
+            // Sector marks along the track, like a lap progress bar.
+            for (int k = 1; k < 10; k++)
+            {
+                var tick = UiFactory.Decor("Tick", back.transform, new Color(0, 0, 0, 0.6f));
+                tick.rectTransform.anchorMin = new Vector2(k * 0.1f, 0);
+                tick.rectTransform.anchorMax = new Vector2(k * 0.1f, 1);
+                tick.rectTransform.offsetMin = new Vector2(-1, 0);
+                tick.rectTransform.offsetMax = new Vector2(1, 0);
+            }
             _task = UiFactory.Label("Task", bar.transform, "", Theme.FontSmall - 4, TextAnchor.MiddleCenter, new Color(1, 1, 1, 0.6f));
             UiFactory.Place(_task.rectTransform, 0.05f, 0.02f, 0.95f, 0.26f);
         }

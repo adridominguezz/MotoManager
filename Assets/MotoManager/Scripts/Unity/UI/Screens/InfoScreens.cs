@@ -12,7 +12,7 @@ namespace MotoManager.App.UI.Screens
         private string _category;
         private int _table;
 
-        private static readonly Color Mine = new Color(0.9f, 0.22f, 0.23f, 0.2f);
+        private static readonly Color Mine = new Color(0.94f, 0.7f, 0.16f, 0.16f);
 
         public override void Build(RectTransform content)
         {

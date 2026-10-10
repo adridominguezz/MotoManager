@@ -20,7 +20,7 @@ namespace MotoManager.App.UI
 
         public static RectTransform Build(RaceSimulation sim, RectTransform root, Action onReplay, Action onContinue)
         {
-            var panel = UiFactory.Panel("PostRace", root, new Color(0.043f, 0.075f, 0.125f, 0.97f), true);
+            var panel = UiFactory.Panel("PostRace", root, new Color(0.035f, 0.038f, 0.047f, 0.97f), true);
             var rt = panel.rectTransform;
             UiFactory.Place(rt, 0.02f, 0.03f, 0.98f, 0.97f);
             _tab = 0;
@@ -33,7 +33,7 @@ namespace MotoManager.App.UI
         {
             UiFactory.Clear(rt);
             var title = UiFactory.Label("Title", rt, Loc.T("post.title", Txt(sim.Config.SessionName)), Theme.FontLarge - 4, TextAnchor.MiddleLeft);
-            title.fontStyle = FontStyle.Bold;
+            UiFactory.RaceTitle(title);
             UiFactory.Place(title.rectTransform, 0.02f, 0.9f, 0.45f, 0.99f);
 
             var players = new List<RiderRaceState>();

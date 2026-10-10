@@ -29,7 +29,7 @@ namespace MotoManager.App.UI
             var bg = UiFactory.Panel("Background", root, Theme.Background);
             UiFactory.Stretch(bg.rectTransform);
             var title = UiFactory.Label("Title", root, "<b>" + Loc.T("quali.title") + "</b>  " + Theme.Dim(eventName), Theme.FontLarge - 4, TextAnchor.MiddleLeft);
-            title.supportRichText = true;
+            UiFactory.RaceTitle(title);
             UiFactory.Place(title.rectTransform, 0.03f, 0.89f, 0.97f, 0.98f);
 
             // Best qualifying lap of every rider (all qualifying sessions: Q1/Q2, Superpole...).
