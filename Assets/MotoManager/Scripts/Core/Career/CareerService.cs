@@ -92,14 +92,8 @@ namespace MotoManager.Core.Career
                 world.Managers[m.Id] = m;
                 Employ(world, db, m, team, team.Reputation > 70 ? Autonomy.Limited : Autonomy.Standard, 2);
             }
-            var teams = new List<Team>(world.Teams.Values);
-            teams.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));
-            foreach (var team in teams)
-            {
-                if (world.GetManager(team.ManagerId) != null) continue;
-                var m = GenerateAiManager(world, db, rng, team.Reputation);
-                Employ(world, db, m, team, team.Reputation > 70 ? Autonomy.Limited : Autonomy.Standard, 2 + rng.NextInt(0, 2));
-            }
+            // The rest: managers out of work first, then new names.
+            ManagerMarket.FillVacancies(world, db, rng, false);
         }
 
         public static ManagerProfile GenerateAiManager(WorldState world, GameDatabase db, DeterministicRandom rng, double level)
@@ -128,8 +122,9 @@ namespace MotoManager.Core.Career
         }
 
         /// <summary>Places a manager at a team under a new contract (the previous manager, if any, leaves).</summary>
-        public static void Employ(WorldState world, GameDatabase db, ManagerProfile m, Team team, Autonomy autonomy, int seasons, double salary = -1)
+        public static void Employ(WorldState world, GameDatabase db, ManagerProfile m, Team team, Autonomy autonomy, int seasons, double salary = -1, int startSeason = 0)
         {
+            int from = startSeason > 0 ? startSeason : world.Season;
             var previous = world.GetManager(team.ManagerId);
             if (previous != null && previous != m) EndJob(world, previous, "Replaced");
             if (m.Job != null) EndJob(world, m, "Moved");
@@ -139,14 +134,14 @@ namespace MotoManager.Core.Career
                 OrganisationId = team.OrganisationId,
                 TeamId = team.Id,
                 Role = ManagerRole.TeamManager,
-                StartSeason = world.Season,
-                EndSeason = world.Season + Math.Max(1, seasons) - 1,
+                StartSeason = from,
+                EndSeason = from + Math.Max(1, seasons) - 1,
                 SalaryPerSeason = salary >= 0 ? salary : SalaryFor(rules, m, team),
                 Autonomy = autonomy,
                 AssignedBudget = team.SeasonBudget
             };
             team.ManagerId = m.Id;
-            m.History.Add(new ManagerStint { OrganisationId = team.OrganisationId, TeamId = team.Id, TeamName = team.Name, CategoryId = team.CategoryId, Role = ManagerRole.TeamManager, FromSeason = world.Season, ToSeason = world.Season });
+            m.History.Add(new ManagerStint { OrganisationId = team.OrganisationId, TeamId = team.Id, TeamName = team.Name, CategoryId = team.CategoryId, Role = ManagerRole.TeamManager, FromSeason = from, ToSeason = from });
         }
 
         public static void EndJob(WorldState world, ManagerProfile m, string reason)
@@ -201,10 +196,12 @@ namespace MotoManager.Core.Career
                 if (cat == null || !cat.Simulated || team.IsPlayer) continue;
                 var org = world.OrganisationOf(team);
                 if (org == null || org.Owner == OwnerKind.Player) continue;
-                // Only some boards are looking for a manager right now.
+                // Only some boards are looking for a manager right now, and not those the manager fell out with.
                 if (!Vacant(world, team)) continue;
+                double relation = m.RelationWith(org.Id);
+                if (relation <= -20) continue;
                 double required = cat.Prestige * 0.35 + team.Reputation * 0.45 + (team.Status == TeamStatus.Factory ? 10 : 0);
-                if (standing < required) continue;
+                if (standing + relation * 0.3 < required) continue;
                 var rules = db.GetRules(cat.Id, world.Season);
                 offers.Add(new JobOffer
                 {
@@ -233,8 +230,11 @@ namespace MotoManager.Core.Career
         public static bool Vacant(WorldState world, Team team)
         {
             var current = world.GetManager(team.ManagerId);
-            if (current == null) return true;
-            return DeterministicRandom.Combine(world.MasterSeed, DeterministicRandom.Hash(world.Season + "|vacancy|" + team.Id)) % 100 < 35;
+            if (current == null || current.Job == null) return true;
+            if (current.IsPlayer) return false;
+            // A board whose manager's contract is running out, or who has lost faith in him, listens to offers.
+            if (current.Job.EndSeason <= world.Season || current.Job.BoardConfidence < ManagerCareer.RenewFrom) return true;
+            return DeterministicRandom.Combine(world.MasterSeed, DeterministicRandom.Hash(world.Season + "|vacancy|" + team.Id)) % 100 < 25;
         }
 
         /// <summary>The player takes the job: he runs the team; the organisation keeps owning it and its money.</summary>

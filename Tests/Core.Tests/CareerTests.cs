@@ -236,5 +236,84 @@ namespace MotoManager.Tests
             game.CompleteEvent(game.BeginNextEvent());
             Assert.Equal(2, res.Team.RiderIds.Count);
         }
-    }
+    
+        [Fact]
+        public void AiManagersAreJudgedSackedAndHiredAcrossSeasons()
+        {
+            var game = Fresh(205);
+            var w = game.World;
+            var start = w.Teams.Values.ToDictionary(t => t.Id, t => t.ManagerId);
+            for (int s = 0; s < 3; s++)
+            {
+                game.SimulateRestOfSeason();
+                game.EndSeason();
+                // Every team has exactly one manager, whose job is that team.
+                foreach (var t in w.Teams.Values)
+                {
+                    var mgr = w.GetManager(t.ManagerId);
+                    Assert.NotNull(mgr);
+                    Assert.NotNull(mgr.Job);
+                    Assert.Equal(t.Id, mgr.Job.TeamId);
+                    Assert.True(mgr.Job.EndSeason >= w.Season, mgr.FullName + " has an expired contract at " + t.Name);
+                }
+                Assert.Equal(w.Teams.Count, w.Managers.Values.Count(x => x.Job != null));
+            }
+            int changed = w.Teams.Values.Count(t => start.ContainsKey(t.Id) && start[t.Id] != t.ManagerId);
+            int moved = w.Managers.Values.Count(x => x.History.Count > 1);
+            _out.WriteLine("teams with a new manager: " + changed + ", managers with more than one job: " + moved + ", out of work: " + ManagerMarket.FreeAgents(w).Count + ", retired: " + w.Managers.Values.Count(x => x.Retired));
+            Assert.True(changed > 0, "some teams change manager in three seasons");
+            Assert.True(changed < w.Teams.Count / 2, "most boards keep their manager");
+            Assert.Contains(w.Managers.Values, x => x.History.Any(h => h.EndReason == "Sacked" || h.EndReason == "ContractEnded"));
+        }
+
+        [Fact]
+        public void ABoardYouWalkedOutOnDoesNotOfferYouAJob()
+        {
+            var (game, m) = Employed(206);
+            var w = game.World;
+            var first = w.PlayerTeam;
+            string org = first.OrganisationId;
+            m.Reputation = 90;
+            var other = ManagerCareer.Offers(w, game.Db).FirstOrDefault(o => o.OrganisationId != org);
+            Assert.NotNull(other);
+            m.Job.EndSeason = w.Season + 2;
+            Assert.True(ManagerCareer.ChangeJob(w, game.Db, other).Ok);
+            Assert.True(m.RelationWith(org) <= -20);
+            Assert.DoesNotContain(CareerService.JobOffers(w, game.Db, m), o => o.OrganisationId == org);
+            Assert.NotNull(w.GetManager(first.ManagerId));
+        }
+
+        [Fact]
+        public void AnOwnerWhoWorksElsewhereChoosesWhoRunsHisTeamAndCanComeBack()
+        {
+            var game = GameController.NewGame(TestData.Db, new NewGameOptions { Seed = 207 });
+            var w = game.World;
+            var m = CareerService.CreatePlayer(w, game.Db, "Test", "Owner", "ES", "entrepreneur");
+            m.PersonalWealth = 40e6;
+            m.Reputation = 80;
+            var supplier = CareerService.Suppliers(w, "moto3").First();
+            var own = CareerService.Found(w, game.Db, m, new FoundingPlan { CategoryId = "moto3", ManufacturerId = supplier.Id, TeamName = "Owner Racing", Investment = 40e6 }).Team;
+            Assert.NotNull(ManagerCareer.OwnedOrganisation(w));
+            var offer = ManagerCareer.Offers(w, game.Db).First();
+            Assert.True(ManagerCareer.ChangeJob(w, game.Db, offer).Ok);
+            // An AI manager runs the owner's team; the organisation is still the player's.
+            var caretaker = w.GetManager(own.ManagerId);
+            Assert.NotNull(caretaker);
+            Assert.False(caretaker.IsPlayer);
+            Assert.Equal(OwnerKind.Player, w.OrganisationOf(own).Owner);
+            // The owner replaces him with someone of his choice (severance from the organisation).
+            var candidate = ManagerMarket.FreeAgents(w).FirstOrDefault() ?? CareerService.GenerateAiManager(w, game.Db, w.Rng.Fork("t"), 50);
+            var hired = ManagerCareer.HireForOwnTeam(w, game.Db, own, candidate);
+            Assert.True(hired.Ok, hired.Message);
+            Assert.Equal(candidate.Id, own.ManagerId);
+            Assert.Null(caretaker.Job);
+            // ...and later takes charge again.
+            var back = ManagerCareer.RunOwnTeam(w, game.Db, own);
+            Assert.True(back.Ok, back.Message);
+            Assert.Equal(own, w.PlayerTeam);
+            Assert.Equal(ManagerRole.OwnerManager, m.Job.Role);
+            Assert.Null(candidate.Job);
+            Assert.NotNull(w.GetManager(w.Teams[offer.TeamId].ManagerId));
+        }
+}
 }

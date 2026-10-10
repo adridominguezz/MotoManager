@@ -57,6 +57,8 @@ namespace MotoManager.App.UI.Screens
                 {
                     Ui.Line(jobCard, Loc.T("manager.until"), job.EndSeason.ToString());
                     Ui.Line(jobCard, Loc.T("mycareer.autonomy"), Loc.T("autonomy." + job.Autonomy));
+                    double rel = m.RelationWith(job.OrganisationId);
+                    Ui.Line(jobCard, Loc.T("mycareer.relation"), rel >= 10 ? Theme.GoodText(Loc.T("mycareer.relation.good")) : rel <= -10 ? Theme.BadText(Loc.T("mycareer.relation.bad")) : Loc.T("mycareer.relation.neutral"));
                     double conf = ManagerCareer.CurrentConfidence(world, Game.Db);
                     Ui.Bar(jobCard, Loc.T("review.confidence"), conf / 100.0, conf.ToString("0") + "%",
                         conf >= 55 ? Theme.Good : conf >= ManagerCareer.SackBelow + 5 ? Theme.Warning : Theme.Bad, 36);
@@ -158,6 +160,111 @@ namespace MotoManager.App.UI.Screens
                     }));
             }
             if (offers.Count == 0) Ui.Note(card, Loc.T("mycareer.noOffers"));
+        }
+    }
+
+    /// <summary>
+    /// The organisation the player owns: its money and teams, who runs each team, hiring a manager for a team the
+    /// player is not running, and taking charge of it again.
+    /// </summary>
+    public class CareerOrgPage : ScreenBase
+    {
+        public override string Title { get { return Loc.T("tab.career.org"); } }
+        private string _confirm;
+
+        public override void Build(RectTransform content)
+        {
+            var list = Page(content);
+            var world = Game.World;
+            var m = world.PlayerManager;
+            if (m == null) return;
+            var org = ManagerCareer.OwnedOrganisation(world);
+            if (org == null)
+            {
+                var none = Ui.Card(list, Loc.T("tab.career.org"));
+                UiFactory.Paragraph(none, Loc.T("mycareer.org.none"), Theme.FontSmall);
+                UiFactory.ButtonRow(none, 60, UiFactory.Primary(Loc.T("mycareer.found"), () => Shell.Show<CareerFoundPage>()));
+                return;
+            }
+            RectTransform leftCol, rightCol;
+            Ui.Columns(list, out leftCol, out rightCol);
+
+            double debt = 0;
+            foreach (var l in org.Loans) debt += l.Outstanding;
+            var oc = Ui.Card(leftCol, org.Name, Loc.T("mycareer.org.owner"));
+            Ui.Kpis(oc,
+                Ui.Kpi(Theme.Money(org.Cash), Loc.T("finance.cash")),
+                Ui.Kpi(debt > 0 ? MathX.FormatMoney(debt) : "-", Loc.T("mycareer.org.debt")),
+                Ui.Kpi(org.TeamIds.Count.ToString(), Loc.T("mycareer.org.teams")));
+            Ui.Note(oc, Loc.T("mycareer.org.info"));
+
+            Team delegated = null;
+            foreach (var id in org.TeamIds)
+            {
+                var team = world.GetTeam(id);
+                if (team == null) continue;
+                var cat = Game.Db.GetCategory(team.CategoryId);
+                var tc = Ui.Card(leftCol, team.Name, cat != null ? cat.Name : "");
+                bool mine = m.Job != null && m.Job.TeamId == team.Id;
+                var boss = world.GetManager(team.ManagerId);
+                if (mine)
+                {
+                    Ui.Line(tc, Loc.T("mycareer.org.runBy"), "<b>" + Loc.T("mycareer.org.you") + "</b>");
+                    continue;
+                }
+                if (delegated == null) delegated = team;
+                if (boss != null && boss.Job != null)
+                {
+                    Ui.Line(tc, Loc.T("mycareer.org.runBy"), "<b>" + boss.FullName + "</b>  " + Theme.Dim(Loc.T("mycareer.fame") + " " + Fmt.Rating(boss.Reputation)));
+                    Ui.Line(tc, Loc.T("mycareer.salary"), MathX.FormatMoney(boss.Job.SalaryPerSeason) + Theme.Dim("/" + Loc.T("unit.season")));
+                    Ui.Line(tc, Loc.T("manager.until"), boss.Job.EndSeason.ToString());
+                }
+                else Ui.Line(tc, Loc.T("mycareer.org.runBy"), "-");
+                bool breaking = m.Job != null && m.Job.Role == ManagerRole.TeamManager && m.Job.EndSeason > world.Season;
+                string key = "run:" + team.Id;
+                bool confirm = _confirm == key;
+                var t = team;
+                if (breaking) Ui.Note(tc, Theme.WarnText(Loc.T("mycareer.breakNote")));
+                UiFactory.ButtonRow(tc, 58, UiFactory.Primary(confirm ? Loc.T("mycareer.org.runConfirm", MathX.FormatMoney(ManagerCareer.SeveranceFor(world, boss))) : Loc.T("mycareer.org.run"), () =>
+                {
+                    if (_confirm != key) { _confirm = key; Shell.Refresh(); return; }
+                    _confirm = null;
+                    var res = ManagerCareer.RunOwnTeam(world, Game.Db, t);
+                    Shell.Toast(res.Message, res.Ok);
+                    if (res.Ok) Shell.Show<HubScreen>(); else Shell.Refresh();
+                }));
+            }
+
+            // Hiring a manager for a team the player does not run.
+            var hire = Ui.Card(rightCol, Loc.T("mycareer.org.hireTitle"), delegated != null ? delegated.Name : null);
+            if (delegated == null)
+            {
+                Ui.Note(hire, Loc.T("mycareer.org.youRunAll"));
+                return;
+            }
+            var current = world.GetManager(delegated.ManagerId);
+            double severance = ManagerCareer.SeveranceFor(world, current);
+            if (severance > 0) Ui.Note(hire, Loc.T("mycareer.org.severance", current.FullName, MathX.FormatMoney(severance)));
+            var rules = Game.Db.GetRules(delegated.CategoryId, world.Season);
+            var team2 = delegated;
+            foreach (var c in ManagerMarket.Candidates(world, Game.Db, delegated))
+            {
+                var cand = c;
+                string key = "hire:" + c.Id;
+                bool confirm = _confirm == key;
+                string detail = Loc.T("mycareer.skill.sporting") + " " + c.SportingManagement.ToString("0") + " · " + Loc.T("mycareer.skill.negotiation") + " " + c.Negotiation.ToString("0")
+                    + " · " + Loc.T("mycareer.skill.finance") + " " + c.Finance.ToString("0") + " · " + Loc.T("mycareer.org.age", world.Season - c.BirthYear);
+                Ui.Item(hire, c.FullName + "  " + Theme.Dim(Loc.T("mycareer.fame") + " " + Fmt.Rating(c.Reputation)), detail,
+                    MathX.FormatMoney(CareerService.SalaryFor(rules, c, delegated)) + Theme.Dim("/" + Loc.T("unit.season")),
+                    UiFactory.Primary(confirm ? Loc.T("mycareer.org.hireConfirm") : Loc.T("mycareer.org.hire"), () =>
+                    {
+                        if (_confirm != key) { _confirm = key; Shell.Refresh(); return; }
+                        _confirm = null;
+                        var res = ManagerCareer.HireForOwnTeam(world, Game.Db, team2, cand);
+                        Shell.Toast(res.Message, res.Ok);
+                        Shell.Refresh();
+                    }));
+            }
         }
     }
 

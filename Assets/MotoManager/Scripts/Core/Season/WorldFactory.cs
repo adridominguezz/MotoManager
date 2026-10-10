@@ -113,7 +113,7 @@ namespace MotoManager.Core.Season
             foreach (var t in world.Teams.Values) t.IsPlayer = false;
             team.IsPlayer = true;
             world.PlayerTeamId = teamId;
-            foreach (var o in world.Organisations.Values) o.DetailedLedger = false;
+            foreach (var o in world.Organisations.Values) o.DetailedLedger = o.Owner == OwnerKind.Player;
             var org = world.OrganisationOf(team);
             if (org != null) org.DetailedLedger = true;
         }

@@ -81,9 +81,26 @@ namespace MotoManager.Core.World
         public double PersonalWealth;
         public ManagerContract Job;
         public List<ManagerStint> History = new List<ManagerStint>();
+        /// <summary>Standing with each organisation (organisation id, -100 to 100): a broken contract or a sacking is remembered.</summary>
+        public Dictionary<string, double> OrgRelations = new Dictionary<string, double>();
+        /// <summary>No longer looking for work (AI managers only).</summary>
+        public bool Retired;
         public string DataConfidence = "generated";
 
         public string FullName { get { return FirstName + " " + LastName; } }
+
+        public double RelationWith(string organisationId)
+        {
+            double v;
+            return organisationId != null && OrgRelations.TryGetValue(organisationId, out v) ? v : 0;
+        }
+
+        public void ChangeRelation(string organisationId, double delta)
+        {
+            if (organisationId == null) return;
+            double v = RelationWith(organisationId) + delta;
+            OrgRelations[organisationId] = Math.Max(-100, Math.Min(100, Math.Round(v, 1)));
+        }
     }
 
     /// <summary>Starting profiles a player can choose (data: managers/backgrounds.json).</summary>

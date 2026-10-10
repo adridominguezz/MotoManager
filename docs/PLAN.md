@@ -528,6 +528,32 @@ que se quedan en pista, modelos toscos y opción de entrar a boxes (en motos no 
 - Velocidad visual: el cierre del trazado reparte la corrección entre longitudes y ángulos de todo el circuito; las
   longitudes dibujadas quedan entre 0,8 y 1,3 de las reales (antes 0,35–10).
 
+### Tercera prueba en Unity — carrera, personal, estadísticas y aspecto ✅
+- Clasificación antes de la carrera (posición de salida visible), desgaste de neumático delantero y trasero en lugar
+  de fiabilidad, tarjeta de piloto compacta, clasificación completa a la derecha, distancia al líder o al de delante,
+  números legibles en la vista lejana, adelantamientos sin tirón y separación mínima de 2,8 m.
+- Solo se muestran los eventos de tu campeonato; los demás se simulan en segundo plano. Carga de partida corregida.
+- Contratos: nunca más de dos pilotos (las renovaciones exigen plaza salvo para quien ya la tiene).
+- Personal: cobertura de cada rol, cambio de piloto asignado, el personal sigue a la plantilla y confirmación al
+  sustituir a alguien (con su indemnización).
+- Pilotos: estadísticas (campeonato, última carrera, gráfico de posiciones con puntos y líneas, historial).
+- Resumen de fin de temporada con la opinión de la dirección y las ofertas. Repaso visual de los menús.
+
+### Sesión E5 — Carrera del manager ✅
+- «Mi carrera»: dinero, sueldo, fama, habilidades, puesto, confianza de la dirección, renovación en el último año,
+  dimisión, ofertas (cambio de equipo inmediato) e historial.
+- Fin de contrato: renovación, despido con indemnización o salida; sin equipo la partida sigue y llegan ofertas.
+- Fundar equipo solo entre temporadas; el equipo nace vacío y con los colores elegidos. La interfaz adopta los
+  colores de tu equipo.
+- Mercado de managers de la IA (`ManagerMarket`): cada invierno la dirección juzga a su manager (objetivo,
+  posición), renueva, deja vencer el contrato o despide con indemnización; los managers ganan experiencia, envejecen
+  y se retiran; las vacantes se cubren por prestigio, primero con managers libres o con managers de éxito de equipos
+  más pequeños (su equipo busca otro) y, si no hay, con un debutante. Noticias en la categoría reina y en la tuya.
+- Relaciones manager–organización: romper un contrato o ser despedido se recuerda (sin ofertas de esa organización
+  durante un tiempo); cumplir objetivos y renovar la mejora. Las habilidades del jugador también crecen con los años.
+- «Mi organización»: si eres dueño y trabajas en otro equipo, eliges quién dirige el tuyo (managers libres y
+  debutantes, con su sueldo e indemnización del anterior) y puedes volver a dirigirlo cuando quieras.
+
 ## Pendiente de especificación
 
 Recibidas las secciones 49–105; ver la Fase 8.
