@@ -45,6 +45,7 @@ namespace MotoManager.App.UI
             _start = Time.unscaledTime;
             var bg = UiFactory.Panel("Background", root, new Color32(222, 228, 240, 255));
             UiFactory.Stretch(bg.rectTransform);
+            UiFactory.Gradient(bg, 1.06f, 0.9f);
             // Diagonal colour bands on the right, like a livery.
             for (int i = 0; i < 4; i++)
             {
@@ -56,10 +57,18 @@ namespace MotoManager.App.UI
             var title = UiFactory.Label("Title", root, "<b>MOTORCYCLE</b>\n<size=" + (Theme.FontTitle + 30) + "><b>MOTORSPORT</b></size>\n<color=#E5383B><b>MANAGER</b></color>",
                 Theme.FontLarge, TextAnchor.MiddleCenter, new Color32(18, 36, 80, 255));
             title.supportRichText = true;
+            var lift = UiFactory.DropShadow(title, 0.18f, 4);
+            lift.effectDistance = new Vector2(3, -4);
             UiFactory.Place(title.rectTransform, 0.05f, 0.35f, 0.6f, 0.85f);
 
             var bar = UiFactory.Panel("Bar", root, new Color32(18, 36, 80, 235));
             UiFactory.Place(bar.rectTransform, 0, 0, 1, 0.16f);
+            UiFactory.Gradient(bar, 1.35f, 0.85f);
+            var rim = UiFactory.Decor("Rim", bar.transform, Theme.Accent);
+            rim.rectTransform.anchorMin = new Vector2(0, 1);
+            rim.rectTransform.anchorMax = new Vector2(1, 1);
+            rim.rectTransform.offsetMin = new Vector2(0, -5);
+            rim.rectTransform.offsetMax = Vector2.zero;
             _message = UiFactory.Label("Message", bar.transform, "", Theme.FontNormal, TextAnchor.MiddleCenter, Color.white);
             _message.fontStyle = FontStyle.Bold;
             UiFactory.Place(_message.rectTransform, 0.1f, 0.45f, 0.82f, 0.95f);
@@ -69,6 +78,7 @@ namespace MotoManager.App.UI
             var back = UiFactory.Panel("Track", bar.transform, new Color(1, 1, 1, 0.15f), true);
             UiFactory.Place(back.rectTransform, 0.05f, 0.28f, 0.95f, 0.36f);
             _fill = UiFactory.Panel("Fill", back.transform, new Color32(250, 210, 40, 255), true);
+            UiFactory.Gradient(_fill, 1.25f, 0.8f);
             _fill.rectTransform.anchorMin = Vector2.zero;
             _fill.rectTransform.offsetMin = _fill.rectTransform.offsetMax = Vector2.zero;
             _task = UiFactory.Label("Task", bar.transform, "", Theme.FontSmall - 4, TextAnchor.MiddleCenter, new Color(1, 1, 1, 0.6f));

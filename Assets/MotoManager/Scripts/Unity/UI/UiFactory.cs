@@ -29,6 +29,62 @@ namespace MotoManager.App.UI
         public const string WarnHex = "#F0B428";
         public const string BadHex = "#E5383B";
 
+        public static readonly Color Info = new Color32(110, 170, 240, 255);
+        public static readonly Color Divider = new Color(1, 1, 1, 0.07f);
+
+        // Accent per section of the management interface (rail dot, tab underline, card wash, selected chips).
+        // Mid-dark tones so white bold text stays readable on them; the brand red stays the main action colour.
+        public static readonly Color AccentTeam = new Color32(47, 128, 237, 255);         // azure
+        public static readonly Color AccentBike = new Color32(232, 105, 42, 255);         // orange
+        public static readonly Color AccentFinance = new Color32(34, 168, 102, 255);      // emerald
+        public static readonly Color AccentMarket = new Color32(132, 86, 232, 255);       // violet
+        public static readonly Color AccentCompetition = new Color32(217, 154, 22, 255);  // gold
+
+        /// <summary>Colours cycled by key-figure tiles so a dashboard row is not monochrome.</summary>
+        public static readonly Color[] Palette =
+        {
+            new Color32(47, 128, 237, 255), new Color32(34, 168, 102, 255), new Color32(217, 154, 22, 255),
+            new Color32(132, 86, 232, 255), new Color32(232, 105, 42, 255), new Color32(26, 178, 196, 255),
+        };
+
+        /// <summary>Accent of the section being shown (set by the management shell; brand red elsewhere).</summary>
+        public static Color CurrentAccent = Accent;
+        public static string CurrentAccentHex = BadHex;
+
+        /// <summary>The accent colour of a navigation section ("nav.team", "nav.bike"...).</summary>
+        public static Color SectionAccent(string key)
+        {
+            switch (key)
+            {
+                case "nav.team": return AccentTeam;
+                case "nav.bike": return AccentBike;
+                case "nav.finance": return AccentFinance;
+                case "nav.market": return AccentMarket;
+                case "nav.competition": return AccentCompetition;
+                default: return Accent;
+            }
+        }
+
+        /// <summary>Makes <paramref name="c"/> the accent used by cards, chips and tables built from now on.</summary>
+        public static void SetAccent(Color c)
+        {
+            CurrentAccent = c;
+            CurrentAccentHex = "#" + ColorUtility.ToHtmlStringRGB(c);
+        }
+
+        /// <summary>Text in the current section accent, lightened so it reads on the dark panels.</summary>
+        public static string AccentText(string s)
+        {
+            return "<color=#" + ColorUtility.ToHtmlStringRGB(Color.Lerp(CurrentAccent, Color.white, 0.25f)) + ">" + s + "</color>";
+        }
+
+        /// <summary>Colour <paramref name="c"/> with another alpha.</summary>
+        public static Color Alpha(Color c, float a)
+        {
+            c.a = a;
+            return c;
+        }
+
         public static string Dim(string s) { return "<color=" + DimHex + ">" + s + "</color>"; }
         public static string GoodText(string s) { return "<color=" + GoodHex + ">" + s + "</color>"; }
         public static string WarnText(string s) { return "<color=" + WarnHex + ">" + s + "</color>"; }
@@ -51,7 +107,8 @@ namespace MotoManager.App.UI
         public bool Primary;
         public bool Selected;
 
-        public Color Color { get { return Primary || Selected ? Theme.Accent : Theme.PanelLight; } }
+        /// <summary>Main actions use the brand red; a selected option takes the colour of the current section.</summary>
+        public Color Color { get { return Primary ? Theme.Accent : Selected ? Theme.CurrentAccent : Theme.PanelLight; } }
     }
 
     /// <summary>
@@ -166,6 +223,54 @@ namespace MotoManager.App.UI
             return img;
         }
 
+        /// <summary>Vertical shading by brightness multipliers (above 1 lightens the top, below 1 darkens the bottom).</summary>
+        public static UiGradient Gradient(Graphic g, float top, float bottom)
+        {
+            return Gradient(g, new Color(top, top, top, 1), new Color(bottom, bottom, bottom, 1));
+        }
+
+        /// <summary>Two-stop colour multiplier over a graphic (vertical, or left to right when horizontal).</summary>
+        public static UiGradient Gradient(Graphic g, Color top, Color bottom, bool horizontal = false)
+        {
+            var grad = g.GetComponent<UiGradient>();
+            if (grad == null) grad = g.gameObject.AddComponent<UiGradient>();
+            grad.Set(top, bottom, horizontal);
+            return grad;
+        }
+
+        /// <summary>A soft offset shadow under a panel, button or text (fades with the graphic's own alpha).</summary>
+        public static Shadow DropShadow(Graphic g, float alpha = 0.35f, float distance = 4)
+        {
+            var sh = g.gameObject.AddComponent<Shadow>();
+            sh.effectColor = new Color(0, 0, 0, alpha);
+            sh.effectDistance = new Vector2(0, -distance);
+            sh.useGraphicAlpha = true;
+            return sh;
+        }
+
+        /// <summary>A decorative image: ignores clicks and layout groups, so it can sit inside any container.</summary>
+        public static Image Decor(string name, Transform parent, Color color, bool rounded = false)
+        {
+            var img = Panel(name, parent, color, rounded);
+            img.raycastTarget = false;
+            img.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
+            return img;
+        }
+
+        /// <summary>Thin accent bar on the left edge of a container (cards, list items, headings).</summary>
+        public static Image SideStripe(Transform parent, Color color, float width = 5, float inset = 12)
+        {
+            var img = Decor("Stripe", parent, color, true);
+            img.pixelsPerUnitMultiplier = 6f;
+            var rt = img.rectTransform;
+            rt.anchorMin = new Vector2(0, 0);
+            rt.anchorMax = new Vector2(0, 1);
+            rt.pivot = new Vector2(0, 0.5f);
+            rt.offsetMin = new Vector2(0, inset);
+            rt.offsetMax = new Vector2(width, -inset);
+            return img;
+        }
+
         public static Text Label(string name, Transform parent, string text, int size = Theme.FontNormal, TextAnchor align = TextAnchor.MiddleLeft, Color? color = null)
         {
             var rt = Rect(name, parent);
@@ -184,6 +289,9 @@ namespace MotoManager.App.UI
         public static Button Button(string name, Transform parent, string text, Action onClick, Color? color = null, int size = Theme.FontNormal)
         {
             var img = Panel(name, parent, color ?? Theme.PanelLight, true);
+            // Lit from above with a soft shadow below: buttons read as pressable, and runtime tints keep the shading.
+            Gradient(img, 1.2f, 0.84f);
+            DropShadow(img, 0.4f, 3);
             var button = img.gameObject.AddComponent<Button>();
             var colors = button.colors;
             colors.highlightedColor = new Color(1.1f, 1.1f, 1.1f, 1f);
@@ -192,6 +300,7 @@ namespace MotoManager.App.UI
             button.colors = colors;
             var label = Label("Label", img.transform, text, size, TextAnchor.MiddleCenter);
             Stretch(label.rectTransform);
+            DropShadow(label, 0.3f, 1.5f);
             if (onClick != null) button.onClick.AddListener(() => onClick());
             return button;
         }
@@ -252,8 +361,18 @@ namespace MotoManager.App.UI
             if (background.HasValue || header)
             {
                 var img = row.gameObject.AddComponent<Image>();
-                img.color = background ?? new Color(1, 1, 1, 0.06f);
+                img.color = background ?? Theme.Alpha(Theme.CurrentAccent, 0.16f);
                 img.raycastTarget = false;
+                if (header)
+                {
+                    Round(img, 3f);
+                    // Accent underline so the column titles read as a header, not as another row.
+                    var line = Decor("Underline", row, Theme.Alpha(Theme.CurrentAccent, 0.7f));
+                    line.rectTransform.anchorMin = new Vector2(0, 0);
+                    line.rectTransform.anchorMax = new Vector2(1, 0);
+                    line.rectTransform.offsetMin = new Vector2(4, 0);
+                    line.rectTransform.offsetMax = new Vector2(-4, 2);
+                }
             }
             float total = 0;
             foreach (var w in widths) total += w;
@@ -261,7 +380,8 @@ namespace MotoManager.App.UI
             for (int i = 0; i < cells.Length && i < widths.Length; i++)
             {
                 var t = Label("Cell" + i, row, cells[i] ?? "", header ? Theme.FontSmall - 2 : Theme.FontSmall,
-                    i == 0 ? TextAnchor.MiddleLeft : TextAnchor.MiddleCenter, header ? Theme.TextDim : (textColor ?? Theme.Text));
+                    i == 0 ? TextAnchor.MiddleLeft : TextAnchor.MiddleCenter, header ? new Color32(186, 198, 218, 255) : (textColor ?? Theme.Text));
+                if (header) t.fontStyle = FontStyle.Bold;
                 t.supportRichText = true;
                 Place(t.rectTransform, x / total, 0, (x + widths[i]) / total, 1);
                 t.rectTransform.offsetMin = new Vector2(8, 0);
@@ -296,10 +416,18 @@ namespace MotoManager.App.UI
         public static Text Heading(Transform list, string text)
         {
             var row = Row(list, 58);
+            var bar = Decor("Accent", row, Theme.CurrentAccent, true);
+            bar.pixelsPerUnitMultiplier = 6f;
+            bar.rectTransform.anchorMin = bar.rectTransform.anchorMax = Vector2.zero;
+            bar.rectTransform.pivot = Vector2.zero;
+            bar.rectTransform.anchoredPosition = new Vector2(4, 8);
+            bar.rectTransform.sizeDelta = new Vector2(6, 34);
             var t = Label("Heading", row, text, Theme.FontLarge - 6, TextAnchor.LowerLeft, Theme.Text);
             t.supportRichText = true;
+            t.fontStyle = FontStyle.Bold;
+            DropShadow(t, 0.45f, 2);
             Stretch(t.rectTransform);
-            t.rectTransform.offsetMin = new Vector2(6, 4);
+            t.rectTransform.offsetMin = new Vector2(22, 4);
             return t;
         }
 
@@ -339,7 +467,8 @@ namespace MotoManager.App.UI
             var l = Label("Label", row, label, Theme.FontSmall, TextAnchor.MiddleLeft, Theme.TextDim);
             Place(l.rectTransform, 0, 0, 0.3f, 1);
             l.rectTransform.offsetMin = new Vector2(8, 0);
-            var box = Panel("Input", row, Theme.PanelLight);
+            var box = Panel("Input", row, Theme.PanelLight, true);
+            Gradient(box, 0.8f, 1.1f);
             Place(box.rectTransform, 0.3f, 0.1f, 1, 0.9f);
             var text = Label("Text", box.transform, value ?? "", Theme.FontNormal, TextAnchor.MiddleLeft);
             Stretch(text.rectTransform);
