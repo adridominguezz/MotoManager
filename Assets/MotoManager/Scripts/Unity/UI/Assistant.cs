@@ -51,21 +51,32 @@ namespace MotoManager.App.UI
             var card = UiFactory.Panel("Card", root, new Color32(110, 160, 190, 255), true);
             UiFactory.Place(card.rectTransform, 0.24f, 0.08f, 0.76f, 0.38f);
             card.raycastTarget = false;
+            UiFactory.Gradient(card, 1.2f, 0.78f);
+            UiFactory.DropShadow(card, 0.5f, 8);
+            card.gameObject.AddComponent<Outline>().effectColor = new Color(1, 1, 1, 0.15f);
 
-            // Avatar: initial on a round badge, name and role.
+            // Avatar: initial on a round badge with a gold ring, name and role.
             var avatar = UiFactory.Panel("Avatar", card.transform, new Color32(40, 60, 90, 255), true);
             UiFactory.Place(avatar.rectTransform, 0.03f, 0.3f, 0.24f, 0.92f);
             avatar.raycastTarget = false;
+            UiFactory.Gradient(avatar, 1.35f, 0.75f);
+            var ring = avatar.gameObject.AddComponent<Outline>();
+            ring.effectColor = new Color32(250, 210, 40, 200);
+            ring.effectDistance = new Vector2(3, -3);
             var initial = UiFactory.Label("Initial", avatar.transform, Name.Substring(0, 1), Theme.FontTitle, TextAnchor.MiddleCenter, new Color32(250, 210, 40, 255));
             initial.fontStyle = FontStyle.Bold;
+            UiFactory.DropShadow(initial, 0.5f, 3);
             UiFactory.Stretch(initial.rectTransform);
             var who = UiFactory.Label("Who", card.transform, Loc.T("assistant.role") + "\n<b>" + Name + "</b>", Theme.FontSmall, TextAnchor.MiddleCenter, Color.white);
             who.supportRichText = true;
+            UiFactory.DropShadow(who, 0.4f, 1.5f);
             UiFactory.Place(who.rectTransform, 0.01f, 0.03f, 0.26f, 0.3f);
 
             var bubble = UiFactory.Panel("Bubble", card.transform, new Color32(222, 232, 238, 255), true);
             UiFactory.Place(bubble.rectTransform, 0.28f, 0.06f, 0.97f, 0.94f);
             bubble.raycastTarget = false;
+            UiFactory.Gradient(bubble, 1.08f, 0.94f);
+            UiFactory.DropShadow(bubble, 0.25f, 3);
             _text = UiFactory.Label("Text", bubble.transform, "", Theme.FontNormal - 2, TextAnchor.MiddleLeft, new Color32(25, 35, 50, 255));
             _text.supportRichText = true;
             UiFactory.Place(_text.rectTransform, 0.05f, 0.05f, 0.95f, 0.95f);

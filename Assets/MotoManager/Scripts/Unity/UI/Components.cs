@@ -18,6 +18,23 @@ namespace MotoManager.App.UI
         {
             var img = UiFactory.Panel("Card", list, color ?? Theme.Card, true);
             var rt = img.rectTransform;
+            // Depth: lighter at the top, a soft shadow below (only on opaque cards, where it cannot show through).
+            UiFactory.Gradient(img, 1.14f, 0.9f);
+            if (img.color.a > 0.95f) UiFactory.DropShadow(img, 0.45f, 5);
+            // A wash of the section colour fading down from the top edge: every card carries the section's tint.
+            var wash = UiFactory.Decor("Wash", rt, Theme.Alpha(Theme.CurrentAccent, 0.2f), true);
+            wash.rectTransform.anchorMin = new Vector2(0, 1);
+            wash.rectTransform.anchorMax = new Vector2(1, 1);
+            wash.rectTransform.pivot = new Vector2(0.5f, 1);
+            wash.rectTransform.offsetMin = new Vector2(0, -64);
+            wash.rectTransform.offsetMax = Vector2.zero;
+            UiFactory.Gradient(wash, Color.white, new Color(1, 1, 1, 0));
+            // Fine highlight along the top edge (light catching the rim).
+            var rim = UiFactory.Decor("Rim", rt, new Color(1, 1, 1, 0.08f));
+            rim.rectTransform.anchorMin = new Vector2(0, 1);
+            rim.rectTransform.anchorMax = new Vector2(1, 1);
+            rim.rectTransform.offsetMin = new Vector2(14, -2);
+            rim.rectTransform.offsetMax = new Vector2(-14, 0);
             var layout = rt.gameObject.AddComponent<VerticalLayoutGroup>();
             layout.padding = new RectOffset(18, 18, 14, 16);
             layout.spacing = 8;
@@ -31,7 +48,19 @@ namespace MotoManager.App.UI
                 var t = UiFactory.Label("Title", row, "<b>" + title + "</b>" + (subtitle != null ? "\n" + Theme.Dim("<size=" + (Theme.FontSmall - 2) + ">" + subtitle + "</size>") : ""),
                     Theme.FontNormal, TextAnchor.MiddleLeft);
                 t.supportRichText = true;
+                UiFactory.DropShadow(t, 0.35f, 1.5f);
                 UiFactory.Stretch(t.rectTransform);
+                t.rectTransform.offsetMin = new Vector2(16, 0);
+                // Accent tab beside the title and a hairline under the title block.
+                var tab = UiFactory.Decor("TitleAccent", row, Theme.CurrentAccent, true);
+                tab.pixelsPerUnitMultiplier = 6f;
+                UiFactory.Place(tab.rectTransform, 0, 0.18f, 0, 0.82f);
+                tab.rectTransform.offsetMax = new Vector2(5, 0);
+                var hair = UiFactory.Decor("Divider", row, Theme.Divider);
+                hair.rectTransform.anchorMin = new Vector2(0, 0);
+                hair.rectTransform.anchorMax = new Vector2(1, 0);
+                hair.rectTransform.offsetMin = new Vector2(0, -4);
+                hair.rectTransform.offsetMax = new Vector2(0, -2);
             }
             return rt;
         }
@@ -42,15 +71,30 @@ namespace MotoManager.App.UI
             var row = UiFactory.Row(list, 118);
             for (int i = 0; i < items.Length; i++)
             {
-                var tile = UiFactory.Panel("Kpi", row, Theme.PanelLight, true);
+                // Each tile takes a colour of the palette: a tinted body, a bright cap and a faint glow from the cap.
+                var hue = Theme.Palette[i % Theme.Palette.Length];
+                var tile = UiFactory.Panel("Kpi", row, Color.Lerp(Theme.PanelLight, hue, 0.13f), true);
                 UiFactory.Place(tile.rectTransform, (float)i / items.Length, 0, (float)(i + 1) / items.Length, 1, 5);
+                UiFactory.Gradient(tile, 1.18f, 0.82f);
+                UiFactory.DropShadow(tile, 0.4f, 4);
+                var glow = UiFactory.Decor("Glow", tile.transform, Theme.Alpha(hue, 0.22f), true);
+                UiFactory.Place(glow.rectTransform, 0, 0.45f, 1, 1);
+                UiFactory.Gradient(glow, Color.white, new Color(1, 1, 1, 0));
+                var cap = UiFactory.Decor("Cap", tile.transform, hue, true);
+                cap.pixelsPerUnitMultiplier = 8f;
+                cap.rectTransform.anchorMin = new Vector2(0, 1);
+                cap.rectTransform.anchorMax = new Vector2(1, 1);
+                cap.rectTransform.offsetMin = new Vector2(16, -5);
+                cap.rectTransform.offsetMax = new Vector2(-16, 0);
                 var v = UiFactory.Label("Value", tile.transform, items[i][0], Theme.FontLarge - 4, TextAnchor.MiddleCenter);
                 v.supportRichText = true;
+                v.fontStyle = FontStyle.Bold;
+                UiFactory.DropShadow(v, 0.45f, 2);
                 v.resizeTextForBestFit = true;
                 v.resizeTextMinSize = Theme.FontSmall - 6;
                 v.resizeTextMaxSize = Theme.FontLarge - 4;
                 UiFactory.Place(v.rectTransform, 0, 0.38f, 1, 0.95f);
-                var c = UiFactory.Label("Caption", tile.transform, items[i][1], Theme.FontSmall - 4, TextAnchor.MiddleCenter, Theme.TextDim);
+                var c = UiFactory.Label("Caption", tile.transform, items[i][1], Theme.FontSmall - 4, TextAnchor.MiddleCenter, Color.Lerp(Theme.TextDim, Color.white, 0.2f));
                 c.supportRichText = true;
                 c.resizeTextForBestFit = true;
                 c.resizeTextMinSize = Theme.FontSmall - 10;
@@ -71,8 +115,17 @@ namespace MotoManager.App.UI
             for (int i = 0; i < labels.Count; i++)
             {
                 int idx = i;
-                var b = UiFactory.Button("Chip", row, labels[i], () => onSelect(idx), i == selected ? Theme.Accent : Theme.PanelLight, Theme.FontSmall - 2);
+                bool on = i == selected;
+                // Selected pill: filled with the section colour, bold, with a light rim; the others stay quiet.
+                var b = UiFactory.Button("Chip", row, labels[i], () => onSelect(idx), on ? Theme.CurrentAccent : Color.Lerp(Theme.Panel, Theme.PanelLight, 0.7f), Theme.FontSmall - 2);
                 UiFactory.Place((RectTransform)b.transform, (float)i / labels.Count, 0, (float)(i + 1) / labels.Count, 1, 4);
+                var text = b.GetComponentInChildren<Text>();
+                if (on)
+                {
+                    text.fontStyle = FontStyle.Bold;
+                    b.gameObject.AddComponent<Outline>().effectColor = new Color(1, 1, 1, 0.18f);
+                }
+                else text.color = Color.Lerp(Theme.TextDim, Color.white, 0.25f);
             }
         }
 
@@ -88,9 +141,12 @@ namespace MotoManager.App.UI
             l.resizeTextMinSize = Theme.FontSmall - 8;
             l.resizeTextMaxSize = Theme.FontSmall;
             UiFactory.Place(l.rectTransform, 0, 0, 0.45f, 1);
-            var back = UiFactory.Panel("Back", row, new Color(1, 1, 1, 0.08f), true);
-            UiFactory.Place(back.rectTransform, 0.46f, 0.3f, 0.86f, 0.7f);
+            // Recessed track (darker at the top) with a glossy fill (lighter at the top).
+            var back = UiFactory.Panel("Back", row, new Color(0, 0, 0, 0.32f), true);
+            UiFactory.Place(back.rectTransform, 0.46f, 0.28f, 0.86f, 0.72f);
+            UiFactory.Gradient(back, new Color(1, 1, 1, 1.25f), new Color(1, 1, 1, 0.8f));
             var fill = UiFactory.Panel("Fill", back.transform, color ?? Theme.Good, true);
+            UiFactory.Gradient(fill, 1.3f, 0.78f);
             fill.rectTransform.anchorMin = Vector2.zero;
             fill.rectTransform.anchorMax = new Vector2(Mathf.Clamp01((float)fraction), 1);
             fill.rectTransform.offsetMin = fill.rectTransform.offsetMax = Vector2.zero;
@@ -114,8 +170,11 @@ namespace MotoManager.App.UI
             var row = UiFactory.Rect("Item", list);
             var bg = row.gameObject.AddComponent<Image>();
             UiFactory.Round(bg);
-            bg.color = new Color(1, 1, 1, 0.035f);
+            bg.color = new Color(1, 1, 1, 0.05f);
             bg.raycastTarget = false;
+            // Slightly brighter at the top, fading down, with a section-coloured marker on the left edge.
+            UiFactory.Gradient(bg, new Color(1, 1, 1, 1.3f), new Color(1, 1, 1, 0.6f));
+            UiFactory.SideStripe(row, Theme.Alpha(Theme.CurrentAccent, 0.85f), 4, 14);
             var h = row.gameObject.AddComponent<HorizontalLayoutGroup>();
             h.padding = new RectOffset(16, 10, 10, 10);
             h.spacing = 10;
@@ -162,15 +221,17 @@ namespace MotoManager.App.UI
         public static void Expander(Transform list, string key, string title, Action<Transform> build, Action refresh)
         {
             bool open = Open.Contains(key);
-            var b = UiFactory.Button("Expander", list, (open ? "▼  " : "►  ") + title, () =>
+            // The arrow takes the section colour; an open section is lit a little more than a closed one.
+            var b = UiFactory.Button("Expander", list, Theme.AccentText(open ? "▼" : "►") + "  " + title, () =>
             {
                 if (!Open.Remove(key)) Open.Add(key);
                 refresh();
-            }, new Color(1, 1, 1, 0.05f), Theme.FontSmall);
+            }, new Color(1, 1, 1, open ? 0.08f : 0.05f), Theme.FontSmall);
             b.gameObject.AddComponent<LayoutElement>().preferredHeight = 52;
             var label = b.GetComponentInChildren<Text>();
+            label.supportRichText = true;
             label.alignment = TextAnchor.MiddleLeft;
-            label.color = Theme.TextDim;
+            label.color = open ? Theme.Text : Color.Lerp(Theme.TextDim, Color.white, 0.15f);
             label.rectTransform.offsetMin = new Vector2(16, 0);
             if (!open) return;
             var inner = UiFactory.Rect("ExpanderContent", list);

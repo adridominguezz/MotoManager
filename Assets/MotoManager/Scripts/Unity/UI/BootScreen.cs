@@ -27,13 +27,36 @@ namespace MotoManager.App.UI
 
         private void Build(Transform root)
         {
+            // Outside a career the accent is the brand red.
+            Theme.SetAccent(Theme.Accent);
             var bg = UiFactory.Panel("Background", root, Theme.Background);
             UiFactory.Stretch(bg.rectTransform);
+            UiFactory.Gradient(bg, 1.5f, 0.85f);
 
             var left = UiFactory.Panel("Left", bg.transform, Theme.Panel);
             UiFactory.Place(left.rectTransform, 0, 0, 0.36f, 1);
-            var title = UiFactory.Label("Title", left.transform, "<b>MOTORCYCLE</b>\nMOTORSPORT\n<color=" + Theme.BadHex + ">MANAGER</color>", Theme.FontTitle, TextAnchor.UpperLeft);
+            UiFactory.Gradient(left, 1.3f, 0.8f);
+            UiFactory.DropShadow(left, 0.5f, 0).effectDistance = new Vector2(8, 0);
+            // Livery stripes behind the menu, clipped to the panel, and a red edge on its right side.
+            var livery = UiFactory.Rect("Livery", left.transform);
+            UiFactory.Stretch(livery);
+            livery.gameObject.AddComponent<RectMask2D>();
+            for (int i = 0; i < 3; i++)
+            {
+                var band = UiFactory.Decor("Band", livery, i == 1 ? new Color(1, 1, 1, 0.05f) : Theme.Alpha(Theme.Accent, 0.12f));
+                band.rectTransform.anchorMin = band.rectTransform.anchorMax = new Vector2(0.62f + i * 0.16f, 0.3f);
+                band.rectTransform.sizeDelta = new Vector2(i == 1 ? 26 : 70, 1600);
+                band.rectTransform.localRotation = Quaternion.Euler(0, 0, -28);
+            }
+            var edge = UiFactory.Decor("Edge", left.transform, Theme.Accent);
+            edge.rectTransform.anchorMin = new Vector2(1, 0);
+            edge.rectTransform.anchorMax = new Vector2(1, 1);
+            edge.rectTransform.offsetMin = new Vector2(-4, 0);
+            edge.rectTransform.offsetMax = Vector2.zero;
+            UiFactory.Gradient(edge, Color.white, new Color(1, 1, 1, 0.15f));
+            var title = UiFactory.Label("Title", left.transform, "<b>MOTORCYCLE</b>\nMOTORSPORT\n<color=" + Theme.BadHex + "><b>MANAGER</b></color>", Theme.FontTitle, TextAnchor.UpperLeft);
             title.supportRichText = true;
+            UiFactory.DropShadow(title, 0.6f, 3);
             UiFactory.Place(title.rectTransform, 0.08f, 0.66f, 0.95f, 0.95f);
             _status = UiFactory.Label("Status", left.transform, "", Theme.FontSmall + 2, TextAnchor.UpperLeft, Theme.TextDim);
             _status.supportRichText = true;

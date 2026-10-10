@@ -61,7 +61,13 @@ namespace MotoManager.App.UI.Screens
         private string _shownBusy;
         private Text _toast;
         private Image _toastBg;
+        private Image _toastStripe;
         private float _toastUntil;
+        // Purely visual parts recoloured when the section changes.
+        private readonly List<Text> _navLabels = new List<Text>();
+        private readonly List<Image> _navBars = new List<Image>();
+        private readonly List<Image> _livery = new List<Image>();
+        private Image _headerLine;
 
         /// <summary>Result of the last simulated or played event, shown on the home page.</summary>
         public string LastResult = "";
@@ -91,15 +97,54 @@ namespace MotoManager.App.UI.Screens
         {
             var bg = UiFactory.Panel("Background", root, Theme.Background);
             UiFactory.Stretch(bg.rectTransform);
+            // A touch lighter at the top so the page has depth, plus faint livery stripes in the section colour.
+            UiFactory.Gradient(bg, 1.45f, 0.85f);
+            bg.gameObject.AddComponent<RectMask2D>();
+            for (int i = 0; i < 3; i++)
+            {
+                var band = UiFactory.Decor("Livery", bg.transform, Color.white);
+                band.rectTransform.anchorMin = band.rectTransform.anchorMax = new Vector2(0.9f + i * 0.045f, 0.15f);
+                band.rectTransform.sizeDelta = new Vector2(70 - i * 18, 1400);
+                band.rectTransform.localRotation = Quaternion.Euler(0, 0, -28);
+                _livery.Add(band);
+            }
 
             // Header: who and where we are, money, and the main action.
             var header = UiFactory.Panel("Header", root, Theme.Panel);
             UiFactory.Place(header.rectTransform, 0, 0.9f, 1, 1);
-            var logo = UiFactory.Label("Logo", header.transform, "<b>MOTO</b>MANAGER", Theme.FontNormal, TextAnchor.MiddleCenter, Theme.Accent);
+            UiFactory.Gradient(header, 1.4f, 0.9f);
+            UiFactory.DropShadow(header, 0.5f, 6);
+            // Logo: a darker plate with racing stripes behind the wordmark.
+            var plate = UiFactory.Panel("LogoPlate", header.transform, Theme.Background);
+            UiFactory.Place(plate.rectTransform, 0, 0, 0.14f, 1);
+            plate.raycastTarget = false;
+            UiFactory.Gradient(plate, 1.3f, 0.8f);
+            plate.gameObject.AddComponent<RectMask2D>();
+            for (int i = 0; i < 3; i++)
+            {
+                var stripe = UiFactory.Decor("Stripe", plate.transform, i == 1 ? new Color(1, 1, 1, 0.85f) : Theme.Accent);
+                stripe.rectTransform.anchorMin = stripe.rectTransform.anchorMax = new Vector2(0.8f + i * 0.09f, 0.5f);
+                stripe.rectTransform.sizeDelta = new Vector2(i == 1 ? 6 : 16, 260);
+                stripe.rectTransform.localRotation = Quaternion.Euler(0, 0, -24);
+            }
+            var logo = UiFactory.Label("Logo", plate.transform, "<b>MOTO</b>\n<color=" + Theme.BadHex + "><b>MANAGER</b></color>", Theme.FontSmall + 2, TextAnchor.MiddleLeft, Theme.Text);
             logo.supportRichText = true;
-            UiFactory.Place(logo.rectTransform, 0, 0, 0.14f, 1);
+            logo.lineSpacing = 0.85f;
+            logo.resizeTextForBestFit = true;
+            logo.resizeTextMinSize = Theme.FontSmall - 8;
+            logo.resizeTextMaxSize = Theme.FontSmall + 2;
+            UiFactory.DropShadow(logo, 0.6f, 2);
+            UiFactory.Place(logo.rectTransform, 0.1f, 0.08f, 0.78f, 0.92f);
+            // Section-coloured line along the bottom of the header, fading to the right.
+            _headerLine = UiFactory.Decor("AccentLine", header.transform, Theme.Accent);
+            _headerLine.rectTransform.anchorMin = new Vector2(0, 0);
+            _headerLine.rectTransform.anchorMax = new Vector2(1, 0);
+            _headerLine.rectTransform.offsetMin = new Vector2(0, 0);
+            _headerLine.rectTransform.offsetMax = new Vector2(0, 4);
+            UiFactory.Gradient(_headerLine, Color.white, new Color(1, 1, 1, 0.1f), true);
             _header = UiFactory.Label("Team", header.transform, "", Theme.FontNormal + 2, TextAnchor.LowerLeft);
             _header.supportRichText = true;
+            UiFactory.DropShadow(_header, 0.45f, 2);
             UiFactory.Place(_header.rectTransform, 0.155f, 0.48f, 0.56f, 0.96f);
             _subHeader = UiFactory.Label("Date", header.transform, "", Theme.FontSmall - 2, TextAnchor.UpperLeft, Theme.TextDim);
             _subHeader.supportRichText = true;
@@ -114,9 +159,18 @@ namespace MotoManager.App.UI.Screens
             UiFactory.Place((RectTransform)go.transform, 0.78f, 0.12f, 0.99f, 0.88f, 4);
             _continueLabel = go.GetComponentInChildren<Text>();
             _continueLabel.supportRichText = true;
+            // The main action glows: a light rim and a stronger lift than the other buttons.
+            go.gameObject.AddComponent<Outline>().effectColor = new Color(1, 0.75f, 0.75f, 0.25f);
+            UiFactory.Gradient(go.image, 1.3f, 0.8f);
 
             var rail = UiFactory.Panel("Rail", root, Theme.Panel);
             UiFactory.Place(rail.rectTransform, 0, 0, 0.14f, 0.9f);
+            UiFactory.Gradient(rail, 1.15f, 0.8f);
+            var edge = UiFactory.Decor("Edge", rail.transform, new Color(1, 1, 1, 0.05f));
+            edge.rectTransform.anchorMin = new Vector2(1, 0);
+            edge.rectTransform.anchorMax = new Vector2(1, 1);
+            edge.rectTransform.offsetMin = new Vector2(-2, 0);
+            edge.rectTransform.offsetMax = Vector2.zero;
             var layout = rail.gameObject.AddComponent<VerticalLayoutGroup>();
             layout.padding = new RectOffset(12, 12, 16, 16);
             layout.spacing = 10;
@@ -128,10 +182,15 @@ namespace MotoManager.App.UI.Screens
             UiFactory.Place(_tabs, 0.15f, 0.82f, 0.99f, 0.885f);
             _content = UiFactory.Rect("Content", root);
 
-            _toastBg = UiFactory.Panel("Toast", root, new Color(0.09f, 0.14f, 0.22f, 0.97f), true);
+            _toastBg = UiFactory.Panel("Toast", root, new Color(0.11f, 0.17f, 0.27f, 0.98f), true);
             UiFactory.Place(_toastBg.rectTransform, 0.3f, 0.03f, 0.9f, 0.11f);
+            UiFactory.Gradient(_toastBg, 1.25f, 0.85f);
+            UiFactory.DropShadow(_toastBg, 0.55f, 6);
+            _toastBg.gameObject.AddComponent<Outline>().effectColor = new Color(1, 1, 1, 0.08f);
+            _toastStripe = UiFactory.SideStripe(_toastBg.transform, Theme.Good, 6, 14);
             _toast = UiFactory.Label("ToastText", _toastBg.transform, "", Theme.FontNormal - 2, TextAnchor.MiddleCenter);
             _toast.supportRichText = true;
+            UiFactory.DropShadow(_toast, 0.4f, 1.5f);
             UiFactory.Stretch(_toast.rectTransform);
             _toastBg.gameObject.SetActive(false);
 
@@ -148,6 +207,23 @@ namespace MotoManager.App.UI.Screens
                 var b = UiFactory.Button("Nav", rail.transform, Loc.T(s.TitleKey), () => Show(section), Theme.PanelLight, Theme.FontSmall + 2);
                 b.gameObject.AddComponent<LayoutElement>().preferredHeight = 86;
                 _navButtons.Add(b.GetComponent<Image>());
+                // Each section has its own colour: a dot always, and a bar on the left edge when it is open.
+                var accent = Theme.SectionAccent(s.TitleKey);
+                var label = b.GetComponentInChildren<Text>();
+                label.alignment = TextAnchor.MiddleLeft;
+                label.rectTransform.offsetMin = new Vector2(46, 0);
+                label.rectTransform.offsetMax = new Vector2(-6, 0);
+                label.resizeTextForBestFit = true;
+                label.resizeTextMinSize = Theme.FontSmall - 6;
+                label.resizeTextMaxSize = Theme.FontSmall + 2;
+                _navLabels.Add(label);
+                var dot = UiFactory.Decor("Dot", b.transform, accent, true);
+                dot.pixelsPerUnitMultiplier = 3.2f;
+                dot.rectTransform.anchorMin = dot.rectTransform.anchorMax = new Vector2(0, 0.5f);
+                dot.rectTransform.anchoredPosition = new Vector2(26, 0);
+                dot.rectTransform.sizeDelta = new Vector2(13, 13);
+                var bar = UiFactory.SideStripe(b.transform, accent, 6, 14);
+                _navBars.Add(bar);
             }
             Show(_sections[0]);
             Assistant.Show("home", new[] { "tut.home.1", "tut.home.2", "tut.home.3", "tut.home.4", "tut.home.5" });
@@ -156,7 +232,19 @@ namespace MotoManager.App.UI.Screens
         public void Show(Section section)
         {
             _section = section;
-            for (int i = 0; i < _sections.Count; i++) _navButtons[i].color = _sections[i] == section ? Theme.Accent : Theme.PanelLight;
+            var accent = Theme.SectionAccent(section.TitleKey);
+            Theme.SetAccent(accent);
+            for (int i = 0; i < _sections.Count; i++)
+            {
+                bool on = _sections[i] == section;
+                var own = Theme.SectionAccent(_sections[i].TitleKey);
+                _navButtons[i].color = on ? Color.Lerp(Theme.PanelLight, own, 0.45f) : Color.Lerp(Theme.Panel, Theme.PanelLight, 0.55f);
+                _navLabels[i].color = on ? Color.white : Color.Lerp(Theme.TextDim, Color.white, 0.25f);
+                _navLabels[i].fontStyle = on ? FontStyle.Bold : FontStyle.Normal;
+                _navBars[i].gameObject.SetActive(on);
+            }
+            _headerLine.color = accent;
+            foreach (var band in _livery) band.color = Theme.Alpha(accent, 0.045f);
             Refresh();
         }
 
@@ -178,6 +266,7 @@ namespace MotoManager.App.UI.Screens
         {
             _toast.text = message;
             _toast.color = good ? Theme.Text : Theme.Warning;
+            _toastStripe.color = good ? Theme.Good : Theme.Warning;
             _toastBg.gameObject.SetActive(true);
             _toastBg.transform.SetAsLastSibling();
             _toastUntil = Time.unscaledTime + 4f;
@@ -195,7 +284,7 @@ namespace MotoManager.App.UI.Screens
                            (team != null ? "    " + Theme.Money(Accounts.Cash(world, team)) : "");
             _subHeader.text = world.CurrentDate.ToString("d MMM yyyy", Loc.Culture) + "  ·  " + Loc.T("shell.season", world.Season) +
                               (next != null ? "  ·  " + Loc.T("shell.next", Loc.Round(next.Round.Name)) : "");
-            _continueLabel.text = "<b>" + ContinueLabel() + "</b>";
+            _continueLabel.text = "<b>" + ContinueLabel() + "</b>   ►";
 
             UiFactory.Clear(_tabs);
             bool tabs = _section.Pages.Count > 1;
@@ -203,15 +292,32 @@ namespace MotoManager.App.UI.Screens
             UiFactory.Place(_content, 0.15f, 0.01f, 0.995f, tabs ? 0.815f : 0.89f);
             if (tabs)
             {
+                // A recessed strip holding the tabs; the open tab is lifted, tinted and underlined in the section colour.
+                var strip = UiFactory.Decor("TabStrip", _tabs, new Color(0, 0, 0, 0.25f), true);
+                UiFactory.Place(strip.rectTransform, 0, 0, _section.Pages.Count * 0.2f, 1);
+                strip.rectTransform.offsetMin = new Vector2(-2, -2);
+                strip.rectTransform.offsetMax = new Vector2(2, 2);
+                var accent = Theme.CurrentAccent;
                 for (int i = 0; i < _section.Pages.Count; i++)
                 {
                     int idx = i;
+                    bool on = i == _section.Current;
                     var b = UiFactory.Button("Tab", _tabs, _section.Pages[i].Title, () =>
                     {
                         _section.Current = idx;
                         Refresh();
-                    }, i == _section.Current ? Theme.Accent : Theme.PanelLight, Theme.FontSmall);
+                    }, on ? Color.Lerp(Theme.PanelLight, accent, 0.4f) : Theme.Panel, Theme.FontSmall);
                     UiFactory.Place((RectTransform)b.transform, i * 0.2f, 0, i * 0.2f + 0.195f, 1, 3);
+                    var label = b.GetComponentInChildren<Text>();
+                    label.color = on ? Color.white : Color.Lerp(Theme.TextDim, Color.white, 0.2f);
+                    label.fontStyle = on ? FontStyle.Bold : FontStyle.Normal;
+                    if (!on) continue;
+                    var underline = UiFactory.Decor("Underline", b.transform, Color.Lerp(accent, Color.white, 0.2f), true);
+                    underline.pixelsPerUnitMultiplier = 8f;
+                    underline.rectTransform.anchorMin = new Vector2(0, 0);
+                    underline.rectTransform.anchorMax = new Vector2(1, 0);
+                    underline.rectTransform.offsetMin = new Vector2(14, 3);
+                    underline.rectTransform.offsetMax = new Vector2(-14, 8);
                 }
             }
             UiFactory.Clear(_content);
