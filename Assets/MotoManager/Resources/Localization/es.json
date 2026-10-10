@@ -96,5 +96,18 @@
   "ledger.CrashRepair": "Reparación de caídas",
   "ledger.Development": "Proyectos de desarrollo",
   "ledger.TechnicalInvestment": "Inversión técnica",
-  "ledger.Other": "Otros"
+  "ledger.Other": "Otros",
+  "forecast.title": "Previsión de caja hasta final de temporada",
+  "forecast.confirmedIncome": "Ingresos confirmados",
+  "forecast.probableIncome": "Ingresos probables (premios, bonus)",
+  "forecast.costs": "Costes previstos",
+  "forecast.lowest": "Punto más bajo de caja (solo confirmados)",
+  "forecast.endConfirmed": "Final de temporada, solo confirmados",
+  "forecast.endProbable": "Final de temporada, con ingresos probables",
+  "forecast.note": "Estimación: los ingresos probables dependen de los resultados y no están garantizados.",
+  "ledger.Licence": "Licencias",
+  "ledger.EntryFee": "Inscripción",
+  "ledger.SlotPurchase": "Compra de plaza en parrilla",
+  "ledger.Equipment": "Equipamiento",
+  "ledger.BikePurchase": "Compra de motos"
 }

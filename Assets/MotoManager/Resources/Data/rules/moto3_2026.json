@@ -225,7 +225,7 @@
   },
   "economy": {
     "participationIncomePerSeason": 800000,
-    "travelCostPerRound": 80000,
+    "travelCostPerRound": 45000,
     "crashRepairCost": 12000,
     "engineCost": 0,
     "bikeLeasePerSeason": 250000,
@@ -236,7 +236,16 @@
       6000,
       5000
     ],
-    "typicalRiderSalary": 80000
+    "typicalRiderSalary": 80000,
+    "entryModel": "SlotPurchase",
+    "slotPrice": 1500000,
+    "startupEquipmentCost": 800000,
+    "bikePurchasePerRider": 200000,
+    "licenceFeePerSeason": 25000,
+    "facilityCostScale": 0.25,
+    "staffSalaryScale": 0.35,
+    "safetyReserveFraction": 0.15,
+    "dataConfidence": "estimated: entry, slot, equipment and cost scales are not public figures"
   },
   "notes": [
     "250cc single cylinder; minimum weight bike + rider.",

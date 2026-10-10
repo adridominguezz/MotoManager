@@ -261,7 +261,16 @@
       25000,
       20000
     ],
-    "typicalRiderSalary": 1500000
+    "typicalRiderSalary": 1500000,
+    "entryModel": "SlotPurchase",
+    "slotPrice": 20000000,
+    "startupEquipmentCost": 6000000,
+    "bikePurchasePerRider": 0,
+    "licenceFeePerSeason": 0,
+    "facilityCostScale": 1.0,
+    "staffSalaryScale": 1.0,
+    "safetyReserveFraction": 0.15,
+    "dataConfidence": "estimated: entry, slot, equipment and cost scales are not public figures"
   },
   "notes": [
     "2026 is the last season of the 1000cc formula; engine design frozen since 2025 except for manufacturers with concessions.",

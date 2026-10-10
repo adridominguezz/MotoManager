@@ -13,7 +13,7 @@ namespace MotoManager.Core.Economy
     public static class Accounts
     {
         /// <summary>Seasons of per-kind totals kept (older seasons survive as yearly summaries).</summary>
-        public const int TotalsSeasonsKept = 5;
+        public const int TotalsSeasonsKept = 2;
 
         // ------------------------------------------------------------------ idempotency
 

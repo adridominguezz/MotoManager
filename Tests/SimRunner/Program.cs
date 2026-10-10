@@ -205,6 +205,7 @@ namespace MotoManager.Tools
                     Console.WriteLine($"  {"",-10} constructors: {string.Join(", ", makers)}");
                 }
                 if (Environment.GetEnvironmentVariable("SIM_ECON") == "1") Economy(game, db, "motogp");
+                if (Environment.GetEnvironmentVariable("SIM_ECON") == "2") CategoryEconomy(game, db);
                 var summary = game.EndSeason();
                 Console.WriteLine($"  -> retired {summary.Retired.Count}, market moves {summary.Market.Moves.Count(m => !m.Renewal)}, generated {summary.Market.GeneratedRiders}, youth {summary.YouthIntake}");
             }
@@ -229,6 +230,9 @@ namespace MotoManager.Tools
             var json = SaveSystem.Serialize(game.World);
             var back = SaveSystem.Deserialize(json);
             Console.WriteLine($"save {json.Length / 1024} KB, reload ok: {SaveSystem.Serialize(back) == json}");
+            var parts = Newtonsoft.Json.Linq.JObject.Parse(json);
+            Console.WriteLine("  save parts: " + string.Join(", ", parts.Properties().OrderByDescending(p => p.Value.ToString(Newtonsoft.Json.Formatting.None).Length).Take(6)
+                .Select(p => p.Name + " " + p.Value.ToString(Newtonsoft.Json.Formatting.None).Length / 1024 + "KB")));
             foreach (var n in game.World.News.Where(n => n.Important).Take(12)) Console.WriteLine("  NEWS " + n.Date.ToString("yyyy-MM-dd") + " " + n.Headline);
             return 0;
         }
@@ -245,6 +249,27 @@ namespace MotoManager.Tools
                 double funding = totals.ContainsKey(LedgerKind.OwnerFunding) ? totals[LedgerKind.OwnerFunding].Cash : 0;
                 double net = totals.Values.Where(v => v.Kind != LedgerKind.OwnerFunding).Sum(v => v.Cash);
                 Console.WriteLine($"    {t.ShortName,-12} budget {t.SeasonBudget / 1e6,6:0.0}M  spent {MotoManager.Core.Economy.Accounts.SpentThisSeason(w, t) / 1e6,6:0.0}M  org cash {org.Cash / 1e6,7:0.0}M  org net {net / 1e6,6:0.0}M  tech {t.Personality.TechnicalLevel,5:0.0}  bike {bike.Components.Values.Average(),5:0.0}");
+            }
+        }
+
+        /// <summary>SIM_ECON=2: average income and costs per team, by category and concept (owner funding excluded).</summary>
+        static void CategoryEconomy(GameController game, GameDatabase db)
+        {
+            var w = game.World;
+            foreach (var cat in db.CategoriesOrdered().Where(c => c.Simulated))
+            {
+                var teams = w.TeamsInCategory(cat.Id);
+                var byKind = new SortedDictionary<LedgerKind, double>();
+                foreach (var t in teams)
+                    foreach (var kv in Accounts.TotalsFor(w, t.OrganisationId, w.Season, t.Id))
+                    {
+                        double v;
+                        byKind.TryGetValue(kv.Key, out v);
+                        byKind[kv.Key] = v + kv.Value.Cash / teams.Count;
+                    }
+                double income = byKind.Where(k => k.Value > 0).Sum(k => k.Value), costs = -byKind.Where(k => k.Value < 0).Sum(k => k.Value);
+                Console.WriteLine($"  {cat.ShortName,-9} teams {teams.Count,2}  income {income / 1e6,6:0.00}M  costs {costs / 1e6,6:0.00}M  net {(income - costs) / 1e6,6:0.00}M  budget {teams.Average(t => t.SeasonBudget) / 1e6,6:0.00}M");
+                Console.WriteLine("            " + string.Join("  ", byKind.Select(k => k.Key + " " + (k.Value / 1e6).ToString("0.00"))));
             }
         }
 

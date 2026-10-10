@@ -286,6 +286,26 @@ Orden: E1 → E2 → M1 → E3 → E4 → 8.4 → E5 → M2 → E6 → E7 → 8.
   casi todos los títulos de MotoGP en 10 temporadas, y casi todos los equipos de la IA pierden entre 10 y 25 M
   por temporada, que cubren sus propietarios.
 
+### Sesión E2a — Costes por categoría, previsión de caja y viabilidad ✅
+- `EconomyRules` en datos, con valores **estimados** y marcados como tales:
+  - Cómo se entra en la categoría: compra de plaza en MotoGP, Moto2 y Moto3; inscripción abierta en WorldSBK y
+    WorldSSP; la Rookies Cup solo la gestiona el organizador.
+  - Precio de plaza o inscripción, equipamiento inicial, compra de motos por piloto y licencias anuales.
+  - Escalas de coste de instalaciones y de salarios del personal por categoría (antes un equipo de Moto3 pagaba
+    como uno de MotoGP).
+  - Reserva de seguridad y caídas esperadas.
+- `FinanceService` reescrito alrededor de `CostProfile`: la misma lista de conceptos paga cada evento y alimenta la
+  previsión, tanto para un equipo real como para uno planificado.
+- `CashflowForecast`: proyección de la caja por fechas del calendario, separando ingresos confirmados y probables;
+  consolidada por organización.
+- `ViabilityService`: coste de entrada, coste operativo, ingresos confirmados y probables, reserva, caja mínima y
+  veredicto Viable / Arriesgada / Inviable / No disponible, con motivos y cantidad que falta. En una expansión cuenta
+  los equipos que la organización ya tiene.
+- La pantalla de finanzas muestra la previsión de caja hasta final de temporada (ES/EN).
+- Los totales contables se guardan de forma compacta (2 temporadas y resúmenes anuales). 40 tests en verde.
+- Pendiente para E2b: los ingresos siguen muy por debajo de los costes (unos −1,2 a −2 M por equipo y temporada
+  en las categorías inferiores), porque el mercado de patrocinadores es muy pequeño (33 para unos 70 equipos).
+
 ## Pendiente de especificación
 
 Recibidas las secciones 49–105; ver la Fase 8.

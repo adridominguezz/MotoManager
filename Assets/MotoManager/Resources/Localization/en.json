@@ -96,5 +96,18 @@
   "ledger.CrashRepair": "Crash repairs",
   "ledger.Development": "Development projects",
   "ledger.TechnicalInvestment": "Technical investment",
-  "ledger.Other": "Other"
+  "ledger.Other": "Other",
+  "forecast.title": "Cash forecast to the end of the season",
+  "forecast.confirmedIncome": "Confirmed income",
+  "forecast.probableIncome": "Probable income (prizes, bonuses)",
+  "forecast.costs": "Expected costs",
+  "forecast.lowest": "Lowest cash point (confirmed only)",
+  "forecast.endConfirmed": "Season end, confirmed only",
+  "forecast.endProbable": "Season end, with probable income",
+  "forecast.note": "Estimate: probable income depends on results and is not guaranteed.",
+  "ledger.Licence": "Licences",
+  "ledger.EntryFee": "Entry fee",
+  "ledger.SlotPurchase": "Grid place purchase",
+  "ledger.Equipment": "Equipment",
+  "ledger.BikePurchase": "Bike purchase"
 }

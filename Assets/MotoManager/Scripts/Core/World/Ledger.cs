@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace MotoManager.Core.World
 {
@@ -22,6 +23,11 @@ namespace MotoManager.Core.World
         CrashRepair,
         Development,
         TechnicalInvestment,
+        Licence,
+        EntryFee,
+        SlotPurchase,
+        Equipment,
+        BikePurchase,
         Other
     }
 
@@ -40,16 +46,19 @@ namespace MotoManager.Core.World
         public string Note;
     }
 
-    /// <summary>Running total per organisation, team, season and kind (kept for every organisation).</summary>
+    /// <summary>
+    /// Running total per organisation, team, season and kind (kept for every organisation, current and previous
+    /// season). Short property names keep saves small: there are many of these.
+    /// </summary>
     [Serializable]
     public class AccountTotal
     {
-        public int Season;
-        public string OrganisationId;
-        public string TeamId;
-        public LedgerKind Kind;
-        public double Cash;
-        public double Pnl;
+        [JsonProperty("s")] public int Season;
+        [JsonProperty("o")] public string OrganisationId;
+        [JsonProperty("t")] public string TeamId;
+        [JsonProperty("k")] public LedgerKind Kind;
+        [JsonProperty("c")] public double Cash;
+        [JsonProperty("p")] public double Pnl;
     }
 
     /// <summary>Compact yearly result of an organisation, kept forever.</summary>

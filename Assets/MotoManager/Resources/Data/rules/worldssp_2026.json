@@ -234,7 +234,7 @@
   },
   "economy": {
     "participationIncomePerSeason": 300000,
-    "travelCostPerRound": 60000,
+    "travelCostPerRound": 40000,
     "crashRepairCost": 15000,
     "engineCost": 0,
     "bikeLeasePerSeason": 200000,
@@ -243,7 +243,16 @@
       7000,
       5000
     ],
-    "typicalRiderSalary": 90000
+    "typicalRiderSalary": 90000,
+    "entryModel": "Open",
+    "entryFee": 100000,
+    "startupEquipmentCost": 400000,
+    "bikePurchasePerRider": 150000,
+    "licenceFeePerSeason": 30000,
+    "facilityCostScale": 0.2,
+    "staffSalaryScale": 0.3,
+    "safetyReserveFraction": 0.15,
+    "dataConfidence": "estimated: entry, slot, equipment and cost scales are not public figures"
   },
   "notes": [
     "Next-generation supersport: mixed engine concepts balanced by the organiser (BoP)."

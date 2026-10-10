@@ -233,11 +233,11 @@ namespace MotoManager.App.UI.Screens
             {
                 var type = f;
                 int lvl = team.Facility(f);
-                var row = UiFactory.TableRow(list, 44, fw, new[] { f.ToString(), lvl + "/5", lvl >= 5 ? "-" : MathX.FormatMoney(FinanceService.FacilityUpgradeCost(team, f)), "" });
+                var row = UiFactory.TableRow(list, 44, fw, new[] { f.ToString(), lvl + "/5", lvl >= 5 ? "-" : MathX.FormatMoney(FinanceService.FacilityUpgradeCost(world, Game.Db, team, f)), "" });
                 if (lvl >= 5) continue;
                 var b = UiFactory.Button("Upgrade", row, "Upgrade", () =>
                 {
-                    bool ok = FinanceService.UpgradeFacility(world, team, type);
+                    bool ok = FinanceService.UpgradeFacility(world, Game.Db, team, type);
                     Shell.Toast(ok ? type + " upgraded" : "Not enough budget", ok);
                     Shell.Refresh();
                 }, Theme.PanelLight, Theme.FontSmall - 4);
@@ -250,6 +250,11 @@ namespace MotoManager.App.UI.Screens
     /// <summary>Season forecast, sponsors and their objectives, new sponsor deals.</summary>
     public class FinanceScreen : ScreenBase
     {
+        private static string Money(double v)
+        {
+            return (v < 0 ? "<color=#E10600>" : "") + MathX.FormatMoney(v) + (v < 0 ? "</color>" : "");
+        }
+
         public override string Title { get { return "Finances"; } }
 
         public override void Build(RectTransform content)
@@ -282,6 +287,20 @@ namespace MotoManager.App.UI.Screens
             double left = team.SeasonBudget - spent;
             UiFactory.TableRow(list, 40, w, new[] { Loc.T("finance.remaining"), (left < 0 ? "<color=#E10600>" : "") + MathX.FormatMoney(left) + (left < 0 ? "</color>" : "") });
 
+            // Where the cash is heading until the end of the season (estimate, not a guarantee).
+            if (org != null)
+            {
+                var fc = CashflowForecast.ForOrganisation(world, Game.Db, org);
+                UiFactory.TableRow(list, 38, w, new[] { Loc.T("forecast.title"), "" }, true);
+                UiFactory.TableRow(list, 40, w, new[] { Loc.T("forecast.confirmedIncome"), MathX.FormatMoney(fc.ConfirmedIncome) });
+                UiFactory.TableRow(list, 40, w, new[] { Loc.T("forecast.probableIncome"), MathX.FormatMoney(fc.ProbableIncome) });
+                UiFactory.TableRow(list, 40, w, new[] { Loc.T("forecast.costs"), "-" + MathX.FormatMoney(fc.Costs) });
+                UiFactory.TableRow(list, 40, w, new[] { Loc.T("forecast.lowest"), Money(fc.MinConfirmed) });
+                UiFactory.TableRow(list, 40, w, new[] { Loc.T("forecast.endConfirmed"), Money(fc.EndConfirmed) });
+                UiFactory.TableRow(list, 40, w, new[] { Loc.T("forecast.endProbable"), Money(fc.EndProbable) });
+                UiFactory.Paragraph(list, "<color=#9AA4B2>" + Loc.T("forecast.note") + "</color>", Theme.FontSmall - 2);
+            }
+
             // What has actually moved this season, by concept (from the ledger).
             var totals = Accounts.TotalsFor(world, team.OrganisationId, world.Season, team.Id);
             if (totals.Count > 0)
@@ -303,6 +322,7 @@ namespace MotoManager.App.UI.Screens
             UiFactory.TableRow(list, 40, w, new[] { "Staff salaries", "-" + MathX.FormatMoney(f.StaffSalaries) });
             UiFactory.TableRow(list, 40, w, new[] { "Facilities upkeep", "-" + MathX.FormatMoney(f.FacilityUpkeep) });
             UiFactory.TableRow(list, 40, w, new[] { "Bike lease", "-" + MathX.FormatMoney(f.BikeLease) });
+            UiFactory.TableRow(list, 40, w, new[] { "Licences", "-" + MathX.FormatMoney(f.Licences) });
             UiFactory.TableRow(list, 40, w, new[] { "Travel", "-" + MathX.FormatMoney(f.Travel) });
             UiFactory.TableRow(list, 44, w, new[] { "<b>Balance before prizes and bonuses</b>", "<b>" + (f.Balance >= 0 ? "" : "<color=#E10600>") + MathX.FormatMoney(f.Balance) + (f.Balance >= 0 ? "" : "</color>") + "</b>" });
 

@@ -262,7 +262,7 @@
   },
   "economy": {
     "participationIncomePerSeason": 900000,
-    "travelCostPerRound": 120000,
+    "travelCostPerRound": 90000,
     "crashRepairCost": 35000,
     "engineCost": 60000,
     "bikeLeasePerSeason": 800000,
@@ -273,7 +273,16 @@
       10000,
       8000
     ],
-    "typicalRiderSalary": 450000
+    "typicalRiderSalary": 450000,
+    "entryModel": "Open",
+    "entryFee": 500000,
+    "startupEquipmentCost": 1500000,
+    "bikePurchasePerRider": 600000,
+    "licenceFeePerSeason": 100000,
+    "facilityCostScale": 0.4,
+    "staffSalaryScale": 0.5,
+    "safetyReserveFraction": 0.15,
+    "dataConfidence": "estimated: entry, slot, equipment and cost scales are not public figures"
   },
   "notes": [
     "Production-derived: homologated frame and engine, organiser balancing via rev limits and concessions.",

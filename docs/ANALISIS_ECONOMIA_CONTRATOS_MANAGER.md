@@ -395,3 +395,9 @@ El libro de movimientos de E1 incluye desde el principio dos indicadores por mov
 ### 11.5 Orden general actualizado
 
 **E1 → E2 → M1 → E3 → E4 → 8.4 → E5 → M2 → E6 → E7 → 8.6–8.8**
+
+## 12. Rookies Cup (respuesta)
+
+En la Red Bull Rookies Cup el jugador solo puede ser **manager empleado** del equipo único del organizador. Cobra un
+sueldo del organizador, que va a su patrimonio personal y puede invertir después en fundar su propio equipo. No se
+puede fundar un equipo en esa copa.

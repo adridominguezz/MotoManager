@@ -326,15 +326,52 @@ namespace MotoManager.Core.Data
         public bool TestRidersAllowed = true;
     }
 
+    /// <summary>How a new team can enter a category.</summary>
+    public enum EntryModel
+    {
+        /// <summary>Entries accepted up to the grid limit against an entry fee.</summary>
+        Open,
+        /// <summary>Closed grid: a place must be bought from a team that leaves.</summary>
+        SlotPurchase,
+        /// <summary>Only the organiser runs teams (one-make cups): managers can be hired, teams cannot be founded.</summary>
+        OrganiserOnly
+    }
+
+    /// <summary>
+    /// Money rules of a category. Values are estimates (real figures are not public) and marked as such in the data.
+    /// </summary>
     [Serializable]
     public class EconomyRules
     {
         public double ParticipationIncomePerSeason = 0;
         public double TravelCostPerRound = 150000;
         public double CrashRepairCost = 60000;
+        /// <summary>Not used by the simulation yet (engines are included in the bike lease).</summary>
         public double EngineCost = 0;
+        /// <summary>Yearly bike lease per rider for teams that are not the manufacturer's own.</summary>
         public double BikeLeasePerSeason = 0;
         public List<double> PrizeMoneyByPosition = new List<double>();
         public double TypicalRiderSalary = 500000;
+
+        public EntryModel EntryModel = EntryModel.Open;
+        /// <summary>One-off registration for a new entry (Open categories).</summary>
+        public double EntryFee = 0;
+        /// <summary>One-off price of a grid place (SlotPurchase categories).</summary>
+        public double SlotPrice = 0;
+        /// <summary>Yearly licences and registration paid by every team.</summary>
+        public double LicenceFeePerSeason = 0;
+        /// <summary>One-off equipment for a new team: trucks, tools, spares, garage and hospitality basics.</summary>
+        public double StartupEquipmentCost = 0;
+        /// <summary>One-off bikes and spares per rider bought by a new team (on top of any lease).</summary>
+        public double BikePurchasePerRider = 0;
+        /// <summary>Scale of facility upkeep and upgrade costs relative to the MotoGP reference.</summary>
+        public double FacilityCostScale = 1.0;
+        /// <summary>Scale of staff salaries relative to the MotoGP reference.</summary>
+        public double StaffSalaryScale = 1.0;
+        /// <summary>Cash a team should keep in reserve, as a share of its season operating cost.</summary>
+        public double SafetyReserveFraction = 0.15;
+        /// <summary>Expected crashes per rider and event (for forecasts of repair costs).</summary>
+        public double ExpectedCrashesPerRiderEvent = 0.3;
+        public string DataConfidence = "estimated";
     }
 }

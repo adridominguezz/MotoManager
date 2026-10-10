@@ -197,7 +197,12 @@
     "engineCost": 0,
     "bikeLeasePerSeason": 0,
     "prizeMoneyByPosition": [],
-    "typicalRiderSalary": 0
+    "typicalRiderSalary": 0,
+    "entryModel": "OrganiserOnly",
+    "facilityCostScale": 0.15,
+    "staffSalaryScale": 0.25,
+    "safetyReserveFraction": 0.15,
+    "dataConfidence": "estimated: entry, slot, equipment and cost scales are not public figures"
   },
   "notes": [
     "Identical KTM RC 250 R machines run by the organiser.",
