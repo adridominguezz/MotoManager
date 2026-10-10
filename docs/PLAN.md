@@ -165,6 +165,16 @@ Convenciones que se mantienen en todas las fases:
   (sesión 5.1b): derivar los segmentos de la simulación a partir de coordenadas reales del trazado
   (OpenStreetMap). Requiere permitir `overpass-api.de` en la red del entorno o aportar las coordenadas.
 
+### Sesión 5.1b — Trazados reales desde coordenadas (preparada, faltan los datos)
+- ✅ Hecho: `ShapeConverter` convierte una línea central real (metros o lat/lon) en segmentos de
+  simulación (curvatura suavizada → rectas y curvas con radio y ángulo medidos), respetando sentido
+  de giro y línea de meta. Campos nuevos en circuitos: `shape`, `shapeIsLatLon`, `shapeStart`,
+  `clockwise`, `radiusScale`. La calibración ajusta `radiusScale` sin tocar la geometría medida.
+  Test de ida y vuelta con 4 circuitos: mismas curvas, vuelta a ±2,5 % y el dibujo cierra solo.
+- ⏳ Pendiente: descargar las líneas centrales de los 27 circuitos (OpenStreetMap / Overpass),
+  sustituir los `layout` aproximados y recalibrar. Bloqueado por la red del entorno
+  (`overpass-api.de` denegado); alternativa: aportar ficheros GPX/KML/GeoJSON de los trazados.
+
 ### Sesión 5.2 — HUD y controles
 - Torre de tiempos (posición, gaps, vuelta, neumáticos, estado), feed de eventos, clima/radar con
   previsión probabilística, banderas, velocidad Pausa/1x/2x/4x/8x (simulación determinista

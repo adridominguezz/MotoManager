@@ -65,10 +65,11 @@ namespace MotoManager.Core.Race
             lock (Cache)
             {
                 TrackModel t;
-                if (!Cache.TryGetValue(def.Id + "|" + def.Layout + "|" + def.LengthM, out t))
+                string key = def.Id + "|" + def.Layout + "|" + def.LengthM + "|" + def.RadiusScale + "|" + (def.Shape != null ? def.Shape.Count : 0);
+                if (!Cache.TryGetValue(key, out t))
                 {
                     t = Build(def);
-                    Cache[def.Id + "|" + def.Layout + "|" + def.LengthM] = t;
+                    Cache[key] = t;
                 }
                 return t;
             }
@@ -76,9 +77,11 @@ namespace MotoManager.Core.Race
 
         public static TrackModel Build(CircuitDefinition def)
         {
-            if (string.IsNullOrEmpty(def.Layout)) throw new FormatException("empty layout");
+            string layout = def.Layout;
+            if (string.IsNullOrEmpty(layout) && def.Shape != null && def.Shape.Count > 10) layout = ShapeConverter.ToLayout(def);
+            if (string.IsNullOrEmpty(layout)) throw new FormatException("empty layout");
             var model = new TrackModel { CircuitId = def.Id, Definition = def, SectorCount = Math.Max(1, def.Sectors) };
-            var tokens = def.Layout.Split(new[] { ' ', '\t', '\n', '\r', ',' }, StringSplitOptions.RemoveEmptyEntries);
+            var tokens = layout.Split(new[] { ' ', '\t', '\n', '\r', ',' }, StringSplitOptions.RemoveEmptyEntries);
             int corner = 0;
             foreach (var raw in tokens)
             {
@@ -102,7 +105,7 @@ namespace MotoManager.Core.Race
                     int at = token.IndexOf('@');
                     if (at < 0) throw new FormatException("corner token without radius: " + raw);
                     double angle = ParseNumber(token.Substring(1, at - 1), raw);
-                    double radius = ParseNumber(token.Substring(at + 1), raw);
+                    double radius = ParseNumber(token.Substring(at + 1), raw) * (def.RadiusScale > 0 ? def.RadiusScale : 1.0);
                     if (radius <= 0 || angle <= 0) throw new FormatException("invalid corner: " + raw);
                     seg.Type = SegmentType.Corner;
                     seg.Radius = radius;

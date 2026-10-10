@@ -126,6 +126,33 @@ namespace MotoManager.Tools
                 double target;
                 if (!c.ReferenceLaps.TryGetValue(cat, out target)) continue;
                 if (args.Length > 2 && args[2] != c.Id) continue;
+                if (string.IsNullOrEmpty(c.Layout) && c.Shape != null)
+                {
+                    // Real-shape circuits: calibrate the radius factor, never touch the measured geometry.
+                    double slo = 0.5, shi = 2.0, sbest = 1;
+                    for (int it = 0; it < 16; it++)
+                    {
+                        double mid = Math.Sqrt(slo * shi);
+                        var test = Newtonsoft.Json.JsonConvert.DeserializeObject<CircuitDefinition>(Newtonsoft.Json.JsonConvert.SerializeObject(c));
+                        test.RadiusScale = mid;
+                        test.Id = c.Id + "_rs" + it;
+                        double lap = ReferenceLap(db, rules, test);
+                        sbest = mid;
+                        if (lap > target) slo = mid; else shi = mid;
+                    }
+                    foreach (var f in files)
+                    {
+                        var token = Newtonsoft.Json.Linq.JToken.Parse(System.IO.File.ReadAllText(f));
+                        var items = token is Newtonsoft.Json.Linq.JArray arr ? arr.Children<Newtonsoft.Json.Linq.JObject>().ToList() : new List<Newtonsoft.Json.Linq.JObject> { (Newtonsoft.Json.Linq.JObject)token };
+                        var match = items.FirstOrDefault(o => (string)o["id"] == c.Id);
+                        if (match == null) continue;
+                        match["radiusScale"] = Math.Round(sbest, 3);
+                        System.IO.File.WriteAllText(f, token.ToString(Newtonsoft.Json.Formatting.Indented) + "\n");
+                    }
+                    c.RadiusScale = sbest;
+                    Console.WriteLine($"{c.Id,-16} radiusScale {sbest:0.000} -> {MathX.FormatLapTime(ReferenceLap(db, rules, c))} (ref {MathX.FormatLapTime(target)})");
+                    continue;
+                }
                 string original = c.Layout;
                 double lo = 0.4, hi = 3.0, best = 1;
                 for (int it = 0; it < 18; it++)

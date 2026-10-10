@@ -40,6 +40,19 @@ namespace MotoManager.Core.Data
         /// Straights are rescaled so the total equals <see cref="LengthM"/>.
         /// </summary>
         public string Layout;
+        /// <summary>
+        /// Optional real centre line of the circuit: [x, y] in metres, or [lat, lon] when <see cref="ShapeIsLatLon"/>.
+        /// When present (and <see cref="Layout"/> is empty) the simulation segments are derived from it, so the
+        /// physics and the drawing follow the real track. The first point is moved to <see cref="ShapeStart"/> if given.
+        /// </summary>
+        public List<double[]> Shape;
+        public bool ShapeIsLatLon;
+        /// <summary>Finish line position in the same units as <see cref="Shape"/> (optional).</summary>
+        public double[] ShapeStart;
+        /// <summary>Race direction: true if the circuit runs clockwise (the shape is reversed if needed).</summary>
+        public bool Clockwise = true;
+        /// <summary>Calibration factor applied to every corner radius (lap time tuning without editing the layout).</summary>
+        public double RadiusScale = 1.0;
         /// <summary>0..1 surface abrasiveness (tire wear).</summary>
         public double Abrasiveness = 0.5;
         /// <summary>0..1 baseline surface grip.</summary>
