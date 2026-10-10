@@ -66,6 +66,8 @@ namespace MotoManager.Core.World
         public List<SponsorDeal> Sponsors = new List<SponsorDeal>();
         public bool IsPlayer;
         public string DataConfidence = "approximate";
+        /// <summary>AI character (generated when missing from the data).</summary>
+        public TeamPersonality Personality;
 
         public int Facility(FacilityType type)
         {

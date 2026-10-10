@@ -54,5 +54,16 @@
   "trait.Overtaking": "favorece los adelantamientos",
   "trait.Balanced": "equilibrado",
   "race.tower.sector": "Sector",
-  "race.camera.sector": "Sector {0}"
+  "race.camera.sector": "Sector {0}",
+  "objective.title": "Objetivo de la dirección",
+  "objective.target": "(campeonato de equipos: top {0})",
+  "objective.last": "Temporada pasada: {0}, terminó P{1}",
+  "objective.met": "cumplido",
+  "objective.missed": "no cumplido",
+  "objective.Title": "Ganar el título",
+  "objective.Wins": "Ganar carreras",
+  "objective.Podiums": "Podios habituales",
+  "objective.TopHalf": "Mitad alta de la parrilla",
+  "objective.Points": "Puntuar con regularidad",
+  "objective.DevelopRiders": "Formar pilotos jóvenes"
 }

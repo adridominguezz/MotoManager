@@ -192,11 +192,13 @@ namespace MotoManager.Core.Economy
                 var m = world.GetManufacturer(team.ManufacturerId);
                 if (bike == null || m == null) continue;
                 bool concessions = rules.Development.Concessions && m.HasConcessions;
-                double strength = m.EngineeringStrength / 100.0 * (team.Status == TeamStatus.Factory ? 1.0 : 0.6);
+                // Manufacturer support, the team's own engineering and its development push (see TeamAI).
+                double strength = m.EngineeringStrength / 100.0 * Career.TeamAI.InSeasonDevelopmentFactor(team);
+                double chance = Career.TeamAI.InSeasonUpdateChance(team);
                 foreach (var comp in new List<string>(bike.Components.Keys))
                 {
                     if (!concessions && !rules.Development.AllowedComponents.Contains(comp)) continue;
-                    if (!rng.Chance(0.25)) continue;
+                    if (!rng.Chance(chance)) continue;
                     double level = bike.Components[comp];
                     double gain = rng.Range(0, 1.0) * strength * (100 - level) / 35.0;
                     ApplyEffects(world, db, team, bike, new Dictionary<string, double> { { comp, Math.Round(gain, 2) } });
@@ -285,7 +287,7 @@ namespace MotoManager.Core.Economy
                 if (team.ManufacturerId == null || !baseBikes.TryGetValue(team.ManufacturerId + "|" + team.CategoryId, out baseBike)) continue;
                 var current = world.GetBike(team.BikeId);
                 var updated = baseBike.Clone(team.BikeId ?? world.NewId("bike"));
-                double offset = team.Status == TeamStatus.Factory ? 0 : (team.Status == TeamStatus.Satellite ? 1.2 : 2.0);
+                double offset = Career.TeamAI.SpecOffset(team);
                 foreach (var comp in new List<string>(updated.Components.Keys))
                 {
                     double v = updated.Components[comp] - offset;

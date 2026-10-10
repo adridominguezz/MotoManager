@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using MotoManager.Core.Career;
 using MotoManager.Core.Common;
 using MotoManager.Core.Data;
 using MotoManager.Core.Race;
@@ -304,7 +305,8 @@ namespace MotoManager.Core.Season
                 }
                 else
                 {
-                    RaceAI.ChooseTires(Rules, weatherModel.TrackTemp, weather.InitialWetness, Circuit.Abrasiveness, laps, e.Rider.Attributes.TireManagement, out front, out rear);
+                    RaceAI.ChooseTires(Rules, weatherModel.TrackTemp, weather.InitialWetness, Circuit.Abrasiveness, laps, e.Rider.Attributes.TireManagement, out front, out rear,
+                        TeamAI.RaceRisk(e.Team));
                 }
                 e.FrontCompound = front;
                 e.RearCompound = rear;

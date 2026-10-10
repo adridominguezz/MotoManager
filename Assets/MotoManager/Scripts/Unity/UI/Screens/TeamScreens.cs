@@ -50,6 +50,18 @@ namespace MotoManager.App.UI.Screens
             if (team == null) return;
             var date = world.CurrentDate;
 
+            var pers = team.Personality;
+            if (pers != null)
+            {
+                int teams = world.TeamsInCategory(team.CategoryId).Count;
+                string objective = Loc.T("objective." + pers.Objective) + "  <color=#9AA4B2>" + Loc.T("objective.target", TeamAI.TargetPosition(pers.Objective, teams)) + "</color>";
+                if (pers.LastPosition > 0)
+                    objective += "\n<color=#9AA4B2>" + Loc.T("objective.last", Loc.T("objective." + pers.LastObjective), pers.LastPosition) + "</color> " +
+                                 (pers.LastObjectiveMet ? "<color=#3CC878>" + Loc.T("objective.met") + "</color>" : "<color=#E10600>" + Loc.T("objective.missed") + "</color>");
+                UiFactory.Heading(list, Loc.T("objective.title"));
+                UiFactory.Paragraph(list, objective, Theme.FontSmall + 2);
+            }
+
             UiFactory.Heading(list, "Riders");
             foreach (var id in team.RiderIds)
             {

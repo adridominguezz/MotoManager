@@ -39,6 +39,8 @@ namespace MotoManager.Core.Season
         {
             Db = db;
             World = world;
+            // Saves from before team personalities existed.
+            TeamAI.EnsureAll(world, db);
         }
 
         public static GameController NewGame(GameDatabase db, NewGameOptions options)

@@ -31,7 +31,7 @@ namespace MotoManager.Core.Race
             double fuelAtEnd = _sim.ProjectedFuelAtFinish(r);
             if (tiresHot || projectedWear > 0.95 - a.TireManagement / 1000.0 || (!double.IsNaN(fuelAtEnd) && fuelAtEnd < 0.2))
                 pace = PaceMode.Conserve;
-            else if (lapsLeft <= 3 && (Math.Abs(r.GapToAhead) < 1.2 && r.Position > 1))
+            else if (lapsLeft <= 3 && (Math.Abs(r.GapToAhead) < 1.2 + (Career.TeamAI.RaceRisk(r.Entry.Team) - 50) / 50.0 && r.Position > 1))
                 pace = PaceMode.Push;
             else if (lapsLeft <= 2)
                 pace = PaceMode.Push;
@@ -41,8 +41,9 @@ namespace MotoManager.Core.Race
                 pace = pace == PaceMode.Push ? PaceMode.Balanced : pace;
             r.Pace = pace;
 
-            // ---- attitude
-            double attackThreshold = 0.5 + a.Aggression / 100.0 * 0.6;
+            // ---- attitude (rider aggression, tempered or pushed by the team's appetite for risk)
+            double risk = Career.TeamAI.RaceRisk(r.Entry.Team);
+            double attackThreshold = 0.5 + a.Aggression / 100.0 * 0.6 + (risk - 50) / 100.0 * 0.4;
             if (r.Position > 1 && r.GapToAhead > 0 && r.GapToAhead < attackThreshold) r.Mode = RiderMode.Attack;
             else if (GapBehind(r) < 0.5 && (r.GapToAhead > 1.0 || r.Position == 1)) r.Mode = RiderMode.Defend;
             else r.Mode = RiderMode.Balanced;
@@ -67,7 +68,9 @@ namespace MotoManager.Core.Race
                 if (onSlicks)
                 {
                     // Brave / wet-skilled riders stay out longer on slicks.
-                    double threshold = 0.32 + (a.RiskManagement < 50 ? 0.05 : 0) + MathX.Centered(a.WetSkill) * -0.04 + (lapsLeft <= 2 ? 0.25 : 0);
+                    // Gamblers stay out on slicks a little longer.
+                    double teamRisk = (Career.TeamAI.RaceRisk(r.Entry.Team) - 50) / 100.0;
+                    double threshold = 0.32 + (a.RiskManagement < 50 ? 0.05 : 0) + MathX.Centered(a.WetSkill) * -0.04 + (lapsLeft <= 2 ? 0.25 : 0) + teamRisk * 0.08;
                     if (wet > threshold && _sim.Weather.RainIntensity > 0.05)
                     {
                         r.PitRequest = type;
@@ -97,7 +100,7 @@ namespace MotoManager.Core.Race
 
         /// <summary>Pre-race tire choice for a rider given the conditions (used by AI teams and as engineer advice).</summary>
         public static void ChooseTires(CategoryRules rules, double trackTemp, double wetness, double abrasiveness, int laps,
-            double tireManagement, out TireCompound front, out TireCompound rear)
+            double tireManagement, out TireCompound front, out TireCompound rear, double teamRisk = 50)
         {
             if (wetness > 0.35)
             {
@@ -106,7 +109,8 @@ namespace MotoManager.Core.Race
                 return;
             }
             // Hot / abrasive / long races push towards harder compounds.
-            double score = (trackTemp - 30) / 15.0 + (abrasiveness - 0.5) * 2 + (laps - 20) / 12.0 - (tireManagement - 50) / 60.0;
+            // Teams that like risk lean towards the softer, faster option.
+            double score = (trackTemp - 30) / 15.0 + (abrasiveness - 0.5) * 2 + (laps - 20) / 12.0 - (tireManagement - 50) / 60.0 - (teamRisk - 50) / 80.0;
             rear = score > 0.8 ? TireCompound.Hard : score < -0.6 ? TireCompound.Soft : TireCompound.Medium;
             front = score > 1.2 ? TireCompound.Hard : score < -1.0 ? TireCompound.Soft : TireCompound.Medium;
             if (!rules.Tires.Has(rear)) rear = rules.Tires.Has(TireCompound.Medium) ? TireCompound.Medium : rules.Tires.Compounds[0].Compound;

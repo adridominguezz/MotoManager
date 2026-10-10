@@ -238,6 +238,26 @@ sesiones propuestas (8.1–8.8) y decisiones que necesitan aprobación antes de 
 - Pantalla post-carrera completa, columna de equipo en la torre, cámara de vista de sector y primer
   sistema de localización (`Loc`, español/inglés) usado por estas pantallas. 30 tests en verde.
 
+### Sesión 8.2 — IA y personalidad de equipos ✅
+- `TeamPersonality` en cada equipo: objetivo (título, victorias, podios, mitad alta, puntos, formar
+  jóvenes), filosofía (talento joven, experiencia, fiel al fabricante, resultados inmediatos, largo plazo),
+  nivel técnico, ritmo de desarrollo, apoyo del fabricante y tolerancia al riesgo. Se genera de forma
+  determinista a partir de lo que es el equipo (oficial/satélite/privado, reputación, dinero, categoría) o
+  se puede fijar en los JSON.
+- Mercado: la filosofía cambia a quién se ficha (jóvenes con margen frente a veteranos con resultados,
+  pilotos del mismo fabricante), cuánto se paga (techo salarial según riesgo) y la duración del contrato;
+  las renovaciones dependen del objetivo cumplido.
+- Desarrollo: las mejoras en temporada dependen del apoyo del fabricante, el nivel técnico y el ritmo de
+  desarrollo; la distancia de la moto satélite a la oficial sale del apoyo del fabricante.
+- Presupuesto: en invierno cada equipo de la IA invierte parte del excedente en su departamento técnico
+  (más los de largo plazo); la capacidad que no se mantiene se pierde poco a poco.
+- Carrera: el riesgo del equipo mueve el umbral de ataque, el empuje final, el momento de entrar con lluvia
+  y la elección de neumático.
+- Evaluación anual: objetivo cumplido o no; los que fallan asumen más riesgo y, tras varias temporadas,
+  pueden cambiar de filosofía (con noticia). Las partidas antiguas reciben personalidades al cargarse.
+- Pantalla de equipo: objetivo de la dirección y resultado de la temporada anterior (ES/EN). 34 tests en verde;
+  10 temporadas estables (campeones de 5 fabricantes en MotoGP).
+
 ## Pendiente de especificación
 
 Recibidas las secciones 49–105; ver la Fase 8.

@@ -85,6 +85,7 @@ namespace MotoManager.Core.Season
             foreach (var cat in db.Categories.Values)
                 if (cat.Simulated) world.Championships[cat.Id] = new ChampionshipState { CategoryId = cat.Id, Season = options.StartSeason };
 
+            TeamAI.EnsureAll(world, db);
             if (options.PlayerTeamId != null) SetPlayerTeam(world, options.PlayerTeamId);
             InitialKnowledge(world);
             world.AddNews("Season " + options.StartSeason + " begins", "The " + options.StartSeason + " grids are set.", null, true);

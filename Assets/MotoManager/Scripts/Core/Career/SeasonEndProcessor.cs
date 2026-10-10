@@ -34,7 +34,9 @@ namespace MotoManager.Core.Career
             var summary = new SeasonSummary { Season = season };
 
             FinalizeChampionships(world, db, summary);
+            TeamAI.SeasonReview(world, db, rng);
             SponsorsAndReputation(world, db, rng);
+            TeamAI.OffseasonInvestment(world, db);
 
             foreach (var r in SortedRiders(world)) RiderDevelopment.EndOfSeason(world, db, r, rng);
 
@@ -73,6 +75,8 @@ namespace MotoManager.Core.Career
             summary.YouthIntake = YouthIntake(world, db, rng);
             RollOver(world, db);
             TransferMarket.RebuildRosters(world);
+            TeamAI.EnsureAll(world, db);
+            TeamAI.SetObjectives(world, db);
             return summary;
         }
 
@@ -158,7 +162,7 @@ namespace MotoManager.Core.Career
                 if (!team.IsPlayer && cat != null && cat.Simulated)
                 {
                     var rules = db.GetRules(cat.Id, world.Season);
-                    double floor = rules.Economy.TypicalRiderSalary * 4 + rules.Economy.TravelCostPerRound * 10;
+                    double floor = TeamAI.OperatingFloor(rules);
                     if (team.Budget < floor) team.Budget = floor;
                 }
             }

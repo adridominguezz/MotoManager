@@ -54,5 +54,16 @@
   "trait.Overtaking": "good for overtaking",
   "trait.Balanced": "balanced",
   "race.tower.sector": "Sector",
-  "race.camera.sector": "Sector {0}"
+  "race.camera.sector": "Sector {0}",
+  "objective.title": "Board objective",
+  "objective.target": "(team championship: top {0})",
+  "objective.last": "Last season: {0}, finished P{1}",
+  "objective.met": "met",
+  "objective.missed": "missed",
+  "objective.Title": "Win the title",
+  "objective.Wins": "Win races",
+  "objective.Podiums": "Regular podiums",
+  "objective.TopHalf": "Top half of the grid",
+  "objective.Points": "Score points regularly",
+  "objective.DevelopRiders": "Develop young riders"
 }

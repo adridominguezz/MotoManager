@@ -90,7 +90,7 @@ namespace MotoManager.Core.Career
                 if (TeamWantsRenewal(world, db, team, cat, r, rng) && RiderWantsRenewal(world, db, cat, r, rng))
                 {
                     var rules = db.GetRules(cat.Id, season);
-                    r.Contract = NewContract(team, r, next, rng.NextInt(1, 3), SalaryDemand(r, rules));
+                    r.Contract = NewContract(team, r, next, TeamAI.ContractYears(team, r.AgeOn(nextDate), rng), SalaryDemand(r, rules));
                     report.Moves.Add(new MarketMove { RiderId = r.Id, FromTeamId = team.Id, ToTeamId = team.Id, FromCategoryId = cat.Id, ToCategoryId = cat.Id, Renewal = true });
                 }
                 else
@@ -215,7 +215,8 @@ namespace MotoManager.Core.Career
             int field = champ != null ? Math.Max(1, champ.Riders.Count) : 20;
             double rank = pos > 0 ? (double)pos / field : 0.6;
             double age = r.AgeOn(new DateTime(world.Season + 1, 3, 1));
-            double p = 0.85 - rank * 0.7 + (team.Status == TeamStatus.Factory ? -0.1 : 0) + (age < 24 ? 0.1 : 0) - (age > 34 ? 0.15 : 0);
+            double p = 0.85 - rank * 0.7 + (team.Status == TeamStatus.Factory ? -0.1 : 0) + (age < 24 ? 0.1 : 0) - (age > 34 ? 0.15 : 0)
+                       + TeamAI.RenewalBias(team, rank, age);
             if (age > cat.MaxAge - 1) p = 0;
             return rng.Chance(MathX.Clamp(p, 0.05, 0.95));
         }
@@ -300,12 +301,14 @@ namespace MotoManager.Core.Career
 
             // Proven results count: championship position in the season just finished.
             var champ = world.Championships.ContainsKey(r.CategoryId ?? "") ? world.Championships[r.CategoryId] : null;
+            double results = 0;
             if (champ != null)
             {
                 int pos = champ.RiderPosition(r.Id);
                 var from = db.GetCategory(r.CategoryId);
-                if (pos > 0 && from != null) score += Math.Max(0, 8 - pos) * (from.Prestige / 100.0) * 1.5;
+                if (pos > 0 && from != null) results = Math.Max(0, 8 - pos) * (from.Prestige / 100.0) * 1.5;
             }
+            score += results;
 
             if (cat.Pyramid == Pyramid.GrandPrix && age > 32) score -= (age - 32) * 1.5;
             // Feeder categories are for riders on the way up.
@@ -314,17 +317,30 @@ namespace MotoManager.Core.Career
 
             var from2 = db.GetCategory(r.CategoryId);
             if (from2 != null && from2.Pyramid != cat.Pyramid && r.Reputation < 75) score -= 3;
-            if (r.Contract != null && r.Contract.ManufacturerId != null && r.Contract.ManufacturerId == seat.Team.ManufacturerId) score += 3;
+            bool sameManufacturer = r.Contract != null && r.Contract.ManufacturerId != null && r.Contract.ManufacturerId == seat.Team.ManufacturerId;
+            if (sameManufacturer) score += 3;
             if (r.TeamId == seat.Team.Id) score += 2;
 
+            // The team's character: young talent, experience, manufacturer ties, results now or long-term project.
+            bool unproven = r.CareerHistory.Count == 0 || (from2 != null && !from2.Simulated);
+            score += TeamAI.SigningBias(seat.Team, r, age, ability, growth, results, sameManufacturer, unproven);
+
             double demand = SalaryDemand(r, seat.Rules);
-            double affordable = Math.Max(50000, seat.Team.Budget * 0.25);
+            double affordable = TeamAI.SalaryCeiling(seat.Team);
             if (demand > affordable) score -= (demand / affordable - 1) * 5;
 
             // Sub-par riders for the level are unattractive.
             double level;
             if (levels.TryGetValue(cat.Id, out level) && ability < level - 12) score -= (level - 12 - ability);
             return score;
+        }
+
+        /// <summary>How much a team values a rider for one of its seats next season (for tools and tests).</summary>
+        public static double EvaluateForTeam(WorldState world, GameDatabase db, Team team, Rider r)
+        {
+            var cat = db.GetCategory(team.CategoryId);
+            var seat = MakeSeat(team, cat, db.GetRules(cat.Id, world.Season));
+            return TeamScore(world, db, seat, r, new DateTime(world.Season + 1, 3, 1), CategoryLevels(world, db));
         }
 
         // ------------------------------------------------------------------ mutations
@@ -336,7 +352,7 @@ namespace MotoManager.Core.Career
             r.TeamId = seat.Team.Id;
             r.CategoryId = seat.Category.Id;
             r.SeasonsWithoutSeat = 0;
-            int years = seat.Category.IsCup ? 1 : rng.NextInt(1, 3);
+            int years = seat.Category.IsCup ? 1 : TeamAI.ContractYears(seat.Team, r.AgeOn(new DateTime(next, 3, 1)), rng);
             r.Contract = NewContract(seat.Team, r, next, years, SalaryDemand(r, seat.Rules));
             if (!seat.Team.RiderIds.Contains(r.Id)) seat.Team.RiderIds.Add(r.Id);
             if (r.Number <= 0 || NumberTaken(world, r)) r.Number = RiderGenerator.FreeNumber(world, seat.Category.Id, rng);
