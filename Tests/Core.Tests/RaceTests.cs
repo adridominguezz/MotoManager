@@ -216,6 +216,28 @@ namespace MotoManager.Tests
         }
 
         [Fact]
+        public void EngineerWarnsAboutRainOnSlicks()
+        {
+            var weather = new WeatherSetup { AirTemp = 18, CloudCover = 0.9 };
+            weather.RainEvents.Add(new RainEvent { StartTime = 200, RampTime = 60, Duration = 5000, Intensity = 0.9 });
+            var cfg = MakeRace("motogp", "assen", 21, 0.2, 0, weather);
+            foreach (var e in cfg.Entries) e.AutoManaged = true;
+            cfg.Entries[0].IsPlayer = true;
+            cfg.Entries[0].AutoManaged = false; // the player has not reacted yet
+            var sim = new RaceSimulation(cfg);
+            var player = sim.Riders.First(r => r.Entry.IsPlayer);
+            var seen = new HashSet<string>();
+            while (!sim.IsFinished && sim.Time < 900)
+            {
+                sim.Step();
+                if (sim.Tick % 25 == 0)
+                    foreach (var m in RaceEngineer.Advise(sim, player, 60)) seen.Add(m.Key.Split(':')[1]);
+            }
+            _out.WriteLine(string.Join(", ", seen));
+            Assert.Contains("wet", seen);
+        }
+
+        [Fact]
         public void JumpStartsArePenalisedAndServed()
         {
             var cfg = MakeRace("motogp", "jerez", 4, 0.2, 8);

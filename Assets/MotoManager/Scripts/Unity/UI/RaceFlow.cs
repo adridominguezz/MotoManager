@@ -54,10 +54,13 @@ namespace MotoManager.App.UI
             var weekend = _event.PlayerWeekend;
             if (weekend != null && !weekend.IsComplete && weekend.CurrentIsRace)
             {
-                var sim = weekend.CreateRaceSimulation(_session.Db.Tuning.VisualTimeStep);
-                string title = _event.Plan.Round.Name + " · " + weekend.CurrentSession.Name;
                 if (_menuToHide != null) _menuToHide.SetActive(false);
-                RaceView.Create(sim, title, OnRaceClosed);
+                PreRaceDialog.Show(weekend, () =>
+                {
+                    var sim = weekend.CreateRaceSimulation(_session.Db.Tuning.VisualTimeStep);
+                    string title = _event.Plan.Round.Name + " · " + weekend.CurrentSession.Name;
+                    RaceView.Create(sim, title, OnRaceClosed);
+                });
                 return;
             }
             CompleteEvent();

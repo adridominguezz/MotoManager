@@ -175,11 +175,17 @@ Convenciones que se mantienen en todas las fases:
   sustituir los `layout` aproximados y recalibrar. Bloqueado por la red del entorno
   (`overpass-api.de` denegado); alternativa: aportar ficheros GPX/KML/GeoJSON de los trazados.
 
-### Sesión 5.2 — HUD y controles
+### Sesión 5.2 — HUD y controles ✅
 - Torre de tiempos (posición, gaps, vuelta, neumáticos, estado), feed de eventos, clima/radar con
   previsión probabilística, banderas, velocidad Pausa/1x/2x/4x/8x (simulación determinista
   independiente del render), órdenes al piloto (Push/Balanced/Conserve, Attack/Balanced/Defend,
   entrar a boxes con compuesto).
+- Resultado: tarjetas de muro para cada piloto del jugador (posición, distancias, desgaste y
+  temperatura de cada neumático, combustible y proyección, ritmo Ahorrar/Normal/Atacar, actitud
+  Defender/Normal/Atacar, "a boxes esta vuelta" con compuesto, modo automático); ingeniero de carrera
+  en el núcleo (`RaceEngineer`, probado) con avisos de lluvia, pista secándose, neumáticos, combustible,
+  ataques y penalizaciones; previsión de lluvia probabilística según el ingeniero de datos; diálogo
+  previo con parrilla, previsión y elección de neumático delantero/trasero con recomendación.
 
 ### Sesión 5.3 — Replays y rendimiento
 - Replay por semilla + log de comandos, cámara libre/TV, perfilado en Android de gama baja.

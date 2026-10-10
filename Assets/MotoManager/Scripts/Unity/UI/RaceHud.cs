@@ -31,6 +31,12 @@ namespace MotoManager.App.UI
         private RectTransform _results;
         private float _towerTimer;
         private int _feedCount = -1;
+        private readonly List<RiderCommandPanel> _panels = new List<RiderCommandPanel>();
+        private readonly Dictionary<string, double> _adviceShownAt = new Dictionary<string, double>();
+        private readonly List<string> _engineerLines = new List<string>();
+        private float _adviceTimer;
+        private double _forecasterSkill = 50;
+        private float _forecast = -1;
 
         private class TowerRow
         {
@@ -146,7 +152,46 @@ namespace MotoManager.App.UI
             UiFactory.Place(_feed.rectTransform, 0.01f, 0.02f, 0.99f, 0.98f);
             _feed.supportRichText = true;
 
+            // Pit-wall cards for the player's riders (bottom right).
+            var players = new List<RiderRaceState>();
+            foreach (var r in sim.Riders) if (r.Entry.IsPlayer) players.Add(r);
+            if (players.Count > 0)
+            {
+                float h = 0.44f / players.Count;
+                for (int i = 0; i < players.Count; i++)
+                {
+                    var area = UiFactory.Rect("Command" + i, _root);
+                    UiFactory.Place(area, 0.7f, 0.005f + h * (players.Count - 1 - i), 0.995f, 0.005f + h * (players.Count - i) - 0.006f);
+                    _panels.Add(new RiderCommandPanel(_view, players[i], area));
+                }
+                var session = GameSession.Instance;
+                if (session != null && session.Game != null && session.Game.World.PlayerTeam != null)
+                    _forecasterSkill = Core.Economy.StaffService.BestSkill(session.Game.World, session.Game.World.PlayerTeam, StaffRole.DataEngineer, 45);
+            }
+
             RefreshTower();
+        }
+
+        private void UpdateAdvice()
+        {
+            var sim = _view.Sim;
+            bool added = false;
+            foreach (var r in sim.Riders)
+            {
+                if (!r.Entry.IsPlayer) continue;
+                foreach (var m in RaceEngineer.Advise(sim, r, _forecasterSkill))
+                {
+                    double last;
+                    if (_adviceShownAt.TryGetValue(m.Key, out last) && sim.Time - last < 30) continue;
+                    _adviceShownAt[m.Key] = sim.Time;
+                    string color = m.Severity >= 2 ? "#E10600" : m.Severity == 1 ? "#F0B428" : "#5BC0EB";
+                    _engineerLines.Add("<color=" + color + ">ENG</color>  " + m.Text);
+                    if (_engineerLines.Count > 3) _engineerLines.RemoveAt(0);
+                    added = true;
+                }
+            }
+            if (added) RefreshFeed();
+            _forecast = (float)sim.ForecastRain(600, _forecasterSkill);
         }
 
         private void OnRowClicked(int position)
@@ -161,7 +206,8 @@ namespace MotoManager.App.UI
             int lap = Mathf.Clamp(sim.LeaderLap + 1, 1, sim.TotalLaps);
             _lapText.text = sim.ChequeredFlag ? "FINISH" : (sim.Tick == 0 ? "GRID" : "LAP " + lap + "/" + sim.TotalLaps);
             var w = sim.Weather;
-            _conditions.text = w.Condition + "  ·  track " + w.TrackTemp.ToString("0") + "°C  ·  wet " + (w.TrackWetness * 100).ToString("0") + "%";
+            _conditions.text = w.Condition + "  ·  track " + w.TrackTemp.ToString("0") + "°C  ·  wet " + (w.TrackWetness * 100).ToString("0") + "%" +
+                               (_forecast >= 0 ? "\nRain in 10': " + (_forecast * 100).ToString("0") + "%" : "");
             UpdateFlag(sim);
 
             for (int i = 0; i < _speedButtons.Count; i++)
@@ -172,6 +218,13 @@ namespace MotoManager.App.UI
             {
                 _towerTimer = 0.25f;
                 RefreshTower();
+                foreach (var panel in _panels) panel.Refresh();
+            }
+            _adviceTimer -= Time.unscaledDeltaTime;
+            if (_adviceTimer <= 0)
+            {
+                _adviceTimer = 1f;
+                UpdateAdvice();
             }
             if (sim.Events.Count != _feedCount) RefreshFeed();
             UpdateTags();
@@ -244,12 +297,13 @@ namespace MotoManager.App.UI
             var sim = _view.Sim;
             _feedCount = sim.Events.Count;
             var lines = new List<string>();
-            for (int i = sim.Events.Count - 1; i >= 0 && lines.Count < 4; i--)
+            for (int i = sim.Events.Count - 1; i >= 0 && lines.Count < 4 - System.Math.Min(2, _engineerLines.Count); i--)
             {
                 var e = sim.Events[i];
                 if (!e.Important) continue;
                 lines.Insert(0, "<color=#9AA4B2>L" + e.Lap + "</color>  " + e.Detail);
             }
+            for (int i = System.Math.Max(0, _engineerLines.Count - 2); i < _engineerLines.Count; i++) lines.Add(_engineerLines[i]);
             _feed.text = string.Join("\n", lines.ToArray());
         }
 
