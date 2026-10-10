@@ -89,6 +89,8 @@ namespace MotoManager.Core.Data
         public EconomyRules Economy = new EconomyRules();
 
         public int MaxEntries = 24;
+        /// <summary>Usual number of full-time entries; used to complete grids when real data is missing.</summary>
+        public int GridSize = 22;
         public int RidersPerTeam = 2;
         /// <summary>Target race distance used when a circuit does not specify the number of laps.</summary>
         public double RaceDistanceKm = 110;

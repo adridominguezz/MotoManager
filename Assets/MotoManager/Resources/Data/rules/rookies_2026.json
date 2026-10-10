@@ -202,5 +202,6 @@
   "notes": [
     "Identical KTM RC 250 R machines run by the organiser.",
     "Two races per event; a talent showcase rather than a team championship."
-  ]
+  ],
+  "gridSize": 24
 }

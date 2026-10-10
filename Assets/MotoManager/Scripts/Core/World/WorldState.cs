@@ -184,6 +184,8 @@ namespace MotoManager.Core.World
         public int Version = 1;
         public int Season = 2026;
         public DateTime CurrentDate;
+        /// <summary>Date of the last completed event (factory work is measured from here).</summary>
+        public DateTime LastEventDate;
         public ulong MasterSeed = 2026;
         public DeterministicRandom Rng = new DeterministicRandom(2026);
         public string PlayerTeamId;

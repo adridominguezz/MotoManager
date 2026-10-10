@@ -167,7 +167,7 @@ namespace MotoManager.Core.Career
         }
 
         /// <summary>Average overall of the riders racing in each category (what a team expects for the level).</summary>
-        private static Dictionary<string, double> CategoryLevels(WorldState world, GameDatabase db)
+        public static Dictionary<string, double> CategoryLevels(WorldState world, GameDatabase db)
         {
             var sum = new Dictionary<string, double>();
             var count = new Dictionary<string, int>();
@@ -345,31 +345,9 @@ namespace MotoManager.Core.Career
 
         private static Rider GenerateFor(WorldState world, GameDatabase db, Seat seat, DeterministicRandom rng, Dictionary<string, double> levels)
         {
-            var cat = seat.Category;
-            double minAge = Math.Max(cat.MinAge, 13), maxAge;
-            switch (cat.Tier)
-            {
-                case 1: minAge = Math.Max(minAge, 20); maxAge = 26; break;
-                case 2: minAge = Math.Max(minAge, cat.Pyramid == Pyramid.GrandPrix ? 18 : 17); maxAge = 23; break;
-                case 3: minAge = Math.Max(minAge, 16); maxAge = 19; break;
-                default: maxAge = Math.Min(cat.MaxEntryAge, minAge + 3); break;
-            }
-            maxAge = Math.Min(maxAge, cat.MaxEntryAge);
-            if (maxAge < minAge) maxAge = minAge + 1;
-            var r = RiderGenerator.Generate(world, db, rng, cat.Pyramid, cat.Id, minAge, maxAge, cat.Prestige / 100.0);
             double level;
-            if (levels.TryGetValue(cat.Id, out level))
-            {
-                // Promoted from series we do not simulate: bring the newcomer close to the level of the grid.
-                double target = level - rng.Range(3, 8);
-                double gap = target - r.Attributes.Overall;
-                if (gap > 0)
-                {
-                    foreach (var name in RiderAttributes.Names)
-                        if (name != "Aggression" && name != "Experience") r.Attributes.Set(name, r.Attributes.Get(name) + gap);
-                    r.Potential = Math.Max(r.Potential, r.Attributes.Overall + rng.Range(0, 10));
-                }
-            }
+            levels.TryGetValue(seat.Category.Id, out level);
+            var r = RiderGenerator.GenerateForCategory(world, db, rng, seat.Category, level);
             world.Riders[r.Id] = r;
             return r;
         }

@@ -279,5 +279,6 @@
     "Production-derived: homologated frame and engine, organiser balancing via rev limits and concessions.",
     "Three races per round: Race 1, Superpole Race, Race 2 (front rows of Race 2 set by the Superpole Race).",
     "Flag-to-flag with wheel change."
-  ]
+  ],
+  "gridSize": 24
 }

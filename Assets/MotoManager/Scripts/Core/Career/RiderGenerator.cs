@@ -68,6 +68,36 @@ namespace MotoManager.Core.Career
             return rider;
         }
 
+        /// <summary>
+        /// A rider arriving from a series we do not simulate: age fitting the tier and ability close to the grid level
+        /// (<paramref name="gridLevel"/> = average overall of the category, 0 = estimate from prestige). Not added to the world.
+        /// </summary>
+        public static Rider GenerateForCategory(WorldState world, GameDatabase db, DeterministicRandom rng, ChampionshipCategory cat, double gridLevel)
+        {
+            double minAge = Math.Max(cat.MinAge, 13), maxAge;
+            switch (cat.Tier)
+            {
+                case 1: minAge = Math.Max(minAge, 20); maxAge = 26; break;
+                case 2: minAge = Math.Max(minAge, cat.Pyramid == Pyramid.GrandPrix ? 18 : 17); maxAge = 23; break;
+                case 3: minAge = Math.Max(minAge, 16); maxAge = 19; break;
+                default: maxAge = Math.Min(cat.MaxEntryAge, minAge + 3); break;
+            }
+            maxAge = Math.Min(maxAge, Math.Min(cat.MaxEntryAge, cat.MaxAge - 0.5));
+            if (maxAge < minAge) maxAge = minAge + 0.5;
+            var r = Generate(world, db, rng, cat.Pyramid, cat.Id, minAge, maxAge, cat.Prestige / 100.0);
+            if (gridLevel <= 0) gridLevel = 40 + cat.Prestige * 0.42;
+            double target = gridLevel - rng.Range(3, 8);
+            double gap = target - r.Attributes.Overall;
+            if (gap > 0)
+            {
+                foreach (var name in Attr)
+                    if (name != "Aggression" && name != "Experience") r.Attributes.Set(name, r.Attributes.Get(name) + gap);
+                r.Potential = Math.Max(r.Potential, r.Attributes.Overall + rng.Range(0, 10));
+            }
+            r.Reputation = MathX.Clamp(cat.Prestige * 0.4 + rng.Range(-5, 10), 1, 60);
+            return r;
+        }
+
         public static void FillAttributes(RiderAttributes a, double level, double age, DeterministicRandom rng)
         {
             foreach (var name in Attr)

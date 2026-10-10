@@ -5,6 +5,8 @@ using MotoManager.Core.Common;
 using MotoManager.Core.Data;
 using MotoManager.Core.Race;
 using MotoManager.Core.World;
+using MotoManager.Core.Season;
+using MotoManager.Core.Career;
 
 namespace MotoManager.Tools
 {
@@ -18,6 +20,7 @@ namespace MotoManager.Tools
             if (mode == "laps") return Laps(db, args);
             if (mode == "race") return RaceTest(db, args);
             if (mode == "calibrate") return Calibrate(db, root, args);
+            if (mode == "season") return Season(db, args);
             Console.WriteLine("usage: laps <rules> [circuit] | race <rules> <circuit> [seed]");
             return 1;
         }
@@ -135,6 +138,40 @@ namespace MotoManager.Tools
                 c.Layout = layout;
                 Console.WriteLine($"{c.Id,-16} radius x{best:0.00} -> {MathX.FormatLapTime(ReferenceLap(db, rules, c))} (ref {MathX.FormatLapTime(target)})");
             }
+            return 0;
+        }
+
+        /// <summary>season [seed] [years]: simulates whole seasons headless and prints standings.</summary>
+        static int Season(GameDatabase db, string[] args)
+        {
+            ulong seed = args.Length > 1 ? ulong.Parse(args[1]) : 2026;
+            int years = args.Length > 2 ? int.Parse(args[2]) : 1;
+            var errors = db.Validate();
+            foreach (var e in errors) Console.WriteLine("DATA: " + e);
+            var game = GameController.NewGame(db, new NewGameOptions { Seed = seed });
+            for (int y = 0; y < years; y++)
+            {
+                var sw = System.Diagnostics.Stopwatch.StartNew();
+                int events = 0;
+                game.SimulateRestOfSeason(ev => events++);
+                Console.WriteLine($"== Season {game.World.Season}: {events} events in {sw.Elapsed.TotalSeconds:0.0}s");
+                foreach (var cat in db.CategoriesOrdered())
+                {
+                    ChampionshipState champ;
+                    if (!game.World.Championships.TryGetValue(cat.Id, out champ)) continue;
+                    var table = champ.SortedRiders();
+                    var top = table.Take(3).Select(e => { var r = game.World.GetRider(e.Id); var t = game.World.GetTeam(r.TeamId); return $"{r.ShortName} ({(t != null ? t.ShortName ?? t.Name : "-")}) {e.Points:0}pts {e.Wins}W"; });
+                    var makers = champ.SortedManufacturers().Take(3).Select(e => $"{e.Id} {e.Points:0}");
+                    Console.WriteLine($"  {cat.ShortName,-10} rounds {champ.Rounds.Count,2}  {string.Join(" | ", top)}");
+                    Console.WriteLine($"  {"",-10} constructors: {string.Join(", ", makers)}");
+                }
+                var summary = game.EndSeason();
+                Console.WriteLine($"  -> retired {summary.Retired.Count}, market moves {summary.Market.Moves.Count(m => !m.Renewal)}, generated {summary.Market.GeneratedRiders}, youth {summary.YouthIntake}");
+            }
+            var json = SaveSystem.Serialize(game.World);
+            var back = SaveSystem.Deserialize(json);
+            Console.WriteLine($"save {json.Length / 1024} KB, reload ok: {SaveSystem.Serialize(back) == json}");
+            foreach (var n in game.World.News.Where(n => n.Important).Take(12)) Console.WriteLine("  NEWS " + n.Date.ToString("yyyy-MM-dd") + " " + n.Headline);
             return 0;
         }
 

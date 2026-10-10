@@ -1,0 +1,30 @@
+{
+  "id": "grandprix_2026",
+  "group": "grandprix",
+  "season": 2026,
+  "dataConfidence": "approximate - dates as announced before the season, verify",
+  "rounds": [
+    { "round": 1,  "name": "Grand Prix of Thailand",       "circuitId": "buriram",       "date": "2026-03-01", "categories": ["motogp", "moto2", "moto3"] },
+    { "round": 2,  "name": "Grand Prix of Brazil",         "circuitId": "goiania",       "date": "2026-03-22", "categories": ["motogp", "moto2", "moto3"] },
+    { "round": 3,  "name": "Grand Prix of the Americas",   "circuitId": "cota",          "date": "2026-03-29", "categories": ["motogp", "moto2", "moto3"] },
+    { "round": 4,  "name": "Grand Prix of Qatar",          "circuitId": "lusail",        "date": "2026-04-12", "categories": ["motogp", "moto2", "moto3"] },
+    { "round": 5,  "name": "Grand Prix of Spain",          "circuitId": "jerez",         "date": "2026-04-26", "categories": ["motogp", "moto2", "moto3", "rookies"] },
+    { "round": 6,  "name": "Grand Prix of France",         "circuitId": "lemans",        "date": "2026-05-10", "categories": ["motogp", "moto2", "moto3", "rookies"] },
+    { "round": 7,  "name": "Grand Prix of Catalunya",      "circuitId": "catalunya",     "date": "2026-05-17", "categories": ["motogp", "moto2", "moto3"] },
+    { "round": 8,  "name": "Grand Prix of Italy",          "circuitId": "mugello",       "date": "2026-05-31", "categories": ["motogp", "moto2", "moto3", "rookies"] },
+    { "round": 9,  "name": "Grand Prix of Hungary",        "circuitId": "balaton",       "date": "2026-06-07", "categories": ["motogp", "moto2", "moto3"] },
+    { "round": 10, "name": "Grand Prix of Czechia",        "circuitId": "brno",          "date": "2026-06-21", "categories": ["motogp", "moto2", "moto3"] },
+    { "round": 11, "name": "Dutch TT",                     "circuitId": "assen",         "date": "2026-06-28", "categories": ["motogp", "moto2", "moto3", "rookies"] },
+    { "round": 12, "name": "Grand Prix of Germany",        "circuitId": "sachsenring",   "date": "2026-07-12", "categories": ["motogp", "moto2", "moto3", "rookies"] },
+    { "round": 13, "name": "British Grand Prix",           "circuitId": "silverstone",   "date": "2026-08-09", "categories": ["motogp", "moto2", "moto3"] },
+    { "round": 14, "name": "Grand Prix of Aragón",         "circuitId": "aragon",        "date": "2026-08-30", "categories": ["motogp", "moto2", "moto3"] },
+    { "round": 15, "name": "Grand Prix of San Marino",     "circuitId": "misano",        "date": "2026-09-13", "categories": ["motogp", "moto2", "moto3", "rookies"] },
+    { "round": 16, "name": "Grand Prix of Austria",        "circuitId": "redbullring",   "date": "2026-09-20", "categories": ["motogp", "moto2", "moto3", "rookies"] },
+    { "round": 17, "name": "Grand Prix of Japan",          "circuitId": "motegi",        "date": "2026-10-04", "categories": ["motogp", "moto2", "moto3"] },
+    { "round": 18, "name": "Grand Prix of Indonesia",      "circuitId": "mandalika",     "date": "2026-10-11", "categories": ["motogp", "moto2", "moto3"] },
+    { "round": 19, "name": "Australian Grand Prix",        "circuitId": "phillipisland", "date": "2026-10-25", "categories": ["motogp", "moto2", "moto3"] },
+    { "round": 20, "name": "Grand Prix of Malaysia",       "circuitId": "sepang",        "date": "2026-11-01", "categories": ["motogp", "moto2", "moto3"] },
+    { "round": 21, "name": "Grand Prix of Portugal",       "circuitId": "portimao",      "date": "2026-11-15", "categories": ["motogp", "moto2", "moto3"] },
+    { "round": 22, "name": "Grand Prix of Valencia",       "circuitId": "valencia",      "date": "2026-11-22", "categories": ["motogp", "moto2", "moto3", "rookies"] }
+  ]
+}

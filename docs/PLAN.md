@@ -52,13 +52,21 @@ Convenciones que se mantienen en todas las fases:
   las canteras alimentan las parrillas sin necesidad de generar pilotos de relleno.
   Fin de temporada determinista (mismo resultado con la misma semilla).
 
-### Sesión 1.2 — Creación de partida, controlador de juego y guardado
+### Sesión 1.2 — Creación de partida, controlador de juego y guardado ✅
 - `WorldFactory` (snapshot 2026 → `WorldState`: motos por equipo, contratos, relleno de parrillas
   con pilotos generados, cantera inicial, personal, patrocinadores, conocimiento de scouting).
 - `GameController`: próximo evento entre ambos calendarios, `BeginEvent` / `CompleteEvent`
   (economía, bonus, lesiones, desarrollo por días, BoP, scouting, noticias), fin de temporada.
 - `SaveSystem` (JSON, versionado).
 - **Hecho cuando** `SimRunner season` simula 2026 completo de las 6 categorías en modo headless.
+- Resultado: `dotnet run -c Release --project Tests/SimRunner -- season <semilla> <años>`.
+  Una temporada (34 eventos, 6 campeonatos) tarda ~22 s en escritorio; tres seguidas sin errores.
+  Calendarios 2026 de GP (22 rondas, Rookies en 8) y SBK (12 rondas) adelantados de la sesión 2.3.
+  Mientras no haya datos reales, `WorldFactory` genera fabricantes, equipos y pilotos de relleno.
+  Tests: creación de partida, orden del calendario combinado, formato WSBK de 3 carreras,
+  fin de semana del jugador carrera a carrera, determinismo y continuidad tras guardar/cargar.
+- Pendiente para la fase 3: rendimiento en móvil (objetivo < 1 s por evento en segundo plano) y
+  equilibrio (algún campeón con 17 victorias de 22 con pilotos generados).
 
 ## Fase 2 — Datos reales 2026 (2–3 sesiones)
 

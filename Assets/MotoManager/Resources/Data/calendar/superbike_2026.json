@@ -1,0 +1,20 @@
+{
+  "id": "superbike_2026",
+  "group": "superbike",
+  "season": 2026,
+  "dataConfidence": "approximate - verify dates and venues",
+  "rounds": [
+    { "round": 1,  "name": "Australian Round",  "circuitId": "phillipisland", "date": "2026-02-22" },
+    { "round": 2,  "name": "Portuguese Round",  "circuitId": "portimao",      "date": "2026-03-29" },
+    { "round": 3,  "name": "Dutch Round",       "circuitId": "assen",         "date": "2026-04-19" },
+    { "round": 4,  "name": "Hungarian Round",   "circuitId": "balaton",       "date": "2026-05-03" },
+    { "round": 5,  "name": "Czech Round",       "circuitId": "most",          "date": "2026-05-17" },
+    { "round": 6,  "name": "Aragón Round",      "circuitId": "aragon",        "date": "2026-05-31" },
+    { "round": 7,  "name": "Emilia-Romagna Round", "circuitId": "misano",     "date": "2026-06-14" },
+    { "round": 8,  "name": "UK Round",          "circuitId": "donington",     "date": "2026-07-12" },
+    { "round": 9,  "name": "French Round",      "circuitId": "magnycours",    "date": "2026-09-06" },
+    { "round": 10, "name": "Italian Round",     "circuitId": "cremona",       "date": "2026-09-27" },
+    { "round": 11, "name": "Estoril Round",     "circuitId": "estoril",       "date": "2026-10-11" },
+    { "round": 12, "name": "Spanish Round",     "circuitId": "jerez",         "date": "2026-10-18" }
+  ]
+}

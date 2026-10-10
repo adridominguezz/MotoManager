@@ -9,10 +9,34 @@
   "slipstreamFactor": 1.0,
   "riderInfluence": 1.0,
   "allowsRemount": true,
-  "engine": { "type": "Prototype", "displacementCc": 1000, "maxCylinders": 4, "approxPowerKw": 212, "enginesPerSeason": 7, "specEngine": false, "revLimit": 18500, "developmentFrozen": true },
-  "chassis": { "minWeightKg": 157, "averageRiderKg": 66, "productionDerived": false },
-  "physics": { "topSpeedKph": 352, "lateralGrip": 1.32, "brakingG": 1.35, "tractionG": 0.92, "maxLeanDeg": 64, "bikeSpread": 1.0 },
-  "fuel": { "tankLimitLitres": 22, "sprintTankLimitLitres": 0, "consumptionPerKm": 0.20 },
+  "engine": {
+    "type": "Prototype",
+    "displacementCc": 1000,
+    "maxCylinders": 4,
+    "approxPowerKw": 212,
+    "enginesPerSeason": 7,
+    "specEngine": false,
+    "revLimit": 18500,
+    "developmentFrozen": true
+  },
+  "chassis": {
+    "minWeightKg": 157,
+    "averageRiderKg": 66,
+    "productionDerived": false
+  },
+  "physics": {
+    "topSpeedKph": 352,
+    "lateralGrip": 1.32,
+    "brakingG": 1.35,
+    "tractionG": 0.92,
+    "maxLeanDeg": 64,
+    "bikeSpread": 1.0
+  },
+  "fuel": {
+    "tankLimitLitres": 22,
+    "sprintTankLimitLitres": 0,
+    "consumptionPerKm": 0.2
+  },
   "tires": {
     "supplier": "Michelin",
     "warmerTemperature": 90,
@@ -20,61 +44,228 @@
     "frontAllocation": 8,
     "rearAllocation": 9,
     "compounds": [
-      { "compound": "Soft", "grip": 1.025, "wearRate": 1.45, "optimalTempMin": 80, "optimalTempMax": 108, "warmupTime": 28, "heat": 1.04, "wetGrip": 0.38, "dryGrip": 1.0, "dryWearMultiplier": 1 },
-      { "compound": "Medium", "grip": 1.0, "wearRate": 1.0, "optimalTempMin": 86, "optimalTempMax": 116, "warmupTime": 34, "heat": 1.0, "wetGrip": 0.36, "dryGrip": 1.0, "dryWearMultiplier": 1 },
-      { "compound": "Hard", "grip": 0.982, "wearRate": 0.72, "optimalTempMin": 93, "optimalTempMax": 126, "warmupTime": 42, "heat": 0.96, "wetGrip": 0.34, "dryGrip": 1.0, "dryWearMultiplier": 1 },
-      { "compound": "Rain", "isWet": true, "grip": 1.0, "wearRate": 0.9, "optimalTempMin": 25, "optimalTempMax": 65, "warmupTime": 25, "heat": 0.8, "wetGrip": 0.74, "dryGrip": 0.86, "dryWearMultiplier": 4.5 }
+      {
+        "compound": "Soft",
+        "grip": 1.025,
+        "wearRate": 1.45,
+        "optimalTempMin": 80,
+        "optimalTempMax": 108,
+        "warmupTime": 28,
+        "heat": 1.04,
+        "wetGrip": 0.38,
+        "dryGrip": 1.0,
+        "dryWearMultiplier": 1
+      },
+      {
+        "compound": "Medium",
+        "grip": 1.0,
+        "wearRate": 1.0,
+        "optimalTempMin": 86,
+        "optimalTempMax": 116,
+        "warmupTime": 34,
+        "heat": 1.0,
+        "wetGrip": 0.36,
+        "dryGrip": 1.0,
+        "dryWearMultiplier": 1
+      },
+      {
+        "compound": "Hard",
+        "grip": 0.982,
+        "wearRate": 0.72,
+        "optimalTempMin": 93,
+        "optimalTempMax": 126,
+        "warmupTime": 42,
+        "heat": 0.96,
+        "wetGrip": 0.34,
+        "dryGrip": 1.0,
+        "dryWearMultiplier": 1
+      },
+      {
+        "compound": "Rain",
+        "isWet": true,
+        "grip": 1.0,
+        "wearRate": 0.9,
+        "optimalTempMin": 25,
+        "optimalTempMax": 65,
+        "warmupTime": 25,
+        "heat": 0.8,
+        "wetGrip": 0.74,
+        "dryGrip": 0.86,
+        "dryWearMultiplier": 4.5
+      }
     ]
   },
-  "electronics": { "specEcu": true, "tractionControl": true, "launchControl": true, "rideHeightDevices": true, "assistLevel": 0.6 },
-  "aerodynamics": { "allowed": true, "updatesPerSeason": 1, "influence": 1.0 },
-  "pitLane": { "speedLimitKph": 60, "allowsBikeSwap": true, "allowsTireChange": false, "allowsRefuel": false, "bikeSwapTimeS": 5, "tireChangeTimeS": 30, "longLapLossS": 2.8 },
-  "qualifying": { "format": "Knockout", "directToFinal": 10, "advanceFromFirst": 2, "sessionMinutes": 15, "flyingLapsPerRun": 2, "runs": 2, "preferredCompound": "Soft" },
+  "electronics": {
+    "specEcu": true,
+    "tractionControl": true,
+    "launchControl": true,
+    "rideHeightDevices": true,
+    "assistLevel": 0.6
+  },
+  "aerodynamics": {
+    "allowed": true,
+    "updatesPerSeason": 1,
+    "influence": 1.0
+  },
+  "pitLane": {
+    "speedLimitKph": 60,
+    "allowsBikeSwap": true,
+    "allowsTireChange": false,
+    "allowsRefuel": false,
+    "bikeSwapTimeS": 5,
+    "tireChangeTimeS": 30,
+    "longLapLossS": 2.8
+  },
+  "qualifying": {
+    "format": "Knockout",
+    "directToFinal": 10,
+    "advanceFromFirst": 2,
+    "sessionMinutes": 15,
+    "flyingLapsPerRun": 2,
+    "runs": 2,
+    "preferredCompound": "Soft"
+  },
   "weekend": {
     "sessions": [
-      { "id": "fp1", "name": "Free Practice 1", "type": "Practice", "durationMinutes": 45 },
-      { "id": "pr", "name": "Practice", "type": "Practice", "durationMinutes": 60 },
-      { "id": "q", "name": "Qualifying", "type": "Qualifying", "durationMinutes": 30 },
-      { "id": "spr", "name": "Sprint", "type": "Sprint", "distanceFraction": 0.5, "pointsSystem": "sprint" },
-      { "id": "wup", "name": "Warm Up", "type": "WarmUp", "durationMinutes": 10 },
-      { "id": "race", "name": "Grand Prix", "type": "Race", "distanceFraction": 1.0, "pointsSystem": "race" }
+      {
+        "id": "fp1",
+        "name": "Free Practice 1",
+        "type": "Practice",
+        "durationMinutes": 45
+      },
+      {
+        "id": "pr",
+        "name": "Practice",
+        "type": "Practice",
+        "durationMinutes": 60
+      },
+      {
+        "id": "q",
+        "name": "Qualifying",
+        "type": "Qualifying",
+        "durationMinutes": 30
+      },
+      {
+        "id": "spr",
+        "name": "Sprint",
+        "type": "Sprint",
+        "distanceFraction": 0.5,
+        "pointsSystem": "sprint"
+      },
+      {
+        "id": "wup",
+        "name": "Warm Up",
+        "type": "WarmUp",
+        "durationMinutes": 10
+      },
+      {
+        "id": "race",
+        "name": "Grand Prix",
+        "type": "Race",
+        "distanceFraction": 1.0,
+        "pointsSystem": "race"
+      }
     ]
   },
   "pointsSystems": {
-    "race": [25, 20, 16, 13, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
-    "sprint": [12, 9, 7, 6, 5, 4, 3, 2, 1]
+    "race": [
+      25,
+      20,
+      16,
+      13,
+      11,
+      10,
+      9,
+      8,
+      7,
+      6,
+      5,
+      4,
+      3,
+      2,
+      1
+    ],
+    "sprint": [
+      12,
+      9,
+      7,
+      6,
+      5,
+      4,
+      3,
+      2,
+      1
+    ]
   },
   "penalties": {
     "trackLimitsWarnings": 4,
     "infractions": {
-      "TrackLimits": { "type": "LongLap" },
-      "LastLapTrackLimits": { "type": "PositionDrop", "positions": 1 },
-      "JumpStart": { "type": "DoubleLongLap" },
-      "PitLaneSpeeding": { "type": "RideThrough" },
-      "UnsafeRelease": { "type": "LongLap" },
-      "IrresponsibleRiding": { "type": "LongLap" },
-      "FuelLimit": { "type": "Disqualification" }
+      "TrackLimits": {
+        "type": "LongLap"
+      },
+      "LastLapTrackLimits": {
+        "type": "PositionDrop",
+        "positions": 1
+      },
+      "JumpStart": {
+        "type": "DoubleLongLap"
+      },
+      "PitLaneSpeeding": {
+        "type": "RideThrough"
+      },
+      "UnsafeRelease": {
+        "type": "LongLap"
+      },
+      "IrresponsibleRiding": {
+        "type": "LongLap"
+      },
+      "FuelLimit": {
+        "type": "Disqualification"
+      }
     }
   },
   "development": {
-    "allowedComponents": ["Chassis", "Aerodynamics", "Electronics", "Suspension", "Brakes", "Cooling", "Reliability"],
+    "allowedComponents": [
+      "Chassis",
+      "Aerodynamics",
+      "Electronics",
+      "Suspension",
+      "Brakes",
+      "Cooling",
+      "Reliability"
+    ],
     "seasonGainCap": 0,
     "costMultiplier": 1.0,
     "concessions": true,
     "balanceOfPerformance": false
   },
-  "testing": { "privateTestDays": 0, "testRidersAllowed": true },
+  "testing": {
+    "privateTestDays": 0,
+    "testRidersAllowed": true
+  },
   "economy": {
     "participationIncomePerSeason": 4500000,
     "travelCostPerRound": 260000,
     "crashRepairCost": 80000,
     "engineCost": 250000,
     "bikeLeasePerSeason": 2600000,
-    "prizeMoneyByPosition": [120000, 90000, 70000, 55000, 45000, 40000, 35000, 30000, 25000, 20000],
+    "prizeMoneyByPosition": [
+      120000,
+      90000,
+      70000,
+      55000,
+      45000,
+      40000,
+      35000,
+      30000,
+      25000,
+      20000
+    ],
     "typicalRiderSalary": 1500000
   },
   "notes": [
     "2026 is the last season of the 1000cc formula; engine design frozen since 2025 except for manufacturers with concessions.",
     "Flag-to-flag: riders swap to their second bike."
-  ]
+  ],
+  "gridSize": 22
 }

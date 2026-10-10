@@ -244,5 +244,6 @@
     "Spec Triumph 765 triple, spec electronics without traction control.",
     "Minimum weight applies to bike + rider.",
     "Wet races: wheel change in the pits (verify against the current FIM regulations)."
-  ]
+  ],
+  "gridSize": 28
 }

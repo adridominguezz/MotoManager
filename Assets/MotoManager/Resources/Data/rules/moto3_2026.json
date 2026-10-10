@@ -241,5 +241,6 @@
   "notes": [
     "250cc single cylinder; minimum weight bike + rider.",
     "Groups and slipstream decide most races."
-  ]
+  ],
+  "gridSize": 26
 }
