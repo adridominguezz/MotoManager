@@ -50,7 +50,11 @@ namespace MotoManager.Core.World
         MerchStock,
         MerchOperations,
         MerchRoyalty,
-        Other
+        Other,
+        /// <summary>Riders' share of the sales of products with their name (image rights).</summary>
+        RiderImageRights,
+        /// <summary>Marketing campaigns for the shop.</summary>
+        MerchMarketing
     }
 
     /// <summary>One movement of money. Cash entries change the organisation's cash; P&amp;L entries count as income/expense.</summary>

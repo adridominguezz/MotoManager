@@ -554,6 +554,24 @@ que se quedan en pista, modelos toscos y opción de entrar a boxes (en motos no 
 - «Mi organización»: si eres dueño y trabajas en otro equipo, eliges quién dirige el tuyo (managers libres y
   debutantes, con su sueldo e indemnización del anterior) y puedes volver a dirigirlo cuando quieras.
 
+### Sesión M2 — Comercial avanzado ✅
+- Productos de piloto (camiseta y gorra, además de casco y firmados): uno por piloto con derechos de imagen en su
+  contrato (`Contract.ImageRights`, 20 % de las ventas para el piloto, anotado como `RiderImageRights`); un piloto
+  estrella vende varias veces más que uno desconocido. Si el piloto se va o no cede derechos, el producto deja de
+  venderse y su stock conserva el valor.
+- Ediciones especiales ligadas a hechos reales: «Edición victoria» durante 3 eventos tras ganar; «Edición de
+  campeón» toda la temporada siguiente a un título del equipo o de uno de sus pilotos. El catálogo muestra lo que
+  aún está bloqueado y qué lo desbloquea.
+- Productos con patrocinador principal: el patrocinador paga el 30 % de la producción y su satisfacción sube con
+  las ventas.
+- Campañas (redes sociales, evento con aficionados, acuerdo con tiendas) con coste según la categoría, subida de
+  demanda y duración; la previsión solo cuenta lo que el stock permite vender, así que una campaña puede perder
+  dinero. Anotadas como `MerchMarketing`.
+- Producción compartida: las unidades pedidas por los equipos de una misma organización cuentan juntas para el
+  descuento por volumen, y cada equipo paga solo las suyas.
+- La IA aplica las mismas reglas (productos de sus estrellas, ediciones tras ganar, campañas solo si salen a
+  cuenta). 92 tests en verde.
+
 ## Pendiente de especificación
 
 Recibidas las secciones 49–105; ver la Fase 8.

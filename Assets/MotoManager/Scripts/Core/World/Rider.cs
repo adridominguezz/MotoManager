@@ -204,6 +204,10 @@ namespace MotoManager.Core.World
         public bool FactoryBacked;
         /// <summary>Money the rider's backers pay the team per season while the contract runs.</summary>
         public double RiderFunding;
+        /// <summary>The team may sell products with the rider's name or face (image rights).</summary>
+        public bool ImageRights = true;
+        /// <summary>Share of the revenue of the rider's products that goes to the rider.</summary>
+        public double ImageRightsShare = 0.2;
         /// <summary>Set when the contract was cut short by an agreed transfer (recorded when it ends).</summary>
         public bool EndsByTransfer;
 

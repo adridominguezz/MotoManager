@@ -177,7 +177,8 @@
     "appeal": 0.3,
     "minOrder": 100,
     "requires": "Win",
-    "dataConfidence": "estimated costs and prices, typical of team merchandise"
+    "dataConfidence": "estimated costs and prices, typical of team merchandise",
+    "editionEvents": 3
   },
   {
     "id": "title_edition",
@@ -189,6 +190,55 @@
     "appeal": 0.3,
     "minOrder": 100,
     "requires": "Title",
+    "dataConfidence": "estimated costs and prices, typical of team merchandise",
+    "editionEvents": 0
+  },
+  {
+    "id": "rider_tshirt",
+    "type": "RiderTShirt",
+    "identity": "Rider",
+    "segment": "Casual",
+    "baseUnitCost": 9,
+    "referencePrice": 38,
+    "appeal": 0.6,
+    "minOrder": 200,
+    "requires": "RiderRights",
+    "dataConfidence": "estimated costs and prices, typical of team merchandise"
+  },
+  {
+    "id": "rider_cap",
+    "type": "RiderCap",
+    "identity": "Rider",
+    "segment": "Casual",
+    "baseUnitCost": 6,
+    "referencePrice": 32,
+    "appeal": 0.45,
+    "minOrder": 200,
+    "requires": "RiderRights",
+    "dataConfidence": "estimated costs and prices, typical of team merchandise"
+  },
+  {
+    "id": "sponsor_cap",
+    "type": "SponsorCap",
+    "identity": "Sponsor",
+    "segment": "Casual",
+    "baseUnitCost": 6,
+    "referencePrice": 28,
+    "appeal": 0.35,
+    "minOrder": 200,
+    "requires": "None",
+    "dataConfidence": "estimated costs and prices, typical of team merchandise"
+  },
+  {
+    "id": "sponsor_tshirt",
+    "type": "SponsorTShirt",
+    "identity": "Sponsor",
+    "segment": "Casual",
+    "baseUnitCost": 9,
+    "referencePrice": 34,
+    "appeal": 0.4,
+    "minOrder": 200,
+    "requires": "None",
     "dataConfidence": "estimated costs and prices, typical of team merchandise"
   }
 ]

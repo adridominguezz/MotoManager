@@ -173,5 +173,119 @@ namespace MotoManager.Tests
             Assert.True(sf.Revenue > ss.Revenue);
             foreach (var o in w.Organisations.Values) Assert.Equal(o.SeasonOpeningCash + Accounts.SeasonCashFlow(w, o.Id), o.Cash, 2);
         }
-    }
+    
+        [Fact]
+        public void APopularRiderSellsHisOwnProductsAndGetsHisShare()
+        {
+            var (game, team) = Career("ducati_lenovo");
+            var w = game.World;
+            var db = game.Db;
+            var riders = team.RiderIds.Select(w.GetRider).OrderByDescending(r => r.Reputation).ToList();
+            var star = riders.First();
+            var other = riders.Last();
+            var options = MerchService.Offerings(w, db, team).Where(o => o.Template.Id == "rider_tshirt").ToList();
+            Assert.Equal(team.RiderIds.Count, options.Count);
+            var t = db.Products["rider_tshirt"];
+            double starUnits = MerchService.ExpectedUnitsPerEvent(w, db, team, t, t.ReferencePrice, star.Id);
+            double otherUnits = MerchService.ExpectedUnitsPerEvent(w, db, team, t, t.ReferencePrice, other.Id);
+            _out.WriteLine(star.FullName + " " + starUnits.ToString("0") + " vs " + other.FullName + " " + otherUnits.ToString("0"));
+            Assert.True(starUnits >= otherUnits);
+
+            team.Shop.Items.Clear();
+            var item = MerchService.AddProduct(w, db, team, "rider_tshirt", 0, star.Id);
+            Assert.Equal(star.Id, item.RiderId);
+            Assert.True(MerchService.Order(w, db, team, item, 2000));
+            Event(w, db, team);
+            var s = MerchService.Summary(w, team);
+            Assert.True(s.ImageRights > 0);
+            Assert.Equal(Math.Round(s.Revenue * star.Contract.ImageRightsShare), Math.Round(s.ImageRights));
+
+            // Without image rights in the contract the product cannot be sold.
+            star.Contract.ImageRights = false;
+            Assert.DoesNotContain(MerchService.Catalogue(w, db, team), o => o.RiderId == star.Id);
+            Event(w, db, team, 0, 0, 2);
+            Assert.False(item.Active);
+            Assert.True(item.Stock > 0, "the stock stays and keeps its value");
+        }
+
+        [Fact]
+        public void SpecialEditionsOnlyFollowRealResults()
+        {
+            var (game, team) = Career("aspar_moto3");
+            var w = game.World;
+            var db = game.Db;
+            Assert.Contains(MerchService.Offerings(w, db, team), o => o.Template.Id == "victory_edition" && o.Lock == ProductLock.NeedsWin);
+            Assert.Null(MerchService.AddProduct(w, db, team, "victory_edition"));
+            Event(w, db, team, 1, 1);
+            var item = MerchService.AddProduct(w, db, team, "victory_edition");
+            Assert.NotNull(item);
+            for (int i = 0; i < db.Products["victory_edition"].EditionEvents; i++) Event(w, db, team, 0, 0, (ulong)(10 + i));
+            Assert.False(item.Active, "the edition goes off sale a few events after the win");
+            Assert.Contains(MerchService.Offerings(w, db, team), o => o.Template.Id == "title_edition" && o.Lock == ProductLock.NeedsTitle);
+        }
+
+        [Fact]
+        public void CampaignsCostMoneyAndCanLoseIt()
+        {
+            var (game, team) = Career("aspar_moto3");
+            var w = game.World;
+            var db = game.Db;
+            team.Shop.Items.Clear();
+            var item = MerchService.AddProduct(w, db, team, "tshirt");
+            // Without stock a campaign brings nothing: a sure loss.
+            var empty = MerchService.ForecastCampaign(w, db, team, CampaignType.RetailPartner);
+            Assert.True(empty.Cost > 0);
+            Assert.True(empty.Net < 0);
+            Assert.True(MerchService.Order(w, db, team, item, 3000));
+            var f = MerchService.ForecastCampaign(w, db, team, CampaignType.Social);
+            _out.WriteLine("social campaign cost " + f.Cost + " extra profit " + f.ExtraProfit.ToString("0"));
+            double before = MerchService.ExpectedUnitsPerEvent(w, db, team, db.Products["tshirt"], item.Price);
+            double cash = Accounts.Cash(w, team);
+            Assert.True(MerchService.LaunchCampaign(w, db, team, CampaignType.Social));
+            Assert.Equal(cash - f.Cost, Accounts.Cash(w, team), 2);
+            Assert.False(MerchService.LaunchCampaign(w, db, team, CampaignType.Social), "one campaign of each kind at a time");
+            Assert.True(MerchService.ExpectedUnitsPerEvent(w, db, team, db.Products["tshirt"], item.Price) > before);
+            for (int i = 0; i < f.Events; i++) Event(w, db, team, 0, 0, (ulong)(20 + i));
+            Assert.Empty(team.Shop.Campaigns);
+            Assert.Equal(f.Cost, MerchService.Summary(w, team).Marketing, 2);
+        }
+
+        [Fact]
+        public void TeamsOfOneOrganisationShareProductionDiscountsAndSponsorsCoBrand()
+        {
+            var (game, team) = Career("aspar_moto3");
+            var w = game.World;
+            var db = game.Db;
+            var sister = w.Teams["aspar_moto2"];
+            Assert.Equal(team.OrganisationId, sister.OrganisationId);
+            team.Shop.Items.Clear();
+            sister.Shop.Items.Clear();
+            w.OrganisationOf(team).MerchOrdered.Clear();
+            var a = MerchService.AddProduct(w, db, sister, "tshirt");
+            var b = MerchService.AddProduct(w, db, team, "tshirt");
+            double alone = MerchService.PreviewOrder(w, db, team, b, 400).UnitCost;
+            Assert.True(MerchService.Order(w, db, sister, a, 1800));
+            var shared = MerchService.PreviewOrder(w, db, team, b, 400);
+            Assert.Equal(1800, shared.SharedVolume);
+            Assert.True(shared.UnitCost < alone, "the sister team's volume counts for the discount");
+            Assert.Equal(Math.Round(shared.UnitCost * 400, 2), shared.TotalCost);
+
+            // A main sponsor co-brands and pays part of the production.
+            var deal = team.Sponsors.FirstOrDefault(d => MerchService.MainSponsor(w, team, d));
+            if (deal == null)
+            {
+                deal = new SponsorDeal { SponsorId = "test_sponsor", Name = "Test", Tier = 1, PaymentPerSeason = 100000, StartSeason = w.Season, EndSeason = w.Season + 1 };
+                team.Sponsors.Add(deal);
+            }
+            var co = MerchService.AddProduct(w, db, team, "sponsor_cap", 0, null, deal.SponsorId);
+            Assert.NotNull(co);
+            var p = MerchService.PreviewOrder(w, db, team, co, 500);
+            Assert.True(p.SponsorContribution > 0);
+            Assert.True(p.UnitCost < db.Products["sponsor_cap"].BaseUnitCost * 0.8);
+            double satisfaction = deal.Satisfaction;
+            Assert.True(MerchService.Order(w, db, team, co, 500));
+            Event(w, db, team);
+            Assert.True(deal.Satisfaction >= satisfaction);
+        }
+}
 }

@@ -28,6 +28,20 @@ namespace MotoManager.App.UI.Screens
             return t != null ? Loc.T("product." + t.Type) : "?";
         }
 
+        /// <summary>Product name with the rider or sponsor it carries.</summary>
+        private static string Name(WorldState world, ProductTemplate t, string riderId, string sponsorId)
+        {
+            string n = Name(t);
+            var r = riderId != null ? world.GetRider(riderId) : null;
+            if (r != null) n += " · " + r.LastName;
+            if (sponsorId != null)
+            {
+                var team = world.PlayerTeam;
+                if (team != null) foreach (var d in team.Sponsors) if (d.SponsorId == sponsorId) n += " · " + d.Name;
+            }
+            return n;
+        }
+
         public override void Build(RectTransform content)
         {
             var list = Page(content);
@@ -52,15 +66,8 @@ namespace MotoManager.App.UI.Screens
                 return;
             }
 
-            var catalogue = MerchService.Catalogue(db, team);
-            var add = new List<ProductTemplate>();
-            foreach (var t in catalogue)
-            {
-                bool have = false;
-                foreach (var i in shop.Items) if (i.TemplateId == t.Id) have = true;
-                if (!have) add.Add(t);
-            }
-            Ui.Chips(list, new[] { Loc.T("shop.view.summary"), Loc.T("shop.view.products", shop.Items.Count), Loc.T("shop.view.catalogue", add.Count) }, _view, i => { _view = i; Shell.Refresh(); });
+            var add = MerchService.Catalogue(world, db, team);
+            Ui.Chips(list, new[] { Loc.T("shop.view.summary"), Loc.T("shop.view.products", shop.Items.Count), Loc.T("shop.view.catalogue", add.Count), Loc.T("shop.view.campaigns", shop.Campaigns.Count) }, _view, i => { _view = i; Shell.Refresh(); });
             if (_view == 1) Products(list, world, db, team);
             else if (_view == 2)
             {
@@ -68,6 +75,7 @@ namespace MotoManager.App.UI.Screens
                 Catalogue(cat, world, db, team, add);
                 Ui.Note(cat, Loc.T("shop.note"));
             }
+            else if (_view == 3) Campaigns(list, world, db, team);
             else Summary(list, world, team);
         }
 
@@ -90,6 +98,8 @@ namespace MotoManager.App.UI.Screens
                 Ui.Line(c, Loc.T("shop.gross"), Money(s.GrossMargin), true);
                 Ui.Line(c, Loc.T("shop.operations"), Money(-s.Operations));
                 if (s.Royalties > 0) Ui.Line(c, Loc.T("shop.royalties"), Money(-s.Royalties));
+                if (s.ImageRights > 0) Ui.Line(c, Loc.T("shop.imageRights"), Money(-s.ImageRights));
+                if (s.Marketing > 0) Ui.Line(c, Loc.T("shop.marketing"), Money(-s.Marketing));
                 Ui.Line(c, Loc.T("shop.net"), Money(s.Net), true);
                 Ui.Line(c, Loc.T("shop.stockSpend"), Money(-s.StockPurchases));
                 Ui.Line(c, Loc.T("shop.inventory"), MathX.FormatMoney(s.InventoryValue));
@@ -115,10 +125,10 @@ namespace MotoManager.App.UI.Screens
                 var it = item;
                 double cost = item.Stock > 0 ? item.AverageUnitCost : t.BaseUnitCost;
                 double margin = MerchService.MarginPerUnit(world, db, team, t, item, item.Price);
-                double demand = MerchService.ExpectedUnitsPerEvent(world, db, team, t, item.Price);
+                double demand = MerchService.ExpectedUnitsPerEvent(world, db, team, t, item.Price, item.RiderId);
                 var row = UiFactory.TableRow(productsCard, 44, pw, new[]
                 {
-                    Name(t) + (item.Active ? "" : " <color=#9AA4B2>(" + Loc.T("shop.retired") + ")</color>"),
+                    Name(world, t, item.RiderId, item.SponsorId) + (item.Active ? "" : " <color=#9AA4B2>(" + Loc.T("shop.retired") + ")</color>"),
                     MathX.FormatMoney(item.Price), MathX.FormatMoney(cost), Money(margin), item.Stock.ToString("N0", Loc.Culture),
                     item.SoldSeason.ToString("N0", Loc.Culture), Money(item.RevenueSeason - item.CostOfSalesSeason), demand.ToString("0", Loc.Culture), ""
                 }, false, _selected == item.Id ? new Color(0.94f, 0.7f, 0.16f, 0.16f) : (Color?)null);
@@ -128,25 +138,75 @@ namespace MotoManager.App.UI.Screens
 
         }
 
-        private void Catalogue(Transform list, WorldState world, Core.Data.GameDatabase db, Team team, List<ProductTemplate> add)
+        private void Catalogue(Transform list, WorldState world, Core.Data.GameDatabase db, Team team, List<ProductOption> add)
         {
+            var cw = new[] { 3.4f, 1.4f, 1.4f, 1.4f, 2.2f, 1.6f };
+            UiFactory.TableRow(list, 38, cw, new[] { Loc.T("shop.col.product"), Loc.T("shop.col.refPrice"), Loc.T("shop.col.cost"), Loc.T("shop.col.demand"), Loc.T("shop.col.terms"), "" }, true);
+            foreach (var o in add)
             {
-                var cw = new[] { 3f, 1.6f, 1.6f, 2f, 1.6f };
-                UiFactory.TableRow(list, 38, cw, new[] { Loc.T("shop.col.product"), Loc.T("shop.col.refPrice"), Loc.T("shop.col.cost"), Loc.T("shop.col.demand"), "" }, true);
-                foreach (var t in add)
+                var opt = o;
+                var t = o.Template;
+                var row = UiFactory.TableRow(list, 44, cw, new[] { Name(world, t, o.RiderId, o.SponsorId),
+                    MathX.FormatMoney(t.ReferencePrice), MathX.FormatMoney(t.BaseUnitCost), MerchService.ExpectedUnitsPerEvent(world, db, team, t, t.ReferencePrice, o.RiderId).ToString("0", Loc.Culture), Terms(world, t, o.RiderId), "" });
+                var b = UiFactory.Button("Add", row, Loc.T("shop.add"), () =>
                 {
-                    var tpl = t;
-                    var row = UiFactory.TableRow(list, 44, cw, new[] { Name(t) + (t.Identity == ProductIdentity.Manufacturer ? " <color=#9AA4B2>" + Loc.T("shop.royalty") + "</color>" : ""),
-                        MathX.FormatMoney(t.ReferencePrice), MathX.FormatMoney(t.BaseUnitCost), MerchService.ExpectedUnitsPerEvent(world, db, team, t, t.ReferencePrice).ToString("0", Loc.Culture), "" });
-                    var b = UiFactory.Button("Add", row, Loc.T("shop.add"), () =>
+                    var it = MerchService.AddProduct(world, db, team, opt.Template.Id, 0, opt.RiderId, opt.SponsorId);
+                    if (it != null) _selected = it.Id;
+                    Shell.Refresh();
+                }, Theme.Accent, Theme.FontSmall - 4);
+                UiFactory.InColumn(b, cw, cw.Length - 1);
+            }
+            // Special products not available yet, with what unlocks them.
+            var seen = new HashSet<string>();
+            foreach (var o in MerchService.Offerings(world, db, team))
+            {
+                if (o.Lock == ProductLock.None || !seen.Add(o.Template.Id)) continue;
+                UiFactory.TableRow(list, 40, cw, new[] { "<color=#9AA4B2>" + Name(o.Template) + "</color>", "", "", "", "<color=#9AA4B2>" + Loc.T("shop.lock." + o.Lock) + "</color>", "" });
+            }
+        }
+
+        private static string Terms(WorldState world, ProductTemplate t, string riderId)
+        {
+            if (t.Identity == ProductIdentity.Manufacturer) return Loc.T("shop.royalty");
+            if (t.Identity == ProductIdentity.Rider)
+            {
+                var r = world.GetRider(riderId);
+                return Loc.T("shop.terms.rider", r != null && r.Contract != null ? (r.Contract.ImageRightsShare * 100).ToString("0") : "-");
+            }
+            if (t.Identity == ProductIdentity.Sponsor) return Loc.T("shop.terms.sponsor", (MerchService.SponsorProductionShare * 100).ToString("0"));
+            if (t.Requires == ProductRequirement.Win) return Loc.T("shop.terms.edition", t.EditionEvents);
+            if (t.Requires == ProductRequirement.Title) return Loc.T("shop.terms.title");
+            return "";
+        }
+
+        private void Campaigns(RectTransform list, WorldState world, Core.Data.GameDatabase db, Team team)
+        {
+            var card = Ui.Card(list, Loc.T("shop.campaigns"), Loc.T("shop.campaignsInfo"));
+            var cw = new[] { 3f, 1.6f, 1.4f, 1.4f, 1.8f, 1.8f, 1.8f };
+            UiFactory.TableRow(card, 38, cw, new[] { Loc.T("shop.col.campaign"), Loc.T("shop.col.total"), Loc.T("shop.col.boost"), Loc.T("shop.col.events"), Loc.T("shop.col.extraProfit"), Loc.T("shop.col.result"), "" }, true);
+            foreach (CampaignType type in Enum.GetValues(typeof(CampaignType)))
+            {
+                var ty = type;
+                var f = MerchService.ForecastCampaign(world, db, team, type);
+                string status = "";
+                foreach (var c in team.Shop.Campaigns) if (c.Type == type) status = Loc.T("shop.campaignRunning", c.EventsLeft);
+                var row = UiFactory.TableRow(card, 46, cw, new[]
+                {
+                    "<b>" + Loc.T("shop.campaign." + type) + "</b>" + (status.Length > 0 ? "\n" + Theme.GoodText(status) : ""),
+                    MathX.FormatMoney(f.Cost), "+" + (f.Boost * 100).ToString("0") + "%", f.Events.ToString(), Money(f.ExtraProfit), Money(f.Net), ""
+                });
+                if (!f.Running && f.Events > 0)
+                {
+                    var b = UiFactory.Button("Launch", row, Loc.T("shop.launch"), () =>
                     {
-                        var it = MerchService.AddProduct(world, db, team, tpl.Id);
-                        if (it != null) _selected = it.Id;
+                        bool ok = MerchService.LaunchCampaign(world, db, team, ty);
+                        Shell.Toast(ok ? Loc.T("shop.launched") : Loc.T("shop.cannotAfford"), ok);
                         Shell.Refresh();
-                    }, Theme.Accent, Theme.FontSmall - 4);
+                    }, f.Affordable ? (f.Net >= 0 ? Theme.Accent : Theme.PanelLight) : Theme.PanelLight, Theme.FontSmall - 4);
                     UiFactory.InColumn(b, cw, cw.Length - 1);
                 }
             }
+            Ui.Note(card, Loc.T("shop.campaignsNote"));
         }
 
         private void BuildDetail(Transform page, WorldState world, Core.Data.GameDatabase db, Team team, MerchItem item)
@@ -154,14 +214,14 @@ namespace MotoManager.App.UI.Screens
             var t = MerchService.Template(db, item);
             RectTransform leftCol, rightCol;
             Ui.Columns(page, out leftCol, out rightCol);
-            var list = Ui.Card(leftCol, Name(t), Loc.T("shop.priceRange", MathX.FormatMoney(MerchService.MinPrice(t)), MathX.FormatMoney(MerchService.MaxPrice(t))));
+            var list = Ui.Card(leftCol, Name(world, t, item.RiderId, item.SponsorId), Loc.T("shop.priceRange", MathX.FormatMoney(MerchService.MinPrice(t)), MathX.FormatMoney(MerchService.MaxPrice(t))));
 
             UiFactory.ButtonRow(list, 50,
                 UiFactory.Act("-10%", () => { MerchService.SetPrice(db, item, item.Price * 0.9); Shell.Refresh(); }),
                 UiFactory.Act("-5%", () => { MerchService.SetPrice(db, item, item.Price * 0.95); Shell.Refresh(); }),
                 UiFactory.Act("+5%", () => { MerchService.SetPrice(db, item, item.Price * 1.05); Shell.Refresh(); }),
                 UiFactory.Act("+10%", () => { MerchService.SetPrice(db, item, item.Price * 1.1); Shell.Refresh(); }),
-                UiFactory.Act(item.Active ? Loc.T("shop.retire") : Loc.T("shop.reactivate"), () => { item.Active = !item.Active; Shell.Refresh(); }));
+                UiFactory.Act(item.Active ? Loc.T("shop.retire") : Loc.T("shop.reactivate"), () => { item.Active = !item.Active && MerchService.StillAvailable(world, db, team, item); Shell.Refresh(); }));
 
             // Price forecast (an estimate, not a promise).
             var tw = new[] { 2f, 2f, 2f, 2.4f, 1.6f };
@@ -186,7 +246,12 @@ namespace MotoManager.App.UI.Screens
 
             // Stock orders: consequences shown before confirming.
             int left = MerchService.EventsLeft(world, db, team);
-            double perEvent = MerchService.ExpectedUnitsPerEvent(world, db, team, t, item.Price);
+            double perEvent = MerchService.ExpectedUnitsPerEvent(world, db, team, t, item.Price, item.RiderId);
+            string terms = Terms(world, t, item.RiderId);
+            if (terms.Length > 0) Ui.Note(list, terms);
+            if (!item.Active && !MerchService.StillAvailable(world, db, team, item)) Ui.Note(list, Theme.WarnText(Loc.T("shop.offSale")));
+            int shared = MerchService.SharedVolume(world, team, t.Id);
+            if (shared > 0) Ui.Note(list, Loc.T("shop.shared", shared.ToString("N0", Loc.Culture)));
             var sizes = new List<int> { t.MinOrder, (int)Math.Ceiling(perEvent * 4), (int)Math.Ceiling(perEvent * Math.Max(1, left)) };
             sizes.Sort();
             var ow = new[] { 1.6f, 1.6f, 2f, 1.6f, 1.6f, 2f, 1.6f };

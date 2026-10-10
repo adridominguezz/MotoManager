@@ -78,6 +78,8 @@ namespace MotoManager.Core.World
         /// <summary>Keeps every ledger line (organisations the player works for or owns); others keep totals only.</summary>
         public bool DetailedLedger;
         public List<Loan> Loans = new List<Loan>();
+        /// <summary>Units of each product ordered this season by all the organisation's teams (shared production: volume discounts).</summary>
+        public Dictionary<string, int> MerchOrdered = new Dictionary<string, int>();
         public string DataConfidence = "generated";
     }
 
