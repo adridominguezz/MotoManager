@@ -215,6 +215,9 @@ namespace MotoManager.Core.World
         public List<string> FreeAgentPool = new List<string>();
         public Dictionary<string, Organisation> Organisations = new Dictionary<string, Organisation>();
         public FinanceState Finance = new FinanceState();
+        /// <summary>Every manager in the world (the player's and the AI's).</summary>
+        public Dictionary<string, ManagerProfile> Managers = new Dictionary<string, ManagerProfile>();
+        public string PlayerManagerId;
         /// <summary>Sponsors invented during the game to keep the market alive (real ones live in the database).</summary>
         public Dictionary<string, SponsorTemplate> Sponsors = new Dictionary<string, SponsorTemplate>();
         public List<SponsorOffer> SponsorOffers = new List<SponsorOffer>();
@@ -251,6 +254,21 @@ namespace MotoManager.Core.World
         }
 
         public Team PlayerTeam { get { return GetTeam(PlayerTeamId); } }
+
+        public ManagerProfile PlayerManager
+        {
+            get
+            {
+                ManagerProfile m;
+                return PlayerManagerId != null && Managers.TryGetValue(PlayerManagerId, out m) ? m : null;
+            }
+        }
+
+        public ManagerProfile GetManager(string id)
+        {
+            ManagerProfile m;
+            return id != null && Managers.TryGetValue(id, out m) ? m : null;
+        }
 
         public Organisation GetOrganisation(string id)
         {

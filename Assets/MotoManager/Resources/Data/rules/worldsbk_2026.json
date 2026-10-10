@@ -288,7 +288,8 @@
     "merchAudience": 300,
     "fansReference": 80000,
     "merchShopCostPerSeason": 50000,
-    "merchFulfilmentShare": 0.12
+    "merchFulfilmentShare": 0.12,
+    "managerSalary": 150000
   },
   "notes": [
     "Production-derived: homologated frame and engine, organiser balancing via rev limits and concessions.",

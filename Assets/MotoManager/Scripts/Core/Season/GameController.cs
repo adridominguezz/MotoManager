@@ -205,6 +205,9 @@ namespace MotoManager.Core.Season
                 var outcome = ConditionEvaluator.TeamRace(weekend.Result, team.Id);
                 double bonus = SponsorService.EvaluateRace(World, team, outcome);
                 FinanceService.ApplyRound(World, Db, team, rounds, rules, crashes, prize, bonus);
+                CareerService.PaySalary(World, team, rounds);
+                var org = World.OrganisationOf(team);
+                if (org != null && org.Loans.Count > 0 && org.TeamIds.Count > 0 && org.TeamIds[0] == team.Id) CareerService.ServiceLoans(World, org, rounds);
                 var shopRng = new DeterministicRandom(DeterministicRandom.Combine(World.MasterSeed, DeterministicRandom.Hash("merch|" + World.Season + "|" + weekend.Round.Round + "|" + team.Id)));
                 MerchService.AfterEvent(World, Db, team, rules, rounds, outcome, shopRng);
             }

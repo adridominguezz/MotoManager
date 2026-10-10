@@ -251,7 +251,8 @@
     "merchAudience": 180,
     "fansReference": 40000,
     "merchShopCostPerSeason": 25000,
-    "merchFulfilmentShare": 0.12
+    "merchFulfilmentShare": 0.12,
+    "managerSalary": 100000
   },
   "notes": [
     "250cc single cylinder; minimum weight bike + rider.",

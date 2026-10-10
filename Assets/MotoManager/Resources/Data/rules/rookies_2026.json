@@ -208,7 +208,8 @@
     "merchAudience": 0,
     "fansReference": 10000,
     "merchShopCostPerSeason": 0,
-    "merchFulfilmentShare": 0.12
+    "merchFulfilmentShare": 0.12,
+    "managerSalary": 80000
   },
   "notes": [
     "Identical KTM RC 250 R machines run by the organiser.",

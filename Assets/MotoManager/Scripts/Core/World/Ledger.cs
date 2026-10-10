@@ -28,6 +28,14 @@ namespace MotoManager.Core.World
         SlotPurchase,
         Equipment,
         BikePurchase,
+        ManagerSalary,
+        /// <summary>Capital the owner puts into the organisation (not income).</summary>
+        OwnerInvestment,
+        LoanDrawdown,
+        LoanRepayment,
+        Interest,
+        /// <summary>Money received for selling a grid place.</summary>
+        SlotSale,
         /// <summary>Money a rider's personal sponsors pay for his seat.</summary>
         RiderFunding,
         MerchSales,

@@ -538,6 +538,47 @@ namespace MotoManager.Core.Career
             return score;
         }
 
+        /// <summary>
+        /// Riders available now who are eligible for a team's seat and would accept it, best first by the team's
+        /// own valuation (used when a new team needs riders straight away).
+        /// </summary>
+        public static List<Rider> FreeCandidates(WorldState world, GameDatabase db, Team team, int count)
+        {
+            var cat = db.GetCategory(team.CategoryId);
+            var seat = MakeSeat(team, cat, db.GetRules(cat.Id, world.Season));
+            var date = new DateTime(world.Season, 3, 1);
+            var levels = CategoryLevels(world, db);
+            var scored = new List<KeyValuePair<Rider, double>>();
+            foreach (var r in SortedRiders(world))
+            {
+                if (r.TeamId != null || r.FutureContract != null) continue;
+                if (!Eligible(world, db, seat, r, date, world.Season - 1) || !RiderAccepts(world, db, seat, r, world.Season - 1, date)) continue;
+                scored.Add(new KeyValuePair<Rider, double>(r, TeamScore(world, db, seat, r, date, levels)));
+            }
+            scored.Sort((a, b) =>
+            {
+                int c = b.Value.CompareTo(a.Value);
+                return c != 0 ? c : string.CompareOrdinal(a.Key.Id, b.Key.Id);
+            });
+            var list = new List<Rider>();
+            for (int i = 0; i < scored.Count && i < count; i++) list.Add(scored[i].Key);
+            return list;
+        }
+
+        /// <summary>Signs a rider for a team from now until the end of the given season (immediate seat).</summary>
+        public static void SignNow(WorldState world, GameDatabase db, Team team, Rider r, int lastSeason)
+        {
+            var rules = db.GetRules(team.CategoryId, world.Season);
+            var old = world.GetTeam(r.TeamId);
+            if (old != null) old.RiderIds.Remove(r.Id);
+            r.TeamId = team.Id;
+            r.CategoryId = team.CategoryId;
+            r.SeasonsWithoutSeat = 0;
+            r.Contract = NewContract(team, r, world.Season, lastSeason - world.Season + 1, AgreedSalary(team, r, rules), FundingFor(world, db, team, r));
+            if (!team.RiderIds.Contains(r.Id)) team.RiderIds.Add(r.Id);
+            if (r.Number <= 0 || NumberTaken(world, r)) r.Number = RiderGenerator.FreeNumber(world, team.CategoryId, world.Rng.Fork("number-" + r.Id));
+        }
+
         /// <summary>How much a team values a rider for one of its seats next season (for tools and tests).</summary>
         public static double EvaluateForTeam(WorldState world, GameDatabase db, Team team, Rider r)
         {

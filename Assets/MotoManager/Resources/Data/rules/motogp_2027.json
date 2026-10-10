@@ -303,7 +303,8 @@
     "merchAudience": 1000,
     "fansReference": 500000,
     "merchShopCostPerSeason": 250000,
-    "merchFulfilmentShare": 0.12
+    "merchFulfilmentShare": 0.12,
+    "managerSalary": 600000
   },
   "notes": [
     "2026 is the last season of the 1000cc formula; engine design frozen since 2025 except for manufacturers with concessions.",

@@ -253,7 +253,8 @@
     "merchAudience": 250,
     "fansReference": 60000,
     "merchShopCostPerSeason": 40000,
-    "merchFulfilmentShare": 0.12
+    "merchFulfilmentShare": 0.12,
+    "managerSalary": 150000
   },
   "notes": [
     "Spec Triumph 765 triple, spec electronics without traction control.",

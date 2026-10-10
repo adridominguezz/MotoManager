@@ -405,6 +405,8 @@ namespace MotoManager.Core.Data
         public double MerchShopCostPerSeason = 0;
         /// <summary>Share of each sale spent on packing, payment fees and shipping.</summary>
         public double MerchFulfilmentShare = 0.1;
+        /// <summary>Typical yearly salary of a team manager in the category.</summary>
+        public double ManagerSalary = 150000;
         public string DataConfidence = "estimated";
     }
 }

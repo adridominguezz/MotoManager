@@ -258,7 +258,8 @@
     "merchAudience": 90,
     "fansReference": 20000,
     "merchShopCostPerSeason": 12000,
-    "merchFulfilmentShare": 0.12
+    "merchFulfilmentShare": 0.12,
+    "managerSalary": 80000
   },
   "notes": [
     "Next-generation supersport: mixed engine concepts balanced by the organiser (BoP)."

@@ -89,7 +89,14 @@ namespace MotoManager.Core.Season
             SponsorMarket.EnsurePool(world, db, rng);
             SponsorMarket.InitialDeals(world, db, rng);
             MerchService.InitialShops(world, db);
-            if (options.PlayerTeamId != null) SetPlayerTeam(world, options.PlayerTeamId);
+            CareerService.EnsureAiManagers(world, db, rng);
+            if (options.PlayerTeamId != null)
+            {
+                // Quick start (tools, tests): an employed manager with a standard profile.
+                var player = CareerService.CreatePlayer(world, db, "Player", "Manager", "ES", "team_staff");
+                CareerService.Employ(world, db, player, world.GetTeam(options.PlayerTeamId), Autonomy.Standard, 2);
+                SetPlayerTeam(world, options.PlayerTeamId);
+            }
             InitialKnowledge(world);
             world.AddNews("Season " + options.StartSeason + " begins", "The " + options.StartSeason + " grids are set.", null, true);
             return world;

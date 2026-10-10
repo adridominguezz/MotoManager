@@ -68,6 +68,10 @@ namespace MotoManager.Core.Economy
         public double ConfirmedSponsorIncome;
         /// <summary>Organisation that would own the new team (expansion): its other teams' costs are included.</summary>
         public Organisation Organisation;
+        /// <summary>Loan included in <see cref="Capital"/>: its instalments and interest are costs of the plan.</summary>
+        public double LoanAmount;
+        public double LoanRate;
+        public int LoanSeasons = 4;
     }
 
     /// <summary>
@@ -117,6 +121,18 @@ namespace MotoManager.Core.Economy
             var teamFlows = CashflowForecast.TeamFlows(profile, rules, rounds, n, rep.ExpectedPosition, probableSponsors, cat.ShortName);
             foreach (var f in teamFlows) rep.OperatingCost += f.Cost;
             flows.AddRange(teamFlows);
+            if (plan.LoanAmount > 0)
+            {
+                // Instalments and interest (interest on the outstanding amount, approximated as straight-line).
+                double perRound = plan.LoanAmount / (Math.Max(1, plan.LoanSeasons) * n);
+                double outstanding = plan.LoanAmount;
+                foreach (var round in rounds)
+                {
+                    double interest = outstanding * plan.LoanRate / n;
+                    flows.Add(new CashflowForecast.Flow { Date = round.Date, Label = "Loan", Cost = perRound + interest });
+                    outstanding -= perRound;
+                }
+            }
 
             // Expansion: the organisation's existing teams keep costing and earning over the same season.
             if (plan.Organisation != null)

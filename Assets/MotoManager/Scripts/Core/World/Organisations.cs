@@ -77,6 +77,7 @@ namespace MotoManager.Core.World
         public double OwnerBacking = 60;
         /// <summary>Keeps every ledger line (organisations the player works for or owns); others keep totals only.</summary>
         public bool DetailedLedger;
+        public List<Loan> Loans = new List<Loan>();
         public string DataConfidence = "generated";
     }
 
@@ -164,6 +165,8 @@ namespace MotoManager.Core.World
         public string DataConfidence = "approximate";
         /// <summary>AI character (generated when missing from the data).</summary>
         public TeamPersonality Personality;
+        /// <summary>The manager running the team (player or AI).</summary>
+        public string ManagerId;
         /// <summary>Official shop and fan base.</summary>
         public TeamShop Shop = new TeamShop();
 

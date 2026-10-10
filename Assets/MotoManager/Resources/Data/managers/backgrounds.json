@@ -1,0 +1,57 @@
+[
+  {
+    "id": "team_staff",
+    "reputation": 30,
+    "negotiation": 45,
+    "sportingManagement": 55,
+    "finance": 45,
+    "relations": 55,
+    "commercial": 45,
+    "personalWealth": 250000,
+    "dataConfidence": "game design values (fictional starting profiles)"
+  },
+  {
+    "id": "former_rider",
+    "reputation": 45,
+    "negotiation": 50,
+    "sportingManagement": 50,
+    "finance": 30,
+    "relations": 70,
+    "commercial": 55,
+    "personalWealth": 1500000,
+    "dataConfidence": "game design values (fictional starting profiles)"
+  },
+  {
+    "id": "engineer",
+    "reputation": 35,
+    "negotiation": 40,
+    "sportingManagement": 62,
+    "finance": 40,
+    "relations": 50,
+    "commercial": 35,
+    "personalWealth": 400000,
+    "dataConfidence": "game design values (fictional starting profiles)"
+  },
+  {
+    "id": "business_executive",
+    "reputation": 22,
+    "negotiation": 65,
+    "sportingManagement": 35,
+    "finance": 75,
+    "relations": 40,
+    "commercial": 70,
+    "personalWealth": 6000000,
+    "dataConfidence": "game design values (fictional starting profiles)"
+  },
+  {
+    "id": "entrepreneur",
+    "reputation": 15,
+    "negotiation": 55,
+    "sportingManagement": 30,
+    "finance": 60,
+    "relations": 35,
+    "commercial": 60,
+    "personalWealth": 18000000,
+    "dataConfidence": "game design values (fictional starting profiles)"
+  }
+]
