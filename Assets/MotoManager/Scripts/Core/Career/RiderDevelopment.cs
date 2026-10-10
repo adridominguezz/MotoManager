@@ -40,12 +40,12 @@ namespace MotoManager.Core.Career
             double moraleBonus = (rider.Morale - 60) / 80.0;
             double seatBonus = starts > 0 ? 0.3 : (cat != null && !cat.Simulated ? 0.15 : -0.4);
 
-            double headroom = MathX.Clamp((rider.Potential - a.Overall) / 12.0, -0.5, 1.6);
+            double headroom = MathX.Clamp((rider.Potential - a.Overall) / 15.0, -0.5, 1.3);
             double years = rider.PeakAge - age;
             double baseGrowth;
-            if (years > 6) baseGrowth = 3.4;
-            else if (years > 3) baseGrowth = 2.4;
-            else if (years > 0) baseGrowth = 1.2;
+            if (years > 6) baseGrowth = 2.2;
+            else if (years > 3) baseGrowth = 1.6;
+            else if (years > 0) baseGrowth = 0.8;
             else if (years > -3) baseGrowth = 0.0;
             else if (years > -6) baseGrowth = -0.9;
             else baseGrowth = -1.8 + (years + 6) * 0.25;

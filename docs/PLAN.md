@@ -38,7 +38,7 @@ Convenciones que se mantienen en todas las fases:
 
 ## Fase 1 — Cerrar el núcleo "macro" (2 sesiones)
 
-### Sesión 1.1 — Mercado de pilotos y fin de temporada
+### Sesión 1.1 — Mercado de pilotos y fin de temporada ✅
 - `TransferMarket`: renovaciones, vacantes en cascada (MotoGP → Moto2 → Moto3 → Rookies → nuevo
   piloto; WorldSBK → WorldSSP → Junior), movimientos entre pirámides por utilidad (rendimiento,
   edad, potencial, reputación, salario, preferencia GP/SBK, fabricante, límites de edad).
@@ -46,6 +46,11 @@ Convenciones que se mantienen en todas las fases:
   desarrollo invernal de fabricantes, mercado, cantera anual, nueva temporada (calendario
   re-fechado si no hay datos del año siguiente), archivo compacto de campeonatos.
 - **Hecho cuando** compila y un test simula un fin de temporada sin asientos vacíos ni pilotos duplicados.
+- Resultado: `Tests/Core.Tests` (xUnit) con un mundo sintético. 20 temporadas seguidas mantienen
+  parrillas llenas, contratos y edades válidos, dorsales únicos y la jerarquía de niveles
+  (MotoGP > Moto2 > Moto3, WorldSBK > WorldSSP). Unos 10 cambios GP↔SBK por temporada;
+  las canteras alimentan las parrillas sin necesidad de generar pilotos de relleno.
+  Fin de temporada determinista (mismo resultado con la misma semilla).
 
 ### Sesión 1.2 — Creación de partida, controlador de juego y guardado
 - `WorldFactory` (snapshot 2026 → `WorldState`: motos por equipo, contratos, relleno de parrillas

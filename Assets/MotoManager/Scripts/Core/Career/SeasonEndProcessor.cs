@@ -1,0 +1,245 @@
+using System;
+using System.Collections.Generic;
+using MotoManager.Core.Common;
+using MotoManager.Core.Data;
+using MotoManager.Core.Economy;
+using MotoManager.Core.World;
+
+namespace MotoManager.Core.Career
+{
+    public class SeasonSummary
+    {
+        public int Season;
+        public readonly List<ChampionRecord> Champions = new List<ChampionRecord>();
+        public readonly List<string> Retired = new List<string>();
+        public MarketReport Market;
+        public int YouthIntake;
+    }
+
+    /// <summary>
+    /// Everything that happens between the last race of a season and the first of the next one, in order:
+    /// titles, sponsors, rider evolution, retirements, winter development, the market, youth intake and the
+    /// roll-over of calendars and championships.
+    /// </summary>
+    public static class SeasonEndProcessor
+    {
+        /// <summary>New riders entering the non-simulated talent pools every winter.</summary>
+        public static int GrandPrixYouthIntake = 24;
+        public static int SuperbikeYouthIntake = 12;
+
+        public static SeasonSummary Process(WorldState world, GameDatabase db)
+        {
+            int season = world.Season;
+            var rng = world.Rng.Fork("season-end-" + season);
+            var summary = new SeasonSummary { Season = season };
+
+            FinalizeChampionships(world, db, summary);
+            SponsorsAndReputation(world, db, rng);
+
+            foreach (var r in SortedRiders(world)) RiderDevelopment.EndOfSeason(world, db, r, rng);
+
+            // Retirements before the market: riders whose deal ends (or who have none) consider stopping;
+            // riders under contract only stop rarely (very old / unmotivated).
+            foreach (var r in SortedRiders(world))
+            {
+                if (r.IsRetired) continue;
+                bool committed = TransferMarket.IsCommitted(r, season);
+                double p = RetirementModel.Probability(world, db, r, committed);
+                if (committed) p *= 0.35;
+                if (rng.Chance(p))
+                {
+                    RetirementModel.Retire(world, r, committed ? "A surprise decision with a contract still running." : "");
+                    summary.Retired.Add(r.Id);
+                }
+            }
+
+            DevelopmentService.WinterDevelopment(world, db, rng);
+            summary.Market = TransferMarket.Run(world, db, rng);
+
+            // Riders who found no seat may give up.
+            foreach (var r in SortedRiders(world))
+            {
+                if (r.IsRetired || r.TeamId != null) continue;
+                var cat = db.GetCategory(r.CategoryId);
+                bool pool = cat != null && !cat.Simulated;
+                double p = RetirementModel.Probability(world, db, r, pool);
+                if (rng.Chance(p))
+                {
+                    RetirementModel.Retire(world, r, "No competitive seat available.");
+                    summary.Retired.Add(r.Id);
+                }
+            }
+
+            summary.YouthIntake = YouthIntake(world, db, rng);
+            RollOver(world, db);
+            TransferMarket.RebuildRosters(world);
+            return summary;
+        }
+
+        private static void FinalizeChampionships(WorldState world, GameDatabase db, SeasonSummary summary)
+        {
+            var cats = new List<string>(world.Championships.Keys);
+            cats.Sort(StringComparer.Ordinal);
+            foreach (var catId in cats)
+            {
+                var champ = world.Championships[catId];
+                if (champ.Season != world.Season) continue;
+                var cat = db.GetCategory(catId);
+                var riders = champ.SortedRiders();
+                for (int i = 0; i < riders.Count; i++)
+                {
+                    var r = world.GetRider(riders[i].Id);
+                    if (r == null) continue;
+                    foreach (var rec in r.CareerHistory)
+                        if (rec.Season == world.Season && rec.CategoryId == catId) rec.ChampionshipPosition = i + 1;
+                }
+                if (riders.Count == 0 || riders[0].Points <= 0) continue;
+                var champion = world.GetRider(riders[0].Id);
+                var team = champion != null ? world.GetTeam(champion.TeamId) : null;
+                var teams = champ.SortedTeams();
+                var makers = champ.SortedManufacturers();
+                var record = new ChampionRecord
+                {
+                    Season = world.Season,
+                    CategoryId = catId,
+                    RiderId = riders[0].Id,
+                    RiderName = champion != null ? champion.FullName : riders[0].Id,
+                    TeamId = team != null ? team.Id : null,
+                    TeamName = team != null ? team.Name : null,
+                    ManufacturerId = team != null ? team.ManufacturerId : null,
+                    Points = riders[0].Points,
+                    TeamChampionId = teams.Count > 0 ? teams[0].Id : null,
+                    ConstructorChampionId = makers.Count > 0 ? makers[0].Id : null
+                };
+                world.Champions.Add(record);
+                summary.Champions.Add(record);
+                if (champion != null)
+                {
+                    champion.Titles.Add(world.Season + " " + (cat != null ? cat.Name : catId));
+                    champion.Reputation = Math.Min(100, champion.Reputation + 8);
+                    champion.Morale = 95;
+                }
+                world.AddNews(record.RiderName + " is the " + world.Season + " " + (cat != null ? cat.Name : catId) + " World Champion",
+                    record.RiderName + " wins the title with " + record.Points.ToString("0") + " points" + (team != null ? " for " + team.Name : "") + ".", catId, true);
+            }
+        }
+
+        private static void SponsorsAndReputation(WorldState world, GameDatabase db, DeterministicRandom rng)
+        {
+            var teams = new List<Team>(world.Teams.Values);
+            teams.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));
+            foreach (var team in teams)
+            {
+                var cat = db.GetCategory(team.CategoryId);
+                ChampionshipState champ;
+                world.Championships.TryGetValue(team.CategoryId ?? "", out champ);
+                double points = 0;
+                int pos = 0;
+                int field = 1;
+                if (champ != null && champ.Season == world.Season)
+                {
+                    var table = champ.SortedTeams();
+                    field = Math.Max(1, table.Count);
+                    for (int i = 0; i < table.Count; i++)
+                        if (table[i].Id == team.Id)
+                        {
+                            pos = i + 1;
+                            points = table[i].Points;
+                        }
+                }
+                double bonus = SponsorService.EndOfSeason(world, db, team, cat, points, pos, rng);
+                team.Budget += bonus;
+                if (pos > 0)
+                {
+                    double target = 100 - (pos - 1) * 80.0 / field;
+                    team.Reputation = MathX.Clamp(team.Reputation * 0.75 + target * 0.25, 5, 100);
+                }
+                // AI teams are kept afloat by their owners / manufacturers; the player must manage money.
+                if (!team.IsPlayer && cat != null && cat.Simulated)
+                {
+                    var rules = db.GetRules(cat.Id, world.Season);
+                    double floor = rules.Economy.TypicalRiderSalary * 4 + rules.Economy.TravelCostPerRound * 10;
+                    if (team.Budget < floor) team.Budget = floor;
+                }
+            }
+        }
+
+        private static int YouthIntake(WorldState world, GameDatabase db, DeterministicRandom rng)
+        {
+            int total = 0;
+            foreach (var cat in db.CategoriesOrdered())
+            {
+                if (cat.Simulated) continue;
+                int n = cat.Pyramid == Pyramid.GrandPrix ? GrandPrixYouthIntake : SuperbikeYouthIntake;
+                double minAge = cat.MinAge, maxAge = Math.Min(cat.MaxEntryAge, cat.MinAge + 3);
+                for (int i = 0; i < n; i++)
+                {
+                    var r = RiderGenerator.Generate(world, db, rng, cat.Pyramid, cat.Id, minAge, maxAge, 0.3);
+                    world.Riders[r.Id] = r;
+                    total++;
+                }
+            }
+            return total;
+        }
+
+        private static void RollOver(WorldState world, GameDatabase db)
+        {
+            int next = world.Season + 1;
+
+            // Archive championships compactly (standings only) to keep saves small over decades.
+            foreach (var champ in world.Championships.Values)
+            {
+                if (champ.Season != world.Season) continue;
+                world.ArchivedChampionships.Add(new ChampionshipState
+                {
+                    CategoryId = champ.CategoryId,
+                    Season = champ.Season,
+                    Riders = champ.Riders,
+                    Teams = champ.Teams,
+                    Manufacturers = champ.Manufacturers
+                });
+            }
+            world.Championships.Clear();
+
+            var groups = new List<string>(world.Calendars.Keys);
+            groups.Sort(StringComparer.Ordinal);
+            foreach (var group in groups)
+            {
+                var current = world.Calendars[group];
+                CalendarDefinition nextCal = null;
+                foreach (var c in db.Calendars.Values)
+                    if (c.Group == group && c.Season == next) nextCal = JsonSettings.DeepClone(c);
+                if (nextCal == null)
+                {
+                    nextCal = JsonSettings.DeepClone(current);
+                    nextCal.Id = group + "_" + next;
+                    nextCal.Season = next;
+                    foreach (var round in nextCal.Rounds)
+                    {
+                        // Same weekday one year later.
+                        var d = round.Date.AddDays(364);
+                        if (d.Year == next - 1) d = d.AddDays(7);
+                        round.Date = d;
+                    }
+                }
+                world.Calendars[group] = nextCal;
+                world.NextRound[group] = 0;
+            }
+
+            foreach (var cat in db.Categories.Values)
+                if (cat.Simulated) world.Championships[cat.Id] = new ChampionshipState { CategoryId = cat.Id, Season = next };
+
+            foreach (var r in world.Riders.Values) r.InjuryRoundsOut = 0;
+            world.Projects.RemoveAll(p => p.Status != ProjectStatus.InProgress);
+            world.Season = next;
+            world.CurrentDate = new DateTime(next, 1, 1);
+        }
+
+        private static List<Rider> SortedRiders(WorldState world)
+        {
+            var list = new List<Rider>(world.Riders.Values);
+            list.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));
+            return list;
+        }
+    }
+}
