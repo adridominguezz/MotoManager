@@ -62,6 +62,10 @@ namespace MotoManager.Core.Career
         public BoardMood Mood;
         public readonly List<ReviewReason> Reasons = new List<ReviewReason>();
         public readonly List<JobOffer> Offers = new List<JobOffer>();
+        /// <summary>What happened to the manager's job (continues, renewed, contract ended, sacked).</summary>
+        public JobOutcome Outcome;
+        public double Severance;
+        public double ReputationChange;
     }
 
     public static class SeasonReviewService

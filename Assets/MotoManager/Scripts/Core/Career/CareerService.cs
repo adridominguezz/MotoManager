@@ -18,6 +18,7 @@ namespace MotoManager.Core.Career
         /// <summary>Loan taken by the new organisation (0 = none).</summary>
         public double Loan;
         public string PrimaryColor = "#E10600";
+        public string SecondaryColor = "#FFFFFF";
     }
 
     public class CareerResult
@@ -433,6 +434,7 @@ namespace MotoManager.Core.Career
                 DataConfidence = "player"
             };
             team.Colors.Primary = plan.PrimaryColor;
+            team.Colors.Secondary = string.IsNullOrEmpty(plan.SecondaryColor) ? "#FFFFFF" : plan.SecondaryColor;
             foreach (FacilityType f in Enum.GetValues(typeof(FacilityType))) team.Facilities[f] = 1;
             var bike = baseBike.Clone("bike_" + team.Id);
             world.Bikes[bike.Id] = bike;
@@ -445,19 +447,20 @@ namespace MotoManager.Core.Career
             Accounts.Post(world, team, LedgerKind.Equipment, -rules.Economy.StartupEquipmentCost, null, true, false);
             Accounts.Post(world, team, LedgerKind.BikePurchase, -rules.Economy.BikePurchasePerRider * rules.RidersPerTeam, null, true, false);
 
-            // People: the owner runs it; a basic crew; the best riders still free who accept.
+            // People: the owner runs it; riders and staff are the owner's to hire (the team starts empty).
+            if (m.Job != null)
+            {
+                var previous = world.GetTeam(m.Job.TeamId);
+                EndJob(world, m, "Founded own team");
+                if (previous != null)
+                {
+                    previous.IsPlayer = false;
+                    EnsureAiManagers(world, db, world.Rng.Fork("manager-" + previous.Id + "-" + world.Season));
+                }
+            }
             m.Job = new ManagerContract { OrganisationId = org.Id, TeamId = team.Id, Role = ManagerRole.OwnerManager, StartSeason = world.Season, EndSeason = world.Season + 99, Autonomy = Autonomy.Full, AssignedBudget = team.SeasonBudget, BoardConfidence = 100 };
             m.History.Add(new ManagerStint { OrganisationId = org.Id, TeamId = team.Id, TeamName = team.Name, CategoryId = cat.Id, Role = ManagerRole.OwnerManager, FromSeason = world.Season, ToSeason = world.Season });
             team.ManagerId = m.Id;
-            StaffService.EnsureStaff(world, db, team, rng, 0.35);
-            int capacity = TransferMarket.Capacity(cat, rules, team);
-            foreach (var r in TransferMarket.FreeCandidates(world, db, team, capacity)) TransferMarket.SignNow(world, db, team, r, world.Season);
-            while (team.RiderIds.Count < capacity)
-            {
-                var r = RiderGenerator.GenerateForCategory(world, db, rng, cat, TransferMarket.CategoryLevels(world, db)[cat.Id] - 4);
-                world.Riders[r.Id] = r;
-                TransferMarket.SignNow(world, db, team, r, world.Season);
-            }
 
             // Founding sponsors for this category become deals; the others lapse.
             foreach (var o in new List<SponsorOffer>(world.SponsorOffers))

@@ -140,6 +140,19 @@ namespace MotoManager.Core.Season
             var plan = PeekNextEvent();
             if (plan == null) return null;
             World.CurrentDate = plan.Round.Date;
+            // The organiser needs a full entry: seats the player left empty are filled with free riders.
+            var playerTeam = World.PlayerTeam;
+            if (playerTeam != null && plan.Categories.Contains(playerTeam.CategoryId))
+            {
+                var cat = Db.GetCategory(playerTeam.CategoryId);
+                int capacity = Career.TransferMarket.Capacity(cat, Db.GetRules(cat.Id, World.Season), playerTeam);
+                if (playerTeam.RiderIds.Count < capacity)
+                {
+                    Career.TransferMarket.FillVacancyNow(World, Db, playerTeam);
+                    World.AddNews(Txt.F("news.entryFilled", "{0} completes its entry with free riders", playerTeam.Name),
+                        Txt.F("news.entryFilledBody", "The organiser requires a full entry; sign your own riders in the market."), playerTeam.CategoryId, true);
+                }
+            }
             var ev = new LiveEvent { Plan = plan };
             var player = World.PlayerTeam;
             foreach (var catId in plan.Categories)

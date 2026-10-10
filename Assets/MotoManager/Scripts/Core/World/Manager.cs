@@ -39,6 +39,8 @@ namespace MotoManager.Core.World
         public double BoardConfidence = 60;
         /// <summary>Paid if the employer ends the contract early (seasons of salary).</summary>
         public double SeveranceSeasons = 0.5;
+        /// <summary>Season in which the contract was last renewed (0 = never).</summary>
+        public int RenewedSeason;
     }
 
     /// <summary>One period of a manager's career, kept forever.</summary>

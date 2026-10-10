@@ -38,6 +38,7 @@ namespace MotoManager.Core.Career
             FinalizeChampionships(world, db, summary);
             TeamAI.SeasonReview(world, db, rng);
             summary.PlayerReview = SeasonReviewService.Build(world, db);
+            ManagerCareer.SeasonEnd(world, db, summary.PlayerReview);
             Contracts.PaySeasonBonuses(world, db);
             SponsorsAndReputation(world, db, rng);
             TeamAI.OffseasonInvestment(world, db);

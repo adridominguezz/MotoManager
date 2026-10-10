@@ -118,7 +118,8 @@ namespace MotoManager.Tests
             Assert.Equal(m.Id, org.OwnerManagerId);
             Assert.Equal(team, w.PlayerTeam);
             Assert.Equal(teamsBefore, w.TeamsInCategory("moto3").Count);
-            Assert.Equal(gridBefore, w.TeamsInCategory("moto3").Sum(t => t.RiderIds.Count));
+            // The new team starts empty (the owner hires); the seller's riders are free on the market.
+            Assert.Empty(team.RiderIds);
             Assert.Equal(18000000 - 6000000, m.PersonalWealth, 2);
             Assert.Equal(org.SeasonOpeningCash + Accounts.SeasonCashFlow(w, org.Id), org.Cash, 2);
             var totals = Accounts.TotalsFor(w, org.Id, w.Season);
@@ -131,6 +132,7 @@ namespace MotoManager.Tests
             // The season runs with the new team; loans are serviced, no owner bail-out.
             double outstanding = org.Loans[0].Outstanding;
             RunUntilRaced(game, "moto3");
+            Assert.Equal(gridBefore, w.TeamsInCategory("moto3").Sum(t => t.RiderIds.Count));
             Assert.True(org.Loans[0].Outstanding < outstanding);
             Assert.True(Accounts.TotalsFor(w, org.Id, w.Season)[LedgerKind.Interest].Cash < 0);
             while (!game.IsSeasonOver)
@@ -144,6 +146,95 @@ namespace MotoManager.Tests
             var loaded = SaveSystem.Deserialize(SaveSystem.Serialize(w));
             Assert.Equal(m.PersonalWealth, loaded.PlayerManager.PersonalWealth, 2);
             Assert.Equal(org.Loans.Count, loaded.Organisations[org.Id].Loans.Count);
+        }
+
+        private static (GameController, ManagerProfile) Employed(ulong seed)
+        {
+            var game = GameController.NewGame(TestData.Db, new NewGameOptions { Seed = seed });
+            var w = game.World;
+            var m = CareerService.CreatePlayer(w, game.Db, "Test", "Manager", "ES", "team_staff");
+            var offer = CareerService.JobOffers(w, game.Db, m).First();
+            Assert.True(CareerService.AcceptJob(w, game.Db, m, offer).Ok);
+            return (game, m);
+        }
+
+        [Fact]
+        public void AContractThatIsNotRenewedEndsAndThePlayerIsLeftWithoutATeam()
+        {
+            var (game, m) = Employed(201);
+            var w = game.World;
+            m.Job.EndSeason = w.Season;
+            var team = w.PlayerTeam;
+            game.SimulateRestOfSeason();
+            var summary = game.EndSeason();
+            Assert.Equal(JobOutcome.Expired, summary.PlayerReview.Outcome);
+            Assert.Null(m.Job);
+            Assert.Null(w.PlayerTeam);
+            Assert.False(team.IsPlayer);
+            Assert.NotNull(w.GetManager(team.ManagerId));
+            // The world carries on without the player's team, and offers can be taken.
+            game.SimulateUntilEventFor("motogp");
+            var offers = ManagerCareer.Offers(w, game.Db);
+            if (offers.Count > 0)
+            {
+                Assert.True(ManagerCareer.ChangeJob(w, game.Db, offers[0]).Ok);
+                Assert.NotNull(w.PlayerTeam);
+            }
+        }
+
+        [Fact]
+        public void HappyOwnersOfferARenewalInTheLastSeason()
+        {
+            var (game, m) = Employed(202);
+            var w = game.World;
+            m.Job.EndSeason = w.Season;
+            m.Job.BoardConfidence = 80;
+            var offer = ManagerCareer.RenewalOffer(w, game.Db);
+            Assert.NotNull(offer);
+            Assert.True(ManagerCareer.AcceptRenewal(w, game.Db));
+            Assert.True(m.Job.EndSeason > w.Season);
+            Assert.Null(ManagerCareer.RenewalOffer(w, game.Db));
+            m.Job.BoardConfidence = 20;
+            m.Job.EndSeason = w.Season;
+            Assert.Null(ManagerCareer.RenewalOffer(w, game.Db));
+        }
+
+        [Fact]
+        public void AManagerWhoLosesTheOwnersConfidenceIsSackedWithSeverance()
+        {
+            var (game, m) = Employed(203);
+            var w = game.World;
+            m.Job.EndSeason = w.Season + 2;
+            m.Job.BoardConfidence = 0;
+            var team = w.PlayerTeam;
+            team.Personality.Objective = TeamObjective.Title; // almost impossible to meet
+            double wealth = m.PersonalWealth;
+            game.SimulateRestOfSeason();
+            var review = game.EndSeason().PlayerReview;
+            if (review.Confidence < ManagerCareer.SackBelow)
+            {
+                Assert.Equal(JobOutcome.Sacked, review.Outcome);
+                Assert.Null(m.Job);
+                Assert.True(m.PersonalWealth > wealth);
+            }
+        }
+
+        [Fact]
+        public void AFoundedTeamStartsEmptyAndGetsAFullEntryAtItsFirstEvent()
+        {
+            var game = GameController.NewGame(TestData.Db, new NewGameOptions { Seed = 204 });
+            var w = game.World;
+            var m = CareerService.CreatePlayer(w, game.Db, "Test", "Owner", "ES", "entrepreneur");
+            m.PersonalWealth = 40e6;
+            var supplier = CareerService.Suppliers(w, "moto3").First();
+            var res = CareerService.Found(w, game.Db, m, new FoundingPlan { CategoryId = "moto3", ManufacturerId = supplier.Id, TeamName = "Empty Racing", Investment = 40e6, PrimaryColor = "#3366FF", SecondaryColor = "#FFCC00" });
+            Assert.True(res.Ok, res.Message);
+            Assert.Empty(res.Team.RiderIds);
+            Assert.Empty(res.Team.StaffIds);
+            Assert.Equal("#FFCC00", res.Team.Colors.Secondary);
+            game.SimulateUntilEventFor("moto3");
+            game.CompleteEvent(game.BeginNextEvent());
+            Assert.Equal(2, res.Team.RiderIds.Count);
         }
     }
 }
