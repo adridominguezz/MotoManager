@@ -59,7 +59,7 @@ namespace MotoManager.Core.Career
                 if (team == null || c.StartSeason != next) continue;
                 var old = world.GetTeam(r.TeamId);
                 if (old != null) old.RiderIds.Remove(r.Id);
-                Contracts.Close(world, r, r.TeamId == team.Id ? ContractEnd.Renewed : ContractEnd.Expired);
+                Contracts.Close(world, r, r.TeamId == team.Id ? ContractEnd.Renewed : (r.Contract != null && r.Contract.EndsByTransfer ? ContractEnd.Transfer : ContractEnd.Expired));
                 report.Moves.Add(new MarketMove { RiderId = r.Id, FromTeamId = r.TeamId, FromCategoryId = r.CategoryId, ToTeamId = team.Id, ToCategoryId = team.CategoryId, Renewal = r.TeamId == team.Id });
                 r.TeamId = team.Id;
                 r.CategoryId = team.CategoryId;
@@ -575,6 +575,27 @@ namespace MotoManager.Core.Career
             var list = new List<Rider>();
             for (int i = 0; i < scored.Count && i < count; i++) list.Add(scored[i].Key);
             return list;
+        }
+
+        /// <summary>
+        /// An AI team that loses a rider mid-season fills the seat at once: the best free rider who accepts, or a
+        /// newcomer if nobody is available.
+        /// </summary>
+        public static void FillVacancyNow(WorldState world, GameDatabase db, Team team)
+        {
+            var cat = db.GetCategory(team.CategoryId);
+            var rules = db.GetRules(cat.Id, world.Season);
+            int capacity = Capacity(cat, rules, team);
+            var rng = world.Rng.Fork("vacancy-" + team.Id + "-" + world.EventsCompleted);
+            foreach (var r in FreeCandidates(world, db, team, capacity - team.RiderIds.Count)) SignNow(world, db, team, r, world.Season);
+            while (team.RiderIds.Count < capacity)
+            {
+                double level;
+                CategoryLevels(world, db).TryGetValue(cat.Id, out level);
+                var r = RiderGenerator.GenerateForCategory(world, db, rng, cat, level);
+                world.Riders[r.Id] = r;
+                SignNow(world, db, team, r, world.Season);
+            }
         }
 
         /// <summary>Signs a rider for a team from now until the end of the given season (immediate seat).</summary>

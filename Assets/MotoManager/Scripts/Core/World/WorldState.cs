@@ -221,6 +221,11 @@ namespace MotoManager.Core.World
         /// <summary>Sponsors invented during the game to keep the market alive (real ones live in the database).</summary>
         public Dictionary<string, SponsorTemplate> Sponsors = new Dictionary<string, SponsorTemplate>();
         public List<SponsorOffer> SponsorOffers = new List<SponsorOffer>();
+        /// <summary>Offers for riders under contract waiting for the owning team's answer (offers to the player).</summary>
+        public List<TransferOffer> TransferOffers = new List<TransferOffer>();
+        public List<TransferAgreement> TransferAgreements = new List<TransferAgreement>();
+        /// <summary>"season|team|rider" -> rejected proposals (riders lose patience).</summary>
+        public Dictionary<string, int> NegotiationAttempts = new Dictionary<string, int>();
         /// <summary>Events completed since the world began (clock for offer deadlines).</summary>
         public int EventsCompleted;
 

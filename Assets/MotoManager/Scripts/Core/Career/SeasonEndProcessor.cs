@@ -284,6 +284,9 @@ namespace MotoManager.Core.Career
                 if (cat.Simulated) world.Championships[cat.Id] = new ChampionshipState { CategoryId = cat.Id, Season = next };
 
             foreach (var r in world.Riders.Values) r.InjuryRoundsOut = 0;
+            world.NegotiationAttempts.Clear();
+            world.TransferOffers.Clear();
+            world.TransferAgreements.Clear();
             world.Projects.RemoveAll(p => p.Status != ProjectStatus.InProgress);
             world.Season = next;
             world.CurrentDate = new DateTime(next, 1, 1);

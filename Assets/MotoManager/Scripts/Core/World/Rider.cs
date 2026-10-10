@@ -204,6 +204,8 @@ namespace MotoManager.Core.World
         public bool FactoryBacked;
         /// <summary>Money the rider's backers pay the team per season while the contract runs.</summary>
         public double RiderFunding;
+        /// <summary>Set when the contract was cut short by an agreed transfer (recorded when it ends).</summary>
+        public bool EndsByTransfer;
 
         public ContractClause Clause(ClauseType type)
         {
@@ -224,6 +226,57 @@ namespace MotoManager.Core.World
             foreach (var b in ChampionshipBonuses) if (position > 0 && position <= b.MaxPosition && b.Amount > best) best = b.Amount;
             return best;
         }
+    }
+
+    /// <summary>A contract offer under negotiation (not stored: it becomes a Contract when signed).</summary>
+    public class ContractProposal
+    {
+        public double Salary;
+        public int Seasons = 2;
+        /// <summary>The rider joins now (this season) instead of next season.</summary>
+        public bool StartNow;
+        public double SigningBonus;
+        public double WinBonus;
+        public double PodiumBonus;
+        /// <summary>0 = no release clause.</summary>
+        public double ReleaseClause;
+        public bool TeamOption;
+        /// <summary>Championship position that triggers an automatic one-season extension (0 = none).</summary>
+        public int PerformanceExtensionTopN;
+        public bool ExitForHigherCategory;
+    }
+
+    public enum TransferStatus
+    {
+        Pending,
+        Accepted,
+        Rejected
+    }
+
+    /// <summary>One team's offer to another for a rider under contract.</summary>
+    [Serializable]
+    public class TransferOffer
+    {
+        public string Id;
+        public string RiderId;
+        public string FromTeamId;
+        public string ToTeamId;
+        public double Fee;
+        /// <summary>The rider would move now rather than next season.</summary>
+        public bool StartNow;
+        public TransferStatus Status;
+        public int ExpiresAfterEvent;
+    }
+
+    /// <summary>Clubs agreed a fee: the buyer may now sign the rider (who still has to agree personal terms).</summary>
+    [Serializable]
+    public class TransferAgreement
+    {
+        public string RiderId;
+        public string BuyerTeamId;
+        public double Fee;
+        public bool StartNow;
+        public int ExpiresAfterEvent;
     }
 
     public enum ContractEnd

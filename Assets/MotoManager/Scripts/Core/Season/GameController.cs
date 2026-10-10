@@ -139,6 +139,7 @@ namespace MotoManager.Core.Season
             World.NextRound[ev.Plan.Group] = ev.Plan.RoundIndex + 1;
             World.EventsCompleted++;
             SponsorMarket.AfterEvent(World, Db, rng);
+            ContractService.AiApproaches(World, Db, rng);
             World.LastEventDate = ev.Plan.Round.Date;
         }
 
