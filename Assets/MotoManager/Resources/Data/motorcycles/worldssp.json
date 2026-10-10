@@ -1,0 +1,219 @@
+[
+  {
+    "id": "ducati_v2_ssp26",
+    "manufacturerId": "ducati",
+    "categoryId": "worldssp",
+    "bikeClassId": "production_ssp",
+    "model": "Panigale V2",
+    "year": 2026,
+    "components": {
+      "ProductionEngine": 78,
+      "Chassis": 76,
+      "Electronics": 76,
+      "Suspension": 75,
+      "Brakes": 76,
+      "Reliability": 80
+    },
+    "productionBase": {
+      "Power": 82,
+      "TopSpeed": 80,
+      "Acceleration": 78,
+      "Braking": 76,
+      "CornerEntry": 75,
+      "MidCorner": 76,
+      "CornerExit": 78,
+      "Traction": 77,
+      "Stability": 76,
+      "TireWear": 74,
+      "FuelEfficiency": 72,
+      "Reliability": 80,
+      "WetPerformance": 74
+    }
+  },
+  {
+    "id": "yamaha_r9_ssp26",
+    "manufacturerId": "yamaha",
+    "categoryId": "worldssp",
+    "bikeClassId": "production_ssp",
+    "model": "YZF-R9",
+    "year": 2026,
+    "components": {
+      "ProductionEngine": 77,
+      "Chassis": 77,
+      "Electronics": 76,
+      "Suspension": 76,
+      "Brakes": 75,
+      "Reliability": 82
+    },
+    "productionBase": {
+      "Power": 79,
+      "TopSpeed": 79,
+      "Acceleration": 78,
+      "Braking": 77,
+      "CornerEntry": 78,
+      "MidCorner": 78,
+      "CornerExit": 78,
+      "Traction": 78,
+      "Stability": 77,
+      "TireWear": 78,
+      "FuelEfficiency": 78,
+      "Reliability": 82,
+      "WetPerformance": 76
+    }
+  },
+  {
+    "id": "triumph_765_ssp26",
+    "manufacturerId": "triumph",
+    "categoryId": "worldssp",
+    "bikeClassId": "production_ssp",
+    "model": "Street Triple 765 RS",
+    "year": 2026,
+    "components": {
+      "ProductionEngine": 76,
+      "Chassis": 76,
+      "Electronics": 75,
+      "Suspension": 75,
+      "Brakes": 75,
+      "Reliability": 80
+    },
+    "productionBase": {
+      "Power": 78,
+      "TopSpeed": 78,
+      "Acceleration": 79,
+      "Braking": 76,
+      "CornerEntry": 76,
+      "MidCorner": 77,
+      "CornerExit": 78,
+      "Traction": 77,
+      "Stability": 76,
+      "TireWear": 77,
+      "FuelEfficiency": 77,
+      "Reliability": 80,
+      "WetPerformance": 75
+    }
+  },
+  {
+    "id": "mvagusta_f3_ssp26",
+    "manufacturerId": "mvagusta",
+    "categoryId": "worldssp",
+    "bikeClassId": "production_ssp",
+    "model": "F3 800 RR",
+    "year": 2026,
+    "components": {
+      "ProductionEngine": 75,
+      "Chassis": 75,
+      "Electronics": 74,
+      "Suspension": 74,
+      "Brakes": 74,
+      "Reliability": 74
+    },
+    "productionBase": {
+      "Power": 78,
+      "TopSpeed": 79,
+      "Acceleration": 76,
+      "Braking": 75,
+      "CornerEntry": 75,
+      "MidCorner": 75,
+      "CornerExit": 75,
+      "Traction": 74,
+      "Stability": 74,
+      "TireWear": 74,
+      "FuelEfficiency": 73,
+      "Reliability": 72,
+      "WetPerformance": 72
+    }
+  },
+  {
+    "id": "kawasaki_zx6r_ssp26",
+    "manufacturerId": "kawasaki",
+    "categoryId": "worldssp",
+    "bikeClassId": "production_ssp",
+    "model": "Ninja ZX-6R",
+    "year": 2026,
+    "components": {
+      "ProductionEngine": 72,
+      "Chassis": 74,
+      "Electronics": 72,
+      "Suspension": 74,
+      "Brakes": 74,
+      "Reliability": 82
+    },
+    "productionBase": {
+      "Power": 72,
+      "TopSpeed": 73,
+      "Acceleration": 72,
+      "Braking": 76,
+      "CornerEntry": 77,
+      "MidCorner": 77,
+      "CornerExit": 75,
+      "Traction": 75,
+      "Stability": 76,
+      "TireWear": 79,
+      "FuelEfficiency": 80,
+      "Reliability": 84,
+      "WetPerformance": 76
+    }
+  },
+  {
+    "id": "honda_cbr600_ssp26",
+    "manufacturerId": "honda",
+    "categoryId": "worldssp",
+    "bikeClassId": "production_ssp",
+    "model": "CBR600RR",
+    "year": 2026,
+    "components": {
+      "ProductionEngine": 71,
+      "Chassis": 74,
+      "Electronics": 73,
+      "Suspension": 74,
+      "Brakes": 74,
+      "Reliability": 82
+    },
+    "productionBase": {
+      "Power": 71,
+      "TopSpeed": 72,
+      "Acceleration": 72,
+      "Braking": 76,
+      "CornerEntry": 77,
+      "MidCorner": 77,
+      "CornerExit": 76,
+      "Traction": 75,
+      "Stability": 76,
+      "TireWear": 79,
+      "FuelEfficiency": 79,
+      "Reliability": 83,
+      "WetPerformance": 76
+    }
+  },
+  {
+    "id": "qjmotor_srk800_ssp26",
+    "manufacturerId": "qjmotor",
+    "categoryId": "worldssp",
+    "bikeClassId": "production_ssp",
+    "model": "SRK 800 RR",
+    "year": 2026,
+    "components": {
+      "ProductionEngine": 72,
+      "Chassis": 71,
+      "Electronics": 70,
+      "Suspension": 71,
+      "Brakes": 72,
+      "Reliability": 72
+    },
+    "productionBase": {
+      "Power": 74,
+      "TopSpeed": 75,
+      "Acceleration": 72,
+      "Braking": 72,
+      "CornerEntry": 71,
+      "MidCorner": 71,
+      "CornerExit": 71,
+      "Traction": 70,
+      "Stability": 71,
+      "TireWear": 72,
+      "FuelEfficiency": 72,
+      "Reliability": 70,
+      "WetPerformance": 70
+    }
+  }
+]

@@ -176,7 +176,7 @@ namespace MotoManager.Core.Season
             var rules = db.GetRules(cat.Id, world.Season);
             int existingSeats = 0;
             foreach (var t in world.Teams.Values)
-                if (t.CategoryId == cat.Id) existingSeats += TransferMarket.Capacity(cat, rules);
+                if (t.CategoryId == cat.Id) existingSeats += TransferMarket.Capacity(cat, rules, t);
             int target = cat.IsCup ? rules.MaxEntries : rules.GridSize;
             if (cat.IsCup && existingSeats > 0) return;
             var makers = new List<Manufacturer>();
@@ -202,7 +202,7 @@ namespace MotoManager.Core.Season
                 };
                 team.Colors.Primary = Palette[index % Palette.Length];
                 world.Teams[team.Id] = team;
-                existingSeats += TransferMarket.Capacity(cat, rules);
+                existingSeats += TransferMarket.Capacity(cat, rules, team);
                 index++;
             }
         }
@@ -242,7 +242,7 @@ namespace MotoManager.Core.Season
                 var cat = db.GetCategory(team.CategoryId);
                 if (cat == null || !cat.Simulated) continue;
                 var rules = db.GetRules(cat.Id, world.Season);
-                int capacity = TransferMarket.Capacity(cat, rules);
+                int capacity = TransferMarket.Capacity(cat, rules, team);
                 double level;
                 levels.TryGetValue(cat.Id, out level);
                 while (team.RiderIds.Count < capacity)

@@ -1,0 +1,223 @@
+[
+  {
+    "id": "ajo_moto3",
+    "name": "Red Bull KTM Ajo",
+    "shortName": "Ajo M3",
+    "manufacturerId": "ktm",
+    "categoryId": "moto3",
+    "status": "Factory",
+    "bikeId": "ktm_rc250gp_26",
+    "country": "FI",
+    "reputation": 70,
+    "budget": 2400000.0,
+    "colors": {
+      "primary": "#FF6600",
+      "secondary": "#1E2A5A"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "tech3_moto3",
+    "name": "Red Bull KTM Tech3",
+    "shortName": "Tech3 M3",
+    "manufacturerId": "ktm",
+    "categoryId": "moto3",
+    "status": "Satellite",
+    "bikeId": "ktm_rc250gp_26",
+    "country": "FR",
+    "reputation": 62,
+    "budget": 2000000.0,
+    "colors": {
+      "primary": "#1E2A5A",
+      "secondary": "#FF6600"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "intact_moto3",
+    "name": "Liqui Moly Dynavolt Intact GP",
+    "shortName": "Intact M3",
+    "manufacturerId": "ktm",
+    "categoryId": "moto3",
+    "status": "Satellite",
+    "bikeId": "ktm_rc250gp_26",
+    "country": "DE",
+    "reputation": 60,
+    "budget": 1900000.0,
+    "colors": {
+      "primary": "#E30613",
+      "secondary": "#002F6C"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "msi_moto3",
+    "name": "MT Helmets - MSI",
+    "shortName": "MSi M3",
+    "manufacturerId": "ktm",
+    "categoryId": "moto3",
+    "status": "Satellite",
+    "bikeId": "ktm_rc250gp_26",
+    "country": "ES",
+    "reputation": 56,
+    "budget": 1600000.0,
+    "colors": {
+      "primary": "#111111",
+      "secondary": "#FFD100"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "levelup_moto3",
+    "name": "LEVELUP - MTA",
+    "shortName": "MTA",
+    "manufacturerId": "ktm",
+    "categoryId": "moto3",
+    "status": "Satellite",
+    "bikeId": "ktm_rc250gp_26",
+    "country": "IT",
+    "reputation": 50,
+    "budget": 1400000.0,
+    "colors": {
+      "primary": "#2E2E2E",
+      "secondary": "#00B5E2"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "cip_moto3",
+    "name": "CIP Green Power",
+    "shortName": "CIP",
+    "manufacturerId": "ktm",
+    "categoryId": "moto3",
+    "status": "Satellite",
+    "bikeId": "ktm_rc250gp_26",
+    "country": "FR",
+    "reputation": 44,
+    "budget": 1200000.0,
+    "colors": {
+      "primary": "#00A651",
+      "secondary": "#FFFFFF"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "boe_moto3",
+    "name": "BOE Motorsports",
+    "shortName": "BOE",
+    "manufacturerId": "ktm",
+    "categoryId": "moto3",
+    "status": "Satellite",
+    "bikeId": "ktm_rc250gp_26",
+    "country": "ES",
+    "reputation": 50,
+    "budget": 1400000.0,
+    "colors": {
+      "primary": "#FFFFFF",
+      "secondary": "#E4002B"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "leopard_moto3",
+    "name": "Leopard Racing",
+    "shortName": "Leopard",
+    "manufacturerId": "honda",
+    "categoryId": "moto3",
+    "status": "Factory",
+    "bikeId": "honda_nsf250rw_26",
+    "country": "LU",
+    "reputation": 68,
+    "budget": 2200000.0,
+    "colors": {
+      "primary": "#00B140",
+      "secondary": "#FFFFFF"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "asia_moto3",
+    "name": "Honda Team Asia",
+    "shortName": "Team Asia",
+    "manufacturerId": "honda",
+    "categoryId": "moto3",
+    "status": "Satellite",
+    "bikeId": "honda_nsf250rw_26",
+    "country": "JP",
+    "reputation": 52,
+    "budget": 1500000.0,
+    "colors": {
+      "primary": "#E4002B",
+      "secondary": "#FFFFFF"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "sic58_moto3",
+    "name": "SIC58 Squadra Corse",
+    "shortName": "SIC58",
+    "manufacturerId": "honda",
+    "categoryId": "moto3",
+    "status": "Satellite",
+    "bikeId": "honda_nsf250rw_26",
+    "country": "IT",
+    "reputation": 50,
+    "budget": 1400000.0,
+    "colors": {
+      "primary": "#1D1D1B",
+      "secondary": "#FFD100"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "snipers_moto3",
+    "name": "Rivacold Snipers Team",
+    "shortName": "Snipers",
+    "manufacturerId": "honda",
+    "categoryId": "moto3",
+    "status": "Satellite",
+    "bikeId": "honda_nsf250rw_26",
+    "country": "IT",
+    "reputation": 50,
+    "budget": 1400000.0,
+    "colors": {
+      "primary": "#0057A8",
+      "secondary": "#FFFFFF"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "gryd_moto3",
+    "name": "GRYD - MLav Racing",
+    "shortName": "MLav",
+    "manufacturerId": "husqvarna",
+    "categoryId": "moto3",
+    "status": "Factory",
+    "bikeId": "husqvarna_fr250gp_26",
+    "country": "GB",
+    "reputation": 48,
+    "budget": 1300000.0,
+    "colors": {
+      "primary": "#1F3A93",
+      "secondary": "#FFFFFF"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "aspar_moto3",
+    "name": "CFMoto Gaviota Aspar Team",
+    "shortName": "Aspar M3",
+    "manufacturerId": "cfmoto",
+    "categoryId": "moto3",
+    "status": "Factory",
+    "bikeId": "cfmoto_moto3_26",
+    "country": "ES",
+    "reputation": 62,
+    "budget": 1900000.0,
+    "colors": {
+      "primary": "#00A3E0",
+      "secondary": "#FFFFFF"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  }
+]

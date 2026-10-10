@@ -239,6 +239,8 @@ namespace MotoManager.Core.Race
         public bool SpareBikeUsed;
 
         // Dynamics helpers
+        /// <summary>Clean-air lap time of this rider/bike at the start (what the pit wall knows about relative pace).</summary>
+        public double ReferenceLap;
         public double LapNoise = 1.0;
         public double ReactionTime;
         public bool Launched;

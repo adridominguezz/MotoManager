@@ -1,0 +1,34 @@
+[
+  {
+    "id": "kalex_moto2_26",
+    "manufacturerId": "kalex",
+    "categoryId": "moto2",
+    "bikeClassId": "spec_moto2",
+    "model": "Kalex Moto2 (Triumph 765)",
+    "year": 2026,
+    "components": {
+      "SpecEngine": 70,
+      "Chassis": 74,
+      "Suspension": 72,
+      "Brakes": 72,
+      "Aerodynamics": 66,
+      "Reliability": 80
+    }
+  },
+  {
+    "id": "boscoscuro_moto2_26",
+    "manufacturerId": "boscoscuro",
+    "categoryId": "moto2",
+    "bikeClassId": "spec_moto2",
+    "model": "Boscoscuro B-26 (Triumph 765)",
+    "year": 2026,
+    "components": {
+      "SpecEngine": 70,
+      "Chassis": 75,
+      "Suspension": 71,
+      "Brakes": 72,
+      "Aerodynamics": 67,
+      "Reliability": 78
+    }
+  }
+]

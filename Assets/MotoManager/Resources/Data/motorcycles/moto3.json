@@ -1,0 +1,62 @@
+[
+  {
+    "id": "ktm_rc250gp_26",
+    "manufacturerId": "ktm",
+    "categoryId": "moto3",
+    "bikeClassId": "lightweight_moto3",
+    "model": "KTM RC250GP",
+    "year": 2026,
+    "components": {
+      "Engine": 73,
+      "Chassis": 72,
+      "Suspension": 71,
+      "Aerodynamics": 68,
+      "Reliability": 76
+    }
+  },
+  {
+    "id": "honda_nsf250rw_26",
+    "manufacturerId": "honda",
+    "categoryId": "moto3",
+    "bikeClassId": "lightweight_moto3",
+    "model": "Honda NSF250RW",
+    "year": 2026,
+    "components": {
+      "Engine": 71,
+      "Chassis": 73,
+      "Suspension": 72,
+      "Aerodynamics": 67,
+      "Reliability": 79
+    }
+  },
+  {
+    "id": "husqvarna_fr250gp_26",
+    "manufacturerId": "husqvarna",
+    "categoryId": "moto3",
+    "bikeClassId": "lightweight_moto3",
+    "model": "Husqvarna FR250GP",
+    "year": 2026,
+    "components": {
+      "Engine": 73,
+      "Chassis": 71,
+      "Suspension": 70,
+      "Aerodynamics": 67,
+      "Reliability": 75
+    }
+  },
+  {
+    "id": "cfmoto_moto3_26",
+    "manufacturerId": "cfmoto",
+    "categoryId": "moto3",
+    "bikeClassId": "lightweight_moto3",
+    "model": "CFMoto 250 GP",
+    "year": 2026,
+    "components": {
+      "Engine": 71,
+      "Chassis": 70,
+      "Suspension": 69,
+      "Aerodynamics": 66,
+      "Reliability": 72
+    }
+  }
+]

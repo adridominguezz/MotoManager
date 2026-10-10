@@ -27,7 +27,7 @@ namespace MotoManager.Tests
             {
                 var cat = db.GetCategory(team.CategoryId);
                 var rules = db.GetRules(cat.Id, world.Season);
-                Assert.Equal(TransferMarket.Capacity(cat, rules), team.RiderIds.Count);
+                Assert.Equal(TransferMarket.Capacity(cat, rules, team), team.RiderIds.Count);
                 var numbers = new HashSet<int>();
                 foreach (var id in team.RiderIds)
                 {

@@ -27,7 +27,7 @@ namespace MotoManager.Tests
                 Assert.NotEmpty(teams);
                 foreach (var t in teams)
                 {
-                    Assert.Equal(TransferMarket.Capacity(cat, rules), t.RiderIds.Count);
+                    Assert.Equal(TransferMarket.Capacity(cat, rules, t), t.RiderIds.Count);
                     Assert.NotNull(world.GetBike(t.BikeId));
                 }
                 int seats = teams.Sum(t => t.RiderIds.Count);

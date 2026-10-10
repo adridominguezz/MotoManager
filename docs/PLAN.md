@@ -70,9 +70,15 @@ Convenciones que se mantienen en todas las fases:
 
 ## Fase 2 — Datos reales 2026 (2–3 sesiones)
 
-### Sesión 2.1 — Fabricantes, motos y equipos
+### Sesión 2.1 — Fabricantes, motos y equipos ✅
 - `manufacturers/`, `motorcycles/` (componentes por clase; base de producción en SBK/SSP), `teams/`
   (11 equipos MotoGP, Moto2, Moto3, Rookies, WorldSBK, WorldSSP) con estado factory/satélite.
+- Resultado: 15 fabricantes, 25 motos base, 66 equipos (MotoGP 11, Moto2 14, Moto3 13, Rookies 1,
+  WorldSBK 14 con equipos de 1 piloto, WorldSSP 14). Las motos de producción (SBK/SSP) incluyen la
+  "base de serie" de cada modelo. Valoraciones aproximadas, revisables en los JSON.
+- Nuevo modo `SimRunner bikes <categoría> [carreras] [vueltas]`: pilotos idénticos para medir solo la moto.
+- Corrección del motor de carrera: la diferencia de ritmo (vuelta de referencia por piloto/moto)
+  ahora influye en intentar y lograr adelantamientos; antes la moto rápida se quedaba en el tren.
 
 ### Sesión 2.2 — Pilotos y contratos
 - `riders/` con pilotos reales (MotoGP completo; Moto2/Moto3/WSBK/WSSP lo más completo posible),

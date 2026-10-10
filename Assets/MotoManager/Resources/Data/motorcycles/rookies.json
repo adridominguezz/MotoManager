@@ -1,0 +1,15 @@
+[
+  {
+    "id": "ktm_rc250r_rookies",
+    "manufacturerId": "ktm",
+    "categoryId": "rookies",
+    "bikeClassId": "cup_spec",
+    "model": "KTM RC 250 R (Rookies Cup)",
+    "year": 2026,
+    "components": {
+      "Engine": 60,
+      "Chassis": 60,
+      "Reliability": 75
+    }
+  }
+]

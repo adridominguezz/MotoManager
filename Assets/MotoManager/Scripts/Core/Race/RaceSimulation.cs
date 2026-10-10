@@ -114,8 +114,43 @@ namespace MotoManager.Core.Race
 
             if (replayCommands != null) _scheduled.AddRange(replayCommands);
 
-            if (!config.TimeTrial) SetupStart();
+            if (!config.TimeTrial)
+            {
+                foreach (var r in Riders) r.ReferenceLap = EstimateLap(config, r.Entry);
+                SetupStart();
+            }
         }
+
+        /// <summary>One clean flying lap on the race tires, used for relative pace (overtaking decisions, AI).</summary>
+        public static double EstimateLap(RaceConfig config, RaceEntry entry)
+        {
+            var cfg = new RaceConfig
+            {
+                Rules = config.Rules,
+                Circuit = config.Circuit,
+                Tuning = config.Tuning,
+                SessionType = SessionType.Practice,
+                Laps = 1,
+                Seed = config.Seed,
+                TimeStep = 0.2,
+                Weather = config.Weather,
+                TimeTrial = true,
+                TrackEvolution = config.TrackEvolution
+            };
+            cfg.Entries.Add(new RaceEntry
+            {
+                Rider = entry.Rider, Team = entry.Team, Bike = entry.Bike, ManufacturerId = entry.ManufacturerId,
+                FrontCompound = entry.FrontCompound, RearCompound = entry.RearCompound, SetupQuality = entry.SetupQuality, GridPosition = 1
+            });
+            var sim = new RaceSimulation(cfg);
+            var st = sim.Riders[0];
+            st.LapNoise = 1;
+            sim._noiseless = true;
+            sim.RunToEnd();
+            return st.BestLapTime < double.MaxValue ? st.BestLapTime : config.Circuit.LengthM / 40.0;
+        }
+
+        private bool _noiseless;
 
         public TireCompoundSpec CompoundFor(TireCompound compound)
         {
@@ -632,8 +667,11 @@ namespace MotoManager.Core.Race
             if (_yellowUntil[seg.Index] > Time) return false;
             var fa = r.Entry.Rider.Attributes;
             var la = ahead.Entry.Rider.Attributes;
+            // Relative clean-air pace (fraction of a lap) plus current tire state: a clearly faster rider tries more and succeeds more.
+            double paceGap = r.ReferenceLap > 0 && ahead.ReferenceLap > 0 ? (ahead.ReferenceLap - r.ReferenceLap) / ahead.ReferenceLap : 0;
             double desire = (r.Mode == RiderMode.Attack ? 1.4 : r.Mode == RiderMode.Defend ? 0.55 : 1.0) *
-                            (0.7 + fa.Aggression / 100.0 * 0.6) * (1 + Math.Min(1, r.StuckTime / 25.0));
+                            (0.7 + fa.Aggression / 100.0 * 0.6) * (1 + Math.Min(1, r.StuckTime / 25.0)) *
+                            MathX.Clamp(1 + paceGap * 250, 0.4, 3.0);
             if (r.Pace == PaceMode.Conserve) desire *= 0.6;
             double pStart = Tuning.OvertakeBaseChance * (0.25 + seg.OvertakingPotential) * desire;
             if (!_rng.Chance(pStart)) return false;
@@ -649,7 +687,7 @@ namespace MotoManager.Core.Race
                 technique += (fa.Braking - la.Braking) / 100.0 + (r.Entry.Rider.HasStyle(RidingStyle.LateBraker) ? 0.3 : 0);
             else if (!seg.IsCorner)
                 technique += (r.Entry.Bike[PerfAttr.TopSpeed] - ahead.Entry.Bike[PerfAttr.TopSpeed]) / 40.0 * (0.5 + seg.SlipstreamPotential * Rules.SlipstreamFactor);
-            double pSuccess = MathX.Logistic(-0.7 + skill + paceAdv + tireAdv + defence + technique + seg.OvertakingPotential * 1.3);
+            double pSuccess = MathX.Logistic(-0.7 + skill + paceAdv + paceGap * 300 + tireAdv + defence + technique + seg.OvertakingPotential * 1.3);
 
             double attackRisk = (r.Mode == RiderMode.Attack ? Tuning.AttackRisk : 1.0) * (0.6 + fa.Aggression / 100.0) * (1.4 - fa.RiskManagement / 100.0);
             if (_rng.Chance(pSuccess))
@@ -707,7 +745,7 @@ namespace MotoManager.Core.Race
                 Delay(r, loss, 0.45);
                 AddEvent(RaceEventType.PenaltyServed, r.Index, -1, r.Entry.Rider.ShortName + " takes the Long Lap", true);
             }
-            if (!seg.IsCorner) return;
+            if (!seg.IsCorner || _noiseless) return;
             RollIncidents(r, seg, orderIndex);
         }
 
@@ -1234,6 +1272,11 @@ namespace MotoManager.Core.Race
 
         private void NewLapNoise(RiderRaceState r)
         {
+            if (_noiseless)
+            {
+                r.LapNoise = 1;
+                return;
+            }
             double c = r.Entry.Rider.Attributes.Consistency;
             r.LapNoise = 1 + _rng.Gaussian(0, Tuning.ConsistencyNoise * (1.6 - c / 100.0));
             r.LapNoise = MathX.Clamp(r.LapNoise, 0.985, 1.008);

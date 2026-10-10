@@ -1,0 +1,240 @@
+[
+  {
+    "id": "intact_moto2",
+    "name": "Liqui Moly Dynavolt Intact GP",
+    "shortName": "Intact GP",
+    "manufacturerId": "kalex",
+    "categoryId": "moto2",
+    "status": "Independent",
+    "bikeId": "kalex_moto2_26",
+    "country": "DE",
+    "reputation": 68,
+    "budget": 4500000.0,
+    "colors": {
+      "primary": "#E30613",
+      "secondary": "#002F6C"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "ajo_moto2",
+    "name": "Red Bull KTM Ajo",
+    "shortName": "Ajo",
+    "manufacturerId": "kalex",
+    "categoryId": "moto2",
+    "status": "Independent",
+    "bikeId": "kalex_moto2_26",
+    "country": "FI",
+    "reputation": 72,
+    "budget": 5000000.0,
+    "colors": {
+      "primary": "#FF6600",
+      "secondary": "#1E2A5A"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "aspar_moto2",
+    "name": "CFMoto Inde Aspar Team",
+    "shortName": "Aspar",
+    "manufacturerId": "kalex",
+    "categoryId": "moto2",
+    "status": "Independent",
+    "bikeId": "kalex_moto2_26",
+    "country": "ES",
+    "reputation": 68,
+    "budget": 4200000.0,
+    "colors": {
+      "primary": "#00A3E0",
+      "secondary": "#FFFFFF"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "pons_moto2",
+    "name": "Italjet Gresini Moto2",
+    "shortName": "Gresini M2",
+    "manufacturerId": "kalex",
+    "categoryId": "moto2",
+    "status": "Independent",
+    "bikeId": "kalex_moto2_26",
+    "country": "IT",
+    "reputation": 58,
+    "budget": 3400000.0,
+    "colors": {
+      "primary": "#5FB7E5",
+      "secondary": "#FFFFFF"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "italtrans_moto2",
+    "name": "Italtrans Racing Team",
+    "shortName": "Italtrans",
+    "manufacturerId": "kalex",
+    "categoryId": "moto2",
+    "status": "Independent",
+    "bikeId": "kalex_moto2_26",
+    "country": "IT",
+    "reputation": 58,
+    "budget": 3400000.0,
+    "colors": {
+      "primary": "#003DA5",
+      "secondary": "#FFFFFF"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "fantic_moto2",
+    "name": "Fantic Racing",
+    "shortName": "Fantic",
+    "manufacturerId": "kalex",
+    "categoryId": "moto2",
+    "status": "Independent",
+    "bikeId": "kalex_moto2_26",
+    "country": "IT",
+    "reputation": 62,
+    "budget": 3800000.0,
+    "colors": {
+      "primary": "#000000",
+      "secondary": "#E4002B"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "american_moto2",
+    "name": "OnlyFans American Racing",
+    "shortName": "American Racing",
+    "manufacturerId": "kalex",
+    "categoryId": "moto2",
+    "status": "Independent",
+    "bikeId": "kalex_moto2_26",
+    "country": "US",
+    "reputation": 50,
+    "budget": 3000000.0,
+    "colors": {
+      "primary": "#00AFF0",
+      "secondary": "#FFFFFF"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "rw_moto2",
+    "name": "RW-Idrofoglia Racing GP",
+    "shortName": "RW Racing",
+    "manufacturerId": "kalex",
+    "categoryId": "moto2",
+    "status": "Independent",
+    "bikeId": "kalex_moto2_26",
+    "country": "NL",
+    "reputation": 48,
+    "budget": 2800000.0,
+    "colors": {
+      "primary": "#E30613",
+      "secondary": "#FFFFFF"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "pramac_moto2",
+    "name": "BLU CRU Pramac Yamaha Moto2",
+    "shortName": "Pramac M2",
+    "manufacturerId": "boscoscuro",
+    "categoryId": "moto2",
+    "status": "Independent",
+    "bikeId": "boscoscuro_moto2_26",
+    "country": "IT",
+    "reputation": 62,
+    "budget": 3800000.0,
+    "colors": {
+      "primary": "#0A3D91",
+      "secondary": "#00A0E1"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "marcvds_moto2",
+    "name": "ELF Marc VDS Racing Team",
+    "shortName": "Marc VDS",
+    "manufacturerId": "boscoscuro",
+    "categoryId": "moto2",
+    "status": "Independent",
+    "bikeId": "boscoscuro_moto2_26",
+    "country": "BE",
+    "reputation": 66,
+    "budget": 4200000.0,
+    "colors": {
+      "primary": "#1D4F91",
+      "secondary": "#FFFFFF"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "speedrs_moto2",
+    "name": "SpeedRS Team",
+    "shortName": "SpeedRS",
+    "manufacturerId": "boscoscuro",
+    "categoryId": "moto2",
+    "status": "Independent",
+    "bikeId": "boscoscuro_moto2_26",
+    "country": "IT",
+    "reputation": 54,
+    "budget": 3000000.0,
+    "colors": {
+      "primary": "#E4002B",
+      "secondary": "#000000"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "msi_moto2",
+    "name": "MT Helmets - MSI",
+    "shortName": "MSi",
+    "manufacturerId": "boscoscuro",
+    "categoryId": "moto2",
+    "status": "Independent",
+    "bikeId": "boscoscuro_moto2_26",
+    "country": "ES",
+    "reputation": 56,
+    "budget": 3200000.0,
+    "colors": {
+      "primary": "#111111",
+      "secondary": "#FFD100"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "qjmotor_moto2",
+    "name": "QJMotor - Frinsa - MSI",
+    "shortName": "QJMotor M2",
+    "manufacturerId": "boscoscuro",
+    "categoryId": "moto2",
+    "status": "Independent",
+    "bikeId": "boscoscuro_moto2_26",
+    "country": "ES",
+    "reputation": 50,
+    "budget": 3000000.0,
+    "colors": {
+      "primary": "#D71920",
+      "secondary": "#FFFFFF"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "asia_moto2",
+    "name": "IDEMITSU Honda Team Asia",
+    "shortName": "Team Asia M2",
+    "manufacturerId": "kalex",
+    "categoryId": "moto2",
+    "status": "Independent",
+    "bikeId": "kalex_moto2_26",
+    "country": "JP",
+    "reputation": 52,
+    "budget": 3000000.0,
+    "colors": {
+      "primary": "#E4002B",
+      "secondary": "#FFFFFF"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  }
+]

@@ -88,7 +88,7 @@ namespace MotoManager.Core.Career
                 var cat = db.GetCategory(team.CategoryId);
                 if (cat == null || !cat.Simulated) continue;
                 var rules = db.GetRules(cat.Id, season);
-                int capacity = Capacity(cat, rules);
+                int capacity = Capacity(cat, rules, team);
                 int committed = CommittedCount(world, team, season);
                 for (int i = committed; i < capacity; i++) seats.Add(MakeSeat(team, cat, rules));
             }
@@ -370,8 +370,9 @@ namespace MotoManager.Core.Career
             return c != 0 ? c : string.CompareOrdinal(a.Team.Id, b.Team.Id);
         }
 
-        public static int Capacity(ChampionshipCategory cat, CategoryRules rules)
+        public static int Capacity(ChampionshipCategory cat, CategoryRules rules, Team team = null)
         {
+            if (team != null && team.RiderSlots > 0) return team.RiderSlots;
             return cat.IsCup ? rules.MaxEntries : rules.RidersPerTeam;
         }
 

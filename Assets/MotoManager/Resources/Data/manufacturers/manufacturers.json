@@ -1,0 +1,167 @@
+[
+  {
+    "id": "ducati",
+    "name": "Ducati",
+    "country": "IT",
+    "reputation": 96,
+    "developmentBudget": 45000000.0,
+    "engineeringStrength": 92,
+    "color": "#C8102E",
+    "hasConcessions": false,
+    "dataConfidence": "approximate ratings"
+  },
+  {
+    "id": "aprilia",
+    "name": "Aprilia",
+    "country": "IT",
+    "reputation": 82,
+    "developmentBudget": 30000000.0,
+    "engineeringStrength": 84,
+    "color": "#1D1D1B",
+    "hasConcessions": false,
+    "dataConfidence": "approximate ratings"
+  },
+  {
+    "id": "ktm",
+    "name": "KTM",
+    "country": "AT",
+    "reputation": 84,
+    "developmentBudget": 32000000.0,
+    "engineeringStrength": 80,
+    "color": "#FF6600",
+    "hasConcessions": false,
+    "dataConfidence": "approximate ratings"
+  },
+  {
+    "id": "yamaha",
+    "name": "Yamaha",
+    "country": "JP",
+    "reputation": 86,
+    "developmentBudget": 38000000.0,
+    "engineeringStrength": 78,
+    "color": "#0A3D91",
+    "hasConcessions": true,
+    "dataConfidence": "approximate ratings"
+  },
+  {
+    "id": "honda",
+    "name": "Honda",
+    "country": "JP",
+    "reputation": 90,
+    "developmentBudget": 40000000.0,
+    "engineeringStrength": 79,
+    "color": "#E4002B",
+    "hasConcessions": true,
+    "dataConfidence": "approximate ratings"
+  },
+  {
+    "id": "bmw",
+    "name": "BMW",
+    "country": "DE",
+    "reputation": 80,
+    "developmentBudget": 18000000.0,
+    "engineeringStrength": 80,
+    "color": "#0066B1",
+    "hasConcessions": false,
+    "dataConfidence": "approximate ratings"
+  },
+  {
+    "id": "kawasaki",
+    "name": "Kawasaki",
+    "country": "JP",
+    "reputation": 72,
+    "developmentBudget": 8000000.0,
+    "engineeringStrength": 68,
+    "color": "#3AAA35",
+    "hasConcessions": false,
+    "dataConfidence": "approximate ratings"
+  },
+  {
+    "id": "bimota",
+    "name": "Bimota",
+    "country": "IT",
+    "reputation": 58,
+    "developmentBudget": 7000000.0,
+    "engineeringStrength": 70,
+    "color": "#B5121B",
+    "hasConcessions": false,
+    "dataConfidence": "approximate ratings"
+  },
+  {
+    "id": "triumph",
+    "name": "Triumph",
+    "country": "GB",
+    "reputation": 66,
+    "developmentBudget": 6000000.0,
+    "engineeringStrength": 70,
+    "color": "#1F2A44",
+    "hasConcessions": false,
+    "dataConfidence": "approximate ratings"
+  },
+  {
+    "id": "mvagusta",
+    "name": "MV Agusta",
+    "country": "IT",
+    "reputation": 60,
+    "developmentBudget": 3000000.0,
+    "engineeringStrength": 64,
+    "color": "#B01E2D",
+    "hasConcessions": false,
+    "dataConfidence": "approximate ratings"
+  },
+  {
+    "id": "kalex",
+    "name": "Kalex",
+    "country": "DE",
+    "reputation": 80,
+    "developmentBudget": 6000000.0,
+    "engineeringStrength": 82,
+    "color": "#0055A4",
+    "hasConcessions": false,
+    "dataConfidence": "approximate ratings"
+  },
+  {
+    "id": "boscoscuro",
+    "name": "Boscoscuro",
+    "country": "IT",
+    "reputation": 70,
+    "developmentBudget": 4000000.0,
+    "engineeringStrength": 79,
+    "color": "#E30613",
+    "hasConcessions": false,
+    "dataConfidence": "approximate ratings"
+  },
+  {
+    "id": "husqvarna",
+    "name": "Husqvarna",
+    "country": "SE",
+    "reputation": 55,
+    "developmentBudget": 3000000.0,
+    "engineeringStrength": 72,
+    "color": "#1F3A93",
+    "hasConcessions": false,
+    "dataConfidence": "approximate ratings"
+  },
+  {
+    "id": "cfmoto",
+    "name": "CFMoto",
+    "country": "CN",
+    "reputation": 50,
+    "developmentBudget": 4000000.0,
+    "engineeringStrength": 66,
+    "color": "#00A3E0",
+    "hasConcessions": false,
+    "dataConfidence": "approximate ratings"
+  },
+  {
+    "id": "qjmotor",
+    "name": "QJMotor",
+    "country": "CN",
+    "reputation": 40,
+    "developmentBudget": 3000000.0,
+    "engineeringStrength": 58,
+    "color": "#D71920",
+    "hasConcessions": false,
+    "dataConfidence": "approximate ratings"
+  }
+]

@@ -1,0 +1,246 @@
+[
+  {
+    "id": "aruba_ducati",
+    "name": "Aruba.it Racing - Ducati",
+    "shortName": "Aruba Ducati",
+    "manufacturerId": "ducati",
+    "categoryId": "worldsbk",
+    "status": "Factory",
+    "bikeId": "ducati_v4r_sbk26",
+    "country": "IT",
+    "reputation": 92,
+    "budget": 14000000.0,
+    "colors": {
+      "primary": "#C8102E",
+      "secondary": "#FFFFFF"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "barni_sbk",
+    "name": "Barni Spark Racing Team",
+    "shortName": "Barni",
+    "manufacturerId": "ducati",
+    "categoryId": "worldsbk",
+    "status": "Satellite",
+    "bikeId": "ducati_v4r_sbk26",
+    "country": "IT",
+    "reputation": 62,
+    "budget": 4000000.0,
+    "colors": {
+      "primary": "#E4002B",
+      "secondary": "#000000"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "marcvds_sbk",
+    "name": "ELF Marc VDS Racing Team",
+    "shortName": "Marc VDS SBK",
+    "manufacturerId": "ducati",
+    "categoryId": "worldsbk",
+    "status": "Satellite",
+    "bikeId": "ducati_v4r_sbk26",
+    "country": "BE",
+    "reputation": 60,
+    "budget": 4000000.0,
+    "colors": {
+      "primary": "#1D4F91",
+      "secondary": "#FFFFFF"
+    },
+    "dataConfidence": "2026 entry list, approximate",
+    "riderSlots": 1
+  },
+  {
+    "id": "goeleven_sbk",
+    "name": "Motocorsa / GoEleven Ducati",
+    "shortName": "GoEleven",
+    "manufacturerId": "ducati",
+    "categoryId": "worldsbk",
+    "status": "Satellite",
+    "bikeId": "ducati_v4r_sbk26",
+    "country": "IT",
+    "reputation": 52,
+    "budget": 3000000.0,
+    "colors": {
+      "primary": "#2B2B2B",
+      "secondary": "#E4002B"
+    },
+    "dataConfidence": "2026 entry list, approximate",
+    "riderSlots": 1
+  },
+  {
+    "id": "bmw_sbk",
+    "name": "ROKiT BMW Motorrad WorldSBK Team",
+    "shortName": "BMW",
+    "manufacturerId": "bmw",
+    "categoryId": "worldsbk",
+    "status": "Factory",
+    "bikeId": "bmw_m1000rr_sbk26",
+    "country": "DE",
+    "reputation": 84,
+    "budget": 12000000.0,
+    "colors": {
+      "primary": "#0066B1",
+      "secondary": "#FFFFFF"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "bonovo_sbk",
+    "name": "Bonovo Action BMW",
+    "shortName": "Bonovo",
+    "manufacturerId": "bmw",
+    "categoryId": "worldsbk",
+    "status": "Satellite",
+    "bikeId": "bmw_m1000rr_sbk26",
+    "country": "DE",
+    "reputation": 50,
+    "budget": 3000000.0,
+    "colors": {
+      "primary": "#000000",
+      "secondary": "#0066B1"
+    },
+    "dataConfidence": "2026 entry list, approximate",
+    "riderSlots": 1
+  },
+  {
+    "id": "yamaha_sbk",
+    "name": "Pata Maxus Yamaha",
+    "shortName": "Yamaha SBK",
+    "manufacturerId": "yamaha",
+    "categoryId": "worldsbk",
+    "status": "Factory",
+    "bikeId": "yamaha_r1_sbk26",
+    "country": "IT",
+    "reputation": 78,
+    "budget": 9000000.0,
+    "colors": {
+      "primary": "#0A3D91",
+      "secondary": "#FFFFFF"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "grt_sbk",
+    "name": "GYTR GRT Yamaha WorldSBK Team",
+    "shortName": "GRT",
+    "manufacturerId": "yamaha",
+    "categoryId": "worldsbk",
+    "status": "Satellite",
+    "bikeId": "yamaha_r1_sbk26",
+    "country": "IT",
+    "reputation": 58,
+    "budget": 4000000.0,
+    "colors": {
+      "primary": "#00A0E1",
+      "secondary": "#0A3D91"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "honda_sbk",
+    "name": "Honda HRC",
+    "shortName": "Honda SBK",
+    "manufacturerId": "honda",
+    "categoryId": "worldsbk",
+    "status": "Factory",
+    "bikeId": "honda_cbr_sbk26",
+    "country": "JP",
+    "reputation": 76,
+    "budget": 10000000.0,
+    "colors": {
+      "primary": "#E4002B",
+      "secondary": "#FFFFFF"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "bimota_sbk",
+    "name": "Bimota by Kawasaki Racing Team",
+    "shortName": "Bimota",
+    "manufacturerId": "bimota",
+    "categoryId": "worldsbk",
+    "status": "Factory",
+    "bikeId": "bimota_kb998_sbk26",
+    "country": "IT",
+    "reputation": 70,
+    "budget": 8000000.0,
+    "colors": {
+      "primary": "#B5121B",
+      "secondary": "#FFFFFF"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "puccetti_sbk",
+    "name": "Kawasaki WorldSBK Team",
+    "shortName": "Kawasaki SBK",
+    "manufacturerId": "kawasaki",
+    "categoryId": "worldsbk",
+    "status": "Factory",
+    "bikeId": "kawasaki_zx10rr_sbk26",
+    "country": "IT",
+    "reputation": 56,
+    "budget": 3500000.0,
+    "colors": {
+      "primary": "#3AAA35",
+      "secondary": "#000000"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "pedercini_sbk",
+    "name": "Team Pedercini Racing",
+    "shortName": "Pedercini",
+    "manufacturerId": "kawasaki",
+    "categoryId": "worldsbk",
+    "status": "Independent",
+    "bikeId": "kawasaki_zx10rr_sbk26",
+    "country": "IT",
+    "reputation": 40,
+    "budget": 1800000.0,
+    "colors": {
+      "primary": "#3AAA35",
+      "secondary": "#FFFFFF"
+    },
+    "riderSlots": 1,
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "motoxracing_sbk",
+    "name": "Motoxracing WorldSBK Team",
+    "shortName": "Motoxracing",
+    "manufacturerId": "yamaha",
+    "categoryId": "worldsbk",
+    "status": "Independent",
+    "bikeId": "yamaha_r1_sbk26",
+    "country": "IT",
+    "reputation": 40,
+    "budget": 1800000.0,
+    "colors": {
+      "primary": "#FFD100",
+      "secondary": "#0A3D91"
+    },
+    "riderSlots": 1,
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "mie_sbk",
+    "name": "MIE Racing Honda Team",
+    "shortName": "MIE Racing",
+    "manufacturerId": "honda",
+    "categoryId": "worldsbk",
+    "status": "Independent",
+    "bikeId": "honda_cbr_sbk26",
+    "country": "IT",
+    "reputation": 38,
+    "budget": 1600000.0,
+    "colors": {
+      "primary": "#7A7A7A",
+      "secondary": "#E4002B"
+    },
+    "riderSlots": 1,
+    "dataConfidence": "2026 entry list, approximate"
+  }
+]

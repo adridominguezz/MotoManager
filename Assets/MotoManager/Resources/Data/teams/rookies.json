@@ -1,0 +1,19 @@
+[
+  {
+    "id": "rookies_cup",
+    "name": "Red Bull MotoGP Rookies Cup",
+    "shortName": "Rookies",
+    "manufacturerId": "ktm",
+    "categoryId": "rookies",
+    "status": "Independent",
+    "bikeId": "ktm_rc250r_rookies",
+    "country": "AT",
+    "reputation": 40,
+    "budget": 0,
+    "colors": {
+      "primary": "#1E2A5A",
+      "secondary": "#FFD100"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  }
+]

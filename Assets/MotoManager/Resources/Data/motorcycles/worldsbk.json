@@ -1,0 +1,194 @@
+[
+  {
+    "id": "ducati_v4r_sbk26",
+    "manufacturerId": "ducati",
+    "categoryId": "worldsbk",
+    "bikeClassId": "production_sbk",
+    "model": "Panigale V4 R",
+    "year": 2026,
+    "components": {
+      "ProductionEngine": 86,
+      "Chassis": 84,
+      "Electronics": 85,
+      "Aerodynamics": 82,
+      "Suspension": 83,
+      "Brakes": 84,
+      "Reliability": 84
+    },
+    "productionBase": {
+      "Power": 88,
+      "TopSpeed": 86,
+      "Acceleration": 85,
+      "Braking": 84,
+      "CornerEntry": 82,
+      "MidCorner": 83,
+      "CornerExit": 84,
+      "Traction": 84,
+      "Stability": 84,
+      "TireWear": 80,
+      "FuelEfficiency": 76,
+      "Reliability": 82,
+      "WetPerformance": 80
+    }
+  },
+  {
+    "id": "bmw_m1000rr_sbk26",
+    "manufacturerId": "bmw",
+    "categoryId": "worldsbk",
+    "bikeClassId": "production_sbk",
+    "model": "M 1000 RR",
+    "year": 2026,
+    "components": {
+      "ProductionEngine": 87,
+      "Chassis": 80,
+      "Electronics": 83,
+      "Aerodynamics": 82,
+      "Suspension": 81,
+      "Brakes": 83,
+      "Reliability": 82
+    },
+    "productionBase": {
+      "Power": 89,
+      "TopSpeed": 90,
+      "Acceleration": 84,
+      "Braking": 82,
+      "CornerEntry": 78,
+      "MidCorner": 79,
+      "CornerExit": 80,
+      "Traction": 80,
+      "Stability": 82,
+      "TireWear": 77,
+      "FuelEfficiency": 74,
+      "Reliability": 81,
+      "WetPerformance": 76
+    }
+  },
+  {
+    "id": "yamaha_r1_sbk26",
+    "manufacturerId": "yamaha",
+    "categoryId": "worldsbk",
+    "bikeClassId": "production_sbk",
+    "model": "YZF-R1",
+    "year": 2026,
+    "components": {
+      "ProductionEngine": 78,
+      "Chassis": 82,
+      "Electronics": 82,
+      "Aerodynamics": 77,
+      "Suspension": 81,
+      "Brakes": 81,
+      "Reliability": 85
+    },
+    "productionBase": {
+      "Power": 76,
+      "TopSpeed": 77,
+      "Acceleration": 77,
+      "Braking": 80,
+      "CornerEntry": 84,
+      "MidCorner": 83,
+      "CornerExit": 82,
+      "Traction": 82,
+      "Stability": 81,
+      "TireWear": 84,
+      "FuelEfficiency": 82,
+      "Reliability": 85,
+      "WetPerformance": 80
+    }
+  },
+  {
+    "id": "honda_cbr_sbk26",
+    "manufacturerId": "honda",
+    "categoryId": "worldsbk",
+    "bikeClassId": "production_sbk",
+    "model": "CBR1000RR-R Fireblade SP",
+    "year": 2026,
+    "components": {
+      "ProductionEngine": 81,
+      "Chassis": 79,
+      "Electronics": 79,
+      "Aerodynamics": 79,
+      "Suspension": 80,
+      "Brakes": 81,
+      "Reliability": 82
+    },
+    "productionBase": {
+      "Power": 83,
+      "TopSpeed": 84,
+      "Acceleration": 80,
+      "Braking": 80,
+      "CornerEntry": 78,
+      "MidCorner": 78,
+      "CornerExit": 78,
+      "Traction": 77,
+      "Stability": 79,
+      "TireWear": 78,
+      "FuelEfficiency": 78,
+      "Reliability": 82,
+      "WetPerformance": 76
+    }
+  },
+  {
+    "id": "kawasaki_zx10rr_sbk26",
+    "manufacturerId": "kawasaki",
+    "categoryId": "worldsbk",
+    "bikeClassId": "production_sbk",
+    "model": "Ninja ZX-10RR",
+    "year": 2026,
+    "components": {
+      "ProductionEngine": 76,
+      "Chassis": 79,
+      "Electronics": 78,
+      "Aerodynamics": 76,
+      "Suspension": 79,
+      "Brakes": 80,
+      "Reliability": 84
+    },
+    "productionBase": {
+      "Power": 75,
+      "TopSpeed": 77,
+      "Acceleration": 76,
+      "Braking": 79,
+      "CornerEntry": 80,
+      "MidCorner": 80,
+      "CornerExit": 79,
+      "Traction": 79,
+      "Stability": 81,
+      "TireWear": 82,
+      "FuelEfficiency": 82,
+      "Reliability": 85,
+      "WetPerformance": 79
+    }
+  },
+  {
+    "id": "bimota_kb998_sbk26",
+    "manufacturerId": "bimota",
+    "categoryId": "worldsbk",
+    "bikeClassId": "production_sbk",
+    "model": "KB998 Rimini",
+    "year": 2026,
+    "components": {
+      "ProductionEngine": 78,
+      "Chassis": 83,
+      "Electronics": 78,
+      "Aerodynamics": 79,
+      "Suspension": 81,
+      "Brakes": 81,
+      "Reliability": 80
+    },
+    "productionBase": {
+      "Power": 76,
+      "TopSpeed": 78,
+      "Acceleration": 77,
+      "Braking": 81,
+      "CornerEntry": 83,
+      "MidCorner": 83,
+      "CornerExit": 80,
+      "Traction": 79,
+      "Stability": 82,
+      "TireWear": 80,
+      "FuelEfficiency": 80,
+      "Reliability": 80,
+      "WetPerformance": 78
+    }
+  }
+]

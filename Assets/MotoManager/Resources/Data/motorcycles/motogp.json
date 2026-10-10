@@ -1,0 +1,92 @@
+[
+  {
+    "id": "ducati_gp26",
+    "manufacturerId": "ducati",
+    "categoryId": "motogp",
+    "bikeClassId": "prototype_gp",
+    "model": "Desmosedici GP26",
+    "year": 2026,
+    "components": {
+      "Engine": 89,
+      "Chassis": 86,
+      "Aerodynamics": 89,
+      "Electronics": 87,
+      "Suspension": 85,
+      "Brakes": 86,
+      "Cooling": 84,
+      "Reliability": 86
+    }
+  },
+  {
+    "id": "aprilia_rsgp26",
+    "manufacturerId": "aprilia",
+    "categoryId": "motogp",
+    "bikeClassId": "prototype_gp",
+    "model": "RS-GP26",
+    "year": 2026,
+    "components": {
+      "Engine": 85,
+      "Chassis": 87,
+      "Aerodynamics": 88,
+      "Electronics": 83,
+      "Suspension": 84,
+      "Brakes": 85,
+      "Cooling": 82,
+      "Reliability": 82
+    }
+  },
+  {
+    "id": "ktm_rc16_26",
+    "manufacturerId": "ktm",
+    "categoryId": "motogp",
+    "bikeClassId": "prototype_gp",
+    "model": "RC16 (2026)",
+    "year": 2026,
+    "components": {
+      "Engine": 86,
+      "Chassis": 81,
+      "Aerodynamics": 82,
+      "Electronics": 81,
+      "Suspension": 84,
+      "Brakes": 84,
+      "Cooling": 82,
+      "Reliability": 80
+    }
+  },
+  {
+    "id": "yamaha_m1v4_26",
+    "manufacturerId": "yamaha",
+    "categoryId": "motogp",
+    "bikeClassId": "prototype_gp",
+    "model": "YZR-M1 V4",
+    "year": 2026,
+    "components": {
+      "Engine": 80,
+      "Chassis": 81,
+      "Aerodynamics": 81,
+      "Electronics": 82,
+      "Suspension": 82,
+      "Brakes": 83,
+      "Cooling": 79,
+      "Reliability": 76
+    }
+  },
+  {
+    "id": "honda_rc213v_26",
+    "manufacturerId": "honda",
+    "categoryId": "motogp",
+    "bikeClassId": "prototype_gp",
+    "model": "RC213V (2026)",
+    "year": 2026,
+    "components": {
+      "Engine": 83,
+      "Chassis": 81,
+      "Aerodynamics": 83,
+      "Electronics": 80,
+      "Suspension": 81,
+      "Brakes": 84,
+      "Cooling": 81,
+      "Reliability": 82
+    }
+  }
+]

@@ -1,0 +1,240 @@
+[
+  {
+    "id": "aruba_ssp",
+    "name": "Aruba.it Racing WorldSSP Team",
+    "shortName": "Aruba SSP",
+    "manufacturerId": "ducati",
+    "categoryId": "worldssp",
+    "status": "Factory",
+    "bikeId": "ducati_v2_ssp26",
+    "country": "IT",
+    "reputation": 76,
+    "budget": 2500000.0,
+    "colors": {
+      "primary": "#C8102E",
+      "secondary": "#FFFFFF"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "barni_ssp",
+    "name": "Barni Spark Racing Team",
+    "shortName": "Barni SSP",
+    "manufacturerId": "ducati",
+    "categoryId": "worldssp",
+    "status": "Satellite",
+    "bikeId": "ducati_v2_ssp26",
+    "country": "IT",
+    "reputation": 58,
+    "budget": 1400000.0,
+    "colors": {
+      "primary": "#E4002B",
+      "secondary": "#000000"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "orelac_ssp",
+    "name": "Orelac Racing VerdNatura",
+    "shortName": "Orelac",
+    "manufacturerId": "ducati",
+    "categoryId": "worldssp",
+    "status": "Satellite",
+    "bikeId": "ducati_v2_ssp26",
+    "country": "ES",
+    "reputation": 52,
+    "budget": 1200000.0,
+    "colors": {
+      "primary": "#6DBE45",
+      "secondary": "#FFFFFF"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "tenkate_ssp",
+    "name": "Ten Kate Racing Yamaha",
+    "shortName": "Ten Kate",
+    "manufacturerId": "yamaha",
+    "categoryId": "worldssp",
+    "status": "Factory",
+    "bikeId": "yamaha_r9_ssp26",
+    "country": "NL",
+    "reputation": 70,
+    "budget": 2000000.0,
+    "colors": {
+      "primary": "#0A3D91",
+      "secondary": "#FF6600"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "evanbros_ssp",
+    "name": "Evan Bros. WorldSSP Yamaha Team",
+    "shortName": "Evan Bros",
+    "manufacturerId": "yamaha",
+    "categoryId": "worldssp",
+    "status": "Satellite",
+    "bikeId": "yamaha_r9_ssp26",
+    "country": "IT",
+    "reputation": 62,
+    "budget": 1600000.0,
+    "colors": {
+      "primary": "#0A3D91",
+      "secondary": "#FFFFFF"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "gmt94_ssp",
+    "name": "GMT94 Yamaha",
+    "shortName": "GMT94",
+    "manufacturerId": "yamaha",
+    "categoryId": "worldssp",
+    "status": "Satellite",
+    "bikeId": "yamaha_r9_ssp26",
+    "country": "FR",
+    "reputation": 54,
+    "budget": 1300000.0,
+    "colors": {
+      "primary": "#002395",
+      "secondary": "#ED2939"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "ptr_ssp",
+    "name": "PTR Triumph Factory Racing",
+    "shortName": "PTR Triumph",
+    "manufacturerId": "triumph",
+    "categoryId": "worldssp",
+    "status": "Factory",
+    "bikeId": "triumph_765_ssp26",
+    "country": "GB",
+    "reputation": 62,
+    "budget": 1600000.0,
+    "colors": {
+      "primary": "#1F2A44",
+      "secondary": "#FFFFFF"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "dynavolt_ssp",
+    "name": "Dynavolt Triumph",
+    "shortName": "Dynavolt",
+    "manufacturerId": "triumph",
+    "categoryId": "worldssp",
+    "status": "Satellite",
+    "bikeId": "triumph_765_ssp26",
+    "country": "DE",
+    "reputation": 52,
+    "budget": 1200000.0,
+    "colors": {
+      "primary": "#002F6C",
+      "secondary": "#E30613"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "mv_ssp",
+    "name": "MV Agusta Reparto Corse",
+    "shortName": "MV Agusta",
+    "manufacturerId": "mvagusta",
+    "categoryId": "worldssp",
+    "status": "Factory",
+    "bikeId": "mvagusta_f3_ssp26",
+    "country": "IT",
+    "reputation": 60,
+    "budget": 1600000.0,
+    "colors": {
+      "primary": "#B01E2D",
+      "secondary": "#FFFFFF"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "kawasaki_ssp",
+    "name": "Kawasaki WorldSSP Team",
+    "shortName": "Kawasaki SSP",
+    "manufacturerId": "kawasaki",
+    "categoryId": "worldssp",
+    "status": "Factory",
+    "bikeId": "kawasaki_zx6r_ssp26",
+    "country": "IT",
+    "reputation": 52,
+    "budget": 1200000.0,
+    "colors": {
+      "primary": "#3AAA35",
+      "secondary": "#000000"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "honda_ssp",
+    "name": "Honda WorldSSP Team",
+    "shortName": "Honda SSP",
+    "manufacturerId": "honda",
+    "categoryId": "worldssp",
+    "status": "Factory",
+    "bikeId": "honda_cbr600_ssp26",
+    "country": "ES",
+    "reputation": 50,
+    "budget": 1200000.0,
+    "colors": {
+      "primary": "#E4002B",
+      "secondary": "#FFFFFF"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "qjmotor_ssp",
+    "name": "QJMotor Factory Racing",
+    "shortName": "QJMotor",
+    "manufacturerId": "qjmotor",
+    "categoryId": "worldssp",
+    "status": "Factory",
+    "bikeId": "qjmotor_srk800_ssp26",
+    "country": "CN",
+    "reputation": 48,
+    "budget": 1400000.0,
+    "colors": {
+      "primary": "#D71920",
+      "secondary": "#FFFFFF"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "vft_ssp",
+    "name": "VFT Racing",
+    "shortName": "VFT",
+    "manufacturerId": "yamaha",
+    "categoryId": "worldssp",
+    "status": "Satellite",
+    "bikeId": "yamaha_r9_ssp26",
+    "country": "IT",
+    "reputation": 46,
+    "budget": 1000000.0,
+    "colors": {
+      "primary": "#2E2E2E",
+      "secondary": "#FFD100"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "mlav_ssp",
+    "name": "MLav Racing",
+    "shortName": "MLav SSP",
+    "manufacturerId": "ducati",
+    "categoryId": "worldssp",
+    "status": "Satellite",
+    "bikeId": "ducati_v2_ssp26",
+    "country": "GB",
+    "reputation": 46,
+    "budget": 1000000.0,
+    "colors": {
+      "primary": "#1F3A93",
+      "secondary": "#FFFFFF"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  }
+]

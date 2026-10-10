@@ -55,6 +55,8 @@ namespace MotoManager.Core.World
         /// <summary>The bike this team races (each team owns its own instance, cloned from the manufacturer spec).</summary>
         public string BikeId;
         public List<string> RiderIds = new List<string>();
+        /// <summary>Number of riders this team fields (0 = category default). WorldSBK has single-rider teams.</summary>
+        public int RiderSlots;
         public string Country;
         public double Budget = 10000000;
         public double Reputation = 50;

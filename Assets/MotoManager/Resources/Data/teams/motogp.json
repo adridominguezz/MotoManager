@@ -1,0 +1,189 @@
+[
+  {
+    "id": "ducati_lenovo",
+    "name": "Ducati Lenovo Team",
+    "shortName": "Ducati",
+    "manufacturerId": "ducati",
+    "categoryId": "motogp",
+    "status": "Factory",
+    "bikeId": "ducati_gp26",
+    "country": "IT",
+    "reputation": 98,
+    "budget": 38000000.0,
+    "colors": {
+      "primary": "#C8102E",
+      "secondary": "#FFFFFF"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "gresini_motogp",
+    "name": "BK8 Gresini Racing MotoGP",
+    "shortName": "Gresini",
+    "manufacturerId": "ducati",
+    "categoryId": "motogp",
+    "status": "Satellite",
+    "bikeId": "ducati_gp26",
+    "country": "IT",
+    "reputation": 78,
+    "budget": 16000000.0,
+    "colors": {
+      "primary": "#5FB7E5",
+      "secondary": "#E4007C"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "vr46_motogp",
+    "name": "Pertamina Enduro VR46 Racing Team",
+    "shortName": "VR46",
+    "manufacturerId": "ducati",
+    "categoryId": "motogp",
+    "status": "Satellite",
+    "bikeId": "ducati_gp26",
+    "country": "IT",
+    "reputation": 80,
+    "budget": 18000000.0,
+    "colors": {
+      "primary": "#FFE600",
+      "secondary": "#1D1D1B"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "aprilia_racing",
+    "name": "Aprilia Racing",
+    "shortName": "Aprilia",
+    "manufacturerId": "aprilia",
+    "categoryId": "motogp",
+    "status": "Factory",
+    "bikeId": "aprilia_rsgp26",
+    "country": "IT",
+    "reputation": 86,
+    "budget": 30000000.0,
+    "colors": {
+      "primary": "#1D1D1B",
+      "secondary": "#E30613"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "trackhouse_motogp",
+    "name": "Trackhouse MotoGP Team",
+    "shortName": "Trackhouse",
+    "manufacturerId": "aprilia",
+    "categoryId": "motogp",
+    "status": "Satellite",
+    "bikeId": "aprilia_rsgp26",
+    "country": "US",
+    "reputation": 66,
+    "budget": 15000000.0,
+    "colors": {
+      "primary": "#0B2D5B",
+      "secondary": "#FFFFFF"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "ktm_factory",
+    "name": "Red Bull KTM Factory Racing",
+    "shortName": "KTM",
+    "manufacturerId": "ktm",
+    "categoryId": "motogp",
+    "status": "Factory",
+    "bikeId": "ktm_rc16_26",
+    "country": "AT",
+    "reputation": 84,
+    "budget": 32000000.0,
+    "colors": {
+      "primary": "#FF6600",
+      "secondary": "#1E2A5A"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "tech3_motogp",
+    "name": "Red Bull KTM Tech3",
+    "shortName": "Tech3",
+    "manufacturerId": "ktm",
+    "categoryId": "motogp",
+    "status": "Satellite",
+    "bikeId": "ktm_rc16_26",
+    "country": "FR",
+    "reputation": 68,
+    "budget": 16000000.0,
+    "colors": {
+      "primary": "#1E2A5A",
+      "secondary": "#FF6600"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "yamaha_factory",
+    "name": "Monster Energy Yamaha MotoGP",
+    "shortName": "Yamaha",
+    "manufacturerId": "yamaha",
+    "categoryId": "motogp",
+    "status": "Factory",
+    "bikeId": "yamaha_m1v4_26",
+    "country": "JP",
+    "reputation": 86,
+    "budget": 34000000.0,
+    "colors": {
+      "primary": "#0A3D91",
+      "secondary": "#000000"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "pramac_motogp",
+    "name": "Prima Pramac Yamaha MotoGP",
+    "shortName": "Pramac",
+    "manufacturerId": "yamaha",
+    "categoryId": "motogp",
+    "status": "Satellite",
+    "bikeId": "yamaha_m1v4_26",
+    "country": "IT",
+    "reputation": 72,
+    "budget": 17000000.0,
+    "colors": {
+      "primary": "#7F2F8C",
+      "secondary": "#00A0E1"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "honda_hrc",
+    "name": "Honda HRC Castrol",
+    "shortName": "Honda HRC",
+    "manufacturerId": "honda",
+    "categoryId": "motogp",
+    "status": "Factory",
+    "bikeId": "honda_rc213v_26",
+    "country": "JP",
+    "reputation": 88,
+    "budget": 36000000.0,
+    "colors": {
+      "primary": "#E4002B",
+      "secondary": "#00843D"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  },
+  {
+    "id": "lcr_motogp",
+    "name": "LCR Honda",
+    "shortName": "LCR",
+    "manufacturerId": "honda",
+    "categoryId": "motogp",
+    "status": "Satellite",
+    "bikeId": "honda_rc213v_26",
+    "country": "MC",
+    "reputation": 64,
+    "budget": 14000000.0,
+    "colors": {
+      "primary": "#00A9E0",
+      "secondary": "#FFFFFF"
+    },
+    "dataConfidence": "2026 entry list, approximate"
+  }
+]

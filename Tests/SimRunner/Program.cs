@@ -21,6 +21,7 @@ namespace MotoManager.Tools
             if (mode == "race") return RaceTest(db, args);
             if (mode == "calibrate") return Calibrate(db, root, args);
             if (mode == "season") return Season(db, args);
+            if (mode == "bikes") return Bikes(db, args);
             Console.WriteLine("usage: laps <rules> [circuit] | race <rules> <circuit> [seed]");
             return 1;
         }
@@ -153,7 +154,7 @@ namespace MotoManager.Tools
             {
                 var sw = System.Diagnostics.Stopwatch.StartNew();
                 int events = 0;
-                game.SimulateRestOfSeason(ev => events++);
+                game.SimulateRestOfSeason(ev => { events++; if (Environment.GetEnvironmentVariable("SIM_VERBOSE") == "1") Console.WriteLine($"  event {ev.Plan.Group} {ev.Plan.Round.Name} {sw.Elapsed.TotalSeconds:0.0}s"); });
                 Console.WriteLine($"== Season {game.World.Season}: {events} events in {sw.Elapsed.TotalSeconds:0.0}s");
                 foreach (var cat in db.CategoriesOrdered())
                 {
@@ -172,6 +173,60 @@ namespace MotoManager.Tools
             var back = SaveSystem.Deserialize(json);
             Console.WriteLine($"save {json.Length / 1024} KB, reload ok: {SaveSystem.Serialize(back) == json}");
             foreach (var n in game.World.News.Where(n => n.Important).Take(12)) Console.WriteLine("  NEWS " + n.Date.ToString("yyyy-MM-dd") + " " + n.Headline);
+            return 0;
+        }
+
+        /// <summary>bikes &lt;category&gt; [races]: identical riders on every team bike -> machinery ranking.</summary>
+        static int Bikes(GameDatabase db, string[] args)
+        {
+            string catId = args.Length > 1 ? args[1] : "motogp";
+            int races = args.Length > 2 ? int.Parse(args[2]) : 6;
+            int laps0 = args.Length > 3 ? int.Parse(args[3]) : 12;
+            var world = WorldFactory.Create(db, new NewGameOptions { Seed = 1 });
+            var rules = db.GetRules(catId, 2026);
+            var circuits = db.Calendars.Values.SelectMany(c => c.Rounds).Select(r => r.CircuitId).Distinct().OrderBy(x => x).ToList();
+            var sum = new Dictionary<string, double>();
+            var cnt = new Dictionary<string, int>();
+            var laps = new Dictionary<string, double>();
+            var lapN = new Dictionary<string, int>();
+            for (int i = 0; i < races; i++)
+            {
+                var circuit = db.Circuits[circuits[(i * 7) % circuits.Count]];
+                var cfg = new RaceConfig { Rules = rules, Circuit = circuit, Tuning = db.Tuning, Seed = (ulong)(100 + i), TimeStep = 0.2, Laps = laps0 };
+                cfg.Weather.AirTemp = circuit.AverageAirTempC;
+                int grid = 1;
+                foreach (var team in world.TeamsInCategory(catId))
+                {
+                    var bike = world.GetBike(team.BikeId);
+                    var perf = BikePerformance.Compute(bike, db.GetBikeClass(bike.BikeClassId));
+                    foreach (var rid in team.RiderIds)
+                    {
+                        var e = AverageEntry(grid, 75);
+                        e.Rider.Id = team.Id + "|" + rid;
+                        e.Bike = perf; e.ManufacturerId = team.ManufacturerId; e.Team = team; e.GridPosition = grid++;
+                        cfg.Entries.Add(e);
+                    }
+                }
+                // Rotate the grid so nobody always starts in front.
+                foreach (var e in cfg.Entries) e.GridPosition = (e.GridPosition + i * 5) % cfg.Entries.Count + 1;
+                var sim = new RaceSimulation(cfg);
+                sim.RunToEnd();
+                foreach (var r in sim.GetClassification())
+                {
+                    string m = r.ManufacturerId;
+                    double v = r.Status == ResultStatus.Finished ? r.Position : cfg.Entries.Count;
+                    sum[m] = (sum.ContainsKey(m) ? sum[m] : 0) + v;
+                    if (r.BestLap > 0) { laps[m] = (laps.ContainsKey(m) ? laps[m] : 0) + r.BestLap - sim.FastestLap; lapN[m] = (lapN.ContainsKey(m) ? lapN[m] : 0) + 1; }
+                    cnt[m] = (cnt.ContainsKey(m) ? cnt[m] : 0) + 1;
+                }
+            }
+            foreach (var kv in sum.OrderBy(k => k.Value / cnt[k.Key]))
+            {
+                var team = world.Teams.Values.First(t => t.CategoryId == catId && t.ManufacturerId == kv.Key);
+                var bike = world.GetBike(team.BikeId);
+                var perf = BikePerformance.Compute(bike, db.GetBikeClass(bike.BikeClassId));
+                Console.WriteLine($"{kv.Key,-12} avg pos {kv.Value / cnt[kv.Key],5:0.0}  best lap +{(lapN.ContainsKey(kv.Key) ? laps[kv.Key] / lapN[kv.Key] : 0):0.000}s  power {perf[PerfAttr.Power]:0} top {perf[PerfAttr.TopSpeed]:0} mid {perf[PerfAttr.MidCorner]:0} brake {perf[PerfAttr.Braking]:0} trac {perf[PerfAttr.Traction]:0} wear {perf[PerfAttr.TireWear]:0}");
+            }
             return 0;
         }
 
