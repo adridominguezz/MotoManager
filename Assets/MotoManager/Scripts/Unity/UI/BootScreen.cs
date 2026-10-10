@@ -132,10 +132,25 @@ namespace MotoManager.App.UI
                 return;
             }
             UiFactory.Clear(_buttons);
-            AddButton("Simulate next event", SimulateNext, Theme.Accent);
+            AddButton("Play next event", PlayNext, Theme.Accent);
+            AddButton("Simulate next event", SimulateNext);
             AddButton("Simulate rest of season", SimulateSeason);
             AddButton("Save", () => _session.Save());
             RefreshCareer();
+        }
+
+        private void PlayNext()
+        {
+            if (_session.Game.IsSeasonOver)
+            {
+                SimulateNext();
+                return;
+            }
+            new RaceFlow(_session, gameObject, summary =>
+            {
+                _lastSummary = summary;
+                RefreshCareer();
+            }).Start();
         }
 
         private void SimulateNext()

@@ -148,10 +148,22 @@ Convenciones que se mantienen en todas las fases:
 
 ## Fase 5 — Carrera visual (2–3 sesiones) ★ requisito principal
 
-### Sesión 5.1 — Render del circuito y motos
+### Sesión 5.1 — Render del circuito y motos ✅
 - Malla del circuito desde `TrackGeometry` (asfalto, pianos, grava, pit lane), cámara
   cenital/isométrica con zoom y seguimiento, motos low-poly con colores de equipo, inclinación,
   frenada y caídas animadas; interpolación entre ticks.
+- Resultado: shader propio barato (color por vértice), circuito generado desde la geometría del núcleo
+  (asfalto, pianos, grava, meta, parrilla, pit lane, garajes, tribunas), motos low-poly con colores del
+  equipo (inclinación, cabeceo, caídas), cámara Seguir/Circuito/Libre con gestos táctiles, vista de
+  carrera a velocidad 0/1/2/4/8x con paso fijo (determinista) e interpolación, HUD básico (torre de
+  tiempos, vuelta, clima, banderas, eventos, etiquetas, resultados) y flujo completo del evento
+  (entrenos y clasificación en segundo plano → carreras visibles → resto del evento en segundo plano).
+- Vista previa fuera de Unity: `SimRunner preview|circuits` genera SVG del mismo dibujo
+  (`docs/race_preview_mugello.png`, `docs/circuits_current.png`).
+- **Problema detectado**: los trazados escritos a mano solo se parecen vagamente a los reales y 5 se
+  cruzan sobre sí mismos (Jerez, Sepang, Sachsenring, Phillip Island, Silverstone). Solución prevista
+  (sesión 5.1b): derivar los segmentos de la simulación a partir de coordenadas reales del trazado
+  (OpenStreetMap). Requiere permitir `overpass-api.de` en la red del entorno o aportar las coordenadas.
 
 ### Sesión 5.2 — HUD y controles
 - Torre de tiempos (posición, gaps, vuelta, neumáticos, estado), feed de eventos, clima/radar con
