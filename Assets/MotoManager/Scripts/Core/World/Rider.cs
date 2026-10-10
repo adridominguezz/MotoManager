@@ -197,6 +197,8 @@ namespace MotoManager.Core.World
         public List<RidingStyle> Styles = new List<RidingStyle>();
         public Personality Personality = new Personality();
         public Contract Contract;
+        /// <summary>Signed deal that starts next season (applied by the market at season end).</summary>
+        public Contract FutureContract;
         public List<SeasonRecord> CareerHistory = new List<SeasonRecord>();
         public List<string> Titles = new List<string>();
         /// <summary>Free text summary of real-world history before the snapshot.</summary>

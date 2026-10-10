@@ -91,6 +91,81 @@ namespace MotoManager.Core.Economy
         }
     }
 
+    /// <summary>Hiring and firing personnel. Candidates for a role are stable within a season.</summary>
+    public static class StaffMarket
+    {
+        public static List<StaffMember> Candidates(WorldState world, GameDatabase db, Team team, StaffRole role, int count = 5)
+        {
+            int played = 0;
+            foreach (var kv in world.NextRound) played += kv.Value;
+            // New faces every few events, stable in between.
+            var rng = new DeterministicRandom(DeterministicRandom.Combine(world.MasterSeed, DeterministicRandom.Hash(world.Season + "|" + team.Id + "|" + role + "|" + played / 4)));
+            var list = new List<StaffMember>();
+            for (int i = 0; i < count; i++)
+            {
+                double level = 35 + i * 12 + rng.Range(-5, 5);
+                var s = StaffService.Generate(world, db, rng, role, null, level);
+                s.Id = "cand_" + team.Id + "_" + role + "_" + i;
+                list.Add(s);
+            }
+            list.Sort((a, b) => b.Skill.CompareTo(a.Skill));
+            return list;
+        }
+
+        /// <summary>Severance: half of a season's salary.</summary>
+        public static double SeveranceCost(StaffMember s)
+        {
+            return Math.Round(s.Salary * 0.5);
+        }
+
+        public static void Fire(WorldState world, Team team, string staffId)
+        {
+            StaffMember s;
+            if (!world.Staff.TryGetValue(staffId, out s) || s.TeamId != team.Id) return;
+            team.Budget -= SeveranceCost(s);
+            team.StaffIds.Remove(staffId);
+            s.TeamId = null;
+            world.AddNews(s.FullName + " leaves " + team.Name, s.Role + " released.", team.CategoryId);
+        }
+
+        /// <summary>Hires a candidate; for single-holder roles the current holder is released.</summary>
+        public static StaffMember Hire(WorldState world, Team team, StaffMember candidate)
+        {
+            if (candidate.Role != StaffRole.CrewChief && candidate.Role != StaffRole.Mechanic)
+            {
+                foreach (var id in new List<string>(team.StaffIds))
+                {
+                    StaffMember s;
+                    if (world.Staff.TryGetValue(id, out s) && s.Role == candidate.Role) Fire(world, team, id);
+                }
+            }
+            var hired = new StaffMember
+            {
+                Id = world.NewId("staff"), FirstName = candidate.FirstName, LastName = candidate.LastName, Role = candidate.Role,
+                Nationality = candidate.Nationality, BirthYear = candidate.BirthYear, Skill = candidate.Skill, Salary = candidate.Salary, TeamId = team.Id
+            };
+            world.Staff[hired.Id] = hired;
+            team.StaffIds.Add(hired.Id);
+            team.Budget -= Math.Round(hired.Salary * 0.1); // signing fee
+            world.AddNews(hired.FullName + " joins " + team.Name, "New " + hired.Role + ".", team.CategoryId);
+            return hired;
+        }
+    }
+
+    public class FinanceSummary
+    {
+        public double SponsorIncome;
+        public double ParticipationIncome;
+        public double RiderSalaries;
+        public double StaffSalaries;
+        public double FacilityUpkeep;
+        public double BikeLease;
+        public double Travel;
+        public double Income { get { return SponsorIncome + ParticipationIncome; } }
+        public double Expenses { get { return RiderSalaries + StaffSalaries + FacilityUpkeep + BikeLease + Travel; } }
+        public double Balance { get { return Income - Expenses; } }
+    }
+
     /// <summary>Sponsor contracts: signing, objectives, bonuses and renewals.</summary>
     public static class SponsorService
     {
@@ -282,6 +357,31 @@ namespace MotoManager.Core.Economy
             double costs = (SeasonSalaries(world, team) + FacilityUpkeep(team) + lease) * share + rules.Economy.TravelCostPerRound + crashes * rules.Economy.CrashRepairCost;
             team.Budget += income - costs;
             return income - costs;
+        }
+
+        /// <summary>Expected season income and costs before race prizes, bonuses and crash damage.</summary>
+        public static FinanceSummary SeasonForecast(WorldState world, GameDatabase db, Team team, int rounds)
+        {
+            var rules = db.GetRules(team.CategoryId, world.Season);
+            var f = new FinanceSummary
+            {
+                SponsorIncome = SponsorIncomePerSeason(team),
+                ParticipationIncome = rules.Economy.ParticipationIncomePerSeason,
+                FacilityUpkeep = FacilityUpkeep(team),
+                BikeLease = team.Status == TeamStatus.Factory ? 0 : rules.Economy.BikeLeasePerSeason * team.RiderIds.Count,
+                Travel = rules.Economy.TravelCostPerRound * rounds
+            };
+            foreach (var id in team.RiderIds)
+            {
+                var r = world.GetRider(id);
+                if (r != null && r.Contract != null && r.Contract.TeamId == team.Id) f.RiderSalaries += r.Contract.SalaryPerSeason;
+            }
+            foreach (var id in team.StaffIds)
+            {
+                StaffMember s;
+                if (world.Staff.TryGetValue(id, out s)) f.StaffSalaries += s.Salary;
+            }
+            return f;
         }
 
         public static double FacilityUpgradeCost(Team team, FacilityType type)

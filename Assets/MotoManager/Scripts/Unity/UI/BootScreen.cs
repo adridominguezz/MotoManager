@@ -131,6 +131,13 @@ namespace MotoManager.App.UI
                 _status.text = "Could not load the career.";
                 return;
             }
+            if (game.World.PlayerTeam != null)
+            {
+                // Full management interface; the boot screen is no longer needed.
+                Screens.ManagementShell.Create(_session);
+                Destroy(gameObject);
+                return;
+            }
             UiFactory.Clear(_buttons);
             AddButton("Play next event", PlayNext, Theme.Accent);
             AddButton("Simulate next event", SimulateNext);

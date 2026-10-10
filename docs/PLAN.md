@@ -193,12 +193,27 @@ Convenciones que se mantienen en todas las fases:
   re-simula la carrera idéntica, con saltos de ±1 vuelta; "Ver replay" en los resultados con velocidad
   y cámaras. El perfilado en un Android real queda para cuando se pruebe en dispositivo (Fase 7).
 
-## Fase 6 — Interfaz de gestión (2–3 sesiones)
+## Fase 6 — Interfaz de gestión (2–3 sesiones) ✅
 
 - Hub (próximo evento, presupuesto, noticias), Equipo (pilotos con atributos percibidos por
   scouting, contratos, personal), Moto (componentes, proyectos de desarrollo), Instalaciones,
   Patrocinadores/Finanzas, Clasificaciones e historial, Calendario, Mercado (ofertas a pilotos),
   Fin de semana (elección de neumáticos, sesiones), Nueva partida (elegir equipo y categoría).
+- Resultado: estructura con barra lateral, cabecera (equipo, presupuesto, fecha, próximo evento),
+  avisos emergentes y trabajo pesado en segundo plano. Pantallas:
+  - **Inicio**: próximo evento (jugar / simular / simular hasta el final), cierre de temporada con
+    resumen, tus pilotos en el campeonato, noticias, guardar.
+  - **Equipo**: pilotos con sus 18 atributos (rangos según scouting), estilos, historial, contrato,
+    renovaciones; personal con contratar (candidatos por rol) y despedir (indemnización).
+  - **Moto e I+D**: componentes y si el reglamento permite desarrollarlos, rendimiento derivado,
+    proyectos en curso/terminados con resultados reales, iniciar proyectos (coste, días, riesgo,
+    compensaciones) e instalaciones mejorables.
+  - **Finanzas**: previsión de temporada, patrocinadores con objetivos y satisfacción, firmar nuevos.
+  - **Mercado**: pilotos de cualquier categoría o cantera, scouting, ofertas para la temporada
+    siguiente (aceptadas o rechazadas por el piloto con su salario pedido).
+  - **Clasificaciones**, **Calendario** e **Historial** (palmarés y más victorias).
+- Núcleo nuevo y probado: `ContractService` (ofertas, renovaciones, contratos futuros que el mercado
+  aplica al cerrar la temporada), `StaffMarket`, `FinanceService.SeasonForecast`. 28 tests en verde.
 
 ## Fase 7 — Pulido y build Android (1–2 sesiones)
 

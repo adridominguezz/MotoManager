@@ -49,6 +49,24 @@ namespace MotoManager.Core.Career
             int next = season + 1;
             var nextDate = new DateTime(next, 3, 1);
 
+            // 0. Pre-signed deals for next season (player offers accepted during the year).
+            foreach (var r in SortedRiders(world))
+            {
+                if (r.IsRetired || r.FutureContract == null) continue;
+                var c = r.FutureContract;
+                r.FutureContract = null;
+                var team = world.GetTeam(c.TeamId);
+                if (team == null || c.StartSeason != next) continue;
+                var old = world.GetTeam(r.TeamId);
+                if (old != null) old.RiderIds.Remove(r.Id);
+                report.Moves.Add(new MarketMove { RiderId = r.Id, FromTeamId = r.TeamId, FromCategoryId = r.CategoryId, ToTeamId = team.Id, ToCategoryId = team.CategoryId, Renewal = r.TeamId == team.Id });
+                r.TeamId = team.Id;
+                r.CategoryId = team.CategoryId;
+                r.Contract = c;
+                if (!team.RiderIds.Contains(r.Id)) team.RiderIds.Add(r.Id);
+                if (NumberTaken(world, r)) r.Number = RiderGenerator.FreeNumber(world, team.CategoryId, rng);
+            }
+
             // 1. Age limits and expired contracts.
             foreach (var r in SortedRiders(world))
             {

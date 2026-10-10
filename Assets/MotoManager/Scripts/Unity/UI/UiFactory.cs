@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -171,6 +172,72 @@ namespace MotoManager.App.UI
             le.preferredHeight = height;
             le.minHeight = height;
             return rt;
+        }
+
+        /// <summary>
+        /// A table row: cells laid out by relative widths. Returns the row so callers can add buttons.
+        /// Use rich text in cells for colour accents.
+        /// </summary>
+        public static RectTransform TableRow(Transform list, float height, float[] widths, string[] cells, bool header = false, Color? background = null, Color? textColor = null)
+        {
+            var row = Row(list, height);
+            if (background.HasValue || header)
+            {
+                var img = row.gameObject.AddComponent<Image>();
+                img.color = background ?? new Color(1, 1, 1, 0.06f);
+                img.raycastTarget = false;
+            }
+            float total = 0;
+            foreach (var w in widths) total += w;
+            float x = 0;
+            for (int i = 0; i < cells.Length && i < widths.Length; i++)
+            {
+                var t = Label("Cell" + i, row, cells[i] ?? "", header ? Theme.FontSmall - 2 : Theme.FontSmall,
+                    i == 0 ? TextAnchor.MiddleLeft : TextAnchor.MiddleCenter, header ? Theme.TextDim : (textColor ?? Theme.Text));
+                t.supportRichText = true;
+                Place(t.rectTransform, x / total, 0, (x + widths[i]) / total, 1);
+                t.rectTransform.offsetMin = new Vector2(8, 0);
+                x += widths[i];
+            }
+            return row;
+        }
+
+        public static Text Paragraph(Transform list, string text, int size = Theme.FontSmall, float height = 0)
+        {
+            int lines = 1;
+            foreach (var c in text) if (c == '\n') lines++;
+            var row = Row(list, height > 0 ? height : 14 + lines * (size + 8));
+            var t = Label("Text", row, text, size, TextAnchor.UpperLeft);
+            t.supportRichText = true;
+            Stretch(t.rectTransform);
+            t.rectTransform.offsetMin = new Vector2(8, 0);
+            return t;
+        }
+
+        public static Text Heading(Transform list, string text)
+        {
+            var row = Row(list, 58);
+            var t = Label("Heading", row, text, Theme.FontLarge - 6, TextAnchor.LowerLeft, Theme.Text);
+            t.supportRichText = true;
+            Stretch(t.rectTransform);
+            t.rectTransform.offsetMin = new Vector2(6, 4);
+            return t;
+        }
+
+        /// <summary>A row of buttons sharing the width.</summary>
+        public static void ButtonRow(Transform list, float height, params KeyValuePair<string, Action>[] buttons)
+        {
+            var row = Row(list, height);
+            for (int i = 0; i < buttons.Length; i++)
+            {
+                var b = Button("Button", row, buttons[i].Key, buttons[i].Value, i == 0 ? Theme.Accent : Theme.PanelLight, Theme.FontSmall + 2);
+                Place((RectTransform)b.transform, (float)i / buttons.Length, 0, (float)(i + 1) / buttons.Length, 1, 4);
+            }
+        }
+
+        public static KeyValuePair<string, Action> Act(string label, Action action)
+        {
+            return new KeyValuePair<string, Action>(label, action);
         }
 
         public static void Clear(Transform t)
