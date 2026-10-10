@@ -170,24 +170,53 @@ namespace MotoManager.Core.Data
 
     public enum StaffRole
     {
+        /// <summary>Only used in the data to name a team's real manager: managers are ManagerProfiles, not staff.</summary>
         TeamManager,
+        /// <summary>Leads the technical programme: development speed and the quality of every project.</summary>
+        TechnicalDirector,
+        /// <summary>Runs the engineering group: development and the base set-up of the bikes.</summary>
         ChiefEngineer,
-        CrewChief,
-        DataEngineer,
+        /// <summary>Crew chief of one rider: weekend set-up and race-day calls.</summary>
+        RaceEngineer,
+        /// <summary>Electronics strategy and development.</summary>
+        ElectronicsEngineer,
+        /// <summary>Data analysis: set-up work and weather / race forecasts.</summary>
+        DataAnalyst,
+        /// <summary>Tyre choice and tyre-related set-up.</summary>
         TireEngineer,
+        /// <summary>Aerodynamic development (categories with aero freedom).</summary>
         Aerodynamicist,
-        Designer,
+        /// <summary>Crew mechanics (one lead per rider): reliability of the bikes.</summary>
+        Mechanic,
+        /// <summary>Finding and assessing riders.</summary>
         Scout,
-        Mechanic
+        /// <summary>Medical care: recovery from injuries.</summary>
+        Physio,
+        /// <summary>Rider coaching: development of the team's riders.</summary>
+        RiderCoach
     }
 
     public enum FacilityType
     {
-        Workshop,
-        DesignOffice,
+        /// <summary>Workshop and production: development speed, parallel projects, bike preparation.</summary>
+        Factory,
+        /// <summary>Engine test benches: engine and power projects.</summary>
+        Dyno,
+        /// <summary>Aerodynamic projects.</summary>
+        WindTunnel,
+        /// <summary>Electronics projects and weekend electronics set-up.</summary>
+        ElectronicsLab,
+        /// <summary>Set-up preparation and rider learning.</summary>
         Simulator,
+        /// <summary>Rider fitness and training: development and injury recovery.</summary>
+        RiderTrainingCenter,
+        /// <summary>Scouting network.</summary>
+        ScoutingCenter,
+        /// <summary>Data infrastructure: forecasts and set-up analysis.</summary>
         DataCenter,
+        /// <summary>Young riders' development.</summary>
         Academy,
+        /// <summary>Guests and partners: what sponsors pay and how keen they are.</summary>
         Hospitality
     }
 

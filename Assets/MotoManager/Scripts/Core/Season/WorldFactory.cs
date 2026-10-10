@@ -47,10 +47,14 @@ namespace MotoManager.Core.Season
             foreach (var r in db.Riders.Values) world.Riders[r.Id] = JsonSettings.DeepClone(r);
             foreach (var s in db.Staff.Values)
             {
+                // Team managers are managers, not staff (they become the AI managers of their teams).
+                if (s.Role == StaffRole.TeamManager) continue;
                 world.Staff[s.Id] = new StaffMember
                 {
                     Id = s.Id, FirstName = s.FirstName, LastName = s.LastName, Role = s.Role, Nationality = s.Nationality,
-                    BirthYear = s.BirthYear, Skill = s.Skill, Salary = s.Salary, TeamId = s.TeamId
+                    BirthYear = s.BirthYear, Skill = s.Skill, Salary = s.Salary, TeamId = s.TeamId,
+                    Experience = Math.Max(0, options.StartSeason - s.BirthYear - 25), Reputation = s.Skill,
+                    ContractEndSeason = options.StartSeason + 1, DataConfidence = "real person, approximate values"
                 };
                 var team = world.GetTeam(s.TeamId);
                 if (team != null && !team.StaffIds.Contains(s.Id)) team.StaffIds.Add(s.Id);

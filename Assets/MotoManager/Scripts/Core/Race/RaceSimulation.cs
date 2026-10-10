@@ -1189,7 +1189,7 @@ namespace MotoManager.Core.Race
 
             if (!Config.TimeTrial)
             {
-                double rel = bike[PerfAttr.Reliability];
+                double rel = bike[PerfAttr.Reliability] + r.Entry.ReliabilityBonus;
                 double hazard = Tuning.BaseFailureRatePerHour / 3600.0 * Math.Exp((50 - rel) / 30.0) * (r.Pace == PaceMode.Push ? 1.3 : 1.0) * dt;
                 if (_rng.Chance(hazard)) MechanicalProblem(r);
             }

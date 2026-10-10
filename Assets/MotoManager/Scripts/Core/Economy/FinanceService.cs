@@ -39,7 +39,7 @@ namespace MotoManager.Core.Economy
             foreach (FacilityType f in Enum.GetValues(typeof(FacilityType)))
             {
                 int lvl = team.Facility(f);
-                p.FacilityLevelSquares += lvl * lvl;
+                p.FacilityLevelSquares += lvl * lvl * TeamCapabilities.CostWeight(f);
             }
             return p;
         }
@@ -67,7 +67,7 @@ namespace MotoManager.Core.Economy
     public static class FinanceService
     {
         /// <summary>Upkeep of one facility level step at the MotoGP reference (scaled per category).</summary>
-        public const double FacilityUpkeepUnit = 60000;
+        public const double FacilityUpkeepUnit = 40000;
         public const double FacilityUpgradeUnit = 400000;
 
         public static double SeasonSalaries(WorldState world, Team team)
@@ -222,7 +222,7 @@ namespace MotoManager.Core.Economy
         {
             int lvl = team.Facility(type);
             var rules = db.GetRules(team.CategoryId, world.Season);
-            return Math.Round(FacilityUpgradeUnit * Math.Pow(lvl + 1, 2) * rules.Economy.FacilityCostScale / 1000) * 1000;
+            return Math.Round(FacilityUpgradeUnit * Math.Pow(lvl + 1, 2) * rules.Economy.FacilityCostScale * TeamCapabilities.CostWeight(type) / 1000) * 1000;
         }
 
         public static bool UpgradeFacility(WorldState world, GameDatabase db, Team team, FacilityType type)

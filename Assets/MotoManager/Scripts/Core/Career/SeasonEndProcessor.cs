@@ -68,6 +68,8 @@ namespace MotoManager.Core.Career
             DevelopmentService.ManufacturerSeasonReview(world, db, rng);
             DevelopmentService.WinterDevelopment(world, db, rng);
             summary.Market = TransferMarket.Run(world, db, rng);
+            // Personnel: experience, reputation and contracts (after the riders are settled for next season).
+            StaffService.SeasonEnd(world, db, rng);
             // Winter sponsor approaches for next season (AI teams decide straight away, the player has time).
             SponsorMarket.AfterEvent(world, db, rng, true);
             SponsorMarket.AfterEvent(world, db, rng, true);

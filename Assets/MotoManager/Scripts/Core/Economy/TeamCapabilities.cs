@@ -1,0 +1,177 @@
+using System;
+using MotoManager.Core.Common;
+using MotoManager.Core.Data;
+using MotoManager.Core.World;
+
+namespace MotoManager.Core.Economy
+{
+    /// <summary>
+    /// What a team's people and facilities actually do, in one place. Every effect of staff and facilities on the
+    /// simulation goes through here, so the screens can explain them and nothing is counted twice.
+    /// </summary>
+    public static class TeamCapabilities
+    {
+        /// <summary>Relative running and building cost of each facility (1 = average).</summary>
+        public static double CostWeight(FacilityType f)
+        {
+            switch (f)
+            {
+                case FacilityType.Factory: return 1.6;
+                case FacilityType.WindTunnel: return 1.4;
+                case FacilityType.Dyno: return 1.0;
+                case FacilityType.Simulator: return 1.0;
+                case FacilityType.ElectronicsLab: return 0.9;
+                case FacilityType.Hospitality: return 0.8;
+                case FacilityType.DataCenter: return 0.7;
+                case FacilityType.RiderTrainingCenter: return 0.6;
+                case FacilityType.Academy: return 0.6;
+                default: return 0.4; // scouting centre
+            }
+        }
+
+        public static double Skill(WorldState world, Team team, StaffRole role, double fallback = 40)
+        {
+            return StaffService.BestSkill(world, team, role, fallback);
+        }
+
+        // ------------------------------------------------------------------ development
+
+        /// <summary>Facility that drives a bike component's development.</summary>
+        public static FacilityType FacilityFor(string component)
+        {
+            switch (component)
+            {
+                case "Engine":
+                case "ProductionEngine":
+                case "SpecEngine":
+                    return FacilityType.Dyno;
+                case "Aerodynamics":
+                    return FacilityType.WindTunnel;
+                case "Electronics":
+                    return FacilityType.ElectronicsLab;
+                default:
+                    return FacilityType.Factory;
+            }
+        }
+
+        /// <summary>Specialist whose skill shapes a component's projects (null = the chief engineer).</summary>
+        public static StaffRole SpecialistFor(string component)
+        {
+            switch (component)
+            {
+                case "Aerodynamics": return StaffRole.Aerodynamicist;
+                case "Electronics": return StaffRole.ElectronicsEngineer;
+                case "Tyres": return StaffRole.TireEngineer;
+                default: return StaffRole.ChiefEngineer;
+            }
+        }
+
+        /// <summary>Days of project work done per calendar day.</summary>
+        public static double DevelopmentSpeed(WorldState world, Team team, string component)
+        {
+            double td = Skill(world, team, StaffRole.TechnicalDirector, 40);
+            double ce = Skill(world, team, StaffRole.ChiefEngineer, 40);
+            return 0.55 + td * 0.0025 + ce * 0.0015 + team.Facility(FacilityType.Factory) * 0.05 + team.Facility(FacilityFor(component)) * 0.03;
+        }
+
+        /// <summary>How many projects the factory can run in parallel.</summary>
+        public static int ProjectCapacity(Team team)
+        {
+            return 1 + (team.Facility(FacilityType.Factory) + 1) / 2;
+        }
+
+        /// <summary>Engineering quality behind a project (drives failure risk and results).</summary>
+        public static double ProjectQuality(WorldState world, Team team, string component, string engineerId)
+        {
+            StaffMember s;
+            double lead = engineerId != null && world.Staff.TryGetValue(engineerId, out s) ? s.Skill : Skill(world, team, SpecialistFor(component), 40);
+            double td = Skill(world, team, StaffRole.TechnicalDirector, 40);
+            return MathX.Clamp(lead * 0.6 + td * 0.25 + team.Facility(FacilityFor(component)) * 3, 10, 100);
+        }
+
+        // ------------------------------------------------------------------ race weekend
+
+        /// <summary>The race engineer working with a rider (assigned, or the best available).</summary>
+        public static double RaceEngineerSkill(WorldState world, Team team, string riderId)
+        {
+            double best = -1;
+            foreach (var id in team.StaffIds)
+            {
+                StaffMember s;
+                if (!world.Staff.TryGetValue(id, out s) || s.Role != StaffRole.RaceEngineer) continue;
+                if (s.AssignedRiderId == riderId) return s.Skill;
+                best = Math.Max(best, s.Skill);
+            }
+            return best < 0 ? 40 : best;
+        }
+
+        /// <summary>Starting set-up quality contribution of the crew and facilities (0-0.35).</summary>
+        public static double SetupSupport(WorldState world, Team team, string riderId)
+        {
+            double re = RaceEngineerSkill(world, team, riderId);
+            double ee = Skill(world, team, StaffRole.ElectronicsEngineer, 35);
+            double da = Skill(world, team, StaffRole.DataAnalyst, 35);
+            double te = Skill(world, team, StaffRole.TireEngineer, 35);
+            double crew = re * 0.55 + ee * 0.15 + da * 0.15 + te * 0.15;
+            return crew / 500.0 + team.Facility(FacilityType.Simulator) * 0.025 + team.Facility(FacilityType.ElectronicsLab) * 0.008 + team.Facility(FacilityType.DataCenter) * 0.007;
+        }
+
+        /// <summary>Extra reliability points of the bikes from the mechanics and the factory.</summary>
+        public static double ReliabilityBonus(WorldState world, Team team, string riderId)
+        {
+            double mech = -1;
+            foreach (var id in team.StaffIds)
+            {
+                StaffMember s;
+                if (!world.Staff.TryGetValue(id, out s) || s.Role != StaffRole.Mechanic) continue;
+                if (s.AssignedRiderId == riderId) { mech = s.Skill; break; }
+                mech = Math.Max(mech, s.Skill);
+            }
+            if (mech < 0) mech = 40;
+            return (mech - 50) / 5.0 + (team.Facility(FacilityType.Factory) - 1) * 0.5;
+        }
+
+        /// <summary>Skill used for weather and race forecasts.</summary>
+        public static double ForecastSkill(WorldState world, Team team)
+        {
+            return MathX.Clamp(Skill(world, team, StaffRole.DataAnalyst, 45) + (team.Facility(FacilityType.DataCenter) - 1) * 4, 0, 100);
+        }
+
+        // ------------------------------------------------------------------ riders
+
+        /// <summary>Extra growth of the team's riders per season (coach, training centre, simulator; academy for the young).</summary>
+        public static double RiderDevelopmentBonus(WorldState world, Team team, double age)
+        {
+            double coach = Skill(world, team, StaffRole.RiderCoach, 30);
+            double b = (coach - 40) / 120.0 + team.Facility(FacilityType.RiderTrainingCenter) * 0.06 + team.Facility(FacilityType.Simulator) * 0.04;
+            if (age < 22) b += team.Facility(FacilityType.Academy) * 0.06;
+            return b;
+        }
+
+        /// <summary>Chance that an injury heals one event sooner.</summary>
+        public static double QuickerRecoveryChance(WorldState world, Team team)
+        {
+            return MathX.Clamp(Skill(world, team, StaffRole.Physio, 20) / 150.0 + team.Facility(FacilityType.RiderTrainingCenter) * 0.04, 0, 0.8);
+        }
+
+        /// <summary>Knowledge gained per event about a scouted rider.</summary>
+        public static double ScoutingRate(WorldState world, Team team)
+        {
+            return 0.06 + Skill(world, team, StaffRole.Scout, 30) / 900.0 + team.Facility(FacilityType.ScoutingCenter) * 0.012;
+        }
+
+        // ------------------------------------------------------------------ commercial
+
+        /// <summary>Multiplier on what sponsors pay (hospitality for partners).</summary>
+        public static double SponsorValueFactor(Team team)
+        {
+            return 1 + (team.Facility(FacilityType.Hospitality) - 1) * 0.02;
+        }
+
+        /// <summary>Multiplier on how keen sponsors are to approach the team.</summary>
+        public static double SponsorInterestFactor(Team team)
+        {
+            return 1 + (team.Facility(FacilityType.Hospitality) - 1) * 0.05;
+        }
+    }
+}

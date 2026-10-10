@@ -98,7 +98,7 @@ namespace MotoManager.Core.Economy
         /// <summary>What a sponsor would pay a team per season.</summary>
         public static double ValueFor(SponsorTemplate s, Team team, ChampionshipCategory category)
         {
-            return Math.Round(s.PaymentPerSeason * CategoryWeight(s, category) * (0.7 + team.Reputation / 160.0) / 1000) * 1000;
+            return Math.Round(s.PaymentPerSeason * CategoryWeight(s, category) * (0.7 + team.Reputation / 160.0) * TeamCapabilities.SponsorValueFactor(team) / 1000) * 1000;
         }
 
         /// <summary>
@@ -130,7 +130,7 @@ namespace MotoManager.Core.Economy
                 int n = Math.Max(1, champ.Teams.Count);
                 if (o.ChampionshipPosition > 0) form = 0.75 + 0.5 * (1 - (o.ChampionshipPosition - 1.0) / n);
             }
-            return weight * rep * nat * form;
+            return weight * rep * nat * form * TeamCapabilities.SponsorInterestFactor(team);
         }
 
         public static int Slots(GameDatabase db, Team team, int season)

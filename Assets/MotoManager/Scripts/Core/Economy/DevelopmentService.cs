@@ -73,7 +73,7 @@ namespace MotoManager.Core.Economy
             int active = 0;
             foreach (var p in world.Projects)
                 if (p.TeamId == team.Id && p.Status == ProjectStatus.InProgress) active++;
-            int capacity = 1 + team.Facility(FacilityType.DesignOffice);
+            int capacity = TeamCapabilities.ProjectCapacity(team);
             if (active >= capacity)
             {
                 error = "The design office can only run " + capacity + " projects at once.";
@@ -102,11 +102,7 @@ namespace MotoManager.Core.Economy
 
         public static double Speed(WorldState world, Team team, DevelopmentProject p)
         {
-            double eng = 50;
-            StaffMember s;
-            if (p.EngineerId != null && world.Staff.TryGetValue(p.EngineerId, out s)) eng = s.Skill;
-            else eng = StaffService.BestSkill(world, team, StaffRole.ChiefEngineer, 45);
-            return 0.6 + eng / 200.0 + team.Facility(FacilityType.Workshop) * 0.07;
+            return TeamCapabilities.DevelopmentSpeed(world, team, p.Component);
         }
 
         public static void Advance(WorldState world, GameDatabase db, double days, DeterministicRandom rng)
@@ -129,9 +125,7 @@ namespace MotoManager.Core.Economy
         private static void Resolve(WorldState world, GameDatabase db, Team team, DevelopmentProject p, DeterministicRandom rng)
         {
             var bike = world.GetBike(team.BikeId);
-            double eng = 50;
-            StaffMember s;
-            if (p.EngineerId != null && world.Staff.TryGetValue(p.EngineerId, out s)) eng = s.Skill;
+            double eng = TeamCapabilities.ProjectQuality(world, team, p.Component, p.EngineerId);
             double failChance = p.Risk * 0.45 * (1.2 - eng / 100.0);
             bool failed = rng.Chance(failChance);
             p.ActualEffects = new Dictionary<string, double>();

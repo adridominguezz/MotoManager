@@ -45,6 +45,8 @@ namespace MotoManager.Core.Race
         public bool AutoManaged = true;
         public int PendingLongLaps;
         public int GridPenaltyPlaces;
+        /// <summary>Extra reliability points from the team's mechanics and factory.</summary>
+        public double ReliabilityBonus;
     }
 
     public class WeatherSetup

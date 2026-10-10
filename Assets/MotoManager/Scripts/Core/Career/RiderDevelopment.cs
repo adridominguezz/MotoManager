@@ -36,7 +36,7 @@ namespace MotoManager.Core.Career
                     points += rec.Points;
                 }
             double levelBonus = cat != null ? (cat.Prestige / 100.0) * 0.8 : 0.2;
-            double teamBonus = team != null ? (team.Facility(FacilityType.Simulator) + team.Facility(FacilityType.Academy)) * 0.08 : 0;
+            double teamBonus = team != null ? Economy.TeamCapabilities.RiderDevelopmentBonus(world, team, age) : 0;
             double moraleBonus = (rider.Morale - 60) / 80.0;
             double seatBonus = starts > 0 ? 0.3 : (cat != null && !cat.Simulated ? 0.15 : -0.4);
 
@@ -167,13 +167,12 @@ namespace MotoManager.Core.Career
         {
             var player = world.PlayerTeam;
             if (player == null) return;
-            double scout = Economy.StaffService.BestSkill(world, player, StaffRole.Scout, 30);
-            double dataCenter = player.Facility(FacilityType.DataCenter);
+            double rate = Economy.TeamCapabilities.ScoutingRate(world, player);
             foreach (var a in world.Scouting)
             {
                 if (a.TeamId != player.Id) continue;
                 double k = world.GetKnowledge(player.Id, a.RiderId);
-                world.SetKnowledge(player.Id, a.RiderId, k + (0.06 + scout / 900.0 + dataCenter * 0.01) * (1 - k * 0.5));
+                world.SetKnowledge(player.Id, a.RiderId, k + rate * (1 - k * 0.5));
             }
             // Passive knowledge of riders in the same paddock.
             foreach (var r in world.Riders.Values)

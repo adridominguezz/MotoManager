@@ -223,6 +223,8 @@ namespace MotoManager.Core.Season
                 var r = World.GetRider(id);
                 if (r == null) continue;
                 r.InjuryRoundsOut = rng.NextInt(1, 4);
+                var team = World.GetTeam(r.TeamId);
+                if (team != null && r.InjuryRoundsOut > 1 && rng.Chance(TeamCapabilities.QuickerRecoveryChance(World, team))) r.InjuryRoundsOut--;
                 r.Morale = Math.Max(5, r.Morale - 10);
                 var cat = Db.GetCategory(catId);
                 World.AddNews(r.FullName + " injured", r.FullName + " is expected to miss " + r.InjuryRoundsOut + " round(s).", catId,

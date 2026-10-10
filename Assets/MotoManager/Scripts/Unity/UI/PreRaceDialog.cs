@@ -40,7 +40,7 @@ namespace MotoManager.App.UI
             var model = new WeatherModel(weather, w.Db.Tuning, 1);
             double skill = 50;
             var team = w.World.PlayerTeam;
-            if (team != null) skill = StaffService.BestSkill(w.World, team, StaffRole.DataEngineer, 45);
+            if (team != null) skill = TeamCapabilities.ForecastSkill(w.World, team);
             double raceSeconds = laps * w.Circuit.LengthM / 45.0;
             double rain = model.ForecastRainProbability(raceSeconds, skill);
 

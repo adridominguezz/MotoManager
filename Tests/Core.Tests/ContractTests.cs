@@ -69,12 +69,12 @@ namespace MotoManager.Tests
         {
             var (game, team) = NewCareer("trackhouse_motogp");
             var world = game.World;
-            var candidates = StaffMarket.Candidates(world, game.Db, team, StaffRole.DataEngineer);
+            var candidates = StaffMarket.Candidates(world, game.Db, team, StaffRole.DataAnalyst);
             Assert.Equal(5, candidates.Count);
             double budget = Accounts.Cash(world, team);
             var hired = StaffMarket.Hire(world, team, candidates[0]);
             Assert.Contains(hired.Id, team.StaffIds);
-            Assert.Equal(1, team.StaffIds.Count(id => world.Staff[id].Role == StaffRole.DataEngineer));
+            Assert.Equal(1, team.StaffIds.Count(id => world.Staff[id].Role == StaffRole.DataAnalyst));
             Assert.True(Accounts.Cash(world, team) < budget);
             var forecast = FinanceService.SeasonForecast(world, game.Db, team, 22);
             Assert.True(forecast.Income > 0 && forecast.Expenses > 0);

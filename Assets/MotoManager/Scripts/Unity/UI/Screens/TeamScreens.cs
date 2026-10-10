@@ -125,9 +125,9 @@ namespace MotoManager.App.UI.Screens
             }
             NegotiationPanel.Bids(list, Game, Shell.Refresh);
 
-            UiFactory.Heading(list, "Staff");
-            var sw = new[] { 3f, 4f, 1.2f, 2f, 1.5f };
-            UiFactory.TableRow(list, 38, sw, new[] { "Role", "Name", "Skill", "Salary", "" }, true);
+            UiFactory.Heading(list, Loc.T("staff.title"));
+            var sw = new[] { 3f, 3.6f, 1f, 1f, 1.8f, 1.2f, 3f };
+            UiFactory.TableRow(list, 38, sw, new[] { Loc.T("staff.role"), Loc.T("staff.name"), Loc.T("staff.skill"), Loc.T("staff.exp"), Loc.T("staff.salary"), Loc.T("staff.until"), "" }, true);
             var staff = new List<StaffMember>();
             foreach (var id in team.StaffIds)
             {
@@ -138,35 +138,56 @@ namespace MotoManager.App.UI.Screens
             foreach (var s in staff)
             {
                 var member = s;
-                var row = UiFactory.TableRow(list, 46, sw, new[] { s.Role.ToString(), s.FullName + " <color=#9AA4B2>" + s.Nationality + "</color>", s.Skill.ToString("0"), MathX.FormatMoney(s.Salary), "" });
-                var fire = UiFactory.Button("Fire", row, "Release", () =>
+                var rider = s.AssignedRiderId != null ? world.GetRider(s.AssignedRiderId) : null;
+                bool expiring = s.ContractEndSeason <= world.Season;
+                var row = UiFactory.TableRow(list, 46, sw, new[]
+                {
+                    Loc.T("role." + s.Role) + (rider != null ? " <color=#9AA4B2>· " + rider.ShortName + "</color>" : ""),
+                    s.FullName + " <color=#9AA4B2>" + s.Nationality + "</color>", s.Skill.ToString("0"), s.Experience.ToString(), MathX.FormatMoney(s.Salary),
+                    (expiring ? "<color=#F0B428>" : "") + s.ContractEndSeason + (expiring ? "</color>" : ""), ""
+                });
+                var renew = UiFactory.Button("Renew", row, Loc.T("staff.renew"), () =>
+                {
+                    StaffMarket.Extend(world, Game.Db, team, member, 2);
+                    Shell.Toast(Loc.T("staff.renewed", member.FullName, member.ContractEndSeason, MathX.FormatMoney(member.Salary)));
+                    Shell.Refresh();
+                }, Theme.PanelLight, Theme.FontSmall - 6);
+                UiFactory.Place((RectTransform)renew.transform, 0.78f, 0.08f, 0.885f, 0.92f);
+                double severance = StaffMarket.SeveranceCost(world, s);
+                var fire = UiFactory.Button("Fire", row, Loc.T("staff.release", MathX.FormatMoney(severance)), () =>
                 {
                     StaffMarket.Fire(world, team, member.Id);
-                    Shell.Toast(member.FullName + " released (severance " + MathX.FormatMoney(StaffMarket.SeveranceCost(member)) + ")");
+                    Shell.Toast(Loc.T("staff.released", member.FullName, MathX.FormatMoney(severance)));
                     Shell.Refresh();
-                }, Theme.PanelLight, Theme.FontSmall - 4);
-                UiFactory.Place((RectTransform)fire.transform, 0.87f, 0.08f, 1f, 0.92f);
+                }, Theme.PanelLight, Theme.FontSmall - 6);
+                UiFactory.Place((RectTransform)fire.transform, 0.89f, 0.08f, 1f, 0.92f);
             }
 
-            UiFactory.Heading(list, "Hire");
-            var roles = new[] { StaffRole.ChiefEngineer, StaffRole.CrewChief, StaffRole.DataEngineer, StaffRole.TireEngineer, StaffRole.Designer, StaffRole.Aerodynamicist, StaffRole.Scout };
-            var roleRow = UiFactory.Row(list, 60);
-            for (int i = 0; i < roles.Length; i++)
+            UiFactory.Paragraph(list, "<color=#9AA4B2>" + Loc.T("staff.note") + "</color>", Theme.FontSmall - 2);
+            UiFactory.Heading(list, Loc.T("staff.hire"));
+            var roles = new List<StaffRole>();
+            foreach (StaffRole role in Enum.GetValues(typeof(StaffRole))) if (role != StaffRole.TeamManager) roles.Add(role);
+            for (int row0 = 0; row0 < roles.Count; row0 += 6)
             {
-                var role = roles[i];
-                var b = UiFactory.Button(role.ToString(), roleRow, role.ToString(), () =>
+                var roleRow = UiFactory.Row(list, 56);
+                for (int i = row0; i < roles.Count && i < row0 + 6; i++)
                 {
-                    _hiringRole = role;
-                    Shell.Refresh();
-                }, _hiringRole == role ? Theme.Accent : Theme.PanelLight, Theme.FontSmall - 4);
-                UiFactory.Place((RectTransform)b.transform, (float)i / roles.Length, 0, (float)(i + 1) / roles.Length, 1, 3);
+                    var role = roles[i];
+                    var b = UiFactory.Button(role.ToString(), roleRow, Loc.T("role." + role), () =>
+                    {
+                        _hiringRole = role;
+                        Shell.Refresh();
+                    }, _hiringRole == role ? Theme.Accent : Theme.PanelLight, Theme.FontSmall - 6);
+                    UiFactory.Place((RectTransform)b.transform, (float)(i - row0) / 6, 0, (float)(i - row0 + 1) / 6, 1, 3);
+                }
             }
+            if (_hiringRole.HasValue) UiFactory.Paragraph(list, "<color=#9AA4B2>" + Loc.T("roleinfo." + _hiringRole.Value) + "</color>", Theme.FontSmall - 2);
             if (_hiringRole.HasValue)
             {
                 foreach (var c in StaffMarket.Candidates(world, Game.Db, team, _hiringRole.Value))
                 {
                     var cand = c;
-                    var row = UiFactory.TableRow(list, 46, sw, new[] { c.Role.ToString(), c.FullName + " <color=#9AA4B2>" + c.Nationality + "</color>", c.Skill.ToString("0"), MathX.FormatMoney(c.Salary), "" });
+                    var row = UiFactory.TableRow(list, 46, sw, new[] { Loc.T("role." + c.Role), c.FullName + " <color=#9AA4B2>" + c.Nationality + "</color>", c.Skill.ToString("0"), c.Experience.ToString(), MathX.FormatMoney(c.Salary), (world.Season + 1).ToString(), "" });
                     var hire = UiFactory.Button("Hire", row, "Hire", () =>
                     {
                         StaffMarket.Hire(world, team, cand);
@@ -228,7 +249,7 @@ namespace MotoManager.App.UI.Screens
             }
             if (!any) UiFactory.Paragraph(list, "<color=#9AA4B2>No projects yet.</color>");
 
-            UiFactory.Heading(list, "Start a project  <color=#9AA4B2>(design office: " + (1 + team.Facility(FacilityType.DesignOffice)) + " at once)</color>");
+            UiFactory.Heading(list, Loc.T("bike.projects", TeamCapabilities.ProjectCapacity(team)));
             var aw = new[] { 5f, 3.5f, 1.6f, 1.2f, 1.2f, 1.6f };
             UiFactory.TableRow(list, 38, aw, new[] { "Project", "Effect", "Cost", "Days", "Risk", "" }, true);
             foreach (var t in DevelopmentService.AvailableProjects(world, Game.Db, team))
@@ -248,14 +269,14 @@ namespace MotoManager.App.UI.Screens
                 UiFactory.Place((RectTransform)b.transform, 0.88f, 0.08f, 1f, 0.92f);
             }
 
-            UiFactory.Heading(list, "Facilities");
-            var fw = new[] { 4f, 1.5f, 3f, 2f };
-            UiFactory.TableRow(list, 38, fw, new[] { "Facility", "Level", "Upgrade cost", "" }, true);
+            UiFactory.Heading(list, Loc.T("facility.title"));
+            var fw = new[] { 3f, 1f, 6f, 2f, 1.8f };
+            UiFactory.TableRow(list, 38, fw, new[] { Loc.T("facility.name"), Loc.T("facility.level"), Loc.T("facility.effect"), Loc.T("facility.upgrade"), "" }, true);
             foreach (FacilityType f in Enum.GetValues(typeof(FacilityType)))
             {
                 var type = f;
                 int lvl = team.Facility(f);
-                var row = UiFactory.TableRow(list, 44, fw, new[] { f.ToString(), lvl + "/5", lvl >= 5 ? "-" : MathX.FormatMoney(FinanceService.FacilityUpgradeCost(world, Game.Db, team, f)), "" });
+                var row = UiFactory.TableRow(list, 50, fw, new[] { Loc.T("facility." + f), lvl + "/5", "<color=#9AA4B2>" + Loc.T("facilityinfo." + f) + "</color>", lvl >= 5 ? "-" : MathX.FormatMoney(FinanceService.FacilityUpgradeCost(world, Game.Db, team, f)), "" });
                 if (lvl >= 5) continue;
                 var b = UiFactory.Button("Upgrade", row, "Upgrade", () =>
                 {
@@ -263,9 +284,9 @@ namespace MotoManager.App.UI.Screens
                     Shell.Toast(ok ? type + " upgraded" : "Not enough budget", ok);
                     Shell.Refresh();
                 }, Theme.PanelLight, Theme.FontSmall - 4);
-                UiFactory.Place((RectTransform)b.transform, 0.8f, 0.08f, 1f, 0.92f);
+                UiFactory.Place((RectTransform)b.transform, 0.87f, 0.08f, 1f, 0.92f);
             }
-            UiFactory.Paragraph(list, "<color=#9AA4B2>Workshop: development speed · Design office: parallel projects · Simulator: set-up and rider learning · Data center: forecasts and scouting · Academy: young riders' growth</color>");
+            UiFactory.Paragraph(list, "<color=#9AA4B2>" + Loc.T("facility.note") + "</color>", Theme.FontSmall - 2);
         }
     }
 

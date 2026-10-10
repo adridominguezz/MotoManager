@@ -222,6 +222,14 @@ namespace MotoManager.Core.World
         public double Skill = 55;
         public double Salary = 150000;
         public string TeamId;
+        /// <summary>Years working in the paddock.</summary>
+        public int Experience = 5;
+        public double Reputation = 40;
+        /// <summary>Last season of the current contract.</summary>
+        public int ContractEndSeason;
+        /// <summary>Race engineers and lead mechanics work with one rider.</summary>
+        public string AssignedRiderId;
+        public string DataConfidence = "generated";
 
         public string FullName { get { return FirstName + " " + LastName; } }
     }

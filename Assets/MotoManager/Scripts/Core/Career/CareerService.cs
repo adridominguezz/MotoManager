@@ -74,6 +74,23 @@ namespace MotoManager.Core.Career
         /// <summary>Every team gets an AI manager (invented people: real team managers are not modelled).</summary>
         public static void EnsureAiManagers(WorldState world, GameDatabase db, DeterministicRandom rng)
         {
+            // Real team managers from the data run their teams.
+            var real = new List<StaffTemplate>(db.Staff.Values);
+            real.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));
+            foreach (var s in real)
+            {
+                var team = world.GetTeam(s.TeamId);
+                if (s.Role != StaffRole.TeamManager || team == null || world.GetManager(team.ManagerId) != null) continue;
+                double k = s.Skill;
+                var m = new ManagerProfile
+                {
+                    Id = "mgr_" + s.Id, FirstName = s.FirstName, LastName = s.LastName, Nationality = s.Nationality, BirthYear = s.BirthYear,
+                    Reputation = k, Negotiation = k, SportingManagement = k, Finance = k - 5, Relations = k, Commercial = k - 5,
+                    DataConfidence = "real person, approximate values"
+                };
+                world.Managers[m.Id] = m;
+                Employ(world, db, m, team, team.Reputation > 70 ? Autonomy.Limited : Autonomy.Standard, 2);
+            }
             var teams = new List<Team>(world.Teams.Values);
             teams.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));
             foreach (var team in teams)

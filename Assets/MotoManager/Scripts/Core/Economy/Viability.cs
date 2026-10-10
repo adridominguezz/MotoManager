@@ -187,10 +187,9 @@ namespace MotoManager.Core.Economy
         {
             var p = new CostProfile { CategoryId = cat.Id, Status = TeamStatus.Independent, Riders = rules.RidersPerTeam };
             p.RiderSalaries = rules.Economy.TypicalRiderSalary * 0.6 * p.Riders;
-            var roles = new List<StaffRole> { StaffRole.TeamManager, StaffRole.ChiefEngineer, StaffRole.DataEngineer, StaffRole.TireEngineer };
-            for (int i = 0; i < p.Riders; i++) roles.Add(StaffRole.CrewChief);
-            foreach (var role in roles) p.StaffSalaries += StaffService.SalaryFor(role, 45) * rules.Economy.StaffSalaryScale;
-            p.FacilityLevelSquares = Enum.GetValues(typeof(FacilityType)).Length;
+            var probe = new Team { Id = "_new", CategoryId = cat.Id, Reputation = 25 };
+            foreach (var role in StaffService.StandardRoles(db, probe, p.Riders)) p.StaffSalaries += StaffService.SalaryFor(role, 45, 6) * rules.Economy.StaffSalaryScale;
+            foreach (FacilityType f in Enum.GetValues(typeof(FacilityType))) p.FacilityLevelSquares += TeamCapabilities.CostWeight(f);
             return p;
         }
 

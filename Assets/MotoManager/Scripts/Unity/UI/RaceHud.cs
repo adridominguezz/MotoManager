@@ -172,7 +172,7 @@ namespace MotoManager.App.UI
                 }
                 var session = GameSession.Instance;
                 if (session != null && session.Game != null && session.Game.World.PlayerTeam != null)
-                    _forecasterSkill = Core.Economy.StaffService.BestSkill(session.Game.World, session.Game.World.PlayerTeam, StaffRole.DataEngineer, 45);
+                    _forecasterSkill = Core.Economy.TeamCapabilities.ForecastSkill(session.Game.World, session.Game.World.PlayerTeam);
             }
 
             RefreshTower();

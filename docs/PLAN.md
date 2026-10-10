@@ -465,6 +465,40 @@ Orden: E1 → E2 → M1 → E3 → E4 → 8.4 → E5 → M2 → E6 → E7 → 8.
     coste (con doble confirmación).
 - 70 tests en verde.
 
+### Sesión 8.4 — Personal e instalaciones ✅
+- El papel de *TeamManager* no es personal: el manager es un `ManagerProfile` (E3). Los managers reales de los
+  datos (Tardozzi, Brivio, Rivola, Ajo, Meregalli, Cecchinello, Pablo Nieto, Padovani, Borsoi) dirigen ahora sus
+  equipos como managers de la IA.
+- 11 roles de personal:
+  - director técnico, jefe de ingenieros, ingeniero de pista (uno por piloto), electrónica, análisis de datos,
+    neumáticos y aerodinámica;
+  - mecánico jefe (uno por piloto), ojeador, fisio y entrenador de pilotos.
+
+  Cada empleado tiene nivel, experiencia, reputación, salario y contrato. Dall'Igna, Bartolini y Albesiano pasan a
+  directores técnicos.
+- Estructura según la categoría: MotoGP tiene el departamento técnico completo, WorldSBK uno más ligero y las
+  categorías inferiores un equipo reducido. Los ingenieros de pista y los mecánicos se asignan a los pilotos.
+- Contratos del personal: cada temporada ganan experiencia, su nivel evoluciona y su reputación sigue a la del
+  equipo. Los contratos vencen: la IA renueva o sustituye, y el personal del jugador se va si no se renueva.
+  Despedir cuesta el resto de la temporada y la mitad de las siguientes.
+- 10 instalaciones: fábrica, banco de potencia, túnel de viento, laboratorio de electrónica, simulador, centro de
+  entrenamiento, centro de ojeo, centro de datos, academia y hospitality. Cada una tiene un coste propio (el
+  mantenimiento crece con el cuadrado del nivel).
+- `TeamCapabilities` reúne todos los efectos en un solo sitio:
+  - velocidad de desarrollo por componente (director técnico, jefe de ingenieros, fábrica e instalación
+    específica);
+  - proyectos simultáneos (fábrica) y calidad de los proyectos (especialista e instalación);
+  - puesta a punto (ingeniero de pista, electrónica, datos, neumáticos, simulador);
+  - fiabilidad en carrera (mecánicos y fábrica);
+  - previsiones (analista de datos y centro de datos) y ojeo (ojeador y centro de ojeo);
+  - desarrollo de pilotos (entrenador, centro de entrenamiento, simulador y, para los jóvenes, academia);
+  - lesiones (fisio y centro de entrenamiento);
+  - patrocinio (hospitality).
+- Pantallas (ES/EN): personal con rol, piloto asignado, experiencia y fin de contrato, con botones para renovar y
+  despedir mostrando el coste; contratación de los 11 roles con su función; instalaciones con su efecto y el coste
+  de mejora.
+- 73 tests en verde.
+
 ## Pendiente de especificación
 
 Recibidas las secciones 49–105; ver la Fase 8.

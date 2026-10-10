@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using MotoManager.Core.Career;
 using MotoManager.Core.Common;
 using MotoManager.Core.Data;
+using MotoManager.Core.Economy;
 using MotoManager.Core.Race;
 using MotoManager.Core.World;
 
@@ -95,6 +96,7 @@ namespace MotoManager.Core.Season
                         IsPlayer = team.IsPlayer,
                         AutoManaged = !team.IsPlayer,
                         SetupQuality = InitialSetup(rider, team),
+                        ReliabilityBonus = TeamCapabilities.ReliabilityBonus(World, team, rider.Id),
                         Form = WeekendForm(rider)
                     };
                     Entries.Add(entry);
@@ -119,15 +121,9 @@ namespace MotoManager.Core.Season
 
         private double InitialSetup(Rider rider, Team team)
         {
-            double crew = 50;
-            foreach (var sid in team.StaffIds)
-            {
-                StaffMember s;
-                if (World.Staff.TryGetValue(sid, out s) && s.Role == StaffRole.CrewChief) crew = Math.Max(crew, s.Skill);
-            }
             double known = 0;
             foreach (var rec in rider.CareerHistory) if (rec.CategoryId == CategoryId) known += 0.05;
-            return MathX.Clamp01(0.2 + rider.Attributes.TechnicalFeedback / 400.0 + crew / 500.0 + team.Facility(FacilityType.Simulator) * 0.03 + Math.Min(0.15, known));
+            return MathX.Clamp01(0.2 + rider.Attributes.TechnicalFeedback / 400.0 + TeamCapabilities.SetupSupport(World, team, rider.Id) + Math.Min(0.15, known));
         }
 
         // ------------------------------------------------------------------ session flow
