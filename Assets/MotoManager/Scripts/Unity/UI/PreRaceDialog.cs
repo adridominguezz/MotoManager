@@ -46,14 +46,14 @@ namespace MotoManager.App.UI
 
             var bg = UiFactory.Panel("Dim", root, new Color(0, 0, 0, 0.75f));
             UiFactory.Stretch(bg.rectTransform);
-            var panel = UiFactory.Panel("Panel", root, Theme.Panel);
+            var panel = UiFactory.Panel("Panel", root, Theme.Panel, true);
             UiFactory.Place(panel.rectTransform, 0.18f, 0.1f, 0.82f, 0.9f);
             var p = panel.rectTransform;
 
-            var title = UiFactory.Label("Title", p, w.Round.Name + " · " + session.Name + " · " + laps + " laps", Theme.FontLarge, TextAnchor.MiddleCenter);
+            var title = UiFactory.Label("Title", p, w.Round.Name + " · " + Loc.Or("session." + session.Name, session.Name) + " · " + Loc.T("pre.laps", laps), Theme.FontLarge, TextAnchor.MiddleCenter);
             UiFactory.Place(title.rectTransform, 0.02f, 0.88f, 0.98f, 0.98f);
-            string conditions = (weather.InitialWetness > 0.35 ? "Wet track" : "Dry track") + ", air " + model.AirTemp.ToString("0") + "°C, track " + model.TrackTemp.ToString("0") +
-                                "°C\nEngineer's forecast: " + (rain * 100).ToString("0") + "% chance of rain during the race";
+            string conditions = Loc.T(weather.InitialWetness > 0.35 ? "pre.wet" : "pre.dry", model.AirTemp.ToString("0"), model.TrackTemp.ToString("0")) +
+                                "\n" + Loc.T("pre.forecast", (rain * 100).ToString("0"));
             var profile = TrackProfile.Compute(TrackModel.Get(w.Circuit));
             var traits = new List<string>();
             foreach (var t in profile.Traits) traits.Add(Loc.T("trait." + t));
@@ -75,15 +75,15 @@ namespace MotoManager.App.UI
 
                 float yTop = 0.72f - rowH * i;
                 int grid = w.QualifyingOrder.IndexOf(e.Rider.Id) + 1;
-                var name = UiFactory.Label("Rider", p, "<b>" + e.Rider.FullName + "</b>   grid " + (grid > 0 ? "P" + grid : "-") +
-                                                       "   <color=#9AA4B2>engineer: " + RaceHud.CompoundLetter(front) + "/" + RaceHud.CompoundLetter(rear) + "</color>", Theme.FontNormal, TextAnchor.MiddleLeft);
+                var name = UiFactory.Label("Rider", p, "<b>" + e.Rider.FullName + "</b>   " + Loc.T("pre.grid", grid > 0 ? "P" + grid : "-") +
+                                                       "   " + Theme.Dim(Loc.T("pre.engineer", RaceHud.CompoundLetter(front) + "/" + RaceHud.CompoundLetter(rear))), Theme.FontNormal, TextAnchor.MiddleLeft);
                 name.supportRichText = true;
                 UiFactory.Place(name.rectTransform, 0.04f, yTop - rowH * 0.35f, 0.96f, yTop);
-                AddCompoundRow(p, "Front", rules, yTop - rowH * 0.68f, yTop - rowH * 0.38f, () => choice.Front, c => choice.Front = c);
-                AddCompoundRow(p, "Rear", rules, yTop - rowH * 0.98f, yTop - rowH * 0.7f, () => choice.Rear, c => choice.Rear = c);
+                AddCompoundRow(p, Loc.T("pre.front"), rules, yTop - rowH * 0.68f, yTop - rowH * 0.38f, () => choice.Front, c => choice.Front = c);
+                AddCompoundRow(p, Loc.T("pre.rear"), rules, yTop - rowH * 0.98f, yTop - rowH * 0.7f, () => choice.Rear, c => choice.Rear = c);
             }
 
-            var start = UiFactory.Button("Start", p, "Start the race", StartRace, Theme.Accent);
+            var start = UiFactory.Button("Start", p, Loc.T("pre.start"), StartRace, Theme.Accent);
             UiFactory.Place((RectTransform)start.transform, 0.3f, 0.02f, 0.7f, 0.1f);
             RefreshToggles();
         }
@@ -96,7 +96,7 @@ namespace MotoManager.App.UI
             for (int i = 0; i < compounds.Count; i++)
             {
                 var c = compounds[i].Compound;
-                var b = UiFactory.Button(c.ToString(), p, c.ToString(), () =>
+                var b = UiFactory.Button(c.ToString(), p, Loc.T("tyre." + c), () =>
                 {
                     set(c);
                     RefreshToggles();

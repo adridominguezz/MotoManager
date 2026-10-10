@@ -56,7 +56,7 @@ namespace MotoManager.App
             var source = new ResourcesDataSource().Preload();
             GameDatabase db = null;
             List<string> errors = null;
-            Run("Loading data", () =>
+            Run(UI.Loc.T("busy.loading"), () =>
             {
                 db = DataLoader.Load(source);
                 errors = db.Validate();
@@ -72,7 +72,7 @@ namespace MotoManager.App
         public void NewGame(string playerTeamId, ulong seed)
         {
             GameController game = null;
-            Run("Creating the 2026 world", () =>
+            Run(UI.Loc.T("busy.creating"), () =>
             {
                 game = GameController.NewGame(Db, new NewGameOptions { Seed = seed, PlayerTeamId = playerTeamId });
             }, () => SetGame(game));
@@ -85,7 +85,7 @@ namespace MotoManager.App
         public void PrepareCareer(ulong seed, Action<GameController> ready)
         {
             GameController game = null;
-            Run("Creating the 2026 world", () =>
+            Run(UI.Loc.T("busy.creating"), () =>
             {
                 game = GameController.NewGame(Db, new NewGameOptions { Seed = seed });
             }, () => ready(game));
@@ -100,7 +100,7 @@ namespace MotoManager.App
         public void Continue()
         {
             GameController game = null;
-            Run("Loading save", () =>
+            Run(UI.Loc.T("busy.loadingSave"), () =>
             {
                 var world = SaveManager.Load(SaveManager.AutoSlot);
                 if (world != null) game = new GameController(Db, world);
@@ -111,7 +111,7 @@ namespace MotoManager.App
         {
             if (Game == null) return;
             var world = Game.World;
-            Run("Saving", () => SaveManager.Write(SaveManager.AutoSlot, SaveManager.Serialize(world)), null);
+            Run(UI.Loc.T("busy.saving"), () => SaveManager.Write(SaveManager.AutoSlot, SaveManager.Serialize(world)), null);
         }
 
         /// <summary>Runs work that touches the world on the background thread; callbacks come back on the main thread.</summary>

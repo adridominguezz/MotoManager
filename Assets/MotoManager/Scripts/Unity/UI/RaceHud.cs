@@ -89,7 +89,7 @@ namespace MotoManager.App.UI
             }
 
             // Top bar
-            var top = UiFactory.Panel("TopBar", _root, new Color(0.06f, 0.07f, 0.09f, 0.85f));
+            var top = UiFactory.Panel("TopBar", _root, new Color(0.043f, 0.075f, 0.125f, 0.85f));
             UiFactory.Place(top.rectTransform, 0, 0.93f, 1, 1);
             var titleText = UiFactory.Label("Title", top.transform, title, Theme.FontNormal, TextAnchor.MiddleLeft);
             UiFactory.Place(titleText.rectTransform, 0.01f, 0, 0.3f, 1);
@@ -115,7 +115,7 @@ namespace MotoManager.App.UI
             UiFactory.Place((RectTransform)skip.transform, 0.957f, 0.1f, 0.995f, 0.9f);
 
             // Timing tower
-            var tower = UiFactory.Panel("Tower", _root, new Color(0.06f, 0.07f, 0.09f, 0.8f));
+            var tower = UiFactory.Panel("Tower", _root, new Color(0.043f, 0.075f, 0.125f, 0.8f));
             UiFactory.Place(tower.rectTransform, 0.005f, 0.2f, 0.215f, 0.92f);
             float rowH = 1f / Mathf.Max(sim.Riders.Count, 18);
             for (int i = 0; i < sim.Riders.Count; i++)
@@ -142,15 +142,15 @@ namespace MotoManager.App.UI
             }
 
             // Camera buttons
-            var overview = UiFactory.Button("Overview", _root, "Circuit", () => _view.Cam.SetMode(CameraMode.Overview), Theme.PanelLight, Theme.FontSmall);
+            var overview = UiFactory.Button("Overview", _root, Loc.T("race.cam.circuit"), () => _view.Cam.SetMode(CameraMode.Overview), Theme.PanelLight, Theme.FontSmall);
             UiFactory.Place((RectTransform)overview.transform, 0.005f, 0.13f, 0.07f, 0.19f);
-            var follow = UiFactory.Button("Follow", _root, "Follow", () => _view.Select(_view.SelectedRider), Theme.PanelLight, Theme.FontSmall);
+            var follow = UiFactory.Button("Follow", _root, Loc.T("race.cam.follow"), () => _view.Select(_view.SelectedRider), Theme.PanelLight, Theme.FontSmall);
             UiFactory.Place((RectTransform)follow.transform, 0.075f, 0.13f, 0.14f, 0.19f);
             var sector = UiFactory.Button("Sector", _root, Loc.T("race.tower.sector"), () => _view.NextSectorView(), Theme.PanelLight, Theme.FontSmall);
             UiFactory.Place((RectTransform)sector.transform, 0.145f, 0.13f, 0.215f, 0.19f);
 
             // Event feed
-            var feedBg = UiFactory.Panel("Feed", _root, new Color(0.06f, 0.07f, 0.09f, 0.7f));
+            var feedBg = UiFactory.Panel("Feed", _root, new Color(0.043f, 0.075f, 0.125f, 0.7f));
             UiFactory.Place(feedBg.rectTransform, 0.005f, 0.005f, 0.45f, 0.12f);
             _feed = UiFactory.Label("FeedText", feedBg.transform, "", Theme.FontSmall - 2, TextAnchor.LowerLeft);
             UiFactory.Place(_feed.rectTransform, 0.01f, 0.02f, 0.99f, 0.98f);
@@ -192,7 +192,7 @@ namespace MotoManager.App.UI
                     if (_adviceShownAt.TryGetValue(m.Key, out last) && sim.Time - last < 30) continue;
                     _adviceShownAt[m.Key] = sim.Time;
                     string color = m.Severity >= 2 ? "#E10600" : m.Severity == 1 ? "#F0B428" : "#5BC0EB";
-                    _engineerLines.Add("<color=" + color + ">ENG</color>  " + m.Text);
+                    _engineerLines.Add("<color=" + color + ">" + Loc.T("feed.engineer") + "</color>  " + m.Text);
                     if (_engineerLines.Count > 3) _engineerLines.RemoveAt(0);
                     added = true;
                 }
@@ -211,10 +211,10 @@ namespace MotoManager.App.UI
         {
             var sim = _view.Sim;
             int lap = Mathf.Clamp(sim.LeaderLap + 1, 1, sim.TotalLaps);
-            _lapText.text = sim.ChequeredFlag ? "FINISH" : (sim.Tick == 0 ? "GRID" : "LAP " + lap + "/" + sim.TotalLaps);
+            _lapText.text = sim.ChequeredFlag ? Loc.T("race.finish") : (sim.Tick == 0 ? Loc.T("race.grid") : Loc.T("race.lap", lap, sim.TotalLaps));
             var w = sim.Weather;
-            _conditions.text = w.Condition + "  ·  track " + w.TrackTemp.ToString("0") + "°C  ·  wet " + (w.TrackWetness * 100).ToString("0") + "%" +
-                               (_forecast >= 0 ? "\nRain in 10': " + (_forecast * 100).ToString("0") + "%" : "");
+            _conditions.text = Loc.Or("weather." + w.Condition, w.Condition.ToString()) + "  ·  " + Loc.T("race.trackTemp", w.TrackTemp.ToString("0")) + "  ·  " + Loc.T("race.wet", (w.TrackWetness * 100).ToString("0")) +
+                               (_forecast >= 0 ? "\n" + Loc.T("race.rainForecast", (_forecast * 100).ToString("0")) : "");
             UpdateFlag(sim);
 
             for (int i = 0; i < _speedButtons.Count; i++)
@@ -242,14 +242,14 @@ namespace MotoManager.App.UI
         {
             string text = "";
             Color color = new Color(0, 0, 0, 0);
-            if (sim.ChequeredFlag) { text = "CHEQUERED"; color = Color.white; }
-            else if (sim.WhiteFlag) { text = "WHITE FLAG"; color = new Color(0.95f, 0.95f, 0.95f); }
+            if (sim.ChequeredFlag) { text = Loc.T("flag.chequered"); color = Color.white; }
+            else if (sim.WhiteFlag) { text = Loc.T("flag.white"); color = new Color(0.95f, 0.95f, 0.95f); }
             else
             {
                 foreach (var r in sim.Riders)
-                    if (r.Status == RaceStatus.Crashed) { text = "YELLOW"; color = Theme.Warning; break; }
+                    if (r.Status == RaceStatus.Crashed) { text = Loc.T("flag.yellow"); color = Theme.Warning; break; }
             }
-            if (text == "" && sim.Tick > 0) { text = "GREEN"; color = Theme.Good; }
+            if (text == "" && sim.Tick > 0) { text = Loc.T("flag.green"); color = Theme.Good; }
             _flag.text = text;
             _flagBg.color = color;
         }
@@ -280,13 +280,13 @@ namespace MotoManager.App.UI
         {
             switch (r.Status)
             {
-                case RaceStatus.Crashed: return r.RemountAt > 0 ? "<color=#F0B428>CRASH</color>" : "<color=#E10600>OUT</color>";
-                case RaceStatus.Retired: return "<color=#E10600>DNF</color>";
+                case RaceStatus.Crashed: return r.RemountAt > 0 ? "<color=#F0B428>" + Loc.T("tower.crash") + "</color>" : "<color=#E10600>" + Loc.T("tower.out") + "</color>";
+                case RaceStatus.Retired: return "<color=#E10600>" + Loc.T("tower.dnf") + "</color>";
                 case RaceStatus.Disqualified: return "DSQ";
-                case RaceStatus.InPitLane: return "<color=#5BC0EB>PIT</color>";
+                case RaceStatus.InPitLane: return "<color=#5BC0EB>" + Loc.T("tower.pit") + "</color>";
             }
-            if (position == 0) return r.Status == RaceStatus.Finished ? MathX.FormatLapTime(r.FinishTime) : "Leader";
-            if (r.LapsDown > 0) return "+" + r.LapsDown + " lap" + (r.LapsDown > 1 ? "s" : "");
+            if (position == 0) return r.Status == RaceStatus.Finished ? MathX.FormatLapTime(r.FinishTime) : Loc.T("tower.leader");
+            if (r.LapsDown > 0) return Loc.T(r.LapsDown > 1 ? "tower.laps" : "tower.lap", r.LapsDown);
             return MathX.FormatGap(r.GapToLeader);
         }
 
@@ -311,7 +311,7 @@ namespace MotoManager.App.UI
             {
                 var e = sim.Events[i];
                 if (!e.Important) continue;
-                lines.Insert(0, "<color=#9AA4B2>L" + e.Lap + "</color>  " + e.Detail);
+                lines.Insert(0, "<color=#9AA4B2>" + Loc.T("feed.lap", e.Lap) + "</color>  " + e.Detail);
             }
             for (int i = System.Math.Max(0, _engineerLines.Count - 2); i < _engineerLines.Count; i++) lines.Add(_engineerLines[i]);
             _feed.text = string.Join("\n", lines.ToArray());
@@ -366,16 +366,16 @@ namespace MotoManager.App.UI
             _commandArea.gameObject.SetActive(false);
             if (_replayBar == null)
             {
-                var bar = UiFactory.Panel("Replay", _root, new Color(0.06f, 0.07f, 0.09f, 0.88f));
+                var bar = UiFactory.Panel("Replay", _root, new Color(0.043f, 0.075f, 0.125f, 0.88f));
                 _replayBar = bar.rectTransform;
                 UiFactory.Place(_replayBar, 0.7f, 0.005f, 0.995f, 0.12f);
-                var label = UiFactory.Label("Label", _replayBar, "REPLAY", Theme.FontNormal, TextAnchor.MiddleCenter, Theme.Warning);
+                var label = UiFactory.Label("Label", _replayBar, Loc.T("replay.title"), Theme.FontNormal, TextAnchor.MiddleCenter, Theme.Warning);
                 UiFactory.Place(label.rectTransform, 0, 0.55f, 1, 1);
-                var back = UiFactory.Button("Back", _replayBar, "-1 lap", () => _view.SeekLaps(-1), Theme.PanelLight, Theme.FontSmall);
+                var back = UiFactory.Button("Back", _replayBar, Loc.T("replay.back"), () => _view.SeekLaps(-1), Theme.PanelLight, Theme.FontSmall);
                 UiFactory.Place((RectTransform)back.transform, 0.02f, 0.06f, 0.32f, 0.52f);
-                var fwd = UiFactory.Button("Fwd", _replayBar, "+1 lap", () => _view.SeekLaps(1), Theme.PanelLight, Theme.FontSmall);
+                var fwd = UiFactory.Button("Fwd", _replayBar, Loc.T("replay.fwd"), () => _view.SeekLaps(1), Theme.PanelLight, Theme.FontSmall);
                 UiFactory.Place((RectTransform)fwd.transform, 0.35f, 0.06f, 0.65f, 0.52f);
-                var exit = UiFactory.Button("Exit", _replayBar, "Results", () => _view.ExitReplay(), Theme.Accent, Theme.FontSmall);
+                var exit = UiFactory.Button("Exit", _replayBar, Loc.T("replay.results"), () => _view.ExitReplay(), Theme.Accent, Theme.FontSmall);
                 UiFactory.Place((RectTransform)exit.transform, 0.68f, 0.06f, 0.98f, 0.52f);
             }
             _replayBar.gameObject.SetActive(true);

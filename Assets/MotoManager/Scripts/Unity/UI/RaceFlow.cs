@@ -29,7 +29,7 @@ namespace MotoManager.App.UI
         public void Start()
         {
             var game = _session.Game;
-            _session.Run("Preparing the weekend", () =>
+            _session.Run(Loc.T("busy.weekend"), () =>
             {
                 _event = game.BeginNextEvent();
                 AdvanceToNextRace();
@@ -48,7 +48,7 @@ namespace MotoManager.App.UI
         {
             if (_event == null)
             {
-                _onDone("The season is over.");
+                _onDone(Loc.T("home.seasonOverShort"));
                 return;
             }
             var weekend = _event.PlayerWeekend;
@@ -58,7 +58,7 @@ namespace MotoManager.App.UI
                 PreRaceDialog.Show(weekend, () =>
                 {
                     var sim = weekend.CreateRaceSimulation(_session.Db.Tuning.VisualTimeStep);
-                    string title = _event.Plan.Round.Name + " · " + weekend.CurrentSession.Name;
+                    string title = _event.Plan.Round.Name + " · " + Loc.Or("session." + weekend.CurrentSession.Name, weekend.CurrentSession.Name);
                     RaceView.Create(sim, title, OnRaceClosed);
                 });
                 return;
@@ -74,16 +74,16 @@ namespace MotoManager.App.UI
             if (result.Classification.Count > 0)
             {
                 var winner = _session.Game.World.GetRider(result.Classification[0].RiderId);
-                _summary += result.SessionName + ": " + (winner != null ? winner.FullName : "?") + "\n";
+                _summary += Loc.Or("session." + result.SessionName, result.SessionName) + ": " + (winner != null ? winner.FullName : "?") + "\n";
             }
-            _session.Run("Next session", AdvanceToNextRace, ShowNextRaceOrFinish);
+            _session.Run(Loc.T("busy.nextSession"), AdvanceToNextRace, ShowNextRaceOrFinish);
         }
 
         private void CompleteEvent()
         {
             var game = _session.Game;
             var ev = _event;
-            _session.Run("Simulating the rest of the event", () => game.CompleteEvent(ev), () =>
+            _session.Run(Loc.T("busy.restOfEvent"), () => game.CompleteEvent(ev), () =>
             {
                 if (_menuToHide != null) _menuToHide.SetActive(true);
                 _session.Save();

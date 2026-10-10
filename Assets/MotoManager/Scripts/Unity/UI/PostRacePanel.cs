@@ -63,7 +63,7 @@ namespace MotoManager.App.UI
             {
                 var r = Find(sim, e.RiderId);
                 if (r == null) continue;
-                string time = e.Status == ResultStatus.Finished ? (e.Position == 1 ? MathX.FormatLapTime(e.TotalTime) : MathX.FormatGap(e.GapToWinner)) : e.Status.ToString();
+                string time = e.Status == ResultStatus.Finished ? (e.Position == 1 ? MathX.FormatLapTime(e.TotalTime) : MathX.FormatGap(e.GapToWinner)) : Loc.Or("result." + e.Status, e.Status.ToString());
                 int gained = e.GridPosition - e.Position;
                 string gainedText = e.Status != ResultStatus.Finished ? "" : gained > 0 ? "<color=#3CC878>+" + gained + "</color>" : gained < 0 ? "<color=#E10600>" + gained + "</color>" : "=";
                 int pts = e.Status == ResultStatus.Finished && e.Position - 1 < points.Count ? points[e.Position - 1] : 0;
