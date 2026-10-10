@@ -499,6 +499,22 @@ Orden: E1 → E2 → M1 → E3 → E4 → 8.4 → E5 → M2 → E6 → E7 → 8.
   de mejora.
 - 73 tests en verde.
 
+### Sesión 8.8 adelantada — Primera prueba en Unity: carrera visual y rediseño UX/UI ✅
+Tras probar en Unity: muchas pantallas en inglés, menús saturados, pilotos siempre en el centro de la pista, caídos
+que se quedan en pista, modelos toscos y opción de entrar a boxes (en motos no se para).
+- Carrera visual: trazada de mínima curvatura (`RacingLine`, Core, con test: 292/292 vértices por el interior) a la
+  que se suma el desplazamiento lateral de la simulación; tangentes suavizadas en `TrackGeometry`; vista lejana con
+  puntos de color del equipo (halo en los tuyos); los pilotos fuera de carrera salen de pista y desaparecen;
+  motos y pilotos con formas redondeadas; pista con verde único, arcén cortado y líneas blancas.
+- Sin orden de boxes: el cambio de moto flag-to-flag lo decide el piloto (también los del jugador).
+- UX/UI: sistema de diseño (#0B1320, tarjetas redondeadas, cifras clave, chips, barras, secciones desplegables);
+  6 secciones con pestañas (Inicio, Equipo, Moto, Finanzas, Mercado, Competición); cabecera con un único botón
+  "Continuar"; Inicio con próximo evento, tu equipo, pendientes con accesos directos y noticias.
+- Idioma: todo en ES/EN (selector en la pantalla inicial). Los textos de la simulación (noticias, eventos de
+  carrera, ingeniero, respuestas de negociación y patrocinio) pasan por `Txt.F(clave, plantilla inglesa)`: el núcleo
+  sigue sin dependencias y la app le enchufa las traducciones. Nombres de eventos traducidos.
+- `SimRunner news` con `SIM_LANG=es` muestra noticias y eventos en español. 74 tests en verde.
+
 ## Pendiente de especificación
 
 Recibidas las secciones 49–105; ver la Fase 8.

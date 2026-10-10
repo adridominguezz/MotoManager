@@ -50,7 +50,7 @@ namespace MotoManager.App.UI
             UiFactory.Place(panel.rectTransform, 0.18f, 0.1f, 0.82f, 0.9f);
             var p = panel.rectTransform;
 
-            var title = UiFactory.Label("Title", p, w.Round.Name + " · " + Loc.Or("session." + session.Name, session.Name) + " · " + Loc.T("pre.laps", laps), Theme.FontLarge, TextAnchor.MiddleCenter);
+            var title = UiFactory.Label("Title", p, Loc.Round(w.Round.Name) + " · " + Loc.Or("session." + session.Name, session.Name) + " · " + Loc.T("pre.laps", laps), Theme.FontLarge, TextAnchor.MiddleCenter);
             UiFactory.Place(title.rectTransform, 0.02f, 0.88f, 0.98f, 0.98f);
             string conditions = Loc.T(weather.InitialWetness > 0.35 ? "pre.wet" : "pre.dry", model.AirTemp.ToString("0"), model.TrackTemp.ToString("0")) +
                                 "\n" + Loc.T("pre.forecast", (rain * 100).ToString("0"));

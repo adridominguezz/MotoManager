@@ -13,6 +13,16 @@ namespace MotoManager.Core.Economy
     /// </summary>
     public static class DevelopmentService
     {
+        /// <summary>Project name in the player's language (component + ambition), falling back to the data name.</summary>
+        public static string ProjectLabel(DevelopmentProject p)
+        {
+            string id = p.TemplateId ?? "";
+            string tier = id.EndsWith("_inc") ? "inc" : id.EndsWith("_major") ? "major" : id.EndsWith("_exp") ? "exp" : null;
+            if (tier == null || string.IsNullOrEmpty(p.Component)) return p.Name;
+            string english = tier == "inc" ? "incremental update" : tier == "major" ? "new specification" : "experimental concept";
+            return Txt.F("projname", "{0}: {1}", Txt.Name("comp." + p.Component, p.Component), Txt.Name("project." + tier, english));
+        }
+
         public static bool ComponentAllowed(WorldState world, GameDatabase db, Team team, string component)
         {
             var rules = db.GetRules(team.CategoryId, world.Season);
@@ -61,13 +71,13 @@ namespace MotoManager.Core.Economy
             error = null;
             if (!ComponentAllowed(world, db, team, t.Component))
             {
-                error = "The regulations do not allow developing " + t.Component + ".";
+                error = Txt.F("rnd.e.frozen", "The regulations do not allow developing {0}.", Txt.Name("comp." + t.Component, t.Component));
                 return null;
             }
             double cost = ProjectCost(world, db, team, t);
             if (Accounts.Cash(world, team) < cost)
             {
-                error = "Not enough budget (" + MathX.FormatMoney(cost) + " needed).";
+                error = Txt.F("rnd.e.budget", "Not enough budget ({0} needed).", MathX.FormatMoney(cost));
                 return null;
             }
             int active = 0;
@@ -76,7 +86,7 @@ namespace MotoManager.Core.Economy
             int capacity = TeamCapabilities.ProjectCapacity(team);
             if (active >= capacity)
             {
-                error = "The design office can only run " + capacity + " projects at once.";
+                error = Txt.F("rnd.e.capacity", "The design office can only run {0} projects at once.", capacity);
                 return null;
             }
             Accounts.Post(world, team, LedgerKind.Development, -cost, t.Name);
@@ -152,9 +162,10 @@ namespace MotoManager.Core.Economy
             if (team.IsPlayer)
             {
                 var parts = new List<string>();
-                foreach (var kv in p.ActualEffects) parts.Add(kv.Key + " " + (kv.Value >= 0 ? "+" : "") + kv.Value.ToString("0.0"));
-                world.AddNews(failed ? "Project failed: " + p.Name : "Project completed: " + p.Name,
-                    failed ? "The new parts did not deliver. " + string.Join(", ", parts) : string.Join(", ", parts), team.CategoryId, true);
+                foreach (var kv in p.ActualEffects) parts.Add(Txt.Name("comp." + kv.Key, kv.Key) + " " + (kv.Value >= 0 ? "+" : "") + kv.Value.ToString("0.0", Txt.Culture));
+                string name = ProjectLabel(p);
+                world.AddNews(failed ? Txt.F("news.projectFailed", "Project failed: {0}", name) : Txt.F("news.projectDone", "Project completed: {0}", name),
+                    failed ? Txt.F("news.projectFailedBody", "The new parts did not deliver. {0}", string.Join(", ", parts)) : string.Join(", ", parts), team.CategoryId, true);
             }
         }
 
@@ -286,7 +297,7 @@ namespace MotoManager.Core.Economy
                         if (t.ManufacturerId == m.Id && t.Status == TeamStatus.Factory && !t.IsPlayer)
                             t.SeasonBudget = Math.Round(Math.Max(t.SeasonBudget, Math.Min(t.SeasonBudget * 1.2, m.MaxDevelopmentBudget)));
                     if (flagship.Tier == 1)
-                        world.AddNews(m.Name + " steps up its racing programme", m.Name + " increases its budget and hires engineers after a difficult " + world.Season + ".", flagship.Id);
+                        world.AddNews(Txt.F("news.makerUp", "{0} steps up its racing programme", m.Name), Txt.F("news.makerUpBody", "{0} increases its budget and hires engineers after a difficult {1}.", m.Name, world.Season), flagship.Id);
                 }
                 else if (leader && rng.Chance(0.5))
                 {
@@ -298,7 +309,7 @@ namespace MotoManager.Core.Economy
                 m.EngineeringStrength = Math.Round(MathX.Clamp(m.EngineeringStrength, 35, 95), 1);
                 if (m.DevelopmentBudget > m.MaxDevelopmentBudget * 0.7) m.DevelopmentBudget *= 0.97;
                 if (flagship.Tier == 1 && m.EngineeringStrength - before <= -3)
-                    world.AddNews(m.Name + " loses key engineers", "Rivals have recruited part of " + m.Name + "'s technical staff.", flagship.Id);
+                    world.AddNews(Txt.F("news.makerLoses", "{0} loses key engineers", m.Name), Txt.F("news.makerLosesBody", "Rivals have recruited part of {0}'s technical staff.", m.Name), flagship.Id);
             }
         }
 
@@ -322,8 +333,8 @@ namespace MotoManager.Core.Economy
             if (leader != null)
             {
                 var m = world.GetManufacturer(leader);
-                world.AddNews(categoryId.ToUpperInvariant() + " balancing: " + (m != null ? m.Name : leader) + " loses engine performance",
-                    "The organiser reduces the rev limit of the dominant manufacturer.", categoryId);
+                world.AddNews(Txt.F("news.balancing", "{0} balancing: {1} loses engine performance", categoryId.ToUpperInvariant(), m != null ? m.Name : leader),
+                    Txt.F("news.balancingBody", "The organiser reduces the rev limit of the dominant manufacturer."), categoryId);
             }
         }
 
@@ -363,7 +374,7 @@ namespace MotoManager.Core.Economy
                             bike.Components[comp] = MathX.Clamp(bike.Components[comp] + (target - bike.Components[comp]) * reset, 1, 99);
                         }
                         if (resetNews.Add(kv.Key) && catDef != null)
-                            world.AddNews(catDef.Name + " enters a new technical era", "New regulations from " + (world.Season + 1) + ": the established order is reshuffled.", kv.Key, true);
+                            world.AddNews(Txt.F("news.newEra", "{0} enters a new technical era", catDef.Name), Txt.F("news.newEraBody", "New regulations from {0}: the established order is reshuffled.", world.Season + 1), kv.Key, true);
                     }
                     double factor = m.FactorIn(kv.Key);
                     foreach (var comp in new List<string>(bike.Components.Keys))

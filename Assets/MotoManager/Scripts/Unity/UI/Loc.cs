@@ -33,16 +33,41 @@ namespace MotoManager.App.UI
             }
         }
 
+        private static CultureInfo _culture;
+
         public static CultureInfo Culture
         {
-            get { return Language == "es" ? new CultureInfo("es-ES") : CultureInfo.InvariantCulture; }
+            get
+            {
+                if (_culture == null) _culture = Language == "es" ? new CultureInfo("es-ES") : CultureInfo.InvariantCulture;
+                return _culture;
+            }
+        }
+
+        /// <summary>
+        /// Plugs the texts into the simulation core (news, race events, answers). Call on the main thread: the
+        /// dictionaries are loaded here, and the core only reads them (also from the worker thread).
+        /// </summary>
+        public static void Install()
+        {
+            if (_texts == null) _texts = Load(Language);
+            if (_fallback == null) _fallback = Load("en");
+            Core.Common.Txt.Provider = key =>
+            {
+                var t = _texts;
+                string v;
+                return t != null && t.TryGetValue(key, out v) ? v : null;
+            };
+            Core.Common.Txt.Culture = Culture;
         }
 
         public static void SetLanguage(string language)
         {
             if (language != "es" && language != "en") return;
             _language = language;
-            _texts = null;
+            _culture = null;
+            _texts = Load(language);
+            Core.Common.Txt.Culture = Culture;
             PlayerPrefs.SetString(PrefKey, language);
             PlayerPrefs.Save();
             if (LanguageChanged != null) LanguageChanged();
@@ -80,6 +105,12 @@ namespace MotoManager.App.UI
             if (_fallback == null) _fallback = Load("en");
             string text;
             return _texts.TryGetValue(key, out text) || _fallback.TryGetValue(key, out text) ? text : fallback;
+        }
+
+        /// <summary>Event name in the player's language.</summary>
+        public static string Round(string name)
+        {
+            return Or("round." + name, name);
         }
 
         public static bool Has(string key)

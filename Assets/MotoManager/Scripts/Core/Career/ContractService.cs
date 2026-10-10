@@ -161,24 +161,24 @@ namespace MotoManager.Core.Career
             int start = p.StartNow ? world.Season : world.Season + 1;
             double age = rider.AgeOn(new DateTime(start, 3, 1));
             bool renewal = rider.TeamId == team.Id;
-            if (rider.IsRetired) return Reject(result, rider.FullName + " has retired.");
-            if (rider.FutureContract != null && !(p.StartNow && rider.FutureContract.TeamId != team.Id)) return Reject(result, rider.FullName + " has already signed for next season.");
-            if (age < cat.MinAge || age > cat.MaxAge) return Reject(result, "Age limits of " + cat.ShortName + " do not allow it.");
-            if (!renewal && rider.CategoryId != cat.Id && age > cat.MaxEntryAge) return Reject(result, "Too old to enter " + cat.ShortName + ".");
-            if (renewal && p.StartNow) return Reject(result, "He already races for you: renew from next season.");
-            if (p.StartNow && SeatsFreeNow(world, db, team) <= 0) return Reject(result, "No free seat now: release a rider first.");
+            if (rider.IsRetired) return Reject(result, Txt.F("neg.r.retired", "{0} has retired.", rider.FullName));
+            if (rider.FutureContract != null && !(p.StartNow && rider.FutureContract.TeamId != team.Id)) return Reject(result, Txt.F("neg.r.signed", "{0} has already signed for next season.", rider.FullName));
+            if (age < cat.MinAge || age > cat.MaxAge) return Reject(result, Txt.F("neg.r.age", "Age limits of {0} do not allow it.", cat.ShortName));
+            if (!renewal && rider.CategoryId != cat.Id && age > cat.MaxEntryAge) return Reject(result, Txt.F("neg.r.tooOld", "Too old to enter {0}.", cat.ShortName));
+            if (renewal && p.StartNow) return Reject(result, Txt.F("neg.r.alreadyHere", "He already races for you: renew from next season."));
+            if (p.StartNow && SeatsFreeNow(world, db, team) <= 0) return Reject(result, Txt.F("neg.r.noSeatNow", "No free seat now: release a rider first."));
             if (!p.StartNow && SeatsFreeNextSeason(world, db, team) <= 0 && !(renewal && !TransferMarket.IsCommitted(rider, world.Season)))
-                return Reject(result, "You have no free seat for next season.");
+                return Reject(result, Txt.F("neg.r.noSeatNext", "You have no free seat for next season."));
 
             // Under contract: a release clause, an exit clause or an agreement with his team is needed.
             double fee = FeeNeeded(world, db, team, rider, p.StartNow);
-            if (fee < 0) return Reject(result, rider.FullName + " is under contract until " + rider.Contract.EndSeason + ": agree a transfer with his team first.");
-            if (fee > 0 && Accounts.Cash(world, team) < fee + p.SigningBonus) return Reject(result, "Not enough cash for the fee (" + MathX.FormatMoney(fee) + ").");
+            if (fee < 0) return Reject(result, Txt.F("neg.r.underContract", "{0} is under contract until {1}: agree a transfer with his team first.", rider.FullName, rider.Contract.EndSeason));
+            if (fee > 0 && Accounts.Cash(world, team) < fee + p.SigningBonus) return Reject(result, Txt.F("neg.r.noCash", "Not enough cash for the fee ({0}).", MathX.FormatMoney(fee)));
 
             string key = world.Season + "|" + team.Id + "|" + rider.Id;
             int attempts;
             world.NegotiationAttempts.TryGetValue(key, out attempts);
-            if (attempts >= Patience) return Reject(result, rider.FullName + " has stopped negotiating with you this season.");
+            if (attempts >= Patience) return Reject(result, Txt.F("neg.r.stopped", "{0} has stopped negotiating with you this season.", rider.FullName));
 
             // The seat must be attractive enough compared with what he has.
             var currentTeam = world.GetTeam(rider.TeamId);
@@ -190,7 +190,7 @@ namespace MotoManager.Core.Career
                 double now = TransferMarket.SeatUtility(world, currentCat, currentTeam, rider);
                 // A worse seat must be compensated with money (about 3% of the asking salary per utility point).
                 if (offerUtility < now) required *= 1 + (now - offerUtility) * 0.03;
-                if (offerUtility < now - 25) return Reject(result, rider.FullName + " is not interested in this seat.");
+                if (offerUtility < now - 25) return Reject(result, Txt.F("neg.r.notInterested", "{0} is not interested in this seat.", rider.FullName));
             }
             double value = RiderValue(world, db, team, rider, p);
             if (value < required * 0.97)
@@ -200,12 +200,12 @@ namespace MotoManager.Core.Career
                 counter.Salary = Math.Round(Math.Max(p.Salary, p.Salary + (required - value)) / 1000) * 1000;
                 result.Counter = counter;
                 result.AskingSalary = counter.Salary;
-                return Reject(result, rider.FullName + " would sign for " + MathX.FormatMoney(counter.Salary) + " per season with these terms.");
+                return Reject(result, Txt.F("neg.r.counter", "{0} would sign for {1} per season with these terms.", rider.FullName, MathX.FormatMoney(counter.Salary)));
             }
 
             Sign(world, db, team, rider, p, fee);
             result.Accepted = true;
-            result.Message = p.StartNow ? rider.FullName + " joins now." : (renewal ? "New contract until " + (world.Season + p.Seasons) + "." : rider.FullName + " will join for " + (world.Season + 1) + ".");
+            result.Message = p.StartNow ? Txt.F("neg.r.joinsNow", "{0} joins now.", rider.FullName) : (renewal ? Txt.F("neg.r.renewed", "New contract until {0}.", world.Season + p.Seasons) : Txt.F("neg.r.joinsNext", "{0} will join for {1}.", rider.FullName, world.Season + 1));
             return result;
         }
 
@@ -273,7 +273,7 @@ namespace MotoManager.Core.Career
                 if (!team.RiderIds.Contains(rider.Id)) team.RiderIds.Add(rider.Id);
                 if (rider.Number <= 0) rider.Number = RiderGenerator.FreeNumber(world, team.CategoryId, world.Rng.Fork("number-" + rider.Id));
                 if (seller != null && seller != team && !seller.IsPlayer) TransferMarket.FillVacancyNow(world, db, seller);
-                world.AddNews(rider.FullName + " joins " + team.Name, "Contract until " + c.EndSeason + ".", team.CategoryId, true);
+                world.AddNews(Txt.F("news.joins", "{0} joins {1}", rider.FullName, team.Name), Txt.F("news.contractUntil", "Contract until {0}.", c.EndSeason), team.CategoryId, true);
             }
             else
             {
@@ -286,8 +286,8 @@ namespace MotoManager.Core.Career
                     rider.Contract.EndsByTransfer = true;
                 }
                 rider.FutureContract = c;
-                world.AddNews(rider.TeamId == team.Id ? rider.FullName + " extends with " + team.Name : rider.FullName + " signs for " + team.Name,
-                    (rider.TeamId == team.Id ? "New deal from " : "Arrives in ") + start + " until " + c.EndSeason + ".", team.CategoryId, true);
+                world.AddNews(rider.TeamId == team.Id ? Txt.F("news.extends", "{0} extends with {1}", rider.FullName, team.Name) : Txt.F("news.signsFor", "{0} signs for {1}", rider.FullName, team.Name),
+                    rider.TeamId == team.Id ? Txt.F("news.newDeal", "New deal from {0} until {1}.", start, c.EndSeason) : Txt.F("news.arrives", "Arrives in {0} until {1}.", start, c.EndSeason), team.CategoryId, true);
             }
             world.SetKnowledge(team.Id, rider.Id, Math.Max(world.GetKnowledge(team.Id, rider.Id), 0.6));
         }
@@ -301,20 +301,20 @@ namespace MotoManager.Core.Career
         public static TransferAnswer ProposeTransfer(WorldState world, GameDatabase db, Team buyer, Rider rider, double fee, bool startNow)
         {
             var owner = world.GetTeam(rider.TeamId);
-            if (owner == null || rider.Contract == null) return new TransferAnswer { Status = TransferStatus.Accepted, Message = rider.FullName + " is free: no fee needed." };
+            if (owner == null || rider.Contract == null) return new TransferAnswer { Status = TransferStatus.Accepted, Message = Txt.F("tr.free", "{0} is free: no fee needed.", rider.FullName) };
             int from = startNow ? world.Season : world.Season + 1;
             double value = Contracts.TransferValue(world, db, rider, from);
             if (startNow) value *= 1.25; // losing a rider mid-season hurts more
             value = Math.Round(value / 1000) * 1000;
-            if (value <= 0) return new TransferAnswer { Status = TransferStatus.Accepted, Message = rider.FullName + " is free for " + from + ": no fee needed." };
+            if (value <= 0) return new TransferAnswer { Status = TransferStatus.Accepted, Message = Txt.F("tr.freeFrom", "{0} is free for {1}: no fee needed.", rider.FullName, from) };
             if (fee >= value)
             {
                 world.TransferAgreements.RemoveAll(a => a.RiderId == rider.Id && a.BuyerTeamId == buyer.Id);
                 world.TransferAgreements.Add(new TransferAgreement { RiderId = rider.Id, BuyerTeamId = buyer.Id, Fee = fee, StartNow = startNow, ExpiresAfterEvent = world.EventsCompleted + 3 });
-                return new TransferAnswer { Status = TransferStatus.Accepted, Message = owner.Name + " accepts " + MathX.FormatMoney(fee) + ". Now agree terms with " + rider.FullName + "." };
+                return new TransferAnswer { Status = TransferStatus.Accepted, Message = Txt.F("tr.accepts", "{0} accepts {1}. Now agree terms with {2}.", owner.Name, MathX.FormatMoney(fee), rider.FullName) };
             }
-            if (fee >= value * 0.7) return new TransferAnswer { Status = TransferStatus.Rejected, Asking = value, Message = owner.Name + " wants " + MathX.FormatMoney(value) + "." };
-            return new TransferAnswer { Status = TransferStatus.Rejected, Asking = value, Message = owner.Name + " rejects the offer outright." };
+            if (fee >= value * 0.7) return new TransferAnswer { Status = TransferStatus.Rejected, Asking = value, Message = Txt.F("tr.wants", "{0} wants {1}.", owner.Name, MathX.FormatMoney(value)) };
+            return new TransferAnswer { Status = TransferStatus.Rejected, Asking = value, Message = Txt.F("tr.rejects", "{0} rejects the offer outright.", owner.Name) };
         }
 
         /// <summary>
@@ -367,7 +367,7 @@ namespace MotoManager.Core.Career
                     Id = world.NewId("tro"), RiderId = r.Id, FromTeamId = player.Id, ToTeamId = best.Id, Fee = fee,
                     Status = TransferStatus.Pending, ExpiresAfterEvent = world.EventsCompleted + 3
                 });
-                world.AddNews(best.Name + " bids for " + r.FullName, "Offer to " + player.Name + ": " + MathX.FormatMoney(fee) + " for next season.", player.CategoryId, true);
+                world.AddNews(Txt.F("news.bid", "{0} bids for {1}", best.Name, r.FullName), Txt.F("news.bidBody", "Offer to {0}: {1} for next season.", player.Name, MathX.FormatMoney(fee)), player.CategoryId, true);
             }
         }
 
@@ -394,7 +394,7 @@ namespace MotoManager.Core.Career
             };
             Contracts.StandardTerms(c);
             r.FutureContract = c;
-            world.AddNews(r.FullName + " will join " + buyer.Name, seller.Name + " accepts " + MathX.FormatMoney(o.Fee) + "; he moves at the end of the season.", seller.CategoryId, true);
+            world.AddNews(Txt.F("news.willJoin", "{0} will join {1}", r.FullName, buyer.Name), Txt.F("news.willJoinBody", "{0} accepts {1}; he moves at the end of the season.", seller.Name, MathX.FormatMoney(o.Fee)), seller.CategoryId, true);
             return true;
         }
 

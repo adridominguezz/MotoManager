@@ -294,6 +294,8 @@ namespace MotoManager.Core.Race
         public int Overtakes;
         public bool InjuredInCrash;
         public string RetireReason;
+        /// <summary>Why the rider is out, in the player's language (results table).</summary>
+        public string RetireNote;
 
         // Overtake attempt state
         public int AttemptTarget = -1;

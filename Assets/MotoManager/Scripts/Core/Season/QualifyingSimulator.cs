@@ -55,7 +55,7 @@ namespace MotoManager.Core.Season
                         if (rng.Chance(crashPerLap))
                         {
                             run.Crashed = true;
-                            run.Note = "Crashed";
+                            run.Note = Common.Txt.F("note.qualiCrash", "Crashed");
                             break;
                         }
                         double t = clean * runEvolution * (1 + Math.Abs(rng.Gaussian(0, sd)));

@@ -58,7 +58,7 @@ namespace MotoManager.Core.Career
                 if (committed) p *= 0.35;
                 if (rng.Chance(p))
                 {
-                    RetirementModel.Retire(world, r, committed ? "A surprise decision with a contract still running." : "");
+                    RetirementModel.Retire(world, r, committed ? Txt.F("retire.surprise", "A surprise decision with a contract still running.") : "");
                     summary.Retired.Add(r.Id);
                 }
             }
@@ -83,7 +83,7 @@ namespace MotoManager.Core.Career
                 double p = RetirementModel.Probability(world, db, r, pool);
                 if (rng.Chance(p))
                 {
-                    RetirementModel.Retire(world, r, "No competitive seat available.");
+                    RetirementModel.Retire(world, r, Txt.F("retire.noSeat", "No competitive seat available."));
                     summary.Retired.Add(r.Id);
                 }
             }
@@ -143,8 +143,8 @@ namespace MotoManager.Core.Career
                     champion.Reputation = Math.Min(100, champion.Reputation + 8);
                     champion.Morale = 95;
                 }
-                world.AddNews(record.RiderName + " is the " + world.Season + " " + (cat != null ? cat.Name : catId) + " World Champion",
-                    record.RiderName + " wins the title with " + record.Points.ToString("0") + " points" + (team != null ? " for " + team.Name : "") + ".", catId, true);
+                world.AddNews(Txt.F("news.champion", "{0} is the {1} {2} World Champion", record.RiderName, world.Season, cat != null ? cat.Name : catId),
+                    team != null ? Txt.F("news.championBodyTeam", "{0} wins the title with {1} points for {2}.", record.RiderName, record.Points.ToString("0"), team.Name) : Txt.F("news.championBody", "{0} wins the title with {1} points.", record.RiderName, record.Points.ToString("0")), catId, true);
             }
         }
 

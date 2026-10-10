@@ -227,7 +227,7 @@ namespace MotoManager.Core.Season
                 if (team != null && r.InjuryRoundsOut > 1 && rng.Chance(TeamCapabilities.QuickerRecoveryChance(World, team))) r.InjuryRoundsOut--;
                 r.Morale = Math.Max(5, r.Morale - 10);
                 var cat = Db.GetCategory(catId);
-                World.AddNews(r.FullName + " injured", r.FullName + " is expected to miss " + r.InjuryRoundsOut + " round(s).", catId,
+                World.AddNews(Txt.F("news.injured", "{0} injured", r.FullName), Txt.F("news.injuredBody", "{0} is expected to miss {1} round(s).", r.FullName, r.InjuryRoundsOut), catId,
                     (cat != null && cat.Tier == 1) || (World.PlayerTeam != null && r.TeamId == World.PlayerTeamId));
             }
         }
@@ -242,8 +242,8 @@ namespace MotoManager.Core.Season
                 if (s.Type != SessionType.Race || s.Classification.Count == 0) continue;
                 var winner = World.GetRider(s.Classification[0].RiderId);
                 if (winner == null) continue;
-                World.AddNews(winner.FullName + " wins the " + weekend.Round.Name + (s.SessionName != null && weekend.Result.Sessions.Count > 4 ? " (" + s.SessionName + ")" : ""),
-                    cat.Name + ": " + winner.FullName + " takes victory at " + weekend.Circuit.ShortName + ".", catId, cat.Tier == 1);
+                World.AddNews(Txt.F("news.wins", "{0} wins the {1}", winner.FullName, Txt.Name("round." + weekend.Round.Name, weekend.Round.Name)) + (s.SessionName != null && weekend.Result.Sessions.Count > 4 ? " (" + Txt.Name("session." + s.SessionName, s.SessionName) + ")" : ""),
+                    Txt.F("news.winsBody", "{0}: {1} takes victory at {2}.", cat.Name, winner.FullName, weekend.Circuit.ShortName), catId, cat.Tier == 1);
             }
         }
     }

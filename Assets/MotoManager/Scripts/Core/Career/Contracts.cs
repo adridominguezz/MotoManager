@@ -163,7 +163,7 @@ namespace MotoManager.Core.Career
                     team.RiderIds.Remove(r.Id);
                     r.TeamId = null;
                     r.Contract = null;
-                    world.AddNews(r.FullName + " leaves " + team.Name, "He uses his contract's exit clause after a disappointing season.", team.CategoryId, team.IsPlayer);
+                    world.AddNews(Txt.F("news.leaves", "{0} leaves {1}", r.FullName, team.Name), Txt.F("news.exitClause", "He uses his contract's exit clause after a disappointing season."), team.CategoryId, team.IsPlayer);
                 }
             }
         }
@@ -183,7 +183,7 @@ namespace MotoManager.Core.Career
             r.Contract = c;
             var team = world.GetTeam(c.TeamId);
             if (team != null && (team.IsPlayer || r.Reputation > 55))
-                world.AddNews(r.FullName + " stays with " + team.Name, "Contract extended until " + c.EndSeason + (used.Type == ClauseType.PerformanceExtension ? " after meeting his performance clause." : " (option exercised)."), team.CategoryId, team.IsPlayer);
+                world.AddNews(Txt.F("news.stays", "{0} stays with {1}", r.FullName, team.Name), used.Type == ClauseType.PerformanceExtension ? Txt.F("news.extendedPerf", "Contract extended until {0} after meeting his performance clause.", c.EndSeason) : Txt.F("news.extendedOption", "Contract extended until {0} (option exercised).", c.EndSeason), team.CategoryId, team.IsPlayer);
         }
 
         private static bool AiExercisesOption(WorldState world, GameDatabase db, Team team, Rider r, DeterministicRandom rng)
@@ -241,7 +241,7 @@ namespace MotoManager.Core.Career
             team.RiderIds.Remove(r.Id);
             r.TeamId = null;
             r.Contract = null;
-            world.AddNews(team.Name + " releases " + r.FullName, "Termination cost: " + MathX.FormatMoney(cost) + ".", team.CategoryId, team.IsPlayer);
+            world.AddNews(Txt.F("news.releases", "{0} releases {1}", team.Name, r.FullName), Txt.F("news.terminationCost", "Termination cost: {0}.", MathX.FormatMoney(cost)), team.CategoryId, team.IsPlayer);
             return cost;
         }
 
@@ -308,7 +308,7 @@ namespace MotoManager.Core.Career
             if (seller != null)
             {
                 seller.RiderIds.Remove(r.Id);
-                if (fee > 0) world.AddNews(r.FullName + " leaves " + seller.Name + " for " + buyer.Name, (releaseClause ? "Release clause" : "Transfer fee") + ": " + MathX.FormatMoney(fee) + ".", buyer.CategoryId, seller.IsPlayer || buyer.IsPlayer);
+                if (fee > 0) world.AddNews(Txt.F("news.move", "{0} leaves {1} for {2}", r.FullName, seller.Name, buyer.Name), releaseClause ? Txt.F("news.releaseClause", "Release clause: {0}.", MathX.FormatMoney(fee)) : Txt.F("news.fee", "Transfer fee: {0}.", MathX.FormatMoney(fee)), buyer.CategoryId, seller.IsPlayer || buyer.IsPlayer);
             }
             r.TeamId = null;
             r.Contract = null;

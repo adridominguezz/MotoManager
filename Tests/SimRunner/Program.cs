@@ -18,6 +18,16 @@ namespace MotoManager.Tools
             string root = FindDataRoot();
             var db = DataLoader.Load(new FileDataSource(root));
             string mode = args.Length > 0 ? args[0] : "laps";
+            // SIM_LANG=es: simulation texts (news, race events) in that language, as the app does.
+            string lang = Environment.GetEnvironmentVariable("SIM_LANG");
+            if (!string.IsNullOrEmpty(lang))
+            {
+                var file = System.IO.Path.Combine(root, "..", "Localization", lang + ".json");
+                var texts = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, string>>(System.IO.File.ReadAllText(file));
+                Txt.Provider = k => { string v; return texts.TryGetValue(k, out v) ? v : null; };
+                Txt.Culture = new System.Globalization.CultureInfo(lang);
+            }
+            if (mode == "news") return News(db, args);
             if (mode == "laps") return Laps(db, args);
             if (mode == "race") return RaceTest(db, args);
             if (mode == "calibrate") return Calibrate(db, root, args);
@@ -57,6 +67,25 @@ namespace MotoManager.Tools
             var bike = BikePerformance.Average();
             for (int k = 0; k < bike.Values.Length; k++) bike.Values[k] = 70;
             return new RaceEntry { Rider = r, Bike = bike, GridPosition = i + 1, SetupQuality = 0.6 };
+        }
+
+        /// <summary>news [events]: simulates a few events and prints the news and the first race's events.</summary>
+        static int News(GameDatabase db, string[] args)
+        {
+            int events = args.Length > 1 ? int.Parse(args[1]) : 2;
+            var game = GameController.NewGame(db, new NewGameOptions { Seed = 5, PlayerTeamId = "aspar_moto2" });
+            for (int i = 0; i < events && !game.IsSeasonOver; i++)
+            {
+                var ev = game.BeginNextEvent();
+                game.CompleteEvent(ev);
+            }
+            foreach (var n in game.World.News.Take(25)) Console.WriteLine(n.Headline + " | " + n.Body);
+            var cfg = new RaceConfig { Rules = db.GetRules("motogp", 2026), Circuit = db.Circuits.Values.First(), Tuning = db.Tuning, Laps = 5, Seed = 3, TimeStep = 0.05 };
+            for (int k = 0; k < 12; k++) cfg.Entries.Add(AverageEntry(k, 70 + k));
+            var sim = new RaceSimulation(cfg);
+            sim.RunToEnd();
+            foreach (var e in sim.Events.Where(e => e.Important).Take(15)) Console.WriteLine("  L" + e.Lap + " " + e.Detail);
+            return 0;
         }
 
         static int Laps(GameDatabase db, string[] args)

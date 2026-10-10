@@ -191,7 +191,7 @@ namespace MotoManager.App.UI.Screens
             _header.text = "<b>" + (team != null ? team.Name : Loc.T("shell.spectator")) + "</b>" +
                            (team != null ? "    " + Theme.Money(Accounts.Cash(world, team)) : "");
             _subHeader.text = world.CurrentDate.ToString("d MMM yyyy", Loc.Culture) + "  ·  " + Loc.T("shell.season", world.Season) +
-                              (next != null ? "  ·  " + Loc.T("shell.next", next.Round.Name) : "");
+                              (next != null ? "  ·  " + Loc.T("shell.next", Loc.Round(next.Round.Name)) : "");
             _continueLabel.text = "<b>" + ContinueLabel() + "</b>";
 
             UiFactory.Clear(_tabs);
@@ -258,7 +258,7 @@ namespace MotoManager.App.UI.Screens
             {
                 var ev = game.BeginNextEvent();
                 game.CompleteEvent(ev);
-                summary = Loc.T("home.simulated", ev.Plan.Round.Name);
+                summary = Loc.T("home.simulated", Loc.Round(ev.Plan.Round.Name));
             }, () =>
             {
                 LastResult = summary;

@@ -36,6 +36,7 @@ namespace MotoManager.App
             DontDestroyOnLoad(go);
             Instance = go.AddComponent<GameSession>();
             go.AddComponent<FrameRateGovernor>();
+            UI.Loc.Install();
             return Instance;
         }
 

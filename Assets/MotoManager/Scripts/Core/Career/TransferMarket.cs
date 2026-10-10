@@ -771,9 +771,9 @@ namespace MotoManager.Core.Career
                 bool notable = r.Reputation > 55 || toCat.Tier == 1 || to.IsPlayer || (fromCat != null && fromCat.Pyramid != toCat.Pyramid);
                 if (!notable) continue;
                 string headline = fromCat != null && fromCat.Id != toCat.Id
-                    ? r.FullName + " moves from " + fromCat.ShortName + " to " + toCat.ShortName
-                    : r.FullName + " joins " + to.Name;
-                world.AddNews(headline, r.FullName + " signs with " + to.Name + " for " + (world.Season + 1) + ".", toCat.Id, toCat.Tier == 1 || to.IsPlayer);
+                    ? Txt.F("news.stepUp", "{0} moves from {1} to {2}", r.FullName, fromCat.ShortName, toCat.ShortName)
+                    : Txt.F("news.joins", "{0} joins {1}", r.FullName, to.Name);
+                world.AddNews(headline, Txt.F("news.signsBody", "{0} signs with {1} for {2}.", r.FullName, to.Name, world.Season + 1), toCat.Id, toCat.Tier == 1 || to.IsPlayer);
             }
         }
     }

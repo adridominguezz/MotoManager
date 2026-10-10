@@ -102,7 +102,7 @@ namespace MotoManager.Core.Season
                 SetPlayerTeam(world, options.PlayerTeamId);
             }
             InitialKnowledge(world);
-            world.AddNews("Season " + options.StartSeason + " begins", "The " + options.StartSeason + " grids are set.", null, true);
+            world.AddNews(Txt.F("news.seasonBegins", "Season {0} begins", options.StartSeason), Txt.F("news.seasonBeginsBody", "The {0} grids are set.", options.StartSeason), null, true);
             return world;
         }
 

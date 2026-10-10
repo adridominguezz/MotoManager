@@ -197,12 +197,12 @@ namespace MotoManager.Core.Economy
                 if (s.ContractEndSeason > world.Season) continue;
                 if (team.IsPlayer)
                 {
-                    StaffMarket.Leave(world, team, s, "contract ended");
+                    StaffMarket.Leave(world, team, s, Txt.F("staff.reason.ended", "contract ended"));
                     continue;
                 }
                 // AI: keep good people (on a fresh deal), let others go and hire a replacement.
                 if (age < 66 && rng.Chance(0.7 + (s.Skill - 50) / 200.0)) StaffMarket.Extend(world, db, team, s, 2);
-                else StaffMarket.Leave(world, team, s, "contract ended");
+                else StaffMarket.Leave(world, team, s, Txt.F("staff.reason.ended", "contract ended"));
             }
             var teams = new List<Team>(world.Teams.Values);
             teams.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));
@@ -249,7 +249,7 @@ namespace MotoManager.Core.Economy
             StaffMember s;
             if (!world.Staff.TryGetValue(staffId, out s) || s.TeamId != team.Id) return;
             Accounts.Post(world, team, LedgerKind.Severance, -SeveranceCost(world, s), s.FullName);
-            Leave(world, team, s, "released");
+            Leave(world, team, s, Txt.F("staff.reason.released", "released"));
         }
 
         public static void Leave(WorldState world, Team team, StaffMember s, string reason)
@@ -257,7 +257,7 @@ namespace MotoManager.Core.Economy
             team.StaffIds.Remove(s.Id);
             s.TeamId = null;
             s.AssignedRiderId = null;
-            if (team.IsPlayer) world.AddNews(s.FullName + " leaves " + team.Name, s.Role + " (" + reason + ").", team.CategoryId, true);
+            if (team.IsPlayer) world.AddNews(Txt.F("news.leaves", "{0} leaves {1}", s.FullName, team.Name), Txt.F("news.staffLeavesBody", "{0} ({1}).", Txt.Name("role." + s.Role, s.Role.ToString()), reason), team.CategoryId, true);
         }
 
         /// <summary>A new contract for someone already in the team, at today's market salary for him.</summary>
@@ -295,7 +295,7 @@ namespace MotoManager.Core.Economy
             team.StaffIds.Add(hired.Id);
             StaffService.AssignToRiders(world, team);
             Accounts.Post(world, team, LedgerKind.StaffSigning, -Math.Round(hired.Salary * 0.1), hired.FullName);
-            world.AddNews(hired.FullName + " joins " + team.Name, "New " + hired.Role + ".", team.CategoryId);
+            world.AddNews(Txt.F("news.joins", "{0} joins {1}", hired.FullName, team.Name), Txt.F("news.staffJoinsBody", "New {0}.", Txt.Name("role." + hired.Role, hired.Role.ToString())), team.CategoryId);
             return hired;
         }
     }

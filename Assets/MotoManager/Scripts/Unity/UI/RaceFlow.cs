@@ -58,7 +58,7 @@ namespace MotoManager.App.UI
                 PreRaceDialog.Show(weekend, () =>
                 {
                     var sim = weekend.CreateRaceSimulation(_session.Db.Tuning.VisualTimeStep);
-                    string title = _event.Plan.Round.Name + " · " + Loc.Or("session." + weekend.CurrentSession.Name, weekend.CurrentSession.Name);
+                    string title = Loc.Round(_event.Plan.Round.Name) + " · " + Loc.Or("session." + weekend.CurrentSession.Name, weekend.CurrentSession.Name);
                     RaceView.Create(sim, title, OnRaceClosed);
                 });
                 return;
@@ -87,7 +87,7 @@ namespace MotoManager.App.UI
             {
                 if (_menuToHide != null) _menuToHide.SetActive(true);
                 _session.Save();
-                _onDone("<b>" + ev.Plan.Round.Name + "</b>\n" + _summary);
+                _onDone("<b>" + Loc.Round(ev.Plan.Round.Name) + "</b>\n" + _summary);
             });
         }
     }

@@ -197,12 +197,12 @@ namespace MotoManager.Core.Career
                         if (p.Philosophy == old) p.Philosophy = TeamPhilosophy.ImmediateResults;
                         p.SeasonsMissed = 0;
                         if (cat.Tier == 1 && !team.IsPlayer)
-                            world.AddNews(team.Name + " changes direction",
-                                "After another season below expectations the team moves to a " + Describe(p.Philosophy) + " approach.", cat.Id);
+                            world.AddNews(Txt.F("news.direction", "{0} changes direction", team.Name),
+                                Txt.F("news.directionBody", "After another season below expectations the team moves to a {0} approach.", Describe(p.Philosophy)), cat.Id);
                     }
                     else if (p.SeasonsMissed >= 2 && cat.Tier == 1 && !team.IsPlayer && p.Objective <= TeamObjective.Podiums)
                     {
-                        world.AddNews(team.Name + " under pressure", team.Name + " has missed its objectives two seasons in a row.", cat.Id);
+                        world.AddNews(Txt.F("news.pressure", "{0} under pressure", team.Name), Txt.F("news.pressureBody", "{0} has missed its objectives two seasons in a row.", team.Name), cat.Id);
                     }
                 }
                 p.RiskTolerance = Math.Round(MathX.Clamp(p.RiskTolerance, 5, 95), 1);
@@ -228,11 +228,11 @@ namespace MotoManager.Core.Career
         {
             switch (p)
             {
-                case TeamPhilosophy.YoungTalent: return "young-talent";
-                case TeamPhilosophy.Experience: return "experience-first";
-                case TeamPhilosophy.ManufacturerLoyal: return "manufacturer-led";
-                case TeamPhilosophy.ImmediateResults: return "results-now";
-                default: return "long-term";
+                case TeamPhilosophy.YoungTalent: return Txt.F("phil.YoungTalent", "young-talent");
+                case TeamPhilosophy.Experience: return Txt.F("phil.Experience", "experience-first");
+                case TeamPhilosophy.ManufacturerLoyal: return Txt.F("phil.ManufacturerLoyal", "manufacturer-led");
+                case TeamPhilosophy.ImmediateResults: return Txt.F("phil.ImmediateResults", "results-now");
+                default: return Txt.F("phil.LongTerm", "long-term");
             }
         }
 

@@ -240,10 +240,10 @@ namespace MotoManager.Core.Career
         public static CareerResult AcceptJob(WorldState world, GameDatabase db, ManagerProfile m, JobOffer offer)
         {
             var team = world.GetTeam(offer.TeamId);
-            if (team == null) return new CareerResult { Message = "The team no longer exists." };
+            if (team == null) return new CareerResult { Message = Txt.F("career.e.noTeam", "The team no longer exists.") };
             Employ(world, db, m, team, offer.Autonomy, offer.Seasons, offer.SalaryPerSeason);
             Season.WorldFactory.SetPlayerTeam(world, team.Id);
-            return new CareerResult { Ok = true, Team = team, Message = m.FullName + " is the new manager of " + team.Name + "." };
+            return new CareerResult { Ok = true, Team = team, Message = Txt.F("career.r.hired", "{0} is the new manager of {1}.", m.FullName, team.Name) };
         }
 
         // ------------------------------------------------------------------ loans
@@ -372,16 +372,16 @@ namespace MotoManager.Core.Career
         public static CareerResult Found(WorldState world, GameDatabase db, ManagerProfile m, FoundingPlan plan)
         {
             var cat = db.GetCategory(plan.CategoryId);
-            if (cat == null || !cat.Simulated) return Fail("Unknown category.");
-            if (plan.Investment <= 0 || plan.Investment > m.PersonalWealth + 0.01) return Fail("You cannot invest more than your personal wealth.");
+            if (cat == null || !cat.Simulated) return Fail(Txt.F("career.e.category", "Unknown category."));
+            if (plan.Investment <= 0 || plan.Investment > m.PersonalWealth + 0.01) return Fail(Txt.F("career.e.wealth", "You cannot invest more than your personal wealth."));
             var terms = LoanTermsFor(m, plan.Investment);
-            if (plan.Loan > terms.MaxAmount + 0.01) return Fail("The bank will lend at most " + MathX.FormatMoney(terms.MaxAmount) + ".");
+            if (plan.Loan > terms.MaxAmount + 0.01) return Fail(Txt.F("career.e.loan", "The bank will lend at most {0}.", MathX.FormatMoney(terms.MaxAmount)));
             var report = ViabilityService.Evaluate(world, db, PlanFor(world, m, cat.Id, plan.Investment, plan.Loan));
             if (report.Verdict == Viability.NotAvailable || report.Verdict == Viability.Unviable)
-                return new CareerResult { Viability = report, Message = "This project is not financially viable in " + cat.Name + "." };
+                return new CareerResult { Viability = report, Message = Txt.F("career.e.viable", "This project is not financially viable in {0}.", cat.Name) };
             var supplier = world.GetManufacturer(plan.ManufacturerId);
             string baseBikeId;
-            if (supplier == null || !supplier.Programs.TryGetValue(cat.Id, out baseBikeId)) return Fail("That manufacturer does not supply bikes in " + cat.Name + ".");
+            if (supplier == null || !supplier.Programs.TryGetValue(cat.Id, out baseBikeId)) return Fail(Txt.F("career.e.supplier", "That manufacturer does not supply bikes in {0}.", cat.Name));
             var rules = db.GetRules(cat.Id, world.Season);
             var rng = world.Rng.Fork("founding-" + m.Id);
 
@@ -405,7 +405,7 @@ namespace MotoManager.Core.Career
             if (rules.Economy.EntryModel == EntryModel.SlotPurchase)
             {
                 var seller = Seller(world, db, cat.Id);
-                if (seller == null) return Fail("No team is willing to sell its place.");
+                if (seller == null) return Fail(Txt.F("career.e.noSeller", "No team is willing to sell its place."));
                 Accounts.Post(world, org, null, LedgerKind.SlotPurchase, -rules.Economy.SlotPrice, seller.Name, true, false);
                 var sellerOrg = world.OrganisationOf(seller);
                 if (sellerOrg != null) Accounts.Post(world, sellerOrg, seller.Id, LedgerKind.SlotSale, rules.Economy.SlotPrice, plan.TeamName, true, false);
@@ -471,8 +471,8 @@ namespace MotoManager.Core.Career
             team.Shop.Fans = MerchService.FansTarget(world, db, team);
             Season.WorldFactory.SetPlayerTeam(world, team.Id);
             TeamAI.SetObjectives(world, db);
-            world.AddNews(m.FullName + " founds " + team.Name, "A new team joins " + cat.Name + " with " + supplier.Name + " machinery.", cat.Id, true);
-            return new CareerResult { Ok = true, Team = team, Viability = report, Message = team.Name + " is born." };
+            world.AddNews(Txt.F("news.founds", "{0} founds {1}", m.FullName, team.Name), Txt.F("news.foundsBody", "A new team joins {0} with {1} machinery.", cat.Name, supplier.Name), cat.Id, true);
+            return new CareerResult { Ok = true, Team = team, Viability = report, Message = Txt.F("career.r.born", "{0} is born.", team.Name) };
         }
 
         /// <summary>The team that sells its grid place: the weakest private team that is not part of a larger structure if possible.</summary>
@@ -520,7 +520,7 @@ namespace MotoManager.Core.Career
             if (org != null) org.TeamIds.Remove(team.Id);
             world.Teams.Remove(team.Id);
             world.Bikes.Remove(team.BikeId);
-            world.AddNews(team.Name + " withdraws", team.Name + " sells its place on the grid.", team.CategoryId, true);
+            world.AddNews(Txt.F("news.withdraws", "{0} withdraws", team.Name), Txt.F("news.withdrawsBody", "{0} sells its place on the grid.", team.Name), team.CategoryId, true);
         }
 
         private static CareerResult Fail(string message)

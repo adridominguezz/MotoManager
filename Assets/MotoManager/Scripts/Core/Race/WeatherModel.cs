@@ -147,7 +147,7 @@ namespace MotoManager.Core.Race
 
         public string Describe()
         {
-            return Condition + ", air " + AirTemp.ToString("0") + "°C, track " + TrackTemp.ToString("0") + "°C, wetness " + (TrackWetness * 100).ToString("0") + "%";
+            return Common.Txt.F("weather.describe", "{0}, air {1}°C, track {2}°C, wetness {3}%", Common.Txt.Name("weather." + Condition, Condition.ToString()), AirTemp.ToString("0"), TrackTemp.ToString("0"), (TrackWetness * 100).ToString("0"));
         }
     }
 }

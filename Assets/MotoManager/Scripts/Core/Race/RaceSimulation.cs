@@ -172,7 +172,7 @@ namespace MotoManager.Core.Race
 
         private void SetupStart()
         {
-            AddEvent(RaceEventType.RaceStart, -1, -1, Config.SessionName + " start - " + Weather.Describe(), true);
+            AddEvent(RaceEventType.RaceStart, -1, -1, Txt.F("ev.start", "{0} start - {1}", Txt.Name("session." + Config.SessionName, Config.SessionName), Weather.Describe()), true);
             foreach (var r in Riders)
             {
                 var a = r.Entry.Rider.Attributes;
@@ -181,7 +181,7 @@ namespace MotoManager.Core.Race
                 if (_rng.Chance(jump))
                 {
                     r.ReactionTime = 0.02;
-                    AddEvent(RaceEventType.JumpStart, r.Index, -1, r.Entry.Rider.ShortName + " jumped the start", true);
+                    AddEvent(RaceEventType.JumpStart, r.Index, -1, Txt.F("ev.jumpStart", "{0} jumped the start", r.Entry.Rider.ShortName), true);
                     ApplyInfraction(r, InfractionType.JumpStart);
                 }
             }
@@ -238,7 +238,7 @@ namespace MotoManager.Core.Race
                     r.Entry.AutoManaged = c.Flag;
                     break;
             }
-            AddEvent(RaceEventType.CommandApplied, r.Index, -1, r.Entry.Rider.ShortName + ": " + c.Type + " " + (c.Type == RaceCommandType.SetPace ? c.Pace.ToString() : c.Type == RaceCommandType.SetRiderMode ? c.Mode.ToString() : c.Type == RaceCommandType.RequestPit ? c.Pit + " (" + c.Compound + ")" : ""), false);
+            AddEvent(RaceEventType.CommandApplied, r.Index, -1, Txt.F("ev.command", "{0}: {1}", r.Entry.Rider.ShortName, c.Type == RaceCommandType.SetPace ? Txt.Name("pace." + c.Pace, c.Pace.ToString()) : c.Type == RaceCommandType.SetRiderMode ? Txt.Name("mode." + c.Mode, c.Mode.ToString()) : Txt.Name("command." + c.Type, c.Type.ToString())), false);
         }
 
         // ------------------------------------------------------------------ main loop
@@ -254,11 +254,11 @@ namespace MotoManager.Core.Race
             Weather.Update(dt, RunningShare());
             if (Weather.Condition != _lastCondition)
             {
-                AddEvent(RaceEventType.WeatherChange, -1, -1, "Conditions: " + Weather.Condition, true);
+                AddEvent(RaceEventType.WeatherChange, -1, -1, Txt.F("ev.conditions", "Conditions: {0}", Txt.Name("weather." + Weather.Condition, Weather.Condition.ToString())), true);
                 if (!WhiteFlag && Weather.RainIntensity > 0.04 && (Rules.PitLane.AllowsBikeSwap || Rules.PitLane.AllowsTireChange) && !Config.TimeTrial)
                 {
                     WhiteFlag = true;
-                    AddEvent(RaceEventType.WhiteFlag, -1, -1, "White flag: riders may pit to change " + (Rules.PitLane.AllowsBikeSwap ? "bikes" : "tires"), true);
+                    AddEvent(RaceEventType.WhiteFlag, -1, -1, (Rules.PitLane.AllowsBikeSwap ? Txt.F("ev.whiteFlagBikes", "White flag: riders may pit to change bikes") : Txt.F("ev.whiteFlagTyres", "White flag: riders may pit to change tyres")), true);
                 }
                 _lastCondition = Weather.Condition;
             }
@@ -714,7 +714,7 @@ namespace MotoManager.Core.Race
             }
 
             r.Stats.OvertakesFailed++;
-            AddEvent(RaceEventType.OvertakeFailed, r.Index, ahead.Index, r.Entry.Rider.ShortName + " tries a move on " + ahead.Entry.Rider.ShortName + " but has to back out", false);
+            AddEvent(RaceEventType.OvertakeFailed, r.Index, ahead.Index, Txt.F("ev.moveFailed", "{0} tries a move on {1} but has to back out", r.Entry.Rider.ShortName, ahead.Entry.Rider.ShortName), false);
             Delay(r, _rng.Range(0.05, 0.25), 0.4);
             if (_rng.Chance(Tuning.ContactChance * attackRisk)) Contact(r, ahead);
             return false;
@@ -722,11 +722,11 @@ namespace MotoManager.Core.Race
 
         private void Contact(RiderRaceState attacker, RiderRaceState victim)
         {
-            AddEvent(RaceEventType.Contact, attacker.Index, victim.Index, "Contact between " + attacker.Entry.Rider.ShortName + " and " + victim.Entry.Rider.ShortName, true);
+            AddEvent(RaceEventType.Contact, attacker.Index, victim.Index, Txt.F("ev.contact", "Contact between {0} and {1}", attacker.Entry.Rider.ShortName, victim.Entry.Rider.ShortName), true);
             bool victimDown = false;
             if (_rng.Chance(Tuning.ContactCrashChance * 0.6))
             {
-                Crash(victim, CrashType.ContactCrash, "taken out by " + attacker.Entry.Rider.ShortName);
+                Crash(victim, CrashType.ContactCrash, Txt.F("ev.takenOut", "taken out by {0}", attacker.Entry.Rider.ShortName));
                 victimDown = true;
             }
             else
@@ -735,7 +735,7 @@ namespace MotoManager.Core.Race
             }
             if (_rng.Chance(Tuning.ContactCrashChance * 0.4))
             {
-                Crash(attacker, CrashType.ContactCrash, "contact with " + victim.Entry.Rider.ShortName);
+                Crash(attacker, CrashType.ContactCrash, Txt.F("ev.contactWith", "contact with {0}", victim.Entry.Rider.ShortName));
             }
             else
             {
@@ -754,7 +754,7 @@ namespace MotoManager.Core.Race
                 r.OnLongLap = true;
                 double loss = Track.LongLapLossS > 0 ? Track.LongLapLossS : Rules.PitLane.LongLapLossS;
                 Delay(r, loss, 0.45);
-                AddEvent(RaceEventType.PenaltyServed, r.Index, -1, r.Entry.Rider.ShortName + " takes the Long Lap", true);
+                AddEvent(RaceEventType.PenaltyServed, r.Index, -1, Txt.F("ev.longLap", "{0} takes the Long Lap", r.Entry.Rider.ShortName), true);
             }
             if (!seg.IsCorner || _noiseless) return;
             RollIncidents(r, seg, orderIndex);
@@ -884,13 +884,13 @@ namespace MotoManager.Core.Race
                 Delay(r, gravel, 0.65);
                 r.TargetLateral = -1.4 * Math.Sign(seg.AngleDeg == 0 ? 1 : seg.AngleDeg);
                 r.Stats.RunOffs++;
-                AddEvent(RaceEventType.RunOff, r.Index, -1, r.Entry.Rider.ShortName + " runs off at turn " + seg.CornerNumber + " (" + gravel.ToString("0.0") + "s lost)", true);
+                AddEvent(RaceEventType.RunOff, r.Index, -1, Txt.F("ev.runOff", "{0} runs off at turn {1} ({2}s lost)", r.Entry.Rider.ShortName, seg.CornerNumber, gravel.ToString("0.0", Txt.Culture)), true);
                 return;
             }
             Delay(r, loss, 0.5);
             if (type == RiderErrorType.RunWide || type == RiderErrorType.OutBraked)
                 r.TargetLateral = -0.6 * Math.Sign(seg.AngleDeg == 0 ? 1 : seg.AngleDeg);
-            AddEvent(RaceEventType.Error, r.Index, -1, r.Entry.Rider.ShortName + ": " + ErrorText(type) + " at turn " + seg.CornerNumber, loss > 0.6);
+            AddEvent(RaceEventType.Error, r.Index, -1, Txt.F("ev.error", "{0}: {1} at turn {2}", r.Entry.Rider.ShortName, ErrorText(type), seg.CornerNumber), loss > 0.6);
             if (seg.TrackLimits && (type == RiderErrorType.RunWide || type == RiderErrorType.OutBraked)) TrackLimits(r);
         }
 
@@ -898,13 +898,13 @@ namespace MotoManager.Core.Race
         {
             switch (t)
             {
-                case RiderErrorType.LockUp: return "locks the front";
-                case RiderErrorType.OutBraked: return "outbrakes himself";
-                case RiderErrorType.RunWide: return "runs wide";
-                case RiderErrorType.LostLine: return "misses the line";
-                case RiderErrorType.Wheelspin: return "big wheelspin on exit";
-                case RiderErrorType.LostConcentration: return "loses concentration";
-                case RiderErrorType.PressureMistake: return "makes a mistake under pressure";
+                case RiderErrorType.LockUp: return Txt.F("err.LockUp", "locks the front");
+                case RiderErrorType.OutBraked: return Txt.F("err.OutBraked", "outbrakes himself");
+                case RiderErrorType.RunWide: return Txt.F("err.RunWide", "runs wide");
+                case RiderErrorType.LostLine: return Txt.F("err.LostLine", "misses the line");
+                case RiderErrorType.Wheelspin: return Txt.F("err.Wheelspin", "big wheelspin on exit");
+                case RiderErrorType.LostConcentration: return Txt.F("err.LostConcentration", "loses concentration");
+                case RiderErrorType.PressureMistake: return Txt.F("err.PressureMistake", "makes a mistake under pressure");
             }
             return t.ToString();
         }
@@ -924,7 +924,7 @@ namespace MotoManager.Core.Race
                 double loss = _rng.Range(3, 9);
                 Delay(r, loss, 0.7);
                 r.TargetLateral = -1.5 * Math.Sign(seg.AngleDeg == 0 ? 1 : seg.AngleDeg);
-                AddEvent(RaceEventType.RunOff, r.Index, -1, r.Entry.Rider.ShortName + " goes straight on at turn " + seg.CornerNumber + " and rejoins", true);
+                AddEvent(RaceEventType.RunOff, r.Index, -1, Txt.F("ev.straightOn", "{0} goes straight on at turn {1} and rejoins", r.Entry.Rider.ShortName, seg.CornerNumber), true);
                 return;
             }
             r.Status = Config.TimeTrial ? RaceStatus.Retired : RaceStatus.Crashed;
@@ -939,9 +939,9 @@ namespace MotoManager.Core.Race
             _yellowUntil[seg.Index] = Time + 25;
             if (_rng.Chance(type == CrashType.HighSide ? 0.16 : 0.035)) r.InjuredInCrash = true;
 
-            string where = seg.IsCorner ? "turn " + seg.CornerNumber : "the straight";
-            AddEvent(RaceEventType.Crash, r.Index, -1, r.Entry.Rider.ShortName + " crashes at " + where + " (" + type + (cause != null ? ", " + cause : "") + ")", true);
-            AddEvent(RaceEventType.YellowFlag, r.Index, -1, "Yellow flag at " + where, false);
+            string where = seg.IsCorner ? Txt.F("ev.turn", "turn {0}", seg.CornerNumber) : Txt.F("ev.theStraight", "the straight");
+            AddEvent(RaceEventType.Crash, r.Index, -1, Txt.F("ev.crash", "{0} crashes at {1} ({2})", r.Entry.Rider.ShortName, where, Txt.Name("crash." + type, type.ToString()) + (cause != null ? ", " + cause : "")), true);
+            AddEvent(RaceEventType.YellowFlag, r.Index, -1, Txt.F("ev.yellow", "Yellow flag at {0}", where), false);
 
             double remount;
             switch (type)
@@ -962,6 +962,7 @@ namespace MotoManager.Core.Race
             {
                 r.RemountAt = -1;
                 r.RetireReason = "Crash (" + type + ")";
+                r.RetireNote = Txt.F("note.crash", "Crash ({0})", Txt.Name("crash." + type, type.ToString()));
             }
         }
 
@@ -989,12 +990,12 @@ namespace MotoManager.Core.Race
                 r.HandlingLoss += _rng.Range(0.003, 0.02);
                 r.Front.Temperature -= 15;
                 r.Rear.Temperature -= 15;
-                AddEvent(RaceEventType.Remount, r.Index, -1, r.Entry.Rider.ShortName + " picks the bike up and rejoins", true);
+                AddEvent(RaceEventType.Remount, r.Index, -1, Txt.F("ev.remount", "{0} picks the bike up and rejoins", r.Entry.Rider.ShortName), true);
             }
             else if (r.RemountAt < 0 && Time - r.CrashTime > 4)
             {
                 r.Status = RaceStatus.Retired;
-                AddEvent(RaceEventType.Retirement, r.Index, -1, r.Entry.Rider.ShortName + " is out of the " + Config.SessionName.ToLowerInvariant(), true);
+                AddEvent(RaceEventType.Retirement, r.Index, -1, Txt.F("ev.out", "{0} is out of the race", r.Entry.Rider.ShortName), true);
             }
         }
 
@@ -1014,7 +1015,7 @@ namespace MotoManager.Core.Race
             if (r.TrackLimitsCount % warnings == 0)
                 ApplyInfraction(r, InfractionType.TrackLimits);
             else
-                AddEvent(RaceEventType.TrackLimitsWarning, r.Index, -1, r.Entry.Rider.ShortName + " track limits warning (" + r.TrackLimitsCount + ")", r.Entry.IsPlayer);
+                AddEvent(RaceEventType.TrackLimitsWarning, r.Index, -1, Txt.F("ev.trackLimits", "{0} track limits warning ({1})", r.Entry.Rider.ShortName, r.TrackLimitsCount), r.Entry.IsPlayer);
         }
 
         public void ApplyInfraction(RiderRaceState r, InfractionType infraction)
@@ -1033,20 +1034,21 @@ namespace MotoManager.Core.Race
                 case PenaltyType.Disqualification:
                     r.Status = RaceStatus.Disqualified;
                     r.RetireReason = "Disqualified (" + infraction + ")";
+                    r.RetireNote = Txt.F("note.dsq", "Disqualified ({0})", Txt.Name("infraction." + infraction, infraction.ToString()));
                     break;
             }
-            AddEvent(RaceEventType.Penalty, r.Index, -1, r.Entry.Rider.ShortName + ": " + Describe(def) + " for " + infraction, true);
+            AddEvent(RaceEventType.Penalty, r.Index, -1, Txt.F("ev.penalty", "{0}: {1} for {2}", r.Entry.Rider.ShortName, Describe(def), Txt.Name("infraction." + infraction, infraction.ToString())), true);
         }
 
         private static string Describe(PenaltyDefinition def)
         {
             switch (def.Type)
             {
-                case PenaltyType.TimePenalty: return def.TimeSeconds.ToString("0") + "s time penalty";
-                case PenaltyType.PositionDrop: return "drop " + Math.Max(1, def.Positions) + " position(s)";
-                case PenaltyType.DoubleLongLap: return "Double Long Lap";
-                case PenaltyType.LongLap: return "Long Lap";
-                case PenaltyType.RideThrough: return "Ride Through";
+                case PenaltyType.TimePenalty: return Txt.F("pen.time", "{0}s time penalty", def.TimeSeconds.ToString("0"));
+                case PenaltyType.PositionDrop: return Txt.F("pen.drop", "drop {0} position(s)", Math.Max(1, def.Positions));
+                case PenaltyType.DoubleLongLap: return Txt.F("pen.doubleLongLap", "Double Long Lap");
+                case PenaltyType.LongLap: return Txt.F("pen.longLap", "Long Lap");
+                case PenaltyType.RideThrough: return Txt.F("pen.rideThrough", "Ride Through");
             }
             return def.Type.ToString();
         }
@@ -1066,7 +1068,7 @@ namespace MotoManager.Core.Race
                 r.PitStationaryTime = Rules.PitLane.TireChangeTimeS + _rng.Range(-2, 5);
             else
                 r.PitStationaryTime = 0;
-            AddEvent(RaceEventType.PitIn, r.Index, -1, r.Entry.Rider.ShortName + " into the pit lane" + (r.PitRequest == PitRequestType.BikeSwap ? " to swap bikes" : r.PitRequest == PitRequestType.TireChange ? " for tires" : " (ride through)"), true);
+            AddEvent(RaceEventType.PitIn, r.Index, -1, (r.PitRequest == PitRequestType.BikeSwap ? Txt.F("ev.pitSwap", "{0} into the pit lane to swap bikes", r.Entry.Rider.ShortName) : r.PitRequest == PitRequestType.TireChange ? Txt.F("ev.pitTyres", "{0} into the pit lane for tyres", r.Entry.Rider.ShortName) : Txt.F("ev.pitRideThrough", "{0} into the pit lane (ride through)", r.Entry.Rider.ShortName)), true);
         }
 
         private void UpdatePitLane(RiderRaceState r, double dt)
@@ -1124,9 +1126,9 @@ namespace MotoManager.Core.Race
                 if (r.PendingRideThrough && r.PitStationaryTime <= 0)
                 {
                     r.PendingRideThrough = false;
-                    AddEvent(RaceEventType.PenaltyServed, r.Index, -1, r.Entry.Rider.ShortName + " serves the ride through", true);
+                    AddEvent(RaceEventType.PenaltyServed, r.Index, -1, Txt.F("ev.rideThroughServed", "{0} serves the ride through", r.Entry.Rider.ShortName), true);
                 }
-                AddEvent(RaceEventType.PitOut, r.Index, -1, r.Entry.Rider.ShortName + " leaves the pit lane on " + r.Rear.Compound, true);
+                AddEvent(RaceEventType.PitOut, r.Index, -1, Txt.F("ev.pitOut", "{0} leaves the pit lane on {1}", r.Entry.Rider.ShortName, Txt.Name("tyre." + r.Rear.Compound, r.Rear.Compound.ToString())), true);
                 if (_rng.Chance(0.004)) ApplyInfraction(r, InfractionType.PitLaneSpeeding);
                 foreach (var o in Riders)
                 {
@@ -1211,15 +1213,16 @@ namespace MotoManager.Core.Race
             {
                 r.Status = RaceStatus.Retired;
                 r.RetireReason = type + " failure";
+                r.RetireNote = Txt.F("note.failure", "{0} failure", Txt.Name("failure." + type, type.ToString()));
                 r.TargetLateral = 1.6;
-                AddEvent(RaceEventType.MechanicalFailure, r.Index, -1, r.Entry.Rider.ShortName + " retires: " + type.ToString().ToLowerInvariant() + " failure", true);
+                AddEvent(RaceEventType.MechanicalFailure, r.Index, -1, Txt.F("ev.failure", "{0} retires: {1} failure", r.Entry.Rider.ShortName, Txt.Name("failure." + type, type.ToString().ToLowerInvariant())), true);
             }
             else
             {
                 r.HasIssue = true;
                 if (type == FailureType.Engine || type == FailureType.Electronics || type == FailureType.Cooling) r.PowerLoss += _rng.Range(0.02, 0.07);
                 else r.HandlingLoss += _rng.Range(0.005, 0.02);
-                AddEvent(RaceEventType.MechanicalIssue, r.Index, -1, r.Entry.Rider.ShortName + " has a " + type.ToString().ToLowerInvariant() + " problem and loses pace", true);
+                AddEvent(RaceEventType.MechanicalIssue, r.Index, -1, Txt.F("ev.issue", "{0} has a {1} problem and loses pace", r.Entry.Rider.ShortName, Txt.Name("failure." + type, type.ToString().ToLowerInvariant())), true);
             }
         }
 
@@ -1259,7 +1262,7 @@ namespace MotoManager.Core.Race
                     FastestLap = lapTime;
                     FastestLapRider = r.Index;
                     if (!Config.TimeTrial)
-                        AddEvent(RaceEventType.FastestLap, r.Index, -1, "Fastest lap: " + r.Entry.Rider.ShortName + " " + MathX.FormatLapTime(lapTime), false);
+                        AddEvent(RaceEventType.FastestLap, r.Index, -1, Txt.F("ev.fastestLap", "Fastest lap: {0} {1}", r.Entry.Rider.ShortName, MathX.FormatLapTime(lapTime)), false);
                 }
             }
             if (r.CurrentSector == Track.SectorCount - 1 && valid)
@@ -1288,7 +1291,7 @@ namespace MotoManager.Core.Race
                 if (!ChequeredFlag)
                 {
                     ChequeredFlag = true;
-                    AddEvent(RaceEventType.Finish, r.Index, -1, "Chequered flag! " + r.Entry.Rider.ShortName + " wins the " + Config.SessionName.ToLowerInvariant(), true);
+                    AddEvent(RaceEventType.Finish, r.Index, -1, Txt.F("ev.win", "Chequered flag! {0} wins", r.Entry.Rider.ShortName), true);
                 }
                 r.Status = RaceStatus.Finished;
                 r.FinishTime = Time;
@@ -1298,7 +1301,7 @@ namespace MotoManager.Core.Race
             if (!_lastLapAnnounced && r.Lap == Config.Laps - 1)
             {
                 _lastLapAnnounced = true;
-                AddEvent(RaceEventType.LastLap, r.Index, -1, "Last lap!", true);
+                AddEvent(RaceEventType.LastLap, r.Index, -1, Txt.F("ev.lastLap", "Last lap!"), true);
             }
             if (r.PendingLongLaps > 0 && r.Lap >= Config.Laps - 1)
             {
@@ -1395,7 +1398,7 @@ namespace MotoManager.Core.Race
                 if (leaderIdx != _leaderIndex && Time > 1)
                 {
                     if (_leaderIndex >= 0 && !ChequeredFlag)
-                        AddEvent(RaceEventType.LeaderChange, leaderIdx, _leaderIndex, Riders[leaderIdx].Entry.Rider.ShortName + " takes the lead", true);
+                        AddEvent(RaceEventType.LeaderChange, leaderIdx, _leaderIndex, Txt.F("ev.lead", "{0} takes the lead", Riders[leaderIdx].Entry.Rider.ShortName), true);
                     _leaderIndex = leaderIdx;
                 }
             }
@@ -1411,7 +1414,7 @@ namespace MotoManager.Core.Race
                         r.Overtakes++;
                         r.Stats.OvertakesMade++;
                         victim.Stats.OvertakesSuffered++;
-                        AddEvent(RaceEventType.Overtake, r.Index, victim.Index, r.Entry.Rider.ShortName + " passes " + victim.Entry.Rider.ShortName + " for P" + r.Position, r.Position <= 5 || r.Entry.IsPlayer || victim.Entry.IsPlayer);
+                        AddEvent(RaceEventType.Overtake, r.Index, victim.Index, Txt.F("ev.pass", "{0} passes {1} for P{2}", r.Entry.Rider.ShortName, victim.Entry.Rider.ShortName, r.Position), r.Position <= 5 || r.Entry.IsPlayer || victim.Entry.IsPlayer);
                         r.AttemptTarget = -1;
                         r.AttemptSucceeds = false;
                         r.StuckTime = 0;
@@ -1504,7 +1507,7 @@ namespace MotoManager.Core.Race
                     Laps = Math.Min(r.Lap, Config.Laps),
                     BestLap = r.BestLapTime < double.MaxValue ? r.BestLapTime : 0,
                     FastestLap = r.Index == FastestLapRider,
-                    Note = r.TimePenalty > 0 ? "+" + r.TimePenalty.ToString("0.0") + "s penalty" : null
+                    Note = r.TimePenalty > 0 ? Txt.F("note.timePenalty", "+{0}s penalty", r.TimePenalty.ToString("0.0", Txt.Culture)) : null
                 });
             }
             foreach (var r in others)
@@ -1519,7 +1522,7 @@ namespace MotoManager.Core.Race
                     Status = ResultStatus.DNF,
                     Laps = Math.Max(0, r.Lap),
                     BestLap = r.BestLapTime < double.MaxValue ? r.BestLapTime : 0,
-                    Note = r.RetireReason
+                    Note = r.RetireNote ?? r.RetireReason
                 });
             }
             foreach (var r in dsq)
@@ -1533,7 +1536,7 @@ namespace MotoManager.Core.Race
                     GridPosition = r.Entry.GridPosition,
                     Status = ResultStatus.DSQ,
                     Laps = Math.Max(0, r.Lap),
-                    Note = r.RetireReason
+                    Note = r.RetireNote ?? r.RetireReason
                 });
             }
             return list;

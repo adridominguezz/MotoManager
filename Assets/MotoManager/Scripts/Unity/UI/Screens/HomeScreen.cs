@@ -35,7 +35,7 @@ namespace MotoManager.App.UI.Screens
                 var cats = new List<string>();
                 foreach (var c in next.Categories) cats.Add(Game.Db.GetCategory(c).ShortName);
                 bool racing = team != null && next.Categories.Contains(team.CategoryId);
-                var card = Ui.Card(list, next.Round.Name,
+                var card = Ui.Card(list, Loc.Round(next.Round.Name),
                     circuit.Name + " · " + circuit.Country + " · " + next.Round.Date.ToString("d MMMM", Loc.Culture) + "  ·  " + string.Join(", ", cats.ToArray()));
                 if (!racing) Ui.Note(card, Loc.T("home.notRacing"));
                 if (racing)

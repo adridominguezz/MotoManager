@@ -250,7 +250,7 @@ namespace MotoManager.Core.Economy
                 {
                     deal.PaymentPerSeason = Math.Round(deal.PaymentPerSeason * (1 - deal.PenaltyOnMiss) / 1000) * 1000;
                     if (team.IsPlayer)
-                        world.AddNews(deal.Name + " cuts its payment", "Objectives were missed: " + MathX.FormatMoney(deal.PaymentPerSeason) + " per season from now on.", team.CategoryId, true);
+                        world.AddNews(Txt.F("news.sponsorCut", "{0} cuts its payment", deal.Name), Txt.F("news.sponsorCutBody", "Objectives were missed: {0} per season from now on.", MathX.FormatMoney(deal.PaymentPerSeason)), team.CategoryId, true);
                 }
                 if (deal.EndSeason > world.Season) continue;
 
@@ -259,7 +259,7 @@ namespace MotoManager.Core.Economy
                 double keen = MathX.Clamp01(deal.Satisfaction / 100.0 + 0.1);
                 if (!rng.Chance(keen))
                 {
-                    if (team.IsPlayer) world.AddNews(deal.Name + " ends its sponsorship", "The partnership with " + team.Name + " will not continue next season.", team.CategoryId, true);
+                    if (team.IsPlayer) world.AddNews(Txt.F("news.sponsorEnds", "{0} ends its sponsorship", deal.Name), Txt.F("news.sponsorEndsBody", "The partnership with {0} will not continue next season.", team.Name), team.CategoryId, true);
                     continue;
                 }
                 var offer = SponsorMarket.RenewalOffer(world, db, team, deal, rng);

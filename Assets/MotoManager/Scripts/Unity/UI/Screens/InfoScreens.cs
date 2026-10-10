@@ -107,7 +107,7 @@ namespace MotoManager.App.UI.Screens
                 var circuit = Game.Db.GetCircuit(r.CircuitId);
                 string winner = i < next ? Winner(world, topCat, r.Round) : "";
                 Color? bg = i == next ? new Color(0.94f, 0.7f, 0.16f, 0.18f) : (Color?)null;
-                UiFactory.TableRow(card, 44, widths, new[] { r.Round.ToString(), r.Date.ToString("dd MMM", Loc.Culture), (i == next ? "<b>" + r.Name + "</b>" : r.Name), circuit != null ? circuit.ShortName : r.CircuitId, winner }, false, bg,
+                UiFactory.TableRow(card, 44, widths, new[] { r.Round.ToString(), r.Date.ToString("dd MMM", Loc.Culture), (i == next ? "<b>" + Loc.Round(r.Name) + "</b>" : Loc.Round(r.Name)), circuit != null ? circuit.ShortName : r.CircuitId, winner }, false, bg,
                     i < next ? Theme.TextDim : Theme.Text);
             }
         }

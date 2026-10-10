@@ -131,7 +131,7 @@ namespace MotoManager.Core.Economy
                 if (offer == null) continue;
                 engaged.Add(offer.SponsorId, team.Id);
                 world.SponsorOffers.Add(offer);
-                if (team.IsPlayer) world.AddNews(offer.Name + " wants to sponsor " + team.Name, "Offer: " + MathX.FormatMoney(offer.PaymentPerSeason) + " per season for " + offer.Seasons + " season(s).", team.CategoryId, true);
+                if (team.IsPlayer) world.AddNews(Txt.F("news.sponsorOffer", "{0} wants to sponsor {1}", offer.Name, team.Name), Txt.F("news.sponsorOfferBody", "Offer: {0} per season for {1} season(s).", MathX.FormatMoney(offer.PaymentPerSeason), offer.Seasons), team.CategoryId, true);
             }
         }
 
@@ -283,26 +283,26 @@ namespace MotoManager.Core.Economy
         {
             var o = Find(world, offerId);
             var team = o != null ? world.GetTeam(o.TeamId) : null;
-            if (o == null || team == null) return Fail("The offer is no longer available.");
+            if (o == null || team == null) return Fail(Txt.F("sp.gone", "The offer is no longer available."));
             int last = o.StartSeason + Math.Max(1, o.Seasons) - 1;
             if (SponsorService.DealsIn(team, o.StartSeason) >= SponsorService.Slots(db, team, o.StartSeason))
-                return Fail("No free sponsor slot.");
+                return Fail(Txt.F("sp.noSlot", "No free sponsor slot."));
             if (SponsorService.IndustryConflict(team, o.Industry, o.IndustryExclusive, o.StartSeason, last))
-                return Fail("Another sponsor of the same industry (" + o.Industry + ") has exclusivity.");
+                return Fail(Txt.F("sp.exclusive", "Another sponsor of the same industry ({0}) has exclusivity.", Txt.Name("industry." + o.Industry, o.Industry)));
             foreach (var d in team.Sponsors)
-                if (d.SponsorId == o.SponsorId && d.EndSeason >= o.StartSeason) return Fail(o.Name + " already sponsors the team.");
+                if (d.SponsorId == o.SponsorId && d.EndSeason >= o.StartSeason) return Fail(Txt.F("sp.already", "{0} already sponsors the team.", o.Name));
             world.SponsorOffers.Remove(o);
             SponsorService.Sign(world, team, o);
-            if (team.IsPlayer) world.AddNews(o.Name + " signs with " + team.Name, MathX.FormatMoney(o.PaymentPerSeason) + " per season until " + last + ".", team.CategoryId, true);
-            return new SponsorActionResult { Ok = true, Message = o.Name + " signed." };
+            if (team.IsPlayer) world.AddNews(Txt.F("news.sponsorSigns", "{0} signs with {1}", o.Name, team.Name), Txt.F("news.sponsorSignsBody", "{0} per season until {1}.", MathX.FormatMoney(o.PaymentPerSeason), last), team.CategoryId, true);
+            return new SponsorActionResult { Ok = true, Message = Txt.F("sp.signed", "{0} signed.", o.Name) };
         }
 
         public static SponsorActionResult Reject(WorldState world, string offerId)
         {
             var o = Find(world, offerId);
-            if (o == null) return Fail("The offer is no longer available.");
+            if (o == null) return Fail(Txt.F("sp.gone", "The offer is no longer available."));
             world.SponsorOffers.Remove(o);
-            return new SponsorActionResult { Ok = true, Message = o.Name + " declined." };
+            return new SponsorActionResult { Ok = true, Message = Txt.F("sp.declined", "{0} declined.", o.Name) };
         }
 
         /// <summary>
@@ -314,7 +314,7 @@ namespace MotoManager.Core.Economy
             var o = Find(world, offerId);
             var team = o != null ? world.GetTeam(o.TeamId) : null;
             var s = o != null ? SponsorService.GetTemplate(world, db, o.SponsorId) : null;
-            if (o == null || team == null || s == null) return Fail("The offer is no longer available.");
+            if (o == null || team == null || s == null) return Fail(Txt.F("sp.gone", "The offer is no longer available."));
             raise = MathX.Clamp(raise, 0.01, 0.25);
             double interest = SponsorService.Interest(world, db, s, team, db.GetCategory(team.CategoryId));
             double chance = MathX.Clamp(0.25 + interest * 0.5 - raise * 1.6 - o.Counters * 0.25, 0.02, 0.9);
@@ -323,14 +323,14 @@ namespace MotoManager.Core.Economy
             if (rng.Chance(chance))
             {
                 o.PaymentPerSeason = Math.Round(o.PaymentPerSeason * (1 + raise) / 1000) * 1000;
-                return new SponsorActionResult { Ok = true, Message = o.Name + " agrees: " + MathX.FormatMoney(o.PaymentPerSeason) + " per season." };
+                return new SponsorActionResult { Ok = true, Message = Txt.F("sp.agrees", "{0} agrees: {1} per season.", o.Name, MathX.FormatMoney(o.PaymentPerSeason)) };
             }
             if (rng.Chance(0.4 + o.Counters * 0.2))
             {
                 world.SponsorOffers.Remove(o);
-                return Fail(o.Name + " withdraws the offer.");
+                return Fail(Txt.F("sp.withdraws", "{0} withdraws the offer.", o.Name));
             }
-            return Fail(o.Name + " keeps the original terms.");
+            return Fail(Txt.F("sp.keeps", "{0} keeps the original terms.", o.Name));
         }
 
         private static SponsorActionResult Fail(string message)

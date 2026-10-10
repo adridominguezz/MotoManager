@@ -233,7 +233,7 @@ namespace MotoManager.Core.Economy
             if (Accounts.Cash(world, team) < cost) return false;
             Accounts.Post(world, team, LedgerKind.FacilityInvestment, -cost, type + " level " + (lvl + 1), true, false);
             team.Facilities[type] = lvl + 1;
-            if (team.IsPlayer) world.AddNews(type + " upgraded to level " + (lvl + 1), "Investment of " + MathX.FormatMoney(cost) + ".", team.CategoryId);
+            if (team.IsPlayer) world.AddNews(Txt.F("news.facility", "{0} upgraded to level {1}", Txt.Name("facility." + type, type.ToString()), lvl + 1), Txt.F("news.facilityBody", "Investment of {0}.", MathX.FormatMoney(cost)), team.CategoryId);
             return true;
         }
     }
