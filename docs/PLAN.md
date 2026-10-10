@@ -220,9 +220,12 @@ Convenciones que se mantienen en todas las fases:
 - Guardado/carga en `persistentDataPath`, autosave, ajustes, textos (ES/EN), build APK/AAB,
   pruebas en dispositivo, documentación (`README`, `docs/ARCHITECTURE.md`).
 
+## Fase 8 — Requisitos 49–105 (pendiente de aprobación)
+
+La parte final del documento original (secciones 49–105) está analizada en
+[`docs/ANALISIS_49-105.md`](ANALISIS_49-105.md): estado de cada sección, contradicciones detectadas,
+sesiones propuestas (8.1–8.8) y decisiones que necesitan aprobación antes de programar.
+
 ## Pendiente de especificación
 
-El documento original se corta en el apartado **49. Patrocinadores** ("Cada patrocinador puede
-tener: …"). Lo implementado usa: pago por temporada, nivel/tier, reputación mínima, pirámides,
-nacionalidades preferidas, objetivos por carrera y temporada, duración y satisfacción.
-Cuando envíes el resto (secciones 49+), se incorporará en la fase que corresponda.
+Recibidas las secciones 49–105; ver la Fase 8.
