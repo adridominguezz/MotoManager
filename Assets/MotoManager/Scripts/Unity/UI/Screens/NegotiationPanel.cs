@@ -27,7 +27,7 @@ namespace MotoManager.App.UI.Screens
     {
         private static string Money(double v)
         {
-            return (v < 0 ? "<color=#E10600>" : "") + MathX.FormatMoney(v) + (v < 0 ? "</color>" : "");
+            return Theme.Money(v);
         }
 
         public static void Build(RectTransform list, GameController game, NegotiationState s, Action refresh, Action close)
@@ -100,9 +100,9 @@ namespace MotoManager.App.UI.Screens
                     refresh();
                 }));
             UiFactory.ButtonRow(list, 48,
-                UiFactory.Act((p.TeamOption ? "✓ " : "") + Loc.T("neg.teamOption"), () => { p.TeamOption = !p.TeamOption; refresh(); }),
-                UiFactory.Act((p.PerformanceExtensionTopN > 0 ? "✓ " : "") + Loc.T("neg.perf", p.PerformanceExtensionTopN > 0 ? p.PerformanceExtensionTopN : 5), () => { p.PerformanceExtensionTopN = p.PerformanceExtensionTopN > 0 ? 0 : 5; refresh(); }),
-                UiFactory.Act((p.ExitForHigherCategory ? "✓ " : "") + Loc.T("neg.exit"), () => { p.ExitForHigherCategory = !p.ExitForHigherCategory; refresh(); }));
+                UiFactory.Act((p.TeamOption ? "● " : "") + Loc.T("neg.teamOption"), () => { p.TeamOption = !p.TeamOption; refresh(); }),
+                UiFactory.Act((p.PerformanceExtensionTopN > 0 ? "● " : "") + Loc.T("neg.perf", p.PerformanceExtensionTopN > 0 ? p.PerformanceExtensionTopN : 5), () => { p.PerformanceExtensionTopN = p.PerformanceExtensionTopN > 0 ? 0 : 5; refresh(); }),
+                UiFactory.Act((p.ExitForHigherCategory ? "● " : "") + Loc.T("neg.exit"), () => { p.ExitForHigherCategory = !p.ExitForHigherCategory; refresh(); }));
 
             // What it costs, before confirming.
             var c = ContractService.Cost(world, db, team, r, p);
@@ -135,15 +135,15 @@ namespace MotoManager.App.UI.Screens
         {
             var world = game.World;
             if (world.TransferOffers.Count == 0) return;
-            UiFactory.Heading(list, Loc.T("bids.title"));
+            var card = Ui.Card(list, Loc.T("bids.title"));
             foreach (var o in new List<TransferOffer>(world.TransferOffers))
             {
                 var offer = o;
                 var r = world.GetRider(o.RiderId);
                 var buyer = world.GetTeam(o.ToTeamId);
                 if (r == null || buyer == null) continue;
-                UiFactory.Paragraph(list, Loc.T("bids.offer", buyer.Name, r.FullName, MathX.FormatMoney(o.Fee), Math.Max(0, o.ExpiresAfterEvent - world.EventsCompleted + 1)), Theme.FontSmall + 2);
-                UiFactory.ButtonRow(list, 52,
+                UiFactory.Paragraph(card, Loc.T("bids.offer", buyer.Name, r.FullName, MathX.FormatMoney(o.Fee), Math.Max(0, o.ExpiresAfterEvent - world.EventsCompleted + 1)), Theme.FontSmall + 2);
+                UiFactory.ButtonRow(card, 52,
                     UiFactory.Act(Loc.T("bids.accept"), () => { ContractService.AcceptBid(world, game.Db, offer.Id); refresh(); }),
                     UiFactory.Act(Loc.T("bids.reject"), () => { ContractService.RejectBid(world, offer.Id); refresh(); }));
             }

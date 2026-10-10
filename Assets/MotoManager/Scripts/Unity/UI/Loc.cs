@@ -73,6 +73,15 @@ namespace MotoManager.App.UI
             }
         }
 
+        /// <summary>Translation of a key when one exists (current language, then English), otherwise the given text.</summary>
+        public static string Or(string key, string fallback)
+        {
+            if (_texts == null) _texts = Load(Language);
+            if (_fallback == null) _fallback = Load("en");
+            string text;
+            return _texts.TryGetValue(key, out text) || _fallback.TryGetValue(key, out text) ? text : fallback;
+        }
+
         public static bool Has(string key)
         {
             if (_texts == null) _texts = Load(Language);

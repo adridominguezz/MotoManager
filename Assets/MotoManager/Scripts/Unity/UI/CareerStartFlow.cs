@@ -88,7 +88,7 @@ namespace MotoManager.App.UI
                     "<b>" + Loc.T("background." + bg.Id) + "</b>", bg.Reputation.ToString("0"), bg.Negotiation.ToString("0"), bg.SportingManagement.ToString("0"),
                     bg.Finance.ToString("0"), bg.Relations.ToString("0"), bg.Commercial.ToString("0"), MathX.FormatMoney(bg.PersonalWealth), ""
                 }, false, chosen ? new Color(0.94f, 0.7f, 0.16f, 0.16f) : (Color?)null);
-                var button = UiFactory.Button("Pick", row, chosen ? "✓" : Loc.T("career.choose"), () => { _background = b.Id; Render(); }, chosen ? Theme.Accent : Theme.PanelLight, Theme.FontSmall - 4);
+                var button = UiFactory.Button("Pick", row, chosen ? "●" : Loc.T("career.choose"), () => { _background = b.Id; Render(); }, chosen ? Theme.Accent : Theme.PanelLight, Theme.FontSmall - 4);
                 UiFactory.Place((RectTransform)button.transform, 0.86f, 0.1f, 1f, 0.9f);
                 UiFactory.Paragraph(_list, "<color=#9AA4B2>" + Loc.T("background." + bg.Id + ".desc") + "</color>", Theme.FontSmall - 2);
             }
@@ -227,7 +227,7 @@ namespace MotoManager.App.UI
                 foreach (var m in suppliers)
                 {
                     var maker = m;
-                    acts.Add(UiFactory.Act((_supplier == m.Id ? "✓ " : "") + m.Name, () => { _supplier = maker.Id; Render(); }));
+                    acts.Add(UiFactory.Act((_supplier == m.Id ? "● " : "") + m.Name, () => { _supplier = maker.Id; Render(); }));
                 }
                 UiFactory.ButtonRow(_list, 52, acts.ToArray());
                 UiFactory.Input(_list, Loc.T("career.teamName"), _teamName, v => _teamName = v);

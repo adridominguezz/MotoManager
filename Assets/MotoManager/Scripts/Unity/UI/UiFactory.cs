@@ -6,21 +6,41 @@ using UnityEngine.UI;
 
 namespace MotoManager.App.UI
 {
-    /// <summary>Shared colours and sizes so every screen looks consistent.</summary>
+    /// <summary>Shared colours and sizes so every screen looks consistent (dark navy base, one accent colour).</summary>
     public static class Theme
     {
-        public static readonly Color Background = new Color32(14, 17, 22, 255);
-        public static readonly Color Panel = new Color32(24, 29, 37, 255);
-        public static readonly Color PanelLight = new Color32(34, 41, 52, 255);
-        public static readonly Color Accent = new Color32(225, 6, 0, 255);
-        public static readonly Color Text = new Color32(235, 238, 242, 255);
-        public static readonly Color TextDim = new Color32(150, 160, 175, 255);
+        public static readonly Color Background = new Color32(11, 19, 32, 255);   // #0B1320
+        public static readonly Color Panel = new Color32(18, 28, 46, 255);        // rails, header, lists
+        public static readonly Color Card = new Color32(23, 35, 57, 255);         // content cards
+        public static readonly Color PanelLight = new Color32(32, 47, 74, 255);   // buttons, tiles
+        public static readonly Color Accent = new Color32(229, 56, 59, 255);
+        public static readonly Color Text = new Color32(238, 242, 247, 255);
+        public static readonly Color TextDim = new Color32(142, 154, 176, 255);
         public static readonly Color Good = new Color32(60, 200, 120, 255);
         public static readonly Color Warning = new Color32(240, 180, 40, 255);
+        public static readonly Color Bad = new Color32(229, 56, 59, 255);
         public const int FontSmall = 22;
         public const int FontNormal = 28;
         public const int FontLarge = 40;
         public const int FontTitle = 56;
+
+        public const string DimHex = "#8E9AB0";
+        public const string GoodHex = "#3CC878";
+        public const string WarnHex = "#F0B428";
+        public const string BadHex = "#E5383B";
+
+        public static string Dim(string s) { return "<color=" + DimHex + ">" + s + "</color>"; }
+        public static string GoodText(string s) { return "<color=" + GoodHex + ">" + s + "</color>"; }
+        public static string WarnText(string s) { return "<color=" + WarnHex + ">" + s + "</color>"; }
+        public static string BadText(string s) { return "<color=" + BadHex + ">" + s + "</color>"; }
+        public static string Bold(string s) { return "<b>" + s + "</b>"; }
+
+        /// <summary>Money in red when negative.</summary>
+        public static string Money(double v)
+        {
+            string m = Core.Common.MathX.FormatMoney(v);
+            return v < 0 ? BadText(m) : m;
+        }
     }
 
     /// <summary>
@@ -90,11 +110,46 @@ namespace MotoManager.App.UI
             return Place(rt, 0, 0, 1, 1);
         }
 
-        public static Image Panel(string name, Transform parent, Color color)
+        public static Image Panel(string name, Transform parent, Color color, bool rounded = false)
         {
             var rt = Rect(name, parent);
             var img = rt.gameObject.AddComponent<Image>();
             img.color = color;
+            if (rounded) Round(img);
+            return img;
+        }
+
+        private static Sprite _rounded;
+
+        /// <summary>White rounded rectangle (9-sliced) generated once, so panels and buttons get soft corners.</summary>
+        public static Sprite RoundedSprite
+        {
+            get
+            {
+                if (_rounded != null) return _rounded;
+                const int size = 64, r = 20;
+                var tex = new Texture2D(size, size, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
+                var px = new Color32[size * size];
+                for (int y = 0; y < size; y++)
+                    for (int x = 0; x < size; x++)
+                    {
+                        float cx = Mathf.Clamp(x + 0.5f, r, size - r), cy = Mathf.Clamp(y + 0.5f, r, size - r);
+                        float d = Mathf.Sqrt((x + 0.5f - cx) * (x + 0.5f - cx) + (y + 0.5f - cy) * (y + 0.5f - cy));
+                        byte a = (byte)(255 * Mathf.Clamp01(r - d + 0.5f));
+                        px[y * size + x] = new Color32(255, 255, 255, a);
+                    }
+                tex.SetPixels32(px);
+                tex.Apply();
+                _rounded = Sprite.Create(tex, new UnityEngine.Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100, 0, SpriteMeshType.FullRect, new Vector4(r, r, r, r));
+                return _rounded;
+            }
+        }
+
+        public static Image Round(Image img, float radiusScale = 1.6f)
+        {
+            img.sprite = RoundedSprite;
+            img.type = Image.Type.Sliced;
+            img.pixelsPerUnitMultiplier = radiusScale;
             return img;
         }
 
@@ -115,7 +170,7 @@ namespace MotoManager.App.UI
 
         public static Button Button(string name, Transform parent, string text, Action onClick, Color? color = null, int size = Theme.FontNormal)
         {
-            var img = Panel(name, parent, color ?? Theme.PanelLight);
+            var img = Panel(name, parent, color ?? Theme.PanelLight, true);
             var button = img.gameObject.AddComponent<Button>();
             var colors = button.colors;
             colors.highlightedColor = new Color(1.1f, 1.1f, 1.1f, 1f);
@@ -131,7 +186,7 @@ namespace MotoManager.App.UI
         /// <summary>Vertical scroll list. Add children to the returned content transform.</summary>
         public static RectTransform ScrollList(string name, Transform parent, float spacing = 6)
         {
-            var bg = Panel(name, parent, Theme.Panel);
+            var bg = Panel(name, parent, new Color(0, 0, 0, 0));
             var scroll = bg.gameObject.AddComponent<ScrollRect>();
             scroll.horizontal = false;
             scroll.movementType = ScrollRect.MovementType.Clamped;
@@ -150,8 +205,8 @@ namespace MotoManager.App.UI
             content.offsetMin = Vector2.zero;
             content.offsetMax = Vector2.zero;
             var layout = content.gameObject.AddComponent<VerticalLayoutGroup>();
-            layout.spacing = spacing;
-            layout.padding = new RectOffset(8, 8, 8, 8);
+            layout.spacing = Math.Max(spacing, 12);
+            layout.padding = new RectOffset(12, 12, 12, 24);
             layout.childControlHeight = true;
             layout.childControlWidth = true;
             layout.childForceExpandHeight = false;
@@ -202,15 +257,26 @@ namespace MotoManager.App.UI
             return row;
         }
 
+        /// <summary>Wrapped text whose height follows its content (no truncation on narrow screens).</summary>
         public static Text Paragraph(Transform list, string text, int size = Theme.FontSmall, float height = 0)
         {
-            int lines = 1;
-            foreach (var c in text) if (c == '\n') lines++;
-            var row = Row(list, height > 0 ? height : 14 + lines * (size + 8));
+            var row = Rect("Paragraph", list);
+            var layout = row.gameObject.AddComponent<VerticalLayoutGroup>();
+            layout.padding = new RectOffset(8, 8, 4, 4);
+            layout.childControlHeight = true;
+            layout.childControlWidth = true;
+            layout.childForceExpandHeight = false;
+            layout.childForceExpandWidth = true;
+            if (height > 0)
+            {
+                var le = row.gameObject.AddComponent<LayoutElement>();
+                le.preferredHeight = height;
+                le.minHeight = height;
+            }
             var t = Label("Text", row, text, size, TextAnchor.UpperLeft);
             t.supportRichText = true;
-            Stretch(t.rectTransform);
-            t.rectTransform.offsetMin = new Vector2(8, 0);
+            t.verticalOverflow = VerticalWrapMode.Overflow;
+            t.lineSpacing = 1.1f;
             return t;
         }
 
@@ -230,7 +296,7 @@ namespace MotoManager.App.UI
             var row = Row(list, height);
             for (int i = 0; i < buttons.Length; i++)
             {
-                var b = Button("Button", row, buttons[i].Key, buttons[i].Value, i == 0 ? Theme.Accent : Theme.PanelLight, Theme.FontSmall + 2);
+                var b = Button("Button", row, buttons[i].Key, buttons[i].Value, i == 0 && buttons.Length > 1 ? Theme.Accent : Theme.PanelLight, Theme.FontSmall + 2);
                 Place((RectTransform)b.transform, (float)i / buttons.Length, 0, (float)(i + 1) / buttons.Length, 1, 4);
             }
         }
