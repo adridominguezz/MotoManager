@@ -440,6 +440,31 @@ Orden: E1 → E2 → M1 → E3 → E4 → 8.4 → E5 → M2 → E6 → E7 → 8.
   es posible pero poco frecuente.
 - 64 tests en verde; los traspasos cuadran (lo que paga el comprador lo cobra el vendedor).
 
+### Sesión E4b — Negociación, traspasos entre equipos y fichajes inmediatos ✅
+- Propuesta completa:
+  - salario, años e incorporación inmediata o la temporada siguiente;
+  - prima de firma y primas por victoria y podio;
+  - cláusula de rescisión;
+  - opción del equipo, renovación automática por resultados y salida a una categoría superior.
+- Antes de proponer se ve el coste: salario garantizado, primas previstas, prima de firma, traspaso y caja que
+  queda.
+- El piloto valora la oferta según:
+  - salario y primas que espera ganar (más si es ambicioso);
+  - años (los jóvenes prefieren seguridad, las estrellas libertad);
+  - cláusulas (la libertad le suma, la opción del equipo le resta);
+  - la plaza comparada con la que tiene.
+
+  Si no le basta, hace una contraoferta. Tras 3 rechazos deja de negociar esa temporada.
+- Pilotos con contrato: se acuerda un traspaso con su equipo (la IA acepta, pide su precio o rechaza) o se paga su
+  cláusula. Se pueden incorporar ya, sin ventana de traspasos, y el equipo que lo pierde cubre la plaza al momento.
+- La IA puja por tus mejores pilotos: el traspaso se cobra ya y el piloto se va al final de la temporada.
+  Puedes aceptar o rechazar.
+- Pantallas (ES/EN):
+  - **Mercado:** panel de negociación y ofertas recibidas.
+  - **Equipo:** condiciones de cada contrato, negociar renovación, ejercer la opción y rescindir mostrando el
+    coste (con doble confirmación).
+- 70 tests en verde.
+
 ## Pendiente de especificación
 
 Recibidas las secciones 49–105; ver la Fase 8.

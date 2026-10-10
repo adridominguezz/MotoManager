@@ -40,6 +40,8 @@ namespace MotoManager.App.UI.Screens
     {
         public override string Title { get { return "Team"; } }
         private StaffRole? _hiringRole;
+        private NegotiationState _neg;
+        private string _confirmRelease;
 
         public override void Build(RectTransform content)
         {
@@ -97,15 +99,31 @@ namespace MotoManager.App.UI.Screens
                     }
                     UiFactory.TableRow(list, 34, widths, cells);
                 }
-                if (r.Contract != null && r.Contract.EndSeason <= world.Season)
                 {
                     var rider = r;
-                    double ask = ContractService.AskingSalary(world, Game.Db, team, rider);
-                    UiFactory.ButtonRow(list, 70,
-                        UiFactory.Act("Renew 2 years (" + MathX.FormatMoney(ask) + "/season)", () => Renew(rider, ask, 2)),
-                        UiFactory.Act("Renew 1 year", () => Renew(rider, ask * 1.05, 1)));
+                    UiFactory.Paragraph(list, "<color=#9AA4B2>" + NegotiationPanel.Terms(r.Contract) + (r.FutureContract != null ? "  ·  " + Loc.T("terms.next", r.FutureContract.EndSeason) : "") + "</color>", Theme.FontSmall - 2);
+                    var acts = new List<KeyValuePair<string, System.Action>>();
+                    if (r.FutureContract == null) acts.Add(UiFactory.Act(Loc.T("team.renew"), () => { _neg = new NegotiationState { RiderId = rider.Id }; Shell.Refresh(); }));
+                    var option = r.Contract != null ? r.Contract.Clause(ClauseType.TeamOption) : null;
+                    if (option != null && !option.Exercised && r.Contract.EndSeason == world.Season)
+                        acts.Add(UiFactory.Act(Loc.T("team.option"), () => { ContractService.ExerciseOption(world, team, rider); Shell.Refresh(); }));
+                    double cost = Contracts.TerminationCost(world, Game.Db, r);
+                    bool confirm = _confirmRelease == r.Id;
+                    acts.Add(UiFactory.Act(Loc.T(confirm ? "team.releaseConfirm" : "team.release", MathX.FormatMoney(cost)), () =>
+                    {
+                        if (_confirmRelease == rider.Id)
+                        {
+                            Contracts.Terminate(world, Game.Db, team, rider);
+                            _confirmRelease = null;
+                        }
+                        else _confirmRelease = rider.Id;
+                        Shell.Refresh();
+                    }));
+                    UiFactory.ButtonRow(list, 56, acts.ToArray());
                 }
+                if (_neg != null && _neg.RiderId == r.Id) NegotiationPanel.Build(list, Game, _neg, Shell.Refresh, () => _neg = null);
             }
+            NegotiationPanel.Bids(list, Game, Shell.Refresh);
 
             UiFactory.Heading(list, "Staff");
             var sw = new[] { 3f, 4f, 1.2f, 2f, 1.5f };
@@ -160,12 +178,6 @@ namespace MotoManager.App.UI.Screens
             }
         }
 
-        private void Renew(Rider rider, double salary, int years)
-        {
-            var res = ContractService.Offer(Game.World, Game.Db, Game.World.PlayerTeam, rider, salary, years);
-            Shell.Toast(res.Message, res.Accepted);
-            Shell.Refresh();
-        }
     }
 
     /// <summary>Bike components, derived performance, R&amp;D projects and facilities.</summary>
@@ -394,6 +406,7 @@ namespace MotoManager.App.UI.Screens
         public override string Title { get { return "Market"; } }
         private string _category = "moto2";
         private bool _onlyFree = true;
+        private NegotiationState _neg;
 
         public override void Build(RectTransform content)
         {
@@ -423,8 +436,9 @@ namespace MotoManager.App.UI.Screens
             var list = UiFactory.ScrollList("Market", content);
             UiFactory.Place((RectTransform)list.parent.parent, 0, 0, 1, 0.91f);
             int free = ContractService.SeatsFreeNextSeason(world, Game.Db, team);
-            UiFactory.Paragraph(list, "Free seats in your team for " + (world.Season + 1) + ": <b>" + free + "</b>.  Offers are made at the rider's asking salary for 2 seasons; accepted deals start next season. " +
-                                      "Values are what your scouts know (ranges narrow with scouting).", Theme.FontSmall);
+            UiFactory.Paragraph(list, Loc.T("market.seats", world.Season + 1, free, ContractService.SeatsFreeNow(world, Game.Db, team)), Theme.FontSmall);
+            NegotiationPanel.Bids(list, Game, Shell.Refresh);
+            if (_neg != null) NegotiationPanel.Build(list, Game, _neg, Shell.Refresh, () => _neg = null);
 
             var date = world.CurrentDate;
             var riders = new List<Rider>();
@@ -477,11 +491,7 @@ namespace MotoManager.App.UI.Screens
 
         private void MakeOffer(Rider r)
         {
-            var world = Game.World;
-            var team = world.PlayerTeam;
-            double ask = ContractService.AskingSalary(world, Game.Db, team, r);
-            var res = ContractService.Offer(world, Game.Db, team, r, ask, 2);
-            Shell.Toast(res.Message, res.Accepted);
+            _neg = new NegotiationState { RiderId = r.Id };
             Shell.Refresh();
         }
     }
