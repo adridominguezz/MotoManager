@@ -14,6 +14,8 @@ namespace MotoManager.Core.Career
         public readonly List<string> Retired = new List<string>();
         public MarketReport Market;
         public int YouthIntake;
+        /// <summary>The player's season as the owners see it, with the offers for the manager (null without a team).</summary>
+        public PlayerSeasonReview PlayerReview;
     }
 
     /// <summary>
@@ -35,6 +37,7 @@ namespace MotoManager.Core.Career
 
             FinalizeChampionships(world, db, summary);
             TeamAI.SeasonReview(world, db, rng);
+            summary.PlayerReview = SeasonReviewService.Build(world, db);
             Contracts.PaySeasonBonuses(world, db);
             SponsorsAndReputation(world, db, rng);
             TeamAI.OffseasonInvestment(world, db);
@@ -97,6 +100,7 @@ namespace MotoManager.Core.Career
             SponsorMarket.SeasonRefresh(world, db, rng);
             TeamAI.EnsureAll(world, db);
             TeamAI.SetObjectives(world, db);
+            SeasonReviewService.AddOffers(world, db, summary.PlayerReview);
             return summary;
         }
 

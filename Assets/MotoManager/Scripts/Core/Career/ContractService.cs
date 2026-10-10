@@ -175,8 +175,10 @@ namespace MotoManager.Core.Career
             if (!renewal && rider.CategoryId != cat.Id && age > cat.MaxEntryAge) return Reject(result, Txt.F("neg.r.tooOld", "Too old to enter {0}.", cat.ShortName));
             if (renewal && p.StartNow) return Reject(result, Txt.F("neg.r.alreadyHere", "He already races for you: renew from next season."));
             if (p.StartNow && SeatsFreeNow(world, db, team) <= 0) return Reject(result, Txt.F("neg.r.noSeatNow", "No free seat now: release a rider first."));
-            // A renewal needs a seat like any other signing: a rider whose contract ends does not hold one for next year.
-            if (!p.StartNow && SeatsFreeNextSeason(world, db, team) <= 0)
+            // A renewal needs a seat like any other signing, unless the rider already holds his own seat for next year
+            // (contract running on, or the team option exercised): then the new deal simply replaces that one.
+            bool holdsSeat = renewal && (TransferMarket.IsCommitted(rider, world.Season) || OptionExercised(rider, world.Season));
+            if (!p.StartNow && !holdsSeat && SeatsFreeNextSeason(world, db, team) <= 0)
                 return Reject(result, Txt.F("neg.r.noSeatNext", "You have no free seat for next season."));
 
             // Under contract: a release clause, an exit clause or an agreement with his team is needed.

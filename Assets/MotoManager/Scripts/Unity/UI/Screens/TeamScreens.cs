@@ -73,6 +73,7 @@ namespace MotoManager.App.UI.Screens
         private NegotiationState _neg;
         private string _confirmRelease;
         private int _view;
+        private int _riderTab;
 
         private static readonly string[] KeyAttributes = { "RaceSkill", "QualifyingSkill", "Consistency", "WetSkill", "Overtaking", "TireManagement" };
 
@@ -98,13 +99,114 @@ namespace MotoManager.App.UI.Screens
             _view = Mathf.Clamp(_view, 0, labels.Count - 1);
             Ui.Chips(list, labels, _view, i => { _view = i; _confirmRelease = null; Shell.Refresh(); });
 
-            if (_view < riders.Count) RiderView(list, world, team, riders[_view]);
+            if (_view < riders.Count)
+            {
+                Ui.Chips(list, new[] { Loc.T("rider.tab.profile"), Loc.T("rider.tab.stats") }, _riderTab, i => { _riderTab = i; Shell.Refresh(); }, 46);
+                if (_riderTab == 0) RiderView(list, world, team, riders[_view]);
+                else StatsView(list, world, team, riders[_view]);
+            }
             else if (riders.Count < 2 && _view == riders.Count)
             {
                 var card = Ui.Card(list, Loc.T("rider.freeSeat"), Loc.T("rider.freeSeatInfo"));
                 UiFactory.ButtonRow(card, 64, UiFactory.Primary(Loc.T("rider.toMarket"), () => Shell.Show<MarketScreen>()));
             }
             else NegotiationPanel.Bids(list, Game, Shell.Refresh);
+        }
+
+        /// <summary>Results of one race session for the rider (position, or 0 when out / not started).</summary>
+        private struct RaceDot
+        {
+            public string Label;
+            public int Position;
+            public bool Out;
+            public int Field;
+        }
+
+        private void StatsView(RectTransform list, WorldState world, Team team, Rider r)
+        {
+            ChampionshipState champ;
+            world.Championships.TryGetValue(r.CategoryId ?? team.CategoryId, out champ);
+            StandingEntry st = null;
+            if (champ != null) champ.Riders.TryGetValue(r.Id, out st);
+            int pos = champ != null ? champ.RiderPosition(r.Id) : 0;
+
+            // Every race (not sprints) of this season for the chart.
+            var races = new List<RaceDot>();
+            int dnfs = 0, sum = 0, finished = 0;
+            if (champ != null)
+                foreach (var wk in champ.Rounds)
+                    foreach (var s in wk.Sessions)
+                    {
+                        if (s.Type != SessionType.Race) continue;
+                        var e = s.Classification.Find(x => x.RiderId == r.Id);
+                        if (e == null) continue;
+                        bool outOf = e.Status != ResultStatus.Finished;
+                        if (outOf) dnfs++;
+                        else { sum += e.Position; finished++; }
+                        races.Add(new RaceDot { Label = wk.Round.ToString(), Position = e.Position, Out = outOf, Field = s.Classification.Count });
+                    }
+            var last = races.Count > 0 ? races[races.Count - 1] : (RaceDot?)null;
+
+            var top = Ui.Card(list, r.FullName, Loc.T("rider.stats.season", world.Season));
+            Ui.Kpis(top,
+                Ui.Kpi(pos > 0 ? "P" + pos : "-", Loc.T("rider.stats.position")),
+                Ui.Kpi(st != null ? st.Points.ToString("0") : "0", Loc.T("rider.stats.points")),
+                Ui.Kpi(last.HasValue ? (last.Value.Out ? Theme.BadText(Loc.T("result.DNF")) : "P" + last.Value.Position) : "-", Loc.T("rider.stats.lastRace")),
+                Ui.Kpi(st != null ? st.Wins.ToString() : "0", Loc.T("rider.stats.wins")),
+                Ui.Kpi(st != null ? st.Podiums.ToString() : "0", Loc.T("rider.stats.podiums")),
+                Ui.Kpi(finished > 0 ? ((double)sum / finished).ToString("0.0", Loc.Culture) : "-", Loc.T("rider.stats.average")),
+                Ui.Kpi(dnfs.ToString(), Loc.T("rider.stats.dnfs")));
+
+            RectTransform leftCol, rightCol;
+            Ui.Columns(list, out leftCol, out rightCol);
+            var chart = Ui.Card(leftCol, Loc.T("rider.stats.chart"));
+            if (races.Count == 0) Ui.Note(chart, Loc.T("rider.stats.noRaces"));
+            else PositionChart(chart, races);
+
+            var hist = Ui.Card(rightCol, Loc.T("rider.stats.career"));
+            var w = new[] { 1.1f, 1.4f, 3f, 0.9f, 0.9f, 0.9f, 1.1f };
+            UiFactory.TableRow(hist, 32, w, new[] { Loc.T("col.season"), Loc.T("manager.category"), Loc.T("col.team"), "Pos", Loc.T("col.wins"), Loc.T("col.podiums"), Loc.T("col.points") }, true);
+            int rows = 0;
+            for (int i = r.CareerHistory.Count - 1; i >= 0 && rows < 9; i--, rows++)
+            {
+                var h = r.CareerHistory[i];
+                var cat = Game.Db.GetCategory(h.CategoryId);
+                UiFactory.TableRow(hist, 34, w, new[]
+                {
+                    h.Season.ToString(), cat != null ? cat.ShortName : h.CategoryId ?? "", h.TeamName ?? "",
+                    h.ChampionshipPosition > 0 ? h.ChampionshipPosition.ToString() : "-", h.Wins.ToString(), h.Podiums.ToString(), h.Points.ToString("0")
+                });
+            }
+            if (r.CareerHistory.Count == 0) Ui.Note(hist, Loc.T("rider.stats.noHistory"));
+            if (!string.IsNullOrEmpty(r.RealHistory)) Ui.Note(hist, r.RealHistory);
+        }
+
+        /// <summary>Bar chart of race positions: taller is better; podiums in gold/silver/bronze, points in green.</summary>
+        private static void PositionChart(Transform card, List<RaceDot> races)
+        {
+            var area = UiFactory.Row(card, 260);
+            int field = 1;
+            foreach (var d in races) field = Math.Max(field, d.Field);
+            float wEach = 1f / Math.Max(races.Count, 12);
+            for (int i = 0; i < races.Count; i++)
+            {
+                var d = races[i];
+                float h = d.Out ? 0.04f : Mathf.Lerp(0.08f, 1f, (float)(field - d.Position) / Math.Max(1, field - 1));
+                Color c = d.Out ? new Color(0.45f, 0.48f, 0.55f) : d.Position == 1 ? new Color32(240, 190, 40, 255) : d.Position == 2 ? new Color32(200, 205, 215, 255) :
+                    d.Position == 3 ? new Color32(205, 125, 60, 255) : d.Position <= 15 ? Theme.Good : new Color32(70, 110, 160, 255);
+                var bar = UiFactory.Panel("Bar", area, c, true);
+                bar.rectTransform.anchorMin = new Vector2(i * wEach + wEach * 0.15f, 0.14f);
+                bar.rectTransform.anchorMax = new Vector2((i + 1) * wEach - wEach * 0.15f, 0.14f + 0.72f * h);
+                bar.rectTransform.offsetMin = bar.rectTransform.offsetMax = Vector2.zero;
+                var label = UiFactory.Label("Pos", area, d.Out ? "X" : d.Position.ToString(), Theme.FontSmall - 6, TextAnchor.LowerCenter);
+                label.rectTransform.anchorMin = new Vector2(i * wEach, 0.14f + 0.72f * h);
+                label.rectTransform.anchorMax = new Vector2((i + 1) * wEach, 0.14f + 0.72f * h + 0.12f);
+                label.rectTransform.offsetMin = label.rectTransform.offsetMax = Vector2.zero;
+                var round = UiFactory.Label("Round", area, d.Label, Theme.FontSmall - 8, TextAnchor.UpperCenter, Theme.TextDim);
+                round.rectTransform.anchorMin = new Vector2(i * wEach, 0);
+                round.rectTransform.anchorMax = new Vector2((i + 1) * wEach, 0.13f);
+                round.rectTransform.offsetMin = round.rectTransform.offsetMax = Vector2.zero;
+            }
         }
 
         private void RiderView(RectTransform list, WorldState world, Team team, Rider r)
@@ -167,11 +269,14 @@ namespace MotoManager.App.UI.Screens
         }
     }
 
-    /// <summary>Staff: the current people (a table) or hiring by role, as two views of the page.</summary>
+    /// <summary>
+    /// Staff: the current people (a table, with renewals, releases and which rider each engineer and mechanic works
+    /// with) or hiring, where every role says what it does, how it is covered and what a candidate would add.
+    /// </summary>
     public class StaffPage : ScreenBase
     {
         public override string Title { get { return Loc.T("tab.staff"); } }
-        private StaffRole _hiringRole = StaffRole.RaceEngineer;
+        private StaffRole? _hiringRole;
         private string _confirmFire;
         private int _view;
 
@@ -189,9 +294,24 @@ namespace MotoManager.App.UI.Screens
                 if (world.Staff.TryGetValue(id, out s)) staff.Add(s);
             }
             staff.Sort((a, b) => a.Role.CompareTo(b.Role));
-            Ui.Chips(list, new[] { Loc.T("staff.viewTeam", staff.Count), Loc.T("staff.viewHire") }, _view, i => { _view = i; Shell.Refresh(); });
+            int missing = 0;
+            foreach (var role in Roles())
+            {
+                double best;
+                int count;
+                if (StaffService.Coverage(world, Game.Db, team, role, out best, out count) == RoleCoverage.Missing) missing++;
+            }
+            string hire = Loc.T("staff.viewHire") + (missing > 0 ? "  (" + Loc.T("staff.missingCount", missing) + ")" : "");
+            Ui.Chips(list, new[] { Loc.T("staff.viewTeam", staff.Count), hire }, _view, i => { _view = i; Shell.Refresh(); });
             if (_view == 0) Current(list, world, team, staff);
             else Hire(list, world, team);
+        }
+
+        private static List<StaffRole> Roles()
+        {
+            var roles = new List<StaffRole>();
+            foreach (StaffRole role in Enum.GetValues(typeof(StaffRole))) if (role != StaffRole.TeamManager) roles.Add(role);
+            return roles;
         }
 
         private void Current(RectTransform list, WorldState world, Team team, List<StaffMember> staff)
@@ -200,7 +320,7 @@ namespace MotoManager.App.UI.Screens
             foreach (var s in staff) payroll += s.Salary;
             var card = Ui.Card(list, null);
             Ui.Note(card, Loc.T("staff.summary", staff.Count, MathX.FormatMoney(payroll)) + " · " + Loc.T("staff.noteShort"));
-            var w = new[] { 3.2f, 3.6f, 1f, 1.6f, 1.4f, 3.2f };
+            var w = new[] { 3.4f, 3.2f, 0.9f, 1.5f, 1.1f, 4.4f };
             UiFactory.TableRow(card, 34, w, new[] { Loc.T("staff.role"), Loc.T("staff.name"), Loc.T("staff.skill"), Loc.T("staff.salary"), Loc.T("staff.untilCol"), "" }, true);
             foreach (var s in staff)
             {
@@ -209,10 +329,28 @@ namespace MotoManager.App.UI.Screens
                 bool expiring = s.ContractEndSeason <= world.Season;
                 var row = UiFactory.TableRow(card, 46, w, new[]
                 {
-                    Loc.T("role." + s.Role) + (rider != null ? " " + Theme.Dim(rider.ShortName) : ""),
+                    Loc.T("role." + s.Role) + (rider != null ? "  " + Theme.Dim("→ " + rider.ShortName) : ""),
                     s.FullName, Fmt.Rating(s.Skill), MathX.FormatMoney(s.Salary),
                     expiring ? Theme.WarnText(s.ContractEndSeason.ToString()) : s.ContractEndSeason.ToString(), ""
                 });
+                bool perRider = StaffService.IsPerRider(s.Role) && team.RiderIds.Count > 1;
+                int parts = perRider ? 3 : 2;
+                int part = 0;
+                if (perRider)
+                {
+                    var swap = UiFactory.Button("Assign", row, Loc.T("staff.otherRider"), () =>
+                    {
+                        int idx = team.RiderIds.IndexOf(member.AssignedRiderId);
+                        string next = team.RiderIds[(idx + 1) % team.RiderIds.Count];
+                        if (StaffService.Assign(world, team, member, next))
+                        {
+                            var r = world.GetRider(next);
+                            Shell.Toast(Loc.T("staff.assigned", member.FullName, r != null ? r.FullName : ""));
+                        }
+                        Shell.Refresh();
+                    }, Theme.PanelLight, Theme.FontSmall - 6);
+                    UiFactory.InColumn(swap, w, w.Length - 1, part++, parts);
+                }
                 double severance = StaffMarket.SeveranceCost(world, s);
                 bool confirm = _confirmFire == s.Id;
                 var renew = UiFactory.Button("Renew", row, Loc.T("staff.renew"), () =>
@@ -221,7 +359,7 @@ namespace MotoManager.App.UI.Screens
                     Shell.Toast(Loc.T("staff.renewed", member.FullName, member.ContractEndSeason, MathX.FormatMoney(member.Salary)));
                     Shell.Refresh();
                 }, Theme.PanelLight, Theme.FontSmall - 6);
-                UiFactory.InColumn(renew, w, w.Length - 1, 0, 2);
+                UiFactory.InColumn(renew, w, w.Length - 1, part++, parts);
                 var fire = UiFactory.Button("Fire", row, confirm ? Loc.T("staff.fireConfirm", MathX.FormatMoney(severance)) : Loc.T("staff.fire"), () =>
                 {
                     if (_confirmFire == member.Id)
@@ -233,34 +371,85 @@ namespace MotoManager.App.UI.Screens
                     else _confirmFire = member.Id;
                     Shell.Refresh();
                 }, confirm ? Theme.Accent : Theme.PanelLight, Theme.FontSmall - 6);
-                UiFactory.InColumn(fire, w, w.Length - 1, 1, 2);
+                UiFactory.InColumn(fire, w, w.Length - 1, part, parts);
+            }
+        }
+
+        private static int Urgency(RoleCoverage c)
+        {
+            return c == RoleCoverage.Missing ? 0 : c == RoleCoverage.Weak ? 1 : c == RoleCoverage.Covered ? 2 : 3;
+        }
+
+        private static string Badge(RoleCoverage c)
+        {
+            switch (c)
+            {
+                case RoleCoverage.Missing: return Theme.BadText(Loc.T("staff.cov.Missing"));
+                case RoleCoverage.Weak: return Theme.WarnText(Loc.T("staff.cov.Weak"));
+                case RoleCoverage.Covered: return Theme.GoodText(Loc.T("staff.cov.Covered"));
+                default: return Theme.Dim(Loc.T("staff.cov.Optional"));
             }
         }
 
         private void Hire(RectTransform list, WorldState world, Team team)
         {
-            var roles = new List<StaffRole>();
-            foreach (StaffRole role in Enum.GetValues(typeof(StaffRole))) if (role != StaffRole.TeamManager) roles.Add(role);
-            var card = Ui.Card(list, null);
-            for (int row = 0; row < roles.Count; row += 6)
+            // Roles, most urgent first.
+            var roles = Roles();
+            var coverage = new Dictionary<StaffRole, RoleCoverage>();
+            var bestSkill = new Dictionary<StaffRole, double>();
+            foreach (var role in roles)
             {
-                var labels = new List<string>();
-                int selected = -1;
-                for (int i = row; i < roles.Count && i < row + 6; i++)
-                {
-                    labels.Add(Loc.T("role." + roles[i]));
-                    if (_hiringRole == roles[i]) selected = i - row;
-                }
-                int start = row;
-                Ui.Chips(card, labels, selected, idx => { _hiringRole = roles[start + idx]; Shell.Refresh(); }, 50);
+                double best;
+                int count;
+                coverage[role] = StaffService.Coverage(world, Game.Db, team, role, out best, out count);
+                bestSkill[role] = best;
             }
-            Ui.Note(card, Loc.T("roleinfo." + _hiringRole));
-            int shown = 0;
-            foreach (var c in StaffMarket.Candidates(world, Game.Db, team, _hiringRole))
+            roles.Sort((a, b) =>
             {
-                if (shown++ >= 5) break;
+                int c = Urgency(coverage[a]).CompareTo(Urgency(coverage[b]));
+                return c != 0 ? c : a.CompareTo(b);
+            });
+            if (!_hiringRole.HasValue) _hiringRole = roles[0];
+
+            RectTransform leftCol, rightCol;
+            Ui.Columns(list, out leftCol, out rightCol);
+            var rolesCard = Ui.Card(leftCol, null);
+            var w = new[] { 3.6f, 2.2f, 1f };
+            foreach (var role in roles)
+            {
+                var r = role;
+                bool selected = _hiringRole == role;
+                var row = UiFactory.TableRow(rolesCard, 42, w, new[]
+                {
+                    (selected ? "<b>" : "") + Loc.T("role." + role) + (selected ? "</b>" : ""), Badge(coverage[role]),
+                    bestSkill[role] >= 0 ? Fmt.Rating(bestSkill[role]) : "-"
+                }, false, selected ? new Color(0.9f, 0.22f, 0.23f, 0.22f) : (Color?)null);
+                var pick = row.gameObject.AddComponent<UnityEngine.UI.Button>();
+                pick.onClick.AddListener(() => { _hiringRole = r; Shell.Refresh(); });
+                var img = row.GetComponent<UnityEngine.UI.Image>();
+                if (img == null)
+                {
+                    img = row.gameObject.AddComponent<UnityEngine.UI.Image>();
+                    img.color = new Color(1, 1, 1, 0.001f);
+                }
+                img.raycastTarget = true;
+                pick.targetGraphic = img;
+            }
+
+            var sel = _hiringRole.Value;
+            var detail = Ui.Card(rightCol, Loc.T("role." + sel), Badge(coverage[sel]));
+            UiFactory.Paragraph(detail, "<b>" + Loc.T("staff.whatFor") + "</b>  " + Loc.T("roleinfo." + sel), Theme.FontSmall);
+            UiFactory.Paragraph(detail, "<b>" + Loc.T("staff.impact") + "</b>  " + Loc.T("roleimpact." + sel), Theme.FontSmall);
+            Ui.Note(detail, Loc.T("staff.advice." + coverage[sel]));
+            double current = bestSkill[sel];
+            int shown = 0;
+            foreach (var c in StaffMarket.Candidates(world, Game.Db, team, sel))
+            {
+                if (shown++ >= 4) break;
                 var cand = c;
-                Ui.Item(card, c.FullName + "  " + Theme.Dim(c.Nationality), Loc.T("staff.line", c.Experience, MathX.FormatMoney(c.Salary)), Fmt.Rating(c.Skill),
+                string delta = current < 0 ? Theme.GoodText(Loc.T("staff.newRole")) :
+                    c.Skill > current ? Theme.GoodText("+" + (c.Skill - current).ToString("0") + " " + Loc.T("staff.vsCurrent")) : Theme.Dim(Loc.T("staff.noBetter"));
+                Ui.Item(detail, c.FullName + "  " + Theme.Dim(c.Nationality), Loc.T("staff.line", c.Experience, MathX.FormatMoney(c.Salary)) + "\n" + delta, Fmt.Rating(c.Skill),
                     UiFactory.Primary(Loc.T("staff.hireButton"), () =>
                     {
                         StaffMarket.Hire(world, team, cand);

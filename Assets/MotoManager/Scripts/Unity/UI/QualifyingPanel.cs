@@ -65,7 +65,7 @@ namespace MotoManager.App.UI
                 double t;
                 best.TryGetValue(e.Rider.Id, out t);
                 Ui.Kpis(card,
-                    Ui.Kpi("<size=" + (Theme.FontTitle) + ">P" + (i + 1) + "</size>", Loc.T("quali.grid")),
+                    Ui.Kpi("<b>P" + (i + 1) + "</b>", Loc.T("quali.grid")),
                     Ui.Kpi(t > 0 ? MathX.FormatLapTime(t) : "-", Loc.T("quali.best")),
                     Ui.Kpi(i == 0 ? Theme.GoodText(Loc.T("quali.pole")) : t > 0 && pole > 0 ? "+" + (t - pole).ToString("0.000", Loc.Culture) : "-", Loc.T("quali.gap")));
                 Ui.Note(card, Loc.T("quali.row", (i / 3) + 1));

@@ -103,5 +103,38 @@ namespace MotoManager.Tests
             other.ContractEndSeason = w.Season + 2;
             Assert.Equal(other.Salary * 0.5 + other.Salary * 0.5 * 2, StaffMarket.SeveranceCost(w, other), 0);
         }
+
+        [Fact]
+        public void PerRiderStaffCanBeReassignedAndSwap()
+        {
+            var game = MotoManager.Core.Season.GameController.NewGame(TestData.Db, new MotoManager.Core.Season.NewGameOptions { Seed = 31, PlayerTeamId = "aspar_moto2" });
+            var w = game.World;
+            var team = w.PlayerTeam;
+            var engineers = team.StaffIds.Select(id => w.Staff[id]).Where(s => s.Role == StaffRole.RaceEngineer).ToList();
+            Assert.Equal(2, engineers.Count);
+            string a = engineers[0].AssignedRiderId, b = engineers[1].AssignedRiderId;
+            Assert.NotEqual(a, b);
+            Assert.True(StaffService.Assign(w, team, engineers[0], b));
+            Assert.Equal(b, engineers[0].AssignedRiderId);
+            Assert.Equal(a, engineers[1].AssignedRiderId);
+            // Firing a standard role makes it missing (recommended to hire).
+            var chief = team.StaffIds.Select(id => w.Staff[id]).First(s => s.Role == StaffRole.ChiefEngineer);
+            StaffMarket.Fire(w, team, chief.Id);
+            Assert.Equal(RoleCoverage.Missing, StaffService.Coverage(w, game.Db, team, StaffRole.ChiefEngineer, out _, out _));
+        }
+
+        [Fact]
+        public void TheSeasonEndsWithAReviewOfThePlayersTeam()
+        {
+            var game = MotoManager.Core.Season.GameController.NewGame(TestData.Db, new MotoManager.Core.Season.NewGameOptions { Seed = 32, PlayerTeamId = "aspar_moto2" });
+            game.SimulateRestOfSeason();
+            var summary = game.EndSeason();
+            var review = summary.PlayerReview;
+            Assert.NotNull(review);
+            Assert.True(review.TeamPosition > 0);
+            Assert.Equal(2, review.Riders.Count);
+            Assert.InRange(review.Confidence, 0, 100);
+            Assert.Contains(review.ObjectiveMet ? MotoManager.Core.Career.ReviewReason.ObjectiveMet : MotoManager.Core.Career.ReviewReason.ObjectiveMissed, review.Reasons);
+        }
     }
 }

@@ -46,9 +46,15 @@ namespace MotoManager.App.UI
                 UiFactory.Place(tile.rectTransform, (float)i / items.Length, 0, (float)(i + 1) / items.Length, 1, 5);
                 var v = UiFactory.Label("Value", tile.transform, items[i][0], Theme.FontLarge - 4, TextAnchor.MiddleCenter);
                 v.supportRichText = true;
+                v.resizeTextForBestFit = true;
+                v.resizeTextMinSize = Theme.FontSmall - 6;
+                v.resizeTextMaxSize = Theme.FontLarge - 4;
                 UiFactory.Place(v.rectTransform, 0, 0.38f, 1, 0.95f);
                 var c = UiFactory.Label("Caption", tile.transform, items[i][1], Theme.FontSmall - 4, TextAnchor.MiddleCenter, Theme.TextDim);
                 c.supportRichText = true;
+                c.resizeTextForBestFit = true;
+                c.resizeTextMinSize = Theme.FontSmall - 10;
+                c.resizeTextMaxSize = Theme.FontSmall - 4;
                 UiFactory.Place(c.rectTransform, 0.04f, 0.05f, 0.96f, 0.42f);
             }
         }
@@ -74,11 +80,16 @@ namespace MotoManager.App.UI
         public static void Bar(Transform list, string label, double fraction, string value, Color? color = null, float height = 40)
         {
             var row = UiFactory.Row(list, height);
+            // The label shrinks to fit on one line rather than being cut ("Gestión de neumáticos").
             var l = UiFactory.Label("Label", row, label, Theme.FontSmall, TextAnchor.MiddleLeft, Theme.TextDim);
             l.supportRichText = true;
-            UiFactory.Place(l.rectTransform, 0, 0, 0.36f, 1);
+            l.horizontalOverflow = HorizontalWrapMode.Wrap;
+            l.resizeTextForBestFit = true;
+            l.resizeTextMinSize = Theme.FontSmall - 8;
+            l.resizeTextMaxSize = Theme.FontSmall;
+            UiFactory.Place(l.rectTransform, 0, 0, 0.45f, 1);
             var back = UiFactory.Panel("Back", row, new Color(1, 1, 1, 0.08f), true);
-            UiFactory.Place(back.rectTransform, 0.37f, 0.3f, 0.86f, 0.7f);
+            UiFactory.Place(back.rectTransform, 0.46f, 0.3f, 0.86f, 0.7f);
             var fill = UiFactory.Panel("Fill", back.transform, color ?? Theme.Good, true);
             fill.rectTransform.anchorMin = Vector2.zero;
             fill.rectTransform.anchorMax = new Vector2(Mathf.Clamp01((float)fraction), 1);

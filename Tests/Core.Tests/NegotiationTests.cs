@@ -204,5 +204,25 @@ namespace MotoManager.Tests
             Assert.DoesNotContain(leaving.Id, team.RiderIds);
             Assert.Contains(newcomer.Id, team.RiderIds);
         }
+
+        [Fact]
+        public void ARiderWhoseOptionWasExercisedCanStillBeRenegotiated()
+        {
+            var (game, team) = Career("aspar_moto2", 98);
+            var w = game.World;
+            var db = game.Db;
+            var other = w.GetRider(team.RiderIds[0]);
+            var r = w.GetRider(team.RiderIds[1]);
+            other.Contract.EndSeason = w.Season + 1;
+            r.Contract.EndSeason = w.Season;
+            r.Contract.Clauses.Add(new ContractClause { Type = ClauseType.TeamOption, ExtraSeasons = 1 });
+            Assert.True(ContractService.ExerciseOption(w, db, team, r));
+            Assert.Equal(0, ContractService.SeatsFreeNextSeason(w, db, team));
+            var p = ContractService.DefaultProposal(w, db, team, r);
+            p.Salary *= 1.5;
+            var answer = ContractService.Propose(w, db, team, r, p);
+            Assert.True(answer.Accepted, answer.Message);
+            Assert.Equal(team.Id, r.FutureContract.TeamId);
+        }
     }
 }

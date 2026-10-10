@@ -322,9 +322,11 @@ namespace MotoManager.App.UI.Screens
         {
             var game = Session.Game;
             string summary = "";
+            Core.Career.SeasonSummary closed = null;
             Session.Run(Loc.T("busy.closing"), () =>
             {
                 var s = game.EndSeason();
+                closed = s;
                 var sb = new StringBuilder("<b>" + Loc.T("home.closed", s.Season) + "</b>\n");
                 foreach (var c in s.Champions)
                     sb.Append(Loc.T("home.champion", game.Db.GetCategory(c.CategoryId).ShortName, c.RiderName)).Append('\n');
@@ -335,6 +337,7 @@ namespace MotoManager.App.UI.Screens
                 LastResult = summary;
                 Session.Save();
                 Refresh();
+                if (closed != null) SeasonReviewPanel.Show(closed, game, Refresh);
             });
         }
 

@@ -7,6 +7,14 @@ using MotoManager.Core.World;
 namespace MotoManager.Core.Economy
 {
     /// <summary>Generates, pays and develops team personnel.</summary>
+    public enum RoleCoverage
+    {
+        Missing,
+        Weak,
+        Covered,
+        Optional
+    }
+
     public static class StaffService
     {
         public static StaffMember Generate(WorldState world, GameDatabase db, DeterministicRandom rng, StaffRole role, string teamId, double level, double salaryScale = 1.0)
@@ -143,6 +151,54 @@ namespace MotoManager.Core.Economy
                 team.StaffIds.Add(s.Id);
             }
             AssignToRiders(world, team);
+        }
+
+        /// <summary>Roles that work with one rider (race engineer, lead mechanic).</summary>
+        public static bool IsPerRider(StaffRole role)
+        {
+            return role == StaffRole.RaceEngineer || role == StaffRole.Mechanic;
+        }
+
+        /// <summary>
+        /// Puts a race engineer or mechanic with another rider of the team. If someone in the same role already works
+        /// with that rider, the two swap.
+        /// </summary>
+        public static bool Assign(WorldState world, Team team, StaffMember member, string riderId)
+        {
+            if (member == null || !IsPerRider(member.Role) || !team.RiderIds.Contains(riderId) || member.AssignedRiderId == riderId) return false;
+            foreach (var id in team.StaffIds)
+            {
+                StaffMember other;
+                if (!world.Staff.TryGetValue(id, out other) || other == member || other.Role != member.Role) continue;
+                if (other.AssignedRiderId == riderId) other.AssignedRiderId = member.AssignedRiderId;
+            }
+            member.AssignedRiderId = riderId;
+            return true;
+        }
+
+        /// <summary>
+        /// How well a role is covered compared with what a team of this category normally has: Missing (standard role
+        /// nobody does), Weak (below the usual level), Covered, or Optional (not standard here, not hired).
+        /// </summary>
+        public static RoleCoverage Coverage(WorldState world, GameDatabase db, Team team, StaffRole role, out double bestSkill, out int count)
+        {
+            bestSkill = -1;
+            count = 0;
+            foreach (var id in team.StaffIds)
+            {
+                StaffMember s;
+                if (!world.Staff.TryGetValue(id, out s) || s.Role != role) continue;
+                count++;
+                bestSkill = Math.Max(bestSkill, s.Skill);
+            }
+            int riders = Math.Max(1, Math.Min(team.RiderIds.Count, 4));
+            int needed = 0;
+            foreach (var r in StandardRoles(db, team, riders)) if (r == role) needed++;
+            double usual = 35 + team.Reputation * 0.45;
+            if (count < needed) return RoleCoverage.Missing;
+            if (count == 0) return RoleCoverage.Optional;
+            if (bestSkill < usual - 8) return RoleCoverage.Weak;
+            return RoleCoverage.Covered;
         }
 
         /// <summary>Race engineers and lead mechanics are paired with riders (in order).</summary>
