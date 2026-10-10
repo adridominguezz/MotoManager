@@ -5,6 +5,7 @@ using MotoManager.Core.Common;
 using MotoManager.Core.Data;
 using MotoManager.Core.Race;
 using MotoManager.Core.World;
+using MotoManager.Core.Economy;
 using MotoManager.Core.Season;
 using MotoManager.Core.Career;
 
@@ -203,6 +204,7 @@ namespace MotoManager.Tools
                     Console.WriteLine($"  {cat.ShortName,-10} rounds {champ.Rounds.Count,2}  {string.Join(" | ", top)}");
                     Console.WriteLine($"  {"",-10} constructors: {string.Join(", ", makers)}");
                 }
+                if (Environment.GetEnvironmentVariable("SIM_ECON") == "1") Economy(game, db, "motogp");
                 var summary = game.EndSeason();
                 Console.WriteLine($"  -> retired {summary.Retired.Count}, market moves {summary.Market.Moves.Count(m => !m.Renewal)}, generated {summary.Market.GeneratedRiders}, youth {summary.YouthIntake}");
             }
@@ -229,6 +231,21 @@ namespace MotoManager.Tools
             Console.WriteLine($"save {json.Length / 1024} KB, reload ok: {SaveSystem.Serialize(back) == json}");
             foreach (var n in game.World.News.Where(n => n.Important).Take(12)) Console.WriteLine("  NEWS " + n.Date.ToString("yyyy-MM-dd") + " " + n.Headline);
             return 0;
+        }
+
+        /// <summary>SIM_ECON=1: money, budgets and technical level of a category's teams at the end of a season.</summary>
+        static void Economy(GameController game, GameDatabase db, string catId)
+        {
+            var w = game.World;
+            foreach (var t in w.TeamsInCategory(catId))
+            {
+                var org = w.OrganisationOf(t);
+                var bike = w.GetBike(t.BikeId);
+                var totals = MotoManager.Core.Economy.Accounts.TotalsFor(w, org.Id, w.Season);
+                double funding = totals.ContainsKey(LedgerKind.OwnerFunding) ? totals[LedgerKind.OwnerFunding].Cash : 0;
+                double net = totals.Values.Where(v => v.Kind != LedgerKind.OwnerFunding).Sum(v => v.Cash);
+                Console.WriteLine($"    {t.ShortName,-12} budget {t.SeasonBudget / 1e6,6:0.0}M  spent {MotoManager.Core.Economy.Accounts.SpentThisSeason(w, t) / 1e6,6:0.0}M  org cash {org.Cash / 1e6,7:0.0}M  org net {net / 1e6,6:0.0}M  tech {t.Personality.TechnicalLevel,5:0.0}  bike {bike.Components.Values.Average(),5:0.0}");
+            }
         }
 
         /// <summary>bikes &lt;category&gt; [races]: identical riders on every team bike -> machinery ranking.</summary>

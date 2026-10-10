@@ -126,7 +126,8 @@ namespace MotoManager.Core.Season
                 champ.Rounds.Add(weekend.Result);
                 var rules = Db.GetRules(catId, World.Season);
 
-                ApplyEconomy(weekend, rules, catId);
+                // Guarded: an event's money can never be posted twice.
+                if (Accounts.TryBegin(World, "event|" + ev.Plan.Group + "|" + ev.Plan.RoundIndex + "|" + catId)) ApplyEconomy(weekend, rules, catId);
                 ApplyInjuries(weekend, catId, rng);
                 DevelopmentService.AiInSeasonUpdates(World, Db, catId, rng);
                 DevelopmentService.ApplyBalanceOfPerformance(World, Db, catId, champ);
@@ -137,7 +138,6 @@ namespace MotoManager.Core.Season
             ScoutingService.AfterRound(World, Db);
             World.NextRound[ev.Plan.Group] = ev.Plan.RoundIndex + 1;
             World.LastEventDate = ev.Plan.Round.Date;
-            if (World.PlayerTeam != null) World.PlayerCash = World.PlayerTeam.Budget;
         }
 
         private DateTime LastEventDate()
@@ -165,10 +165,15 @@ namespace MotoManager.Core.Season
 
         public int RoundsInSeason(string categoryId)
         {
-            var cat = Db.GetCategory(categoryId);
+            return RoundsInSeason(World, Db, categoryId);
+        }
+
+        public static int RoundsInSeason(WorldState world, GameDatabase db, string categoryId)
+        {
+            var cat = db.GetCategory(categoryId);
             if (cat == null) return 0;
             CalendarDefinition cal;
-            if (!World.Calendars.TryGetValue(cat.CalendarGroup ?? "", out cal)) return 0;
+            if (!world.Calendars.TryGetValue(cat.CalendarGroup ?? "", out cal)) return 0;
             int n = 0;
             foreach (var r in cal.Rounds)
                 if (r.Categories == null || r.Categories.Count == 0 || r.Categories.Contains(categoryId)) n++;
@@ -190,6 +195,7 @@ namespace MotoManager.Core.Season
                 int best = 0, podiums = 0, wins = 0;
                 foreach (var session in weekend.Result.Sessions)
                 {
+                    if (session.Type == SessionType.Race) FinanceService.PayRaceBonuses(World, team, session.Classification);
                     if (session.Type != SessionType.Race && session.Type != SessionType.Sprint) continue;
                     foreach (var e in session.Classification)
                     {

@@ -65,7 +65,7 @@ namespace MotoManager.Core.Economy
                 return null;
             }
             double cost = ProjectCost(world, db, team, t);
-            if (team.Budget < cost)
+            if (Accounts.Cash(world, team) < cost)
             {
                 error = "Not enough budget (" + MathX.FormatMoney(cost) + " needed).";
                 return null;
@@ -79,7 +79,7 @@ namespace MotoManager.Core.Economy
                 error = "The design office can only run " + capacity + " projects at once.";
                 return null;
             }
-            team.Budget -= cost;
+            Accounts.Post(world, team, LedgerKind.Development, -cost, t.Name);
             var project = new DevelopmentProject
             {
                 Id = world.NewId("proj"),

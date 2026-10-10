@@ -261,8 +261,41 @@ namespace MotoManager.App.UI.Screens
             if (team == null) return;
             var f = FinanceService.SeasonForecast(world, Game.Db, team, Game.RoundsInSeason(team.CategoryId));
 
-            UiFactory.Heading(list, "Budget  " + MathX.FormatMoney(team.Budget));
             var w = new[] { 5f, 3f };
+            var org = world.OrganisationOf(team);
+            if (org != null)
+            {
+                UiFactory.Heading(list, Loc.T("finance.organisation", org.Name));
+                UiFactory.TableRow(list, 40, w, new[] { Loc.T("finance.cash"), MathX.FormatMoney(org.Cash) });
+                UiFactory.TableRow(list, 40, w, new[] { Loc.T("finance.owner"), Loc.T("owner." + org.Owner) });
+                if (org.TeamIds.Count > 1)
+                {
+                    var names = new List<string>();
+                    foreach (var id in org.TeamIds) { var t = world.GetTeam(id); if (t != null) names.Add(t.Name); }
+                    UiFactory.TableRow(list, 40, w, new[] { Loc.T("finance.teams"), string.Join(", ", names.ToArray()) });
+                }
+            }
+            double spent = Accounts.SpentThisSeason(world, team);
+            UiFactory.Heading(list, Loc.T("finance.teamBudget", team.Name));
+            UiFactory.TableRow(list, 40, w, new[] { Loc.T("finance.allocated"), MathX.FormatMoney(team.SeasonBudget) });
+            UiFactory.TableRow(list, 40, w, new[] { Loc.T("finance.spent"), MathX.FormatMoney(spent) });
+            double left = team.SeasonBudget - spent;
+            UiFactory.TableRow(list, 40, w, new[] { Loc.T("finance.remaining"), (left < 0 ? "<color=#E10600>" : "") + MathX.FormatMoney(left) + (left < 0 ? "</color>" : "") });
+
+            // What has actually moved this season, by concept (from the ledger).
+            var totals = Accounts.TotalsFor(world, team.OrganisationId, world.Season, team.Id);
+            if (totals.Count > 0)
+            {
+                UiFactory.TableRow(list, 38, w, new[] { Loc.T("finance.actual", world.Season), "" }, true);
+                var kinds = new List<LedgerKind>(totals.Keys);
+                kinds.Sort();
+                foreach (var k in kinds)
+                {
+                    double v = totals[k].Cash;
+                    UiFactory.TableRow(list, 40, w, new[] { Loc.T("ledger." + k), (v < 0 ? "<color=#E10600>" : "") + MathX.FormatMoney(v) + (v < 0 ? "</color>" : "") });
+                }
+            }
+
             UiFactory.TableRow(list, 38, w, new[] { "Season forecast", "" }, true);
             UiFactory.TableRow(list, 40, w, new[] { "Sponsors", MathX.FormatMoney(f.SponsorIncome) });
             UiFactory.TableRow(list, 40, w, new[] { "Participation income", MathX.FormatMoney(f.ParticipationIncome) });

@@ -9,7 +9,7 @@
     "bikeId": "ktm_rc250r_rookies",
     "country": "AT",
     "reputation": 40,
-    "budget": 0,
+    "seasonBudget": 0,
     "colors": {
       "primary": "#1E2A5A",
       "secondary": "#FFD100"

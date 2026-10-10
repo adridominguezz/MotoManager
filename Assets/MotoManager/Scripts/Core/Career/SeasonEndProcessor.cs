@@ -73,8 +73,10 @@ namespace MotoManager.Core.Career
             }
 
             summary.YouthIntake = YouthIntake(world, db, rng);
+            Accounts.CloseSeason(world);
             RollOver(world, db);
             TransferMarket.RebuildRosters(world);
+            AssignSeasonBudgets(world, db);
             TeamAI.EnsureAll(world, db);
             TeamAI.SetObjectives(world, db);
             return summary;
@@ -152,19 +154,51 @@ namespace MotoManager.Core.Career
                         }
                 }
                 double bonus = SponsorService.EndOfSeason(world, db, team, cat, points, pos, rng);
-                team.Budget += bonus;
+                Accounts.Post(world, team, LedgerKind.SponsorBonus, bonus, "Season objectives");
                 if (pos > 0)
                 {
                     double target = 100 - (pos - 1) * 80.0 / field;
                     team.Reputation = MathX.Clamp(team.Reputation * 0.75 + target * 0.25, 5, 100);
                 }
-                // AI teams are kept afloat by their owners / manufacturers; the player must manage money.
-                if (!team.IsPlayer && cat != null && cat.Simulated)
+            }
+            OwnerFunding(world, db);
+        }
+
+        /// <summary>
+        /// Owners (private investors, manufacturers, the cup organiser) cover their organisation's cash shortfall up
+        /// to the minimum needed to operate. It is posted as income from the owner, never created silently. An
+        /// organisation owned by the player's manager gets nothing: the player must finance it.
+        /// </summary>
+        public static void OwnerFunding(WorldState world, GameDatabase db)
+        {
+            var orgs = new List<Organisation>(world.Organisations.Values);
+            orgs.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));
+            foreach (var org in orgs)
+            {
+                if (org.Owner == OwnerKind.Player) continue;
+                double floor = 0;
+                foreach (var id in org.TeamIds)
                 {
-                    var rules = db.GetRules(cat.Id, world.Season);
-                    double floor = TeamAI.OperatingFloor(rules);
-                    if (team.Budget < floor) team.Budget = floor;
+                    var team = world.GetTeam(id);
+                    var cat = team != null ? db.GetCategory(team.CategoryId) : null;
+                    if (cat == null || !cat.Simulated) continue;
+                    floor += TeamAI.OperatingFloor(db.GetRules(cat.Id, world.Season));
                 }
+                if (org.Cash < floor && Accounts.TryBegin(world, "owner-funding|" + org.Id))
+                    Accounts.Post(world, org, null, LedgerKind.OwnerFunding, floor - org.Cash, "Owners cover the shortfall");
+            }
+        }
+
+        /// <summary>Season spending allocations for the new season (owners approve them from the expected costs).</summary>
+        public static void AssignSeasonBudgets(WorldState world, GameDatabase db)
+        {
+            var teams = new List<Team>(world.Teams.Values);
+            teams.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));
+            foreach (var team in teams)
+            {
+                var cat = db.GetCategory(team.CategoryId);
+                if (cat == null || !cat.Simulated) continue;
+                team.SeasonBudget = FinanceService.PlanSeasonBudget(world, db, team, Math.Max(1, Season.GameController.RoundsInSeason(world, db, cat.Id)));
             }
         }
 

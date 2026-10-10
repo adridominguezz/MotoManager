@@ -82,6 +82,7 @@ namespace MotoManager.Core.Season
             }
 
             SetupCalendars(world, db, options.StartSeason);
+            SetupOrganisations(world, db);
             foreach (var cat in db.Categories.Values)
                 if (cat.Simulated) world.Championships[cat.Id] = new ChampionshipState { CategoryId = cat.Id, Season = options.StartSeason };
 
@@ -99,7 +100,9 @@ namespace MotoManager.Core.Season
             foreach (var t in world.Teams.Values) t.IsPlayer = false;
             team.IsPlayer = true;
             world.PlayerTeamId = teamId;
-            world.PlayerCash = team.Budget;
+            foreach (var o in world.Organisations.Values) o.DetailedLedger = false;
+            var org = world.OrganisationOf(team);
+            if (org != null) org.DetailedLedger = true;
         }
 
         private static void ApplyContracts(WorldState world, GameDatabase db, int season)
@@ -114,6 +117,8 @@ namespace MotoManager.Core.Season
                     TeamId = c.TeamId, ManufacturerId = c.ManufacturerId, StartSeason = c.StartSeason, EndSeason = c.EndSeason,
                     SalaryPerSeason = c.SalaryPerSeason, FactoryBacked = c.FactoryBacked
                 };
+                // Real bonus terms are not public: standard estimated bonuses.
+                TransferMarket.StandardBonuses(r.Contract);
             }
             foreach (var r in Sorted(world.Riders.Values))
             {
@@ -132,6 +137,7 @@ namespace MotoManager.Core.Season
                         TeamId = team.Id, ManufacturerId = team.ManufacturerId, StartSeason = season, EndSeason = season + (int)(DeterministicRandom.Hash(r.Id) % 2),
                         SalaryPerSeason = TransferMarket.SalaryDemand(r, rules), FactoryBacked = team.Status == TeamStatus.Factory
                     };
+                    TransferMarket.StandardBonuses(r.Contract);
                 }
             }
         }
@@ -198,7 +204,7 @@ namespace MotoManager.Core.Season
                     BikeId = m.Programs[cat.Id],
                     Country = m.Country,
                     Reputation = MathX.Clamp(cat.Prestige * 0.5 + rng.Range(0, 30), 10, 90),
-                    Budget = rules.Economy.TypicalRiderSalary * 5 + rules.Economy.TravelCostPerRound * 22,
+                    SeasonBudget = rules.Economy.TypicalRiderSalary * 5 + rules.Economy.TravelCostPerRound * 22,
                     DataConfidence = "generated"
                 };
                 team.Colors.Primary = Palette[index % Palette.Length];
@@ -256,6 +262,7 @@ namespace MotoManager.Core.Season
                         TeamId = team.Id, ManufacturerId = team.ManufacturerId, StartSeason = world.Season, EndSeason = world.Season + rng.NextInt(0, 2),
                         SalaryPerSeason = TransferMarket.SalaryDemand(r, rules), FactoryBacked = team.Status == TeamStatus.Factory
                     };
+                    TransferMarket.StandardBonuses(r.Contract);
                     world.Riders[r.Id] = r;
                     team.RiderIds.Add(r.Id);
                 }
@@ -273,6 +280,44 @@ namespace MotoManager.Core.Season
                     var r = RiderGenerator.Generate(world, db, rng, cat.Pyramid, cat.Id, cat.MinAge, cat.MaxEntryAge, 0.35);
                     world.Riders[r.Id] = r;
                 }
+            }
+        }
+
+        /// <summary>
+        /// Organisations from the data (known multi-team structures and manufacturers' works divisions); every other
+        /// team gets its own. Initial cash is the sum of the season budgets of the teams it owns.
+        /// </summary>
+        public static void SetupOrganisations(WorldState world, GameDatabase db)
+        {
+            foreach (var def in Sorted(db.Organisations.Values))
+            {
+                var org = JsonSettings.DeepClone(def);
+                org.TeamIds.RemoveAll(id => world.GetTeam(id) == null);
+                if (org.TeamIds.Count == 0) continue;
+                world.Organisations[org.Id] = org;
+                foreach (var id in org.TeamIds) world.GetTeam(id).OrganisationId = org.Id;
+            }
+            foreach (var team in Sorted(world.Teams.Values))
+            {
+                if (world.GetOrganisation(team.OrganisationId) != null) continue;
+                var cat = db.GetCategory(team.CategoryId);
+                var org = new Organisation
+                {
+                    Id = "org_" + team.Id,
+                    Name = team.Name,
+                    Owner = cat != null && cat.IsCup ? OwnerKind.Organiser : OwnerKind.Private,
+                    TeamIds = new List<string> { team.Id },
+                    OwnerBacking = MathX.Clamp(30 + team.Reputation * 0.5, 20, 90),
+                    DataConfidence = "generated"
+                };
+                world.Organisations[org.Id] = org;
+                team.OrganisationId = org.Id;
+            }
+            foreach (var org in Sorted(world.Organisations.Values))
+            {
+                double cash = 0;
+                foreach (var id in org.TeamIds) cash += world.GetTeam(id).SeasonBudget;
+                org.Cash = org.SeasonOpeningCash = cash;
             }
         }
 
@@ -320,6 +365,7 @@ namespace MotoManager.Core.Season
             var t = o as Team; if (t != null) return t.Id;
             var m = o as Manufacturer; if (m != null) return m.Id;
             var b = o as Motorcycle; if (b != null) return b.Id;
+            var g = o as Organisation; if (g != null) return g.Id;
             return o.ToString();
         }
     }

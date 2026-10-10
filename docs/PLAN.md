@@ -258,6 +258,34 @@ sesiones propuestas (8.1–8.8) y decisiones que necesitan aprobación antes de 
 - Pantalla de equipo: objetivo de la dirección y resultado de la temporada anterior (ES/EN). 34 tests en verde;
   10 temporadas estables (campeones de 5 fabricantes en MotoGP).
 
+### Fase E — Economía, contratos y carrera del manager
+Auditoría, decisiones y plan en [`docs/ANALISIS_ECONOMIA_CONTRATOS_MANAGER.md`](ANALISIS_ECONOMIA_CONTRATOS_MANAGER.md).
+Orden: E1 → E2 → M1 → E3 → E4 → 8.4 → E5 → M2 → E6 → E7 → 8.6–8.8.
+
+### Sesión E1 — Organización y dinero único ✅
+- `Organisation`: dueña de los equipos y del dinero (caja, propietario: privado, fabricante, jugador u organizador del campeonato,
+  disposición de los propietarios a cubrir pérdidas). Las estructuras con varios equipos (Intact, Ajo, Aspar, Tech3,
+  MSi, Team Asia, Marc VDS, Barni, Pramac, Gresini) y las divisiones oficiales (Ducati Corse, HRC, Yamaha, Aprilia,
+  KTM, BMW, MV Agusta) se definen en `organisations/organisations.json`, con agrupación aproximada. El resto de
+  equipos tiene su propia organización.
+- El equipo ya no tiene dinero: tiene `SeasonBudget`, una asignación de la temporada. Gastar por encima de ella
+  aparece como exceso de gasto.
+- `Accounts.Post` es el único punto que mueve dinero (IA y jugador). Totales por organización, equipo, temporada y
+  concepto; detalle línea a línea para la organización del jugador; cada movimiento indica si afecta a la caja y si
+  afecta a pérdidas y ganancias; claves para que un evento o una acción nunca se apliquen dos veces; resúmenes
+  anuales permanentes y limpieza de los datos antiguos.
+- El suelo de dinero oculto de la IA se sustituye por la aportación de los propietarios, anotada como movimiento.
+  Una organización del jugador no la recibe.
+- Las primas por victoria y podio de los contratos de pilotos ya se pagan (antes no se pagaban). Los contratos
+  reales de 2026 reciben primas estándar estimadas.
+- Los salarios que acepta la IA tienen tope según el presupuesto del equipo.
+- Desaparece `PlayerCash`, que duplicaba el dinero. La pantalla de finanzas muestra la organización, la caja,
+  el presupuesto asignado, lo gastado y los movimientos reales por concepto (ES/EN).
+- 37 tests en verde.
+- Hallazgo de equilibrio que ya existía antes de E1 (se trata en E2/E7): con la mayoría de semillas Ducati gana
+  casi todos los títulos de MotoGP en 10 temporadas, y casi todos los equipos de la IA pierden entre 10 y 25 M
+  por temporada, que cubren sus propietarios.
+
 ## Pendiente de especificación
 
 Recibidas las secciones 49–105; ver la Fase 8.

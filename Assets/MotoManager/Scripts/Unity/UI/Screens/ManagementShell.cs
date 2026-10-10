@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using MotoManager.Core.Common;
+using MotoManager.Core.Economy;
 using MotoManager.Core.Season;
 using UnityEngine;
 using UnityEngine.UI;
@@ -144,7 +145,7 @@ namespace MotoManager.App.UI.Screens
             var team = world.PlayerTeam;
             var next = game.PeekNextEvent();
             _header.text = "<b>" + (team != null ? team.Name : "Spectator") + "</b>   " +
-                           (team != null ? MathX.FormatMoney(team.Budget) + "   " : "") +
+                           (team != null ? MathX.FormatMoney(Accounts.Cash(world, team)) + "   " : "") +
                            "<color=#9AA4B2>" + world.CurrentDate.ToString("d MMM yyyy") + "  ·  season " + world.Season +
                            (next != null ? "  ·  next: " + next.Round.Name : "") + "</color>";
             UiFactory.Clear(_content);

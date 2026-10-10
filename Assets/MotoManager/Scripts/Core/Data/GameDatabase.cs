@@ -25,6 +25,7 @@ namespace MotoManager.Core.Data
         public readonly Dictionary<string, SponsorTemplate> Sponsors = new Dictionary<string, SponsorTemplate>();
         public readonly Dictionary<string, NamePool> NamePools = new Dictionary<string, NamePool>();
         public readonly Dictionary<string, DevelopmentTemplate> DevelopmentTemplates = new Dictionary<string, DevelopmentTemplate>();
+        public readonly Dictionary<string, Organisation> Organisations = new Dictionary<string, Organisation>();
         public SimulationTuning Tuning = new SimulationTuning();
 
         public CategoryRules GetRules(string categoryId, int season)
@@ -112,6 +113,17 @@ namespace MotoManager.Core.Data
             {
                 if (!Riders.ContainsKey(c.RiderId ?? "")) errors.Add("Contract references missing rider " + c.RiderId);
                 if (!Teams.ContainsKey(c.TeamId ?? "")) errors.Add("Contract references missing team " + c.TeamId);
+            }
+            var owned = new HashSet<string>();
+            foreach (var o in Organisations.Values)
+            {
+                if (o.Owner == World.OwnerKind.Manufacturer && !Manufacturers.ContainsKey(o.ManufacturerId ?? ""))
+                    errors.Add("Organisation " + o.Id + " references missing manufacturer " + o.ManufacturerId);
+                foreach (var id in o.TeamIds)
+                {
+                    if (!Teams.ContainsKey(id)) errors.Add("Organisation " + o.Id + " references missing team " + id);
+                    if (!owned.Add(id)) errors.Add("Team " + id + " belongs to more than one organisation");
+                }
             }
             foreach (var circuit in Circuits.Values)
             {

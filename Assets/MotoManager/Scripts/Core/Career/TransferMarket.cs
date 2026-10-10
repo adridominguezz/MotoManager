@@ -90,7 +90,7 @@ namespace MotoManager.Core.Career
                 if (TeamWantsRenewal(world, db, team, cat, r, rng) && RiderWantsRenewal(world, db, cat, r, rng))
                 {
                     var rules = db.GetRules(cat.Id, season);
-                    r.Contract = NewContract(team, r, next, TeamAI.ContractYears(team, r.AgeOn(nextDate), rng), SalaryDemand(r, rules));
+                    r.Contract = NewContract(team, r, next, TeamAI.ContractYears(team, r.AgeOn(nextDate), rng), AgreedSalary(team, r, rules));
                     report.Moves.Add(new MarketMove { RiderId = r.Id, FromTeamId = team.Id, ToTeamId = team.Id, FromCategoryId = cat.Id, ToCategoryId = cat.Id, Renewal = true });
                 }
                 else
@@ -182,6 +182,15 @@ namespace MotoManager.Core.Career
             double typical = rules != null ? rules.Economy.TypicalRiderSalary : 100000;
             if (typical <= 0) return 0;
             return Math.Round(typical * Math.Exp((r.Reputation - 55) / 15.0) / 1000) * 1000;
+        }
+
+        /// <summary>
+        /// Salary an AI deal settles at: the rider's demand, but never more than the team can pay out of its season
+        /// budget. Riders whose demand exceeds every budget accept the best offer available rather than no seat.
+        /// </summary>
+        public static double AgreedSalary(Team team, Rider r, CategoryRules rules)
+        {
+            return Math.Round(Math.Min(SalaryDemand(r, rules), TeamAI.MaxSalary(team)) / 1000) * 1000;
         }
 
         /// <summary>Average overall of the riders racing in each category (what a team expects for the level).</summary>
@@ -353,7 +362,7 @@ namespace MotoManager.Core.Career
             r.CategoryId = seat.Category.Id;
             r.SeasonsWithoutSeat = 0;
             int years = seat.Category.IsCup ? 1 : TeamAI.ContractYears(seat.Team, r.AgeOn(new DateTime(next, 3, 1)), rng);
-            r.Contract = NewContract(seat.Team, r, next, years, SalaryDemand(r, seat.Rules));
+            r.Contract = NewContract(seat.Team, r, next, years, AgreedSalary(seat.Team, r, seat.Rules));
             if (!seat.Team.RiderIds.Contains(r.Id)) seat.Team.RiderIds.Add(r.Id);
             if (r.Number <= 0 || NumberTaken(world, r)) r.Number = RiderGenerator.FreeNumber(world, seat.Category.Id, rng);
         }
@@ -371,6 +380,14 @@ namespace MotoManager.Core.Career
                 PodiumBonus = Math.Round(salary * 0.02),
                 FactoryBacked = team.Status == TeamStatus.Factory
             };
+        }
+
+        /// <summary>Standard race bonuses (estimated: real terms are not public) for contracts that have none.</summary>
+        public static void StandardBonuses(Contract c)
+        {
+            if (c == null || c.WinBonus > 0 || c.PodiumBonus > 0) return;
+            c.WinBonus = Math.Round(c.SalaryPerSeason * 0.05);
+            c.PodiumBonus = Math.Round(c.SalaryPerSeason * 0.02);
         }
 
         private static void Release(WorldState world, Rider r, MarketReport report)

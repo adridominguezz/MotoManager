@@ -4,6 +4,7 @@ using System.IO;
 using MotoManager.Core.Career;
 using MotoManager.Core.Common;
 using MotoManager.Core.Data;
+using MotoManager.Core.Season;
 using MotoManager.Core.World;
 
 namespace MotoManager.Tests
@@ -78,7 +79,7 @@ namespace MotoManager.Tests
                         ManufacturerId = m,
                         Status = t < makers.Length ? TeamStatus.Factory : TeamStatus.Satellite,
                         Reputation = rng.Range(30, 90),
-                        Budget = rules.Economy.TypicalRiderSalary * 6 + 2e6
+                        SeasonBudget = rules.Economy.TypicalRiderSalary * 6 + 2e6
                     };
                     var bike = world.Bikes[m + "_" + cat.Id].Clone("bike_" + team.Id);
                     world.Bikes[bike.Id] = bike;
@@ -108,6 +109,7 @@ namespace MotoManager.Tests
                     }
                 }
             }
+            WorldFactory.SetupOrganisations(world, db);
             RandomStandings(world, db, rng);
             return world;
         }

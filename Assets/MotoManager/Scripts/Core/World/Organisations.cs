@@ -22,6 +22,45 @@ namespace MotoManager.Core.World
         public string Color = "#CCCCCC";
     }
 
+    /// <summary>Who owns an organisation (and therefore who funds it when money runs short).</summary>
+    public enum OwnerKind
+    {
+        /// <summary>Private owners / investors behind an independent structure.</summary>
+        Private,
+        /// <summary>A manufacturer's racing division (works teams).</summary>
+        Manufacturer,
+        /// <summary>Owned by the player's manager.</summary>
+        Player,
+        /// <summary>Run by the championship organiser (one-make cups).</summary>
+        Organiser
+    }
+
+    /// <summary>
+    /// The company that owns one or more teams. It holds all the money (cash, later loans); teams only receive a
+    /// season budget allocation to spend against. Every movement of money goes through <c>Accounts.Post</c>.
+    /// </summary>
+    [Serializable]
+    public class Organisation
+    {
+        public string Id;
+        public string Name;
+        public OwnerKind Owner = OwnerKind.Private;
+        /// <summary>For manufacturer-owned organisations.</summary>
+        public string ManufacturerId;
+        /// <summary>Manager who owns it (player-founded organisations).</summary>
+        public string OwnerManagerId;
+        public List<string> TeamIds = new List<string>();
+        /// <summary>Liquidity. Only changed by ledger postings.</summary>
+        public double Cash;
+        /// <summary>Cash at the start of the current season (ledger check: Cash = opening + this season's cash postings).</summary>
+        public double SeasonOpeningCash;
+        /// <summary>0-100: how far the owners are willing to fund losses.</summary>
+        public double OwnerBacking = 60;
+        /// <summary>Keeps every ledger line (organisations the player works for or owns); others keep totals only.</summary>
+        public bool DetailedLedger;
+        public string DataConfidence = "generated";
+    }
+
     [Serializable]
     public class TeamColors
     {
@@ -58,7 +97,10 @@ namespace MotoManager.Core.World
         /// <summary>Number of riders this team fields (0 = category default). WorldSBK has single-rider teams.</summary>
         public int RiderSlots;
         public string Country;
-        public double Budget = 10000000;
+        /// <summary>Organisation that owns the team (and its money).</summary>
+        public string OrganisationId;
+        /// <summary>Spending allocation for the current season. Not money: the cash belongs to the organisation.</summary>
+        public double SeasonBudget = 10000000;
         public double Reputation = 50;
         public TeamColors Colors = new TeamColors();
         public Dictionary<FacilityType, int> Facilities = new Dictionary<FacilityType, int>();

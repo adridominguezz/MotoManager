@@ -1,0 +1,194 @@
+[
+  {
+    "id": "ducati_corse",
+    "name": "Ducati Corse",
+    "owner": "Manufacturer",
+    "manufacturerId": "ducati",
+    "teamIds": [
+      "ducati_lenovo",
+      "aruba_ducati",
+      "aruba_ssp"
+    ],
+    "ownerBacking": 85,
+    "dataConfidence": "Manufacturer works division; grouping approximate"
+  },
+  {
+    "id": "honda_hrc_org",
+    "name": "Honda Racing Corporation",
+    "owner": "Manufacturer",
+    "manufacturerId": "honda",
+    "teamIds": [
+      "honda_hrc",
+      "honda_sbk"
+    ],
+    "ownerBacking": 85,
+    "dataConfidence": "Manufacturer works division; grouping approximate"
+  },
+  {
+    "id": "yamaha_racing",
+    "name": "Yamaha Motor Racing",
+    "owner": "Manufacturer",
+    "manufacturerId": "yamaha",
+    "teamIds": [
+      "yamaha_factory",
+      "yamaha_sbk"
+    ],
+    "ownerBacking": 80,
+    "dataConfidence": "Manufacturer works division; grouping approximate"
+  },
+  {
+    "id": "aprilia_racing_org",
+    "name": "Aprilia Racing",
+    "owner": "Manufacturer",
+    "manufacturerId": "aprilia",
+    "teamIds": [
+      "aprilia_racing"
+    ],
+    "ownerBacking": 80,
+    "dataConfidence": "Manufacturer works division; grouping approximate"
+  },
+  {
+    "id": "ktm_factory_org",
+    "name": "KTM Factory Racing",
+    "owner": "Manufacturer",
+    "manufacturerId": "ktm",
+    "teamIds": [
+      "ktm_factory"
+    ],
+    "ownerBacking": 75,
+    "dataConfidence": "Manufacturer works division; grouping approximate"
+  },
+  {
+    "id": "bmw_motorrad_org",
+    "name": "BMW Motorrad Motorsport",
+    "owner": "Manufacturer",
+    "manufacturerId": "bmw",
+    "teamIds": [
+      "bmw_sbk"
+    ],
+    "ownerBacking": 80,
+    "dataConfidence": "Manufacturer works division; grouping approximate"
+  },
+  {
+    "id": "mv_agusta_org",
+    "name": "MV Agusta Reparto Corse",
+    "owner": "Manufacturer",
+    "manufacturerId": "mvagusta",
+    "teamIds": [
+      "mv_ssp"
+    ],
+    "ownerBacking": 55,
+    "dataConfidence": "Manufacturer works division; grouping approximate"
+  },
+  {
+    "id": "intact_gp",
+    "name": "Intact GP",
+    "owner": "Private",
+    "teamIds": [
+      "intact_moto2",
+      "intact_moto3"
+    ],
+    "ownerBacking": 65,
+    "dataConfidence": "Multi-entry structure as of the 2026 entry lists; grouping approximate"
+  },
+  {
+    "id": "ajo_motorsport",
+    "name": "Ajo Motorsport",
+    "owner": "Private",
+    "teamIds": [
+      "ajo_moto2",
+      "ajo_moto3"
+    ],
+    "ownerBacking": 65,
+    "dataConfidence": "Multi-entry structure as of the 2026 entry lists; grouping approximate"
+  },
+  {
+    "id": "aspar_team",
+    "name": "Aspar Team",
+    "owner": "Private",
+    "teamIds": [
+      "aspar_moto2",
+      "aspar_moto3"
+    ],
+    "ownerBacking": 65,
+    "dataConfidence": "Multi-entry structure as of the 2026 entry lists; grouping approximate"
+  },
+  {
+    "id": "tech3_racing",
+    "name": "Tech3 Racing",
+    "owner": "Private",
+    "teamIds": [
+      "tech3_motogp",
+      "tech3_moto3"
+    ],
+    "ownerBacking": 65,
+    "dataConfidence": "Multi-entry structure as of the 2026 entry lists; grouping approximate"
+  },
+  {
+    "id": "msi_racing",
+    "name": "MSi Racing",
+    "owner": "Private",
+    "teamIds": [
+      "msi_moto2",
+      "qjmotor_moto2",
+      "msi_moto3"
+    ],
+    "ownerBacking": 55,
+    "dataConfidence": "Multi-entry structure as of the 2026 entry lists; grouping approximate"
+  },
+  {
+    "id": "honda_team_asia",
+    "name": "Honda Team Asia",
+    "owner": "Private",
+    "teamIds": [
+      "asia_moto2",
+      "asia_moto3"
+    ],
+    "ownerBacking": 60,
+    "dataConfidence": "Multi-entry structure as of the 2026 entry lists; grouping approximate"
+  },
+  {
+    "id": "marc_vds",
+    "name": "Marc VDS Racing",
+    "owner": "Private",
+    "teamIds": [
+      "marcvds_moto2",
+      "marcvds_sbk"
+    ],
+    "ownerBacking": 60,
+    "dataConfidence": "Multi-entry structure as of the 2026 entry lists; grouping approximate"
+  },
+  {
+    "id": "barni_racing",
+    "name": "Barni Spark Racing",
+    "owner": "Private",
+    "teamIds": [
+      "barni_sbk",
+      "barni_ssp"
+    ],
+    "ownerBacking": 55,
+    "dataConfidence": "Multi-entry structure as of the 2026 entry lists; grouping approximate"
+  },
+  {
+    "id": "pramac_racing",
+    "name": "Pramac Racing",
+    "owner": "Private",
+    "teamIds": [
+      "pramac_motogp",
+      "pramac_moto2"
+    ],
+    "ownerBacking": 65,
+    "dataConfidence": "Multi-entry structure as of the 2026 entry lists; grouping approximate"
+  },
+  {
+    "id": "gresini_racing",
+    "name": "Gresini Racing",
+    "owner": "Private",
+    "teamIds": [
+      "gresini_motogp",
+      "pons_moto2"
+    ],
+    "ownerBacking": 60,
+    "dataConfidence": "Multi-entry structure as of the 2026 entry lists; grouping approximate"
+  }
+]

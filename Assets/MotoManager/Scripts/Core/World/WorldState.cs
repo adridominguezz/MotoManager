@@ -213,7 +213,8 @@ namespace MotoManager.Core.World
         /// <summary>teamId -> (riderId -> knowledge 0..1). Controls how precisely attributes are displayed.</summary>
         public Dictionary<string, Dictionary<string, double>> ScoutingKnowledge = new Dictionary<string, Dictionary<string, double>>();
         public List<string> FreeAgentPool = new List<string>();
-        public double PlayerCash;
+        public Dictionary<string, Organisation> Organisations = new Dictionary<string, Organisation>();
+        public FinanceState Finance = new FinanceState();
 
         public string NewId(string prefix)
         {
@@ -245,6 +246,17 @@ namespace MotoManager.Core.World
         }
 
         public Team PlayerTeam { get { return GetTeam(PlayerTeamId); } }
+
+        public Organisation GetOrganisation(string id)
+        {
+            Organisation o;
+            return id != null && Organisations.TryGetValue(id, out o) ? o : null;
+        }
+
+        public Organisation OrganisationOf(Team team)
+        {
+            return team != null ? GetOrganisation(team.OrganisationId) : null;
+        }
 
         public List<Team> TeamsInCategory(string categoryId)
         {

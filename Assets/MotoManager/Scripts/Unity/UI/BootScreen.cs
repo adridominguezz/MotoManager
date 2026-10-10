@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Text;
 using MotoManager.Core.Common;
+using MotoManager.Core.Economy;
 using MotoManager.Core.Season;
 using MotoManager.Core.World;
 using UnityEngine;
@@ -117,7 +118,7 @@ namespace MotoManager.App.UI
                     UiFactory.Stretch((RectTransform)b.transform);
                     var label = b.GetComponentInChildren<Text>();
                     label.alignment = TextAnchor.MiddleLeft;
-                    label.text = "   " + team.Name + "   <color=#9AA4B2>" + team.Status + " · budget " + MathX.FormatMoney(team.Budget) + "</color>";
+                    label.text = "   " + team.Name + "   <color=#9AA4B2>" + team.Status + " · budget " + MathX.FormatMoney(team.SeasonBudget) + "</color>";
                     label.supportRichText = true;
                 }
             }
@@ -215,7 +216,7 @@ namespace MotoManager.App.UI
             var world = game.World;
             var team = world.PlayerTeam;
             var next = game.PeekNextEvent();
-            _status.text = (team != null ? team.Name + "\n" + MathX.FormatMoney(team.Budget) + "\n" : "") +
+            _status.text = (team != null ? team.Name + "\n" + MathX.FormatMoney(Accounts.Cash(world, team)) + "\n" : "") +
                            "Season " + world.Season + (next != null ? "  ·  next: " + next.Round.Name : "  ·  season finished");
 
             UiFactory.Clear(_list);

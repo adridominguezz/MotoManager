@@ -9,7 +9,7 @@
     "bikeId": "ktm_rc250gp_26",
     "country": "FI",
     "reputation": 70,
-    "budget": 2400000.0,
+    "seasonBudget": 2400000.0,
     "colors": {
       "primary": "#FF6600",
       "secondary": "#1E2A5A"
@@ -26,7 +26,7 @@
     "bikeId": "ktm_rc250gp_26",
     "country": "FR",
     "reputation": 62,
-    "budget": 2000000.0,
+    "seasonBudget": 2000000.0,
     "colors": {
       "primary": "#1E2A5A",
       "secondary": "#FF6600"
@@ -43,7 +43,7 @@
     "bikeId": "ktm_rc250gp_26",
     "country": "DE",
     "reputation": 60,
-    "budget": 1900000.0,
+    "seasonBudget": 1900000.0,
     "colors": {
       "primary": "#E30613",
       "secondary": "#002F6C"
@@ -60,7 +60,7 @@
     "bikeId": "ktm_rc250gp_26",
     "country": "ES",
     "reputation": 56,
-    "budget": 1600000.0,
+    "seasonBudget": 1600000.0,
     "colors": {
       "primary": "#111111",
       "secondary": "#FFD100"
@@ -77,7 +77,7 @@
     "bikeId": "ktm_rc250gp_26",
     "country": "IT",
     "reputation": 50,
-    "budget": 1400000.0,
+    "seasonBudget": 1400000.0,
     "colors": {
       "primary": "#2E2E2E",
       "secondary": "#00B5E2"
@@ -94,7 +94,7 @@
     "bikeId": "ktm_rc250gp_26",
     "country": "FR",
     "reputation": 44,
-    "budget": 1200000.0,
+    "seasonBudget": 1200000.0,
     "colors": {
       "primary": "#00A651",
       "secondary": "#FFFFFF"
@@ -111,7 +111,7 @@
     "bikeId": "ktm_rc250gp_26",
     "country": "ES",
     "reputation": 50,
-    "budget": 1400000.0,
+    "seasonBudget": 1400000.0,
     "colors": {
       "primary": "#FFFFFF",
       "secondary": "#E4002B"
@@ -128,7 +128,7 @@
     "bikeId": "honda_nsf250rw_26",
     "country": "LU",
     "reputation": 68,
-    "budget": 2200000.0,
+    "seasonBudget": 2200000.0,
     "colors": {
       "primary": "#00B140",
       "secondary": "#FFFFFF"
@@ -145,7 +145,7 @@
     "bikeId": "honda_nsf250rw_26",
     "country": "JP",
     "reputation": 52,
-    "budget": 1500000.0,
+    "seasonBudget": 1500000.0,
     "colors": {
       "primary": "#E4002B",
       "secondary": "#FFFFFF"
@@ -162,7 +162,7 @@
     "bikeId": "honda_nsf250rw_26",
     "country": "IT",
     "reputation": 50,
-    "budget": 1400000.0,
+    "seasonBudget": 1400000.0,
     "colors": {
       "primary": "#1D1D1B",
       "secondary": "#FFD100"
@@ -179,7 +179,7 @@
     "bikeId": "honda_nsf250rw_26",
     "country": "IT",
     "reputation": 50,
-    "budget": 1400000.0,
+    "seasonBudget": 1400000.0,
     "colors": {
       "primary": "#0057A8",
       "secondary": "#FFFFFF"
@@ -196,7 +196,7 @@
     "bikeId": "husqvarna_fr250gp_26",
     "country": "GB",
     "reputation": 48,
-    "budget": 1300000.0,
+    "seasonBudget": 1300000.0,
     "colors": {
       "primary": "#1F3A93",
       "secondary": "#FFFFFF"
@@ -213,7 +213,7 @@
     "bikeId": "cfmoto_moto3_26",
     "country": "ES",
     "reputation": 62,
-    "budget": 1900000.0,
+    "seasonBudget": 1900000.0,
     "colors": {
       "primary": "#00A3E0",
       "secondary": "#FFFFFF"

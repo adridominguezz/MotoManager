@@ -53,7 +53,7 @@ namespace MotoManager.Core.Career
                 ? MathX.Clamp(engineering * 0.7 + rep * 0.3 + rng.Gaussian(0, 4), 25, 95)
                 : MathX.Clamp(25 + rep * 0.5 + rng.Gaussian(0, 7), 20, 85);
 
-            double money = MathX.Clamp(team.Budget / 15000000.0, 0, 2);
+            double money = MathX.Clamp(team.SeasonBudget / 15000000.0, 0, 2);
             p.DevelopmentRate = MathX.Clamp(35 + money * 15 + (team.Status == TeamStatus.Factory ? 12 : 0) + rng.Gaussian(0, 8), 15, 95);
 
             // Philosophy: weighted by what the team is.
@@ -246,10 +246,12 @@ namespace MotoManager.Core.Career
             {
                 var p = team.Personality;
                 var cat = db.GetCategory(team.CategoryId);
-                if (p == null || team.IsPlayer || cat == null || !cat.Simulated || cat.IsCup) continue;
+                var org = world.OrganisationOf(team);
+                if (p == null || team.IsPlayer || org == null || org.Owner == OwnerKind.Player || cat == null || !cat.Simulated || cat.IsCup) continue;
                 var rules = db.GetRules(cat.Id, world.Season);
                 double floor = OperatingFloor(rules);
-                double surplus = team.Budget - floor * 1.5;
+                // The organisation's spare cash is shared between the teams it owns.
+                double surplus = org.Cash / Math.Max(1, org.TeamIds.Count) - floor * 1.5;
                 double gain = 0;
                 if (surplus > 0)
                 {
@@ -257,7 +259,7 @@ namespace MotoManager.Core.Career
                     if (p.Philosophy == TeamPhilosophy.LongTerm) share *= 1.25;
                     if (p.Philosophy == TeamPhilosophy.ImmediateResults) share *= 0.8;
                     double invest = surplus * share;
-                    team.Budget -= invest;
+                    Economy.Accounts.Post(world, team, LedgerKind.TechnicalInvestment, -invest, "Technical department", true, false);
                     double unit = Math.Max(100000, rules.Economy.TypicalRiderSalary * 10);
                     gain = Math.Min(3, invest / unit);
                 }
@@ -311,7 +313,13 @@ namespace MotoManager.Core.Career
             var p = Of(team);
             double share = 0.25 * (0.7 + p.RiskTolerance / 100.0 * 0.6);
             if (p.Philosophy == TeamPhilosophy.ImmediateResults) share *= 1.15;
-            return Math.Max(50000, team.Budget * share);
+            return Math.Max(50000, team.SeasonBudget * share);
+        }
+
+        /// <summary>Hard limit on one rider's salary: beyond this the owners refuse to pay.</summary>
+        public static double MaxSalary(Team team)
+        {
+            return SalaryCeiling(team) * 1.6;
         }
 
         /// <summary>Contract length the team offers (seasons).</summary>
