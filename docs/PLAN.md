@@ -386,8 +386,11 @@ Orden: E1 → E2 → M1 → E3 → E4 → 8.4 → E5 → M2 → E6 → E7 → 8.
   por la plaza.
 - `Contract.RiderFunding`: el dinero entra por ronda en la contabilidad del equipo (`RiderFunding`), tanto con la
   IA como con el jugador; la columna «Aporta» aparece en el mercado.
-- En 10 temporadas: 6–9 pilotos de pago por parrilla en las categorías pequeñas, algo más lentos que el resto.
-  54 tests en verde.
+- Un piloto solo paga cuando su nivel no basta para la plaza: por debajo del nivel que el equipo espera (media de
+  la categoría ajustada por la reputación del equipo). Se vuelve a evaluar en cada contrato y renovación: si mejora,
+  deja de pagar aunque siga teniendo patrocinadores. El mercado solo valora el dinero en ese caso.
+- En 6 temporadas: 4–9 pilotos de pago por parrilla en las categorías pequeñas, entre 4 y 13 puntos más lentos que
+  el resto; prácticamente ninguno en MotoGP. 55 tests en verde.
 
 ## Pendiente de especificación
 

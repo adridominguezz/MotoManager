@@ -434,6 +434,7 @@ namespace MotoManager.App.UI.Screens
             var w = new[] { 4f, 1f, 1f, 3f, 1.5f, 1.5f, 1.4f, 1.2f, 1.6f, 2.4f };
             UiFactory.TableRow(list, 38, w, new[] { "Rider", "Age", "Nat", "Team", "Race", "Potential", "Until", "Known", Loc.T("market.brings"), "" }, true);
             int shown = 0;
+            var levels = TransferMarket.CategoryLevels(world, Game.Db);
             foreach (var r in riders)
             {
                 if (shown++ >= 60) break;
@@ -445,7 +446,7 @@ namespace MotoManager.App.UI.Screens
                     r.FullName + (r.FutureContract != null ? " <color=#9AA4B2>(signed)</color>" : ""), r.AgeOn(date).ToString(), r.Nationality,
                     t != null ? t.ShortName ?? t.Name : "<color=#9AA4B2>free</color>", Fmt.Attr(world, team.Id, r, "RaceSkill"), Fmt.Attr(world, team.Id, r, "Potential"),
                     r.Contract != null ? r.Contract.EndSeason.ToString() : "-", (world.GetKnowledge(team.Id, r.Id) * 100).ToString("0") + "%",
-                    r.PersonalBacking > 0 ? "<color=#3CC878>" + MathX.FormatMoney(r.PersonalBacking) + "</color>" : "", ""
+                    TransferMarket.NeedsToPay(world, Game.Db, team, r, levels) ? "<color=#3CC878>" + MathX.FormatMoney(r.PersonalBacking) + "</color>" : "", ""
                 });
                 var scout = UiFactory.Button("Scout", row, scouted ? "Scouting" : "Scout", () => ToggleScout(rider), scouted ? Theme.Good : Theme.PanelLight, Theme.FontSmall - 6);
                 UiFactory.Place((RectTransform)scout.transform, 0.885f, 0.08f, 0.94f, 0.92f);

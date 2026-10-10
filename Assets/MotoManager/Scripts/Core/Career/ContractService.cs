@@ -83,14 +83,14 @@ namespace MotoManager.Core.Career
             {
                 TeamId = team.Id, ManufacturerId = team.ManufacturerId, StartSeason = next, EndSeason = next + years - 1,
                 SalaryPerSeason = salary, WinBonus = Math.Round(salary * 0.05), PodiumBonus = Math.Round(salary * 0.02),
-                FactoryBacked = team.Status == TeamStatus.Factory, RiderFunding = rider.PersonalBacking
+                FactoryBacked = team.Status == TeamStatus.Factory, RiderFunding = TransferMarket.FundingFor(world, db, team, rider)
             };
             if (renewal)
             {
                 // Extension of the current deal (keeps him under contract, no seat change).
                 rider.Contract.EndSeason = contract.EndSeason;
                 rider.Contract.SalaryPerSeason = salary;
-                rider.Contract.RiderFunding = rider.PersonalBacking;
+                rider.Contract.RiderFunding = contract.RiderFunding;
                 rider.Morale = Math.Min(100, rider.Morale + 5);
                 world.AddNews(rider.FullName + " extends with " + team.Name, "New deal until " + contract.EndSeason + ".", team.CategoryId, true);
             }

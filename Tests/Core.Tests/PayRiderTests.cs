@@ -24,7 +24,7 @@ namespace MotoManager.Tests
             var world = WorldFactory.Create(db, new NewGameOptions { Seed = 61 });
             var small = world.TeamsInCategory("moto3").OrderBy(t => t.Reputation).First();
             var top = world.Teams["ducati_lenovo"];
-            var rider = world.Riders.Values.First(r => r.CategoryId == "moto3" && r.TeamId != null);
+            var rider = world.Riders.Values.Where(r => r.CategoryId == "moto3" && r.TeamId != null).OrderBy(r => r.Attributes.Overall).First();
             rider.PersonalBacking = 0;
             double smallWithout = TransferMarket.EvaluateForTeam(world, db, small, rider);
             double topWithout = TransferMarket.EvaluateForTeam(world, db, top, rider);
@@ -35,6 +35,24 @@ namespace MotoManager.Tests
             Assert.True(smallWith - smallWithout > 4, "a modest Moto3 team should value the money like several points of ability");
             Assert.True(topWith - topWithout < 0.6, "a MotoGP works team barely notices it");
             Assert.Equal(0, TransferMarket.BackingValue(world, db, world.Teams["rookies_cup"], rider));
+        }
+
+        [Fact]
+        public void OnlyRidersWhoAreNotGoodEnoughPayForTheSeat()
+        {
+            var db = TestData.Db;
+            var world = WorldFactory.Create(db, new NewGameOptions { Seed = 63 });
+            var levels = TransferMarket.CategoryLevels(world, db);
+            var team = world.TeamsInCategory("moto3").OrderBy(t => t.Reputation).First();
+            var riders = world.Riders.Values.Where(r => r.CategoryId == "moto3" && r.TeamId != null).OrderBy(r => r.Attributes.Overall).ToList();
+            var weak = riders.First();
+            var strong = riders.Last();
+            weak.PersonalBacking = strong.PersonalBacking = 300000;
+            Assert.True(TransferMarket.NeedsToPay(world, db, team, weak, levels));
+            Assert.Equal(300000, TransferMarket.FundingFor(world, db, team, weak, levels));
+            Assert.False(TransferMarket.NeedsToPay(world, db, team, strong, levels), "a rider who merits the seat does not pay");
+            Assert.Equal(0, TransferMarket.FundingFor(world, db, team, strong, levels));
+            Assert.Equal(0, TransferMarket.BackingValue(world, db, team, strong, levels));
         }
 
         [Fact]
