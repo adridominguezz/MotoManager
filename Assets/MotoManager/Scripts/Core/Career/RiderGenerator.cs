@@ -65,6 +65,8 @@ namespace MotoManager.Core.Career
             };
             rider.Styles = DeriveStyles(rider.Attributes, rng);
             rider.Number = FreeNumber(world, categoryId, rng);
+            // Some riders arrive with backers who pay for a seat (common in the smaller categories).
+            if (rng.Chance(0.3)) rider.PersonalBacking = Math.Round(250000 * Math.Exp(rng.Gaussian(0, 0.7)) / 10000) * 10000;
             return rider;
         }
 

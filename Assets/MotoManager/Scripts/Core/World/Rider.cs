@@ -150,6 +150,8 @@ namespace MotoManager.Core.World
         public double WinBonus;
         public double PodiumBonus;
         public bool FactoryBacked;
+        /// <summary>Money the rider's backers pay the team per season while the contract runs.</summary>
+        public double RiderFunding;
     }
 
     /// <summary>One season of a rider's career, kept forever.</summary>
@@ -207,6 +209,11 @@ namespace MotoManager.Core.World
         public bool IsRetired;
         public int RetiredSeason;
         public bool Generated;
+        /// <summary>
+        /// Money per season the rider's personal sponsors / family put into the team that gives him a seat (0 = none).
+        /// Only invented riders have it: real riders' private deals are not public.
+        /// </summary>
+        public double PersonalBacking;
         public string DataConfidence = "approximate";
         /// <summary>Seasons without a seat (unattached).</summary>
         public int SeasonsWithoutSeat;

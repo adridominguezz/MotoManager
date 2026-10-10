@@ -201,5 +201,7 @@
   "ledger.MerchCostOfSales": "Cost of goods sold",
   "ledger.MerchStock": "Merchandise stock",
   "ledger.MerchOperations": "Shop costs",
-  "ledger.MerchRoyalty": "Manufacturer royalties"
+  "ledger.MerchRoyalty": "Manufacturer royalties",
+  "market.brings": "Brings",
+  "ledger.RiderFunding": "Rider backing"
 }

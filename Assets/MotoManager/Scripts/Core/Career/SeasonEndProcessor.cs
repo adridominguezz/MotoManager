@@ -39,6 +39,13 @@ namespace MotoManager.Core.Career
             TeamAI.OffseasonInvestment(world, db);
 
             foreach (var r in SortedRiders(world)) RiderDevelopment.EndOfSeason(world, db, r, rng);
+            // Riders' backers change their minds over the years.
+            foreach (var r in SortedRiders(world))
+            {
+                if (r.IsRetired || !r.Generated) continue;
+                if (r.PersonalBacking > 0) r.PersonalBacking = rng.Chance(0.08) ? 0 : Math.Round(r.PersonalBacking * rng.Range(0.85, 1.15) / 10000) * 10000;
+                else if (r.AgeOn(new DateTime(world.Season + 1, 3, 1)) < 22 && rng.Chance(0.03)) r.PersonalBacking = Math.Round(200000 * Math.Exp(rng.Gaussian(0, 0.6)) / 10000) * 10000;
+            }
 
             // Retirements before the market: riders whose deal ends (or who have none) consider stopping;
             // riders under contract only stop rarely (very old / unmotivated).

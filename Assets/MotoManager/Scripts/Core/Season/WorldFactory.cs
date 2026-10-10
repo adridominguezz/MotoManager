@@ -265,6 +265,7 @@ namespace MotoManager.Core.Season
                         SalaryPerSeason = TransferMarket.SalaryDemand(r, rules), FactoryBacked = team.Status == TeamStatus.Factory
                     };
                     TransferMarket.StandardBonuses(r.Contract);
+                    r.Contract.RiderFunding = cat.IsCup ? 0 : r.PersonalBacking;
                     world.Riders[r.Id] = r;
                     team.RiderIds.Add(r.Id);
                 }

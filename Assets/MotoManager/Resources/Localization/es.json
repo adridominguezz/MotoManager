@@ -201,5 +201,7 @@
   "ledger.MerchCostOfSales": "Coste de lo vendido",
   "ledger.MerchStock": "Existencias de merchandising",
   "ledger.MerchOperations": "Costes de la tienda",
-  "ledger.MerchRoyalty": "Royalties al fabricante"
+  "ledger.MerchRoyalty": "Royalties al fabricante",
+  "market.brings": "Aporta",
+  "ledger.RiderFunding": "Aportación de pilotos"
 }

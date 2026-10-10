@@ -28,6 +28,8 @@ namespace MotoManager.Core.World
         SlotPurchase,
         Equipment,
         BikePurchase,
+        /// <summary>Money a rider's personal sponsors pay for his seat.</summary>
+        RiderFunding,
         MerchSales,
         /// <summary>Cost of the units sold (not a cash movement: the cash left when the stock was bought).</summary>
         MerchCostOfSales,

@@ -293,6 +293,23 @@ namespace MotoManager.Core.Career
             return Math.Round(Math.Min(SalaryDemand(r, rules), TeamAI.MaxSalary(team)) / 1000) * 1000;
         }
 
+        /// <summary>
+        /// How much a team values the money a rider brings: relative to its budget, more for modest and cash-strapped
+        /// teams. A rider bringing a fifth of a Moto3 team's budget can beat a clearly faster one; the same money means
+        /// little to a MotoGP works team.
+        /// </summary>
+        public static double BackingValue(WorldState world, GameDatabase db, Team team, Rider r)
+        {
+            if (r.PersonalBacking <= 0 || team.SeasonBudget <= 0) return 0;
+            var category = db.GetCategory(team.CategoryId);
+            if (category == null || category.IsCup) return 0; // cups pick on talent: nobody pays for a seat
+            double need = 1.4 - team.Reputation / 100.0;
+            var org = world.OrganisationOf(team);
+            var rules = db.GetRules(team.CategoryId, world.Season);
+            if (org != null && rules != null && org.Cash < TeamAI.OperatingFloor(rules)) need += 0.4;
+            return Math.Min(10, r.PersonalBacking / team.SeasonBudget * 40 * Math.Max(0.2, need));
+        }
+
         /// <summary>Average overall of the riders racing in each category (what a team expects for the level).</summary>
         public static Dictionary<string, double> CategoryLevels(WorldState world, GameDatabase db)
         {
@@ -474,6 +491,9 @@ namespace MotoManager.Core.Career
             bool unproven = r.CareerHistory.Count == 0 || (from2 != null && !from2.Simulated);
             score += TeamAI.SigningBias(seat.Team, r, age, ability, growth, results, sameManufacturer, unproven);
 
+            // Money the rider brings: decisive for small teams in small categories, irrelevant at the top.
+            score += BackingValue(world, db, seat.Team, r);
+
             double demand = SalaryDemand(r, seat.Rules);
             double affordable = TeamAI.SalaryCeiling(seat.Team);
             if (demand > affordable) score -= (demand / affordable - 1) * 5;
@@ -503,6 +523,7 @@ namespace MotoManager.Core.Career
             r.SeasonsWithoutSeat = 0;
             int years = seat.Category.IsCup ? 1 : TeamAI.ContractYears(seat.Team, r.AgeOn(new DateTime(next, 3, 1)), rng);
             r.Contract = NewContract(seat.Team, r, next, years, AgreedSalary(seat.Team, r, seat.Rules));
+            if (seat.Category.IsCup) r.Contract.RiderFunding = 0;
             if (!seat.Team.RiderIds.Contains(r.Id)) seat.Team.RiderIds.Add(r.Id);
             if (r.Number <= 0 || NumberTaken(world, r)) r.Number = RiderGenerator.FreeNumber(world, seat.Category.Id, rng);
         }
@@ -511,6 +532,7 @@ namespace MotoManager.Core.Career
         {
             return new Contract
             {
+                RiderFunding = r.PersonalBacking,
                 TeamId = team.Id,
                 ManufacturerId = team.ManufacturerId,
                 StartSeason = start,

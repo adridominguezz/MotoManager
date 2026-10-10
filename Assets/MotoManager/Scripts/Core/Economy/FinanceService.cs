@@ -21,6 +21,8 @@ namespace MotoManager.Core.Economy
         public double FacilityLevelSquares;
         /// <summary>Signed sponsorship per season.</summary>
         public double SponsorIncome;
+        /// <summary>Money riders' backers pay per season.</summary>
+        public double RiderFunding;
 
         public static CostProfile Of(WorldState world, Team team)
         {
@@ -31,7 +33,8 @@ namespace MotoManager.Core.Economy
                 Riders = team.RiderIds.Count,
                 RiderSalaries = FinanceService.RiderSalaries(world, team),
                 StaffSalaries = FinanceService.StaffSalaries(world, team),
-                SponsorIncome = FinanceService.SponsorIncomePerSeason(world, team)
+                SponsorIncome = FinanceService.SponsorIncomePerSeason(world, team),
+                RiderFunding = FinanceService.RiderFunding(world, team)
             };
             foreach (FacilityType f in Enum.GetValues(typeof(FacilityType)))
             {
@@ -83,6 +86,17 @@ namespace MotoManager.Core.Economy
             return total;
         }
 
+        public static double RiderFunding(WorldState world, Team team)
+        {
+            double total = 0;
+            foreach (var id in team.RiderIds)
+            {
+                var r = world.GetRider(id);
+                if (r != null && r.Contract != null && r.Contract.TeamId == team.Id) total += r.Contract.RiderFunding;
+            }
+            return total;
+        }
+
         public static double StaffSalaries(WorldState world, Team team)
         {
             double total = 0;
@@ -119,6 +133,7 @@ namespace MotoManager.Core.Economy
             return new List<KeyValuePair<LedgerKind, double>>
             {
                 new KeyValuePair<LedgerKind, double>(LedgerKind.Sponsorship, p.SponsorIncome),
+                new KeyValuePair<LedgerKind, double>(LedgerKind.RiderFunding, p.RiderFunding),
                 new KeyValuePair<LedgerKind, double>(LedgerKind.ParticipationIncome, rules.Economy.ParticipationIncomePerSeason),
                 new KeyValuePair<LedgerKind, double>(LedgerKind.RiderSalary, -p.RiderSalaries),
                 new KeyValuePair<LedgerKind, double>(LedgerKind.StaffSalary, -p.StaffSalaries),

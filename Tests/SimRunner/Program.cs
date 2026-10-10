@@ -227,6 +227,15 @@ namespace MotoManager.Tools
                     Console.WriteLine($"  {cat.ShortName,-11} {rs.Count,3} riders  overall {rs.Average(r => r.Attributes.Overall):0.0}  age {rs.Average(r => r.AgeOn(date)):0.0}  real {rs.Count(r => !r.Generated)}");
                 }
                 Console.WriteLine($"  active riders {game.World.Riders.Values.Count(r => !r.IsRetired)}, retired {game.World.Riders.Values.Count(r => r.IsRetired)}");
+                Console.WriteLine("== Riders who bring money (share of the grid / their overall vs the others)");
+                foreach (var cat in db.CategoriesOrdered().Where(c => c.Simulated))
+                {
+                    var rs = game.World.Riders.Values.Where(r => !r.IsRetired && r.CategoryId == cat.Id && r.TeamId != null).ToList();
+                    var pay = rs.Where(r => r.Contract != null && r.Contract.RiderFunding > 0).ToList();
+                    var rest = rs.Except(pay).ToList();
+                    if (rs.Count == 0) continue;
+                    Console.WriteLine($"  {cat.ShortName,-11} {pay.Count,2}/{rs.Count,-2}  overall {(pay.Count > 0 ? pay.Average(r => r.Attributes.Overall) : 0),5:0.0} vs {(rest.Count > 0 ? rest.Average(r => r.Attributes.Overall) : 0),5:0.0}  avg money {(pay.Count > 0 ? pay.Average(r => r.Contract.RiderFunding) / 1000 : 0),5:0}k");
+                }
             }
             var json = SaveSystem.Serialize(game.World);
             var back = SaveSystem.Deserialize(json);

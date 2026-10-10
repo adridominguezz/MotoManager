@@ -378,6 +378,17 @@ Orden: E1 → E2 → M1 → E3 → E4 → 8.4 → E5 → M2 → E6 → E7 → 8.
 - Los presupuestos de los equipos oficiales quedan limitados por la capacidad financiera del fabricante. 52 tests
   en verde.
 
+### Pilotos que aportan dinero (adelanto de E4) ✅
+- `Rider.PersonalBacking`: dinero de patrocinadores personales o de la familia (solo en pilotos inventados: los
+  acuerdos privados de los pilotos reales no son públicos). Cambia con los años.
+- El mercado lo valora según el presupuesto y la necesidad del equipo: decisivo para un equipo modesto de Moto3,
+  Moto2, WorldSSP o un WorldSBK pequeño, casi irrelevante en un equipo oficial de MotoGP. En las copas no se paga
+  por la plaza.
+- `Contract.RiderFunding`: el dinero entra por ronda en la contabilidad del equipo (`RiderFunding`), tanto con la
+  IA como con el jugador; la columna «Aporta» aparece en el mercado.
+- En 10 temporadas: 6–9 pilotos de pago por parrilla en las categorías pequeñas, algo más lentos que el resto.
+  54 tests en verde.
+
 ## Pendiente de especificación
 
 Recibidas las secciones 49–105; ver la Fase 8.
