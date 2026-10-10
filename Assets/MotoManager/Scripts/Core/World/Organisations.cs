@@ -80,6 +80,41 @@ namespace MotoManager.Core.World
         public double Satisfaction = 60;
         public List<SponsorObjective> Objectives = new List<SponsorObjective>();
         public double BonusEarnedThisSeason;
+        public string Industry;
+        /// <summary>Conditional deal: pays nothing until the team races in this category.</summary>
+        public string RequiredCategoryId;
+        /// <summary>Cut applied to next season's payment when season objectives are missed.</summary>
+        public double PenaltyOnMiss;
+        public bool IndustryExclusive = true;
+    }
+
+    /// <summary>
+    /// A sponsor's proposal to a team. Not money: nothing is counted until it is accepted, and conditional parts
+    /// only once their condition is met.
+    /// </summary>
+    [Serializable]
+    public class SponsorOffer
+    {
+        public string Id;
+        public string SponsorId;
+        public string TeamId;
+        public string Name;
+        public string Industry;
+        public int Tier;
+        public double PaymentPerSeason;
+        public double SigningBonus;
+        public int Seasons = 1;
+        /// <summary>First season of the deal (next season for renewals and offers made at season end).</summary>
+        public int StartSeason;
+        public List<SponsorObjective> Objectives = new List<SponsorObjective>();
+        public double PenaltyOnMiss;
+        public bool IndustryExclusive = true;
+        public string RequiredCategoryId;
+        public bool Renewal;
+        /// <summary>Last event (count of events completed by the world) at which it can be accepted.</summary>
+        public int ExpiresAfterEvent;
+        /// <summary>How many times the team has pushed for better terms (sponsors lose patience).</summary>
+        public int Counters;
     }
 
     [Serializable]

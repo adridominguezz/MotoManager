@@ -109,6 +109,30 @@ namespace MotoManager.Core.Data
         public List<string> HomeTeams = new List<string>();
         public List<SponsorObjective> Objectives = new List<SponsorObjective>();
         public int ContractSeasons = 2;
+        /// <summary>
+        /// Weighted category preference (categoryId -> weight, 1 = ideal). Multiplies both what the sponsor pays and how
+        /// keen it is to sign. Empty = no preference beyond <see cref="Pyramids"/>.
+        /// </summary>
+        public Dictionary<string, double> CategoryPreference = new Dictionary<string, double>();
+        /// <summary>Two sponsors of an exclusive industry cannot back the same team.</summary>
+        public bool IndustryExclusive = true;
+        /// <summary>Share of one season's payment paid once at signing.</summary>
+        public double SigningBonusShare = 0.1;
+        /// <summary>Cut of the following season's payment when the season objectives are missed (0-1).</summary>
+        public double PenaltyOnMiss = 0;
+        /// <summary>Invented brand created by the game to populate the market (not a real company).</summary>
+        public bool Generated;
+        public string DataConfidence;
+    }
+
+    /// <summary>Word lists used to invent fictional sponsors for the market (clearly not real brands).</summary>
+    [Serializable]
+    public class SponsorNameParts
+    {
+        public List<string> Prefixes = new List<string>();
+        public List<string> Roots = new List<string>();
+        /// <summary>industry -> words that can close a name ("Logistics" -> "Freight", "Cargo").</summary>
+        public Dictionary<string, List<string>> IndustryWords = new Dictionary<string, List<string>>();
     }
 
     public enum SponsorObjectiveType

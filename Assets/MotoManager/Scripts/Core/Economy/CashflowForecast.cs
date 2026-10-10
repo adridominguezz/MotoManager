@@ -157,7 +157,8 @@ namespace MotoManager.Core.Economy
         {
             double total = 0;
             foreach (var d in team.Sponsors)
-                foreach (var o in d.Objectives) total += o.SeasonBonus * 0.5;
+                if (d.RequiredCategoryId == null || d.RequiredCategoryId == team.CategoryId)
+                    foreach (var o in d.Objectives) total += o.SeasonBonus * 0.5;
             return total;
         }
     }

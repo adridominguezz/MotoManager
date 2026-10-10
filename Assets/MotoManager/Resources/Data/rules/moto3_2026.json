@@ -245,7 +245,9 @@
     "facilityCostScale": 0.25,
     "staffSalaryScale": 0.35,
     "safetyReserveFraction": 0.15,
-    "dataConfidence": "estimated: entry, slot, equipment and cost scales are not public figures"
+    "dataConfidence": "estimated: entry, slot, equipment and cost scales are not public figures",
+    "typicalSponsorDeal": 350000,
+    "sponsorSlots": 3
   },
   "notes": [
     "250cc single cylinder; minimum weight bike + rider.",

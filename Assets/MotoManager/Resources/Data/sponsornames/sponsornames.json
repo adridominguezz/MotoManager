@@ -1,0 +1,136 @@
+{
+  "dataConfidence": "fictional word lists: generated sponsors are invented brands, not real companies",
+  "prefixes": [
+    "Neo",
+    "Ultra",
+    "Terra",
+    "Velo",
+    "Alto",
+    "Mar",
+    "Sol",
+    "Nor",
+    "Ori",
+    "Lumi"
+  ],
+  "roots": [
+    "Arvento",
+    "Brisca",
+    "Calderon",
+    "Dunmore",
+    "Estrava",
+    "Falconi",
+    "Gravis",
+    "Halden",
+    "Ivora",
+    "Jorvik",
+    "Kestra",
+    "Lombra",
+    "Mirelli",
+    "Nortavia",
+    "Ostrava",
+    "Pelmar",
+    "Quintor",
+    "Rivalta",
+    "Savona",
+    "Tavira",
+    "Umbria",
+    "Valdor",
+    "Westrel",
+    "Xantos",
+    "Ysera",
+    "Zentro",
+    "Corvane",
+    "Belmonte",
+    "Aurelio",
+    "Siroco"
+  ],
+  "industryWords": {
+    "Logistics": [
+      "Freight",
+      "Cargo",
+      "Logistics",
+      "Transport"
+    ],
+    "Construction": [
+      "Builders",
+      "Construction",
+      "Cement",
+      "Group"
+    ],
+    "Energy": [
+      "Energy",
+      "Power",
+      "Solar"
+    ],
+    "Food": [
+      "Foods",
+      "Pasta",
+      "Dairy",
+      "Bakery"
+    ],
+    "Beverages": [
+      "Drinks",
+      "Water",
+      "Coffee"
+    ],
+    "Banking": [
+      "Bank",
+      "Capital",
+      "Finance"
+    ],
+    "Insurance": [
+      "Insurance",
+      "Assurance"
+    ],
+    "Technology": [
+      "Tech",
+      "Systems",
+      "Digital",
+      "Software"
+    ],
+    "Tools": [
+      "Tools",
+      "Tooling"
+    ],
+    "Automotive parts": [
+      "Parts",
+      "Components",
+      "Brakes"
+    ],
+    "Fashion": [
+      "Apparel",
+      "Wear",
+      "Eyewear"
+    ],
+    "Real estate": [
+      "Properties",
+      "Homes"
+    ],
+    "Telecommunications": [
+      "Telecom",
+      "Networks"
+    ],
+    "Media": [
+      "Media",
+      "TV",
+      "Radio"
+    ],
+    "Hospitality": [
+      "Hotels",
+      "Resorts"
+    ],
+    "Chemicals": [
+      "Chemicals",
+      "Coatings",
+      "Paints"
+    ],
+    "Agriculture": [
+      "Agro",
+      "Farms"
+    ],
+    "Retail": [
+      "Stores",
+      "Market"
+    ]
+  }
+}

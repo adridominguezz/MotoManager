@@ -372,6 +372,10 @@ namespace MotoManager.Core.Data
         public double SafetyReserveFraction = 0.15;
         /// <summary>Expected crashes per rider and event (for forecasts of repair costs).</summary>
         public double ExpectedCrashesPerRiderEvent = 0.3;
+        /// <summary>Season value of a typical sponsor deal for a mid-field team (sizes the invented sponsor market).</summary>
+        public double TypicalSponsorDeal = 500000;
+        /// <summary>Most sponsor deals a team can hold at once.</summary>
+        public int SponsorSlots = 3;
         public string DataConfidence = "estimated";
     }
 }

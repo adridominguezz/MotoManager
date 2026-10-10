@@ -181,7 +181,7 @@ namespace MotoManager.Core.Career
         {
             double typical = rules != null ? rules.Economy.TypicalRiderSalary : 100000;
             if (typical <= 0) return 0;
-            return Math.Round(typical * Math.Exp((r.Reputation - 55) / 15.0) / 1000) * 1000;
+            return Math.Round(typical * Math.Exp((r.Reputation - 55) / 20.0) / 1000) * 1000;
         }
 
         /// <summary>

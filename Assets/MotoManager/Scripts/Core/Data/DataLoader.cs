@@ -94,11 +94,12 @@ namespace MotoManager.Core.Data
         public const string Development = "development";
         public const string Simulation = "simulation";
         public const string Organisations = "organisations";
+        public const string SponsorNames = "sponsornames";
 
         public static readonly string[] AllFolders =
         {
             Championships, Categories, Rules, BikeClasses, Circuits, Calendar, Manufacturers, Motorcycles, Teams,
-            Riders, Contracts, Staff, Sponsors, Names, Development, Simulation, Organisations
+            Riders, Contracts, Staff, Sponsors, Names, Development, Simulation, Organisations, SponsorNames
         };
 
         public static GameDatabase Load(IDataSource source)
@@ -123,6 +124,7 @@ namespace MotoManager.Core.Data
             LoadInto(source, Development, serializer, (DevelopmentTemplate x) => db.DevelopmentTemplates[x.Id] = x);
             LoadInto(source, Simulation, serializer, (SimulationTuning x) => db.Tuning = x);
             LoadInto(source, Organisations, serializer, (Organisation x) => db.Organisations[x.Id] = x);
+            LoadInto(source, SponsorNames, serializer, (SponsorNameParts x) => db.SponsorNames = x);
             return db;
         }
 

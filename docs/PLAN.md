@@ -306,6 +306,32 @@ Orden: E1 → E2 → M1 → E3 → E4 → 8.4 → E5 → M2 → E6 → E7 → 8.
 - Pendiente para E2b: los ingresos siguen muy por debajo de los costes (unos −1,2 a −2 M por equipo y temporada
   en las categorías inferiores), porque el mercado de patrocinadores es muy pequeño (33 para unos 70 equipos).
 
+### Sesión E2b — Mercado de patrocinadores y objetivos comunes ✅
+- `ConditionEvaluator`: un único evaluador de resultados (top N, victorias, podios, poles, vueltas rápidas,
+  puntos, posición en el campeonato), usado por los patrocinadores y preparado para las cláusulas de E4 y los
+  objetivos del manager en E5.
+- `SponsorMarket`:
+  - Los patrocinadores hacen ofertas tras los eventos y sobre todo en invierno. Las ofertas caducan y **no son
+    dinero** hasta firmarse.
+  - La IA decide con las mismas reglas que el jugador.
+  - El jugador puede aceptar, rechazar o pedir un +10 %. El patrocinador puede aceptar, mantener la oferta o
+    retirarla; la respuesta es determinista.
+- Condiciones de los contratos de patrocinio:
+  - Prima de firma, que se paga una sola vez.
+  - Pagos por ronda.
+  - Patrocinio condicionado a una categoría: no paga hasta que se cumple la condición.
+  - Exclusividad por sector y número máximo de patrocinadores por equipo.
+  - Recorte del pago si no se cumplen los objetivos.
+  - Renovaciones según la satisfacción del patrocinador y el valor actual de mercado del equipo.
+- Preferencia de categoría con pesos (decisión aprobada). Los objetivos se ajustan a lo que el equipo puede
+  lograr: a un equipo modesto no se le exige ganar el título.
+- Mercado completado con **marcas inventadas** (nombres de datos ficticios, marcadas `Generated` y «fictional»)
+  y renovado cada invierno. Las marcas reales siguen viniendo de los datos.
+- Calibración: la curva de salarios que piden los pilotos se suaviza; 10 temporadas sin inflación de ingresos.
+  Media por equipo entre −0,1 y −0,8 M en las categorías inferiores (incluidos los oficiales); MotoGP −5 M,
+  que cubren los fabricantes.
+- Pantalla de patrocinio con los contratos, su estado y las ofertas con sus acciones (ES/EN). 46 tests en verde.
+
 ## Pendiente de especificación
 
 Recibidas las secciones 49–105; ver la Fase 8.

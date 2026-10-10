@@ -215,6 +215,11 @@ namespace MotoManager.Core.World
         public List<string> FreeAgentPool = new List<string>();
         public Dictionary<string, Organisation> Organisations = new Dictionary<string, Organisation>();
         public FinanceState Finance = new FinanceState();
+        /// <summary>Sponsors invented during the game to keep the market alive (real ones live in the database).</summary>
+        public Dictionary<string, SponsorTemplate> Sponsors = new Dictionary<string, SponsorTemplate>();
+        public List<SponsorOffer> SponsorOffers = new List<SponsorOffer>();
+        /// <summary>Events completed since the world began (clock for offer deadlines).</summary>
+        public int EventsCompleted;
 
         public string NewId(string prefix)
         {

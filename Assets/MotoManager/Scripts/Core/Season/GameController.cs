@@ -137,6 +137,8 @@ namespace MotoManager.Core.Season
             DevelopmentService.Advance(World, Db, days, rng);
             ScoutingService.AfterRound(World, Db);
             World.NextRound[ev.Plan.Group] = ev.Plan.RoundIndex + 1;
+            World.EventsCompleted++;
+            SponsorMarket.AfterEvent(World, Db, rng);
             World.LastEventDate = ev.Plan.Round.Date;
         }
 
@@ -192,30 +194,15 @@ namespace MotoManager.Core.Season
                     if (weekend.CrashesByRider.TryGetValue(id, out c)) crashes += c;
                 }
                 double prize = 0;
-                int best = 0, podiums = 0, wins = 0;
                 foreach (var session in weekend.Result.Sessions)
                 {
-                    if (session.Type == SessionType.Race) FinanceService.PayRaceBonuses(World, team, session.Classification);
-                    if (session.Type != SessionType.Race && session.Type != SessionType.Sprint) continue;
+                    if (session.Type != SessionType.Race) continue;
+                    FinanceService.PayRaceBonuses(World, team, session.Classification);
                     foreach (var e in session.Classification)
-                    {
-                        if (e.TeamId != team.Id || e.Status != ResultStatus.Finished) continue;
-                        if (session.Type == SessionType.Race)
-                        {
-                            if (e.Position - 1 < rules.Economy.PrizeMoneyByPosition.Count) prize += rules.Economy.PrizeMoneyByPosition[e.Position - 1];
-                            if (best == 0 || e.Position < best) best = e.Position;
-                            if (e.Position <= 3) podiums++;
-                            if (e.Position == 1) wins++;
-                        }
-                    }
+                        if (e.TeamId == team.Id && e.Status == ResultStatus.Finished && e.Position - 1 < rules.Economy.PrizeMoneyByPosition.Count)
+                            prize += rules.Economy.PrizeMoneyByPosition[e.Position - 1];
                 }
-                var nats = new List<string>();
-                foreach (var id in team.RiderIds)
-                {
-                    var r = World.GetRider(id);
-                    if (r != null) nats.Add(r.Nationality);
-                }
-                double bonus = SponsorService.EvaluateRace(team, best, podiums, wins, nats);
+                double bonus = SponsorService.EvaluateRace(World, team, ConditionEvaluator.TeamRace(weekend.Result, team.Id));
                 FinanceService.ApplyRound(World, Db, team, rounds, rules, crashes, prize, bonus);
             }
         }

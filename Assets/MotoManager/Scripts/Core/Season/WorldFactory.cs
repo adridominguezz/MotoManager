@@ -78,7 +78,6 @@ namespace MotoManager.Core.Season
                 }
                 if (cat != null && cat.IsCup) continue;
                 StaffService.EnsureStaff(world, db, team, rng, cat != null ? cat.Prestige / 100.0 : 0.5);
-                SponsorService.EnsureSponsors(world, db, team, cat, rng);
             }
 
             SetupCalendars(world, db, options.StartSeason);
@@ -87,6 +86,8 @@ namespace MotoManager.Core.Season
                 if (cat.Simulated) world.Championships[cat.Id] = new ChampionshipState { CategoryId = cat.Id, Season = options.StartSeason };
 
             TeamAI.EnsureAll(world, db);
+            SponsorMarket.EnsurePool(world, db, rng);
+            SponsorMarket.InitialDeals(world, db, rng);
             if (options.PlayerTeamId != null) SetPlayerTeam(world, options.PlayerTeamId);
             InitialKnowledge(world);
             world.AddNews("Season " + options.StartSeason + " begins", "The " + options.StartSeason + " grids are set.", null, true);

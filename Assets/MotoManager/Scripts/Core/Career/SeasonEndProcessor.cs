@@ -57,6 +57,9 @@ namespace MotoManager.Core.Career
 
             DevelopmentService.WinterDevelopment(world, db, rng);
             summary.Market = TransferMarket.Run(world, db, rng);
+            // Winter sponsor approaches for next season (AI teams decide straight away, the player has time).
+            SponsorMarket.AfterEvent(world, db, rng, true);
+            SponsorMarket.AfterEvent(world, db, rng, true);
 
             // Riders who found no seat may give up.
             foreach (var r in SortedRiders(world))
@@ -77,6 +80,7 @@ namespace MotoManager.Core.Career
             RollOver(world, db);
             TransferMarket.RebuildRosters(world);
             AssignSeasonBudgets(world, db);
+            SponsorMarket.SeasonRefresh(world, db, rng);
             TeamAI.EnsureAll(world, db);
             TeamAI.SetObjectives(world, db);
             return summary;
@@ -153,7 +157,7 @@ namespace MotoManager.Core.Career
                             points = table[i].Points;
                         }
                 }
-                double bonus = SponsorService.EndOfSeason(world, db, team, cat, points, pos, rng);
+                double bonus = SponsorService.EndOfSeason(world, db, team, cat, ConditionEvaluator.TeamSeason(champ != null && champ.Season == world.Season ? champ : null, team.Id), rng);
                 Accounts.Post(world, team, LedgerKind.SponsorBonus, bonus, "Season objectives");
                 if (pos > 0)
                 {

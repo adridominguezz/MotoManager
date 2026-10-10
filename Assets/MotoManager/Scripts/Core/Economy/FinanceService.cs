@@ -31,7 +31,7 @@ namespace MotoManager.Core.Economy
                 Riders = team.RiderIds.Count,
                 RiderSalaries = FinanceService.RiderSalaries(world, team),
                 StaffSalaries = FinanceService.StaffSalaries(world, team),
-                SponsorIncome = FinanceService.SponsorIncomePerSeason(team)
+                SponsorIncome = FinanceService.SponsorIncomePerSeason(world, team)
             };
             foreach (FacilityType f in Enum.GetValues(typeof(FacilityType)))
             {
@@ -94,10 +94,12 @@ namespace MotoManager.Core.Economy
             return total;
         }
 
-        public static double SponsorIncomePerSeason(Team team)
+        /// <summary>Season payments of the deals that pay this season (conditional deals only once their condition holds).</summary>
+        public static double SponsorIncomePerSeason(WorldState world, Team team)
         {
             double total = 0;
-            foreach (var d in team.Sponsors) total += d.PaymentPerSeason;
+            foreach (var d in team.Sponsors)
+                if (SponsorService.Pays(d, team, world.Season)) total += d.PaymentPerSeason;
             return total;
         }
 

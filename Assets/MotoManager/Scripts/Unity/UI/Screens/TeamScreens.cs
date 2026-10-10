@@ -326,29 +326,36 @@ namespace MotoManager.App.UI.Screens
             UiFactory.TableRow(list, 40, w, new[] { "Travel", "-" + MathX.FormatMoney(f.Travel) });
             UiFactory.TableRow(list, 44, w, new[] { "<b>Balance before prizes and bonuses</b>", "<b>" + (f.Balance >= 0 ? "" : "<color=#E10600>") + MathX.FormatMoney(f.Balance) + (f.Balance >= 0 ? "" : "</color>") + "</b>" });
 
-            UiFactory.Heading(list, "Sponsors");
-            var sw = new[] { 3f, 1f, 2f, 1.5f, 1.5f, 5f };
-            UiFactory.TableRow(list, 38, sw, new[] { "Sponsor", "Tier", "Per season", "Until", "Mood", "Objectives" }, true);
+            UiFactory.Heading(list, Loc.T("sponsor.deals", SponsorService.DealsIn(team, world.Season), SponsorService.Slots(Game.Db, team, world.Season)));
+            var sw = new[] { 3f, 2f, 2f, 1.5f, 1.2f, 5f };
+            UiFactory.TableRow(list, 38, sw, new[] { Loc.T("sponsor.col.sponsor"), Loc.T("sponsor.col.perSeason"), Loc.T("sponsor.col.status"), Loc.T("sponsor.col.until"), Loc.T("sponsor.col.mood"), Loc.T("sponsor.col.objectives") }, true);
             foreach (var d in team.Sponsors)
-                UiFactory.TableRow(list, 44, sw, new[] { d.Name, d.Tier.ToString(), MathX.FormatMoney(d.PaymentPerSeason), d.EndSeason.ToString(), d.Satisfaction.ToString("0"), Objectives(d.Objectives) });
-
-            int slots = 4 - team.Sponsors.Count;
-            var cat = Game.Db.GetCategory(team.CategoryId);
-            if (slots > 0 && cat != null && !cat.IsCup)
             {
-                UiFactory.Heading(list, "Available sponsors  <color=#9AA4B2>(" + slots + " free slots)</color>");
-                foreach (var s in SponsorService.Available(world, Game.Db, team, cat))
-                {
-                    var template = s;
-                    var row = UiFactory.TableRow(list, 44, sw, new[] { s.Name + " <color=#9AA4B2>" + s.Industry + "</color>", s.Tier.ToString(), MathX.FormatMoney(SponsorService.ValueFor(s, team, cat)), s.ContractSeasons + "y", "", Objectives(s.Objectives) });
-                    var b = UiFactory.Button("Sign", row, "Sign", () =>
-                    {
-                        SponsorService.Sign(world, team, template, cat, null);
-                        Shell.Toast(template.Name + " signed");
-                        Shell.Refresh();
-                    }, Theme.Accent, Theme.FontSmall - 4);
-                    UiFactory.Place((RectTransform)b.transform, 0.9f, 0.08f, 1f, 0.92f);
-                }
+                string status = d.StartSeason > world.Season ? Loc.T("sponsor.fromSeason", d.StartSeason)
+                    : !SponsorService.Pays(d, team, world.Season) ? Loc.T("sponsor.conditional", d.RequiredCategoryId) : Loc.T("sponsor.active");
+                UiFactory.TableRow(list, 44, sw, new[] { d.Name + " <color=#9AA4B2>" + d.Industry + "</color>", MathX.FormatMoney(d.PaymentPerSeason), status, d.EndSeason.ToString(), d.Satisfaction.ToString("0"), Objectives(d.Objectives) });
+            }
+
+            // Offers are not money until accepted.
+            var offers = SponsorMarket.OffersFor(world, team);
+            UiFactory.Heading(list, Loc.T("sponsor.offers", offers.Count));
+            if (offers.Count == 0) UiFactory.Paragraph(list, "<color=#9AA4B2>" + Loc.T("sponsor.noOffers") + "</color>", Theme.FontSmall);
+            var ow = new[] { 3f, 2f, 2f, 1.5f, 1.2f, 5f };
+            if (offers.Count > 0)
+                UiFactory.TableRow(list, 38, ow, new[] { Loc.T("sponsor.col.sponsor"), Loc.T("sponsor.col.perSeason"), Loc.T("sponsor.col.signing"), Loc.T("sponsor.col.seasons"), Loc.T("sponsor.col.expires"), Loc.T("sponsor.col.objectives") }, true);
+            foreach (var o in offers)
+            {
+                var offer = o;
+                string terms = Objectives(o.Objectives);
+                if (o.PenaltyOnMiss > 0) terms += " · " + Loc.T("sponsor.penalty", (o.PenaltyOnMiss * 100).ToString("0"));
+                if (o.IndustryExclusive) terms += " · " + Loc.T("sponsor.exclusive");
+                UiFactory.TableRow(list, 44, ow, new[] { o.Name + " <color=#9AA4B2>" + o.Industry + (o.Renewal ? " · " + Loc.T("sponsor.renewal") : "") + "</color>",
+                    MathX.FormatMoney(o.PaymentPerSeason), MathX.FormatMoney(o.SigningBonus), o.StartSeason + (o.Seasons > 1 ? "–" + (o.StartSeason + o.Seasons - 1) : ""),
+                    Loc.T("sponsor.events", Math.Max(0, o.ExpiresAfterEvent - world.EventsCompleted + 1)), terms });
+                UiFactory.ButtonRow(list, 52,
+                    UiFactory.Act(Loc.T("sponsor.accept"), () => { Shell.Toast(SponsorMarket.Accept(world, Game.Db, offer.Id).Message); Shell.Refresh(); }),
+                    UiFactory.Act(Loc.T("sponsor.counter"), () => { Shell.Toast(SponsorMarket.Counter(world, Game.Db, offer.Id, 0.1).Message); Shell.Refresh(); }),
+                    UiFactory.Act(Loc.T("sponsor.reject"), () => { Shell.Toast(SponsorMarket.Reject(world, offer.Id).Message); Shell.Refresh(); }));
             }
         }
 
