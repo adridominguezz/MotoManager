@@ -306,3 +306,92 @@ Consecuencias para el plan:
 - El mercado deja de ejecutarse solo al final de temporada. La IA lo evalúa **tras cada evento**: renovaciones anticipadas, precontratos, sustituciones a mitad de temporada (lesión, despido, fichaje) y traspasos inmediatos con compensación. La cascada de fin de temporada se queda solo para cubrir las plazas que sigan vacías.
 - Los cambios a mitad de temporada mueven los puntos del piloto con él (puntos de piloto) y los dejan en el equipo (puntos de equipo). Las inscripciones del siguiente evento se reconstruyen.
 - Hace falta un límite por reglamento en los datos (por ejemplo, número de sustituciones por temporada), si la categoría lo tiene.
+
+## 10. Respuestas del usuario (segunda ronda)
+
+- **Organización:** aprobada. La organización tiene el dinero; los equipos solo tienen un presupuesto asignado.
+- **Autonomía:** se incluyen los tres niveles (limitada, estándar, completa).
+- **Rookies Cup:** queda por concretar si se gestiona a uno o varios pilotos y cómo se cobra. No bloquea E1–E2.
+- **Nuevo sistema 9:** merchandising. Abajo, la auditoría y el plan.
+
+---
+
+## 11. Merchandising (Sistema 9): auditoría y plan
+
+### 11.1 Hechos observados
+
+- **No existe** nada de inventario, productos, tienda, afición ni ingresos comerciales. Las coincidencias de «production» en el código son de las motos de producción (Superbike), no tienen relación.
+- Lo que se puede reutilizar:
+  - `Team.Reputation` y `Rider.Reputation`; esta última se actualiza con los resultados en `RiderDevelopment`.
+  - `Manufacturer.Reputation`.
+  - `ChampionshipCategory.Prestige`.
+  - Los resultados de cada evento, en `GameController.ApplyEconomy`.
+  - Los títulos, en `WorldState.Champions`.
+  - `SponsorDeal`, para productos con marca de un patrocinador.
+  - El libro de movimientos que se crea en E1.
+- No hay tamaño de afición ni popularidad del piloto como valores separados de la reputación.
+
+### 11.2 Modelo propuesto
+
+**Datos** (`Resources/Data/merchandise/products.json`): plantillas de producto. Añadir productos nuevos es solo cuestión de datos. Cada plantilla tiene:
+
+- `Id` y `Type`: camiseta, sudadera, gorra, chaqueta, réplica de mono, réplica de casco, miniatura, modelo a escala, llavero, mochila, taza, póster, producto firmado, edición de campeonato o conmemorativa.
+- `Identity`: Team, Manufacturer o Rider.
+- `Segment`: Casual, Fan o Collector. Cada segmento tiene su propia sensibilidad al precio.
+- `BaseUnitCost`, `ReferencePrice`, `PriceRange` (precio mínimo y máximo permitidos), `Appeal`, `LimitedUnits` (opcional).
+- `Trigger` para ediciones especiales: victoria, título, fichaje estrella, presentación de moto o aniversario.
+- `MinOrder` y el descuento por volumen.
+
+**Estado:**
+
+- `Team.Fans`: tamaño de la afición. Evoluciona despacio con los resultados, la categoría y la reputación, y tiene un techo por categoría.
+- `Team.Hype`: interés temporal. Sube con victorias, títulos o un fichaje destacado y se disipa evento a evento.
+- `Rider.Popularity`: se calcula a partir de la reputación, los resultados recientes y la trayectoria. Así no se duplica la reputación.
+- `Team.Shop`: lista de `MerchItem`, cada uno con:
+  - `TemplateId` y `RiderId` (si es un producto de piloto).
+  - `Price`, `Status` (activo o retirado).
+  - `Stock` y `StockCost` (coste medio ponderado).
+  - Unidades vendidas en la temporada y en total, ingresos, coste de lo vendido y ventas perdidas.
+  - Las ventas por evento de la temporada, para la gráfica de evolución.
+
+**Demanda**, calculada por producto en cada evento:
+
+```
+Demanda = Audiencia(categoría) · Saturación(afición) · Atractivo · FactorPiloto · (1 + Hype) · Elasticidad(precio / precio de referencia)
+```
+
+- Saturación = afición / (afición + K). Crece con la fama, pero con rendimiento decreciente.
+- Elasticidad = (precio / referencia)^(−e). El exponente e depende del segmento: los coleccionistas son menos sensibles al precio. Además hay un límite superior, para que un precio de saldo no dé ventas ilimitadas.
+- Ventas = mínimo(existencias, demanda × ruido determinista). Lo que falta se registra como venta perdida.
+
+**Contabilidad**, usando el libro de E1, que distingue los movimientos de caja de los que solo cuentan para pérdidas y ganancias:
+
+| Operación | Caja | Pérdidas y ganancias |
+|---|---|---|
+| Pedido de existencias | − coste total | (ninguno: aumenta el valor del inventario) |
+| Venta | + ingresos | + ingresos, − coste de lo vendido (calculado con el coste medio) |
+| Gastos comerciales (operar la tienda, distribución por unidad) | − | − |
+| Liquidación con descuento | + ingresos | Pérdida si el precio es menor que el coste |
+| Fin de temporada | — | El inventario sigue siendo un activo con su coste; no desaparece ni se convierte en ingreso |
+
+- Todo el dinero va a la caja de la **organización**, anotado con el `TeamId` del equipo. Los informes se ven por equipo y consolidados.
+- Los productos de fabricante en equipos oficiales pagan un *royalty* al fabricante, que es un coste, no un ingreso del equipo.
+- Los productos de piloto respetan los derechos de imagen de su contrato: un porcentaje de los ingresos para el piloto. Si el contrato no lo permite, el producto no está disponible. Los contratos del snapshot 2026 llevan una cláusula estándar.
+- La previsión de ingresos por merchandising nunca cuenta como ingreso confirmado en la viabilidad (E2). Solo cuenta como probable.
+
+**IA:** los equipos de la IA usan el mismo modelo, con una política automática: precio de referencia y reposición según la demanda prevista. Así no hay asimetría con el jugador y su dinero sigue siendo coherente.
+
+### 11.3 Fases
+
+| Fase | Contenido | Depende de | Aceptación |
+|---|---|---|---|
+| **M1. Tienda básica** (después de E2) | Catálogo en datos, precios con límites, pedidos de existencias con previsión (coste, cobertura, caja restante, riesgo de exceso), demanda, ventas, ventas perdidas, inventario valorado, informes por equipo y consolidados, política de la IA, `Fans`/`Hype`/`Popularity` | E1 (libro con caja y pérdidas y ganancias), E2 (previsión) | Escenarios del §57: equipo desconocido, equipo popular, precio excesivo, precio por debajo del coste, victoria que dispara el interés, falta y exceso de existencias, pedido que deja poca liquidez, cambio de precio que cambia la previsión; recargar no duplica nada |
+| **M2. Comercial avanzado** (después de E4/E5) | Productos de piloto con derechos de imagen, ediciones especiales ligadas a hechos reales de la partida, campañas con coste y previsión, productos con patrocinador, producción compartida entre equipos de una organización (descuento por volumen sin duplicar costes) | E4 (cláusulas), M1 | Piloto popular con productos propios; organización con varios equipos; campaña no rentable posible |
+
+### 11.4 Impacto en E1
+
+El libro de movimientos de E1 incluye desde el principio dos indicadores por movimiento: si afecta a la caja y si afecta a pérdidas y ganancias. Así la inversión en existencias y el coste de lo vendido entran en el libro sin rehacerlo después.
+
+### 11.5 Orden general actualizado
+
+**E1 → E2 → M1 → E3 → E4 → 8.4 → E5 → M2 → E6 → E7 → 8.6–8.8**
