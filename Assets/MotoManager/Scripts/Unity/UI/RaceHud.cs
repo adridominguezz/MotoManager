@@ -322,16 +322,19 @@ namespace MotoManager.App.UI
             var cam = _view.Cam.Camera;
             if (cam == null) return;
             var canvasRect = _root.rect;
+            float sx = canvasRect.width / Screen.width, sy = canvasRect.height / Screen.height;
             for (int i = 0; i < _tags.Count; i++)
             {
-                var bike = _view.Bikes[i].transform;
-                var screen = cam.WorldToScreenPoint(bike.position + Vector3.up * 3f * bike.localScale.y);
-                bool visible = screen.z > 0 && _view.Bikes[i].Body.gameObject.activeSelf;
+                var bike = _view.Bikes[i];
+                var r = bike.State;
+                // Far view: only the player's riders and the followed one keep a label (the dots carry the colours).
+                bool wanted = bike.Visible && (!bike.ShowingMarker || r.Entry.IsPlayer || i == _view.SelectedRider);
+                var screen = cam.WorldToScreenPoint(bike.transform.position + Vector3.up * (bike.ShowingMarker ? 0f : 3f * bike.transform.localScale.y));
+                bool visible = wanted && screen.z > 0;
                 if (_tags[i].enabled != visible) _tags[i].enabled = visible;
                 if (!visible) continue;
                 // Screen -> canvas units (the canvas scales with the screen).
-                float sx = canvasRect.width / Screen.width, sy = canvasRect.height / Screen.height;
-                _tags[i].rectTransform.anchoredPosition = new Vector2(screen.x * sx, screen.y * sy + 14);
+                _tags[i].rectTransform.anchoredPosition = new Vector2(screen.x * sx, screen.y * sy + (bike.ShowingMarker ? 30 : 14));
             }
         }
 

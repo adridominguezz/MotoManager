@@ -501,6 +501,26 @@ namespace MotoManager.Core.Race
             EvaluateGeometric(ToGeometric(distance), lateral, out x, out y, out heading);
         }
 
+        private double[] _tangent;
+
+        /// <summary>Direction of travel at sample k (central difference over the closed loop).</summary>
+        private double Tangent(int k)
+        {
+            if (_tangent == null)
+            {
+                int last = X.Length - 1; // sample 'last' coincides with sample 0
+                var tan = new double[X.Length];
+                for (int j = 0; j < last; j++)
+                {
+                    int a = j == 0 ? last - 1 : j - 1, b = j + 1;
+                    tan[j] = Math.Atan2(Y[b] - Y[a], X[b] - X[a]);
+                }
+                tan[last] = tan[0];
+                _tangent = tan;
+            }
+            return _tangent[k];
+        }
+
         public void EvaluateGeometric(double g, double lateral, out double x, out double y, out double heading)
         {
             g %= GeometricLength;
@@ -512,9 +532,12 @@ namespace MotoManager.Core.Race
             double t = f - i;
             x = X[i] + (X[i + 1] - X[i]) * t;
             y = Y[i] + (Y[i + 1] - Y[i]) * t;
-            double dx = X[i + 1] - X[i];
-            double dy = Y[i + 1] - Y[i];
-            heading = Math.Atan2(dy, dx);
+            // Tangents blended between samples so offset lines (kerbs, edges, bikes) stay smooth through corners.
+            double h0 = Tangent(i), h1 = Tangent(i + 1);
+            double dh = h1 - h0;
+            while (dh > Math.PI) dh -= 2 * Math.PI;
+            while (dh < -Math.PI) dh += 2 * Math.PI;
+            heading = h0 + dh * t;
             if (lateral != 0)
             {
                 x += -Math.Sin(heading) * lateral;

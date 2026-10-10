@@ -476,10 +476,15 @@ namespace MotoManager.Tools
             sb.Append($"<svg xmlns='http://www.w3.org/2000/svg' width='{w + 330:0}' height='{Math.Max(h, 760):0}' font-family='sans-serif'>");
             sb.Append($"<rect width='100%' height='100%' fill='#34603a'/>");
             sb.Append(TrackSvg(t, g, ox, oy, k, true));
+            // Racing line drawn by the renderer (bikes follow it, plus the simulation's own offset).
+            var line = new RacingLine(g, 6);
+            var linePts = new List<string>();
+            for (double d = 0; d <= t.Length; d += 4) linePts.Add(Pt(g, d, line.OffsetAt(d), ox, oy, k));
+            sb.Append($"<polyline points='{string.Join(" ", linePts)}' fill='none' stroke='#f0b428' stroke-width='1.2' stroke-dasharray='4 3'/>");
             var ordered = sim.Riders.OrderBy(r => r.Position).ToList();
             foreach (var r in sim.Riders)
             {
-                double lat = r.Status == RaceStatus.InPitLane ? g.Orientation * PitLat(r.PitProgress / t.PitLaneLength) : r.LateralOffset * 6;
+                double lat = r.Status == RaceStatus.InPitLane ? g.Orientation * PitLat(r.PitProgress / t.PitLaneLength) : Math.Max(-5.5, Math.Min(5.5, line.OffsetAt(r.Distance) + r.LateralOffset * 6));
                 var p = Pt(g, r.Distance, lat, ox, oy, k).Split(',');
                 string col = r.Entry.Team.Colors.Primary;
                 string label = r.Entry.Rider.Number.ToString();

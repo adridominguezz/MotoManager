@@ -10,7 +10,8 @@ namespace MotoManager.App.UI
 {
     /// <summary>
     /// Pit-wall card for one of the player's riders: position and gaps, tire wear/temperature, fuel, and the
-    /// orders that can be given during the race (pace, attitude, pit stop, hand over to the engineer).
+    /// orders that can be given during the race (pace, attitude, hand over to the engineer). There is no pit call:
+    /// in bike racing riders only come in on their own for a flag-to-flag bike swap or a penalty.
     /// Every order goes through the simulation's command queue, so it is logged and replayable.
     /// </summary>
     public class RiderCommandPanel
@@ -25,10 +26,7 @@ namespace MotoManager.App.UI
         private readonly Image _rearBar;
         private readonly List<Image> _paceButtons = new List<Image>();
         private readonly List<Image> _modeButtons = new List<Image>();
-        private readonly Text _pitLabel;
-        private readonly Image _pitButton;
         private readonly Image _autoButton;
-        private TireCompound _pitCompound;
 
         private static readonly PaceMode[] Paces = { PaceMode.Conserve, PaceMode.Balanced, PaceMode.Push };
         private static readonly RiderMode[] Modes = { RiderMode.Defend, RiderMode.Balanced, RiderMode.Attack };
@@ -38,7 +36,6 @@ namespace MotoManager.App.UI
             _view = view;
             _rider = rider;
             var rules = view.Sim.Rules;
-            _pitCompound = rules.Tires.Has(TireCompound.Rain) ? TireCompound.Rain : TireCompound.Intermediate;
 
             var bg = UiFactory.Panel("Rider " + rider.Entry.Rider.Code, parent, new Color(0.06f, 0.07f, 0.09f, 0.88f));
             UiFactory.Stretch(bg.rectTransform);
@@ -58,7 +55,7 @@ namespace MotoManager.App.UI
             _fuel = UiFactory.Label("Fuel", root, "", Theme.FontSmall - 2, TextAnchor.MiddleLeft, Theme.TextDim);
             UiFactory.Place(_fuel.rectTransform, 0.03f, 0.5f, 0.97f, 0.6f);
 
-            string[] paceLabels = { "Save", "Normal", "Push" };
+            string[] paceLabels = { Loc.T("cmd.pace.save"), Loc.T("cmd.pace.normal"), Loc.T("cmd.pace.push") };
             for (int i = 0; i < 3; i++)
             {
                 var pace = Paces[i];
@@ -66,7 +63,7 @@ namespace MotoManager.App.UI
                 UiFactory.Place((RectTransform)b.transform, 0.03f + i * 0.32f, 0.36f, 0.33f + i * 0.32f, 0.48f);
                 _paceButtons.Add(b.GetComponent<Image>());
             }
-            string[] modeLabels = { "Defend", "Normal", "Attack" };
+            string[] modeLabels = { Loc.T("cmd.mode.defend"), Loc.T("cmd.mode.normal"), Loc.T("cmd.mode.attack") };
             for (int i = 0; i < 3; i++)
             {
                 var mode = Modes[i];
@@ -75,17 +72,8 @@ namespace MotoManager.App.UI
                 _modeButtons.Add(b.GetComponent<Image>());
             }
 
-            bool canPit = rules.PitLane.AllowsBikeSwap || rules.PitLane.AllowsTireChange;
-            var pit = UiFactory.Button("Pit", root, "", TogglePit, Theme.PanelLight, Theme.FontSmall - 2);
-            UiFactory.Place((RectTransform)pit.transform, 0.03f, 0.03f, 0.6f, 0.19f);
-            _pitButton = pit.GetComponent<Image>();
-            _pitLabel = pit.GetComponentInChildren<Text>();
-            pit.interactable = canPit;
-            var compound = UiFactory.Button("Compound", root, "Tyre", CycleCompound, Theme.PanelLight, Theme.FontSmall - 2);
-            UiFactory.Place((RectTransform)compound.transform, 0.62f, 0.03f, 0.79f, 0.19f);
-            compound.interactable = canPit;
-            var auto = UiFactory.Button("Auto", root, "Auto", () => Send(new RaceCommand { Type = RaceCommandType.SetAutoManaged, Flag = !_rider.Entry.AutoManaged }), Theme.PanelLight, Theme.FontSmall - 2);
-            UiFactory.Place((RectTransform)auto.transform, 0.81f, 0.03f, 0.97f, 0.19f);
+            var auto = UiFactory.Button("Auto", root, Loc.T("cmd.auto"), () => Send(new RaceCommand { Type = RaceCommandType.SetAutoManaged, Flag = !_rider.Entry.AutoManaged }), Theme.PanelLight, Theme.FontSmall - 2);
+            UiFactory.Place((RectTransform)auto.transform, 0.03f, 0.03f, 0.97f, 0.19f);
             _autoButton = auto.GetComponent<Image>();
         }
 
@@ -106,27 +94,6 @@ namespace MotoManager.App.UI
             _view.Sim.Enqueue(command);
         }
 
-        private void TogglePit()
-        {
-            if (_rider.PitRequest != PitRequestType.None)
-            {
-                Send(new RaceCommand { Type = RaceCommandType.CancelPit });
-                return;
-            }
-            var rules = _view.Sim.Rules;
-            var type = rules.PitLane.AllowsBikeSwap ? PitRequestType.BikeSwap : PitRequestType.TireChange;
-            Send(new RaceCommand { Type = RaceCommandType.RequestPit, Pit = type, Compound = _pitCompound });
-        }
-
-        private void CycleCompound()
-        {
-            var list = _view.Sim.Rules.Tires.Compounds;
-            int idx = 0;
-            for (int i = 0; i < list.Count; i++)
-                if (list[i].Compound == _pitCompound) idx = i;
-            _pitCompound = list[(idx + 1) % list.Count].Compound;
-        }
-
         private static Color WearColor(TireState t)
         {
             switch (t.Condition)
@@ -143,13 +110,13 @@ namespace MotoManager.App.UI
         {
             var r = _rider;
             var sim = _view.Sim;
-            string status = r.Status == RaceStatus.Racing ? "P" + r.Position : r.Status.ToString().ToUpperInvariant();
+            string status = r.Status == RaceStatus.Racing ? "P" + r.Position : Loc.T("race.status." + r.Status);
             _header.text = "<b>" + r.Entry.Rider.Number + " " + r.Entry.Rider.ShortName + "</b>   " + status +
-                           (r.LastLapTime > 0 ? "   <color=#9AA4B2>last " + MathX.FormatLapTime(r.LastLapTime) + "</color>" : "");
+                           (r.LastLapTime > 0 ? "   <color=#9AA4B2>" + Loc.T("cmd.last", MathX.FormatLapTime(r.LastLapTime)) + "</color>" : "");
             var behind = sim.RiderAtPosition(r.Position + 1);
-            string ahead = r.Position > 1 && r.GapToAhead > 0 ? "ahead -" + r.GapToAhead.ToString("0.0") + "s" : "leading";
-            string back = behind != null && behind.Status == RaceStatus.Racing && behind.GapToAhead > 0 ? "behind +" + behind.GapToAhead.ToString("0.0") + "s" : "";
-            _gaps.text = ahead + "   " + back + (r.PendingLongLaps > 0 ? "   LONG LAP x" + r.PendingLongLaps : "");
+            string ahead = r.Position > 1 && r.GapToAhead > 0 ? Loc.T("cmd.ahead", r.GapToAhead.ToString("0.0", Loc.Culture)) : Loc.T("cmd.leading");
+            string back = behind != null && behind.Status == RaceStatus.Racing && behind.GapToAhead > 0 ? Loc.T("cmd.behind", behind.GapToAhead.ToString("0.0", Loc.Culture)) : "";
+            _gaps.text = ahead + "   " + back + (r.PendingLongLaps > 0 ? "   " + Loc.T("cmd.longLap", r.PendingLongLaps) : "");
 
             _tires.text = "F " + RaceHud.CompoundLetter(r.Front.Compound) + " " + (r.Front.Wear * 100).ToString("0") + "% " + r.Front.Temperature.ToString("0") + "°" +
                           "   R " + RaceHud.CompoundLetter(r.Rear.Compound) + " " + (r.Rear.Wear * 100).ToString("0") + "% " + r.Rear.Temperature.ToString("0") + "°";
@@ -159,12 +126,12 @@ namespace MotoManager.App.UI
             if (sim.Config.FuelLimitLitres > 0)
             {
                 double proj = sim.ProjectedFuelAtFinish(r);
-                _fuel.text = "Fuel " + r.Fuel.ToString("0.0") + " L" + (double.IsNaN(proj) ? "" : "   at flag " + proj.ToString("+0.0;-0.0") + " L");
+                _fuel.text = Loc.T("cmd.fuel", r.Fuel.ToString("0.0", Loc.Culture)) + (double.IsNaN(proj) ? "" : "   " + Loc.T("cmd.fuelAtFlag", proj.ToString("+0.0;-0.0", Loc.Culture)));
                 _fuel.color = !double.IsNaN(proj) && proj < 0.2 ? Theme.Accent : Theme.TextDim;
             }
             else
             {
-                _fuel.text = r.HasIssue ? "Technical problem" : "";
+                _fuel.text = r.HasIssue ? Loc.T("cmd.issue") : "";
             }
 
             for (int i = 0; i < 3; i++)
@@ -172,9 +139,6 @@ namespace MotoManager.App.UI
                 _paceButtons[i].color = r.Pace == Paces[i] ? Theme.Accent : Theme.PanelLight;
                 _modeButtons[i].color = r.Mode == Modes[i] ? Theme.Accent : Theme.PanelLight;
             }
-            bool pitting = r.PitRequest != PitRequestType.None;
-            _pitLabel.text = pitting ? "BOX ON! (" + RaceHud.CompoundLetter(r.PitCompound) + ") cancel" : "Box this lap -> " + RaceHud.CompoundLetter(_pitCompound);
-            _pitButton.color = pitting ? Theme.Warning : Theme.PanelLight;
             _autoButton.color = r.Entry.AutoManaged ? Theme.Good : Theme.PanelLight;
         }
 

@@ -16,17 +16,19 @@ namespace MotoManager.App.Race
 
         public TrackGeometry Geometry { get; private set; }
         public TrackModel Track { get; private set; }
+        /// <summary>The line the bikes follow (outside - apex - outside).</summary>
+        public RacingLine Line { get; private set; }
         /// <summary>+1: pit lane on the left of the direction of travel (inside of an anticlockwise loop).</summary>
         public int PitSide { get; private set; }
 
-        private static readonly Color32 Grass = new Color32(52, 96, 52, 255);
-        private static readonly Color32 GrassDark = new Color32(46, 86, 47, 255);
-        private static readonly Color32 Asphalt = new Color32(58, 60, 66, 255);
-        private static readonly Color32 AsphaltDark = new Color32(52, 54, 60, 255);
+        public static readonly Color32 Grass = new Color32(58, 104, 56, 255);
+        private static readonly Color32 Verge = new Color32(70, 122, 64, 255);
+        private static readonly Color32 Asphalt = new Color32(62, 64, 70, 255);
+        private static readonly Color32 EdgeLine = new Color32(225, 225, 225, 255);
         private static readonly Color32 KerbRed = new Color32(200, 30, 30, 255);
         private static readonly Color32 KerbWhite = new Color32(235, 235, 235, 255);
         private static readonly Color32 Gravel = new Color32(196, 176, 130, 255);
-        private static readonly Color32 Line = new Color32(240, 240, 240, 255);
+        private static readonly Color32 Paint = new Color32(240, 240, 240, 255);
         private static readonly Color32 PitAsphalt = new Color32(70, 72, 78, 255);
         private static readonly Color32 Wall = new Color32(170, 170, 175, 255);
         private static readonly Color32 Garage = new Color32(90, 96, 110, 255);
@@ -78,20 +80,16 @@ namespace MotoManager.App.Race
             var asphalt = new MeshBuilder();
             var details = new MeshBuilder();
 
-            // Grass (checkerboard of large tiles gives a sense of speed and scale).
-            float pad = 250;
+            Line = new RacingLine(Geometry, HalfWidth);
+
+            // One grass field, a lighter mown verge along the circuit (no tiles: they read as blocks from above).
+            float pad = 400;
             float minX = (float)Geometry.MinX - pad, maxX = (float)Geometry.MaxX + pad;
             float minZ = (float)Geometry.MinY - pad, maxZ = (float)Geometry.MaxY + pad;
-            float tile = 100;
-            for (float x = minX; x < maxX; x += tile)
-                for (float z = minZ; z < maxZ; z += tile)
-                {
-                    bool dark = ((int)((x - minX) / tile) + (int)((z - minZ) / tile)) % 2 == 0;
-                    ground.Quad(new Vector3(x, 0, z), new Vector3(x, 0, z + tile), new Vector3(x + tile, 0, z + tile), new Vector3(x + tile, 0, z), dark ? GrassDark : Grass);
-                }
+            ground.Quad(new Vector3(minX, 0, minZ), new Vector3(minX, 0, maxZ), new Vector3(maxX, 0, maxZ), new Vector3(maxX, 0, minZ), Grass);
 
-            // Tarmac ribbon.
-            double step = 4;
+            // Tarmac ribbon, verges and painted edge lines, sampled every 2 m with smooth tangents.
+            double step = 2;
             int n = Mathf.CeilToInt((float)(Geometry.GeometricLength / step));
             var left = new List<Vector3>(n + 1);
             var right = new List<Vector3>(n + 1);
@@ -101,7 +99,12 @@ namespace MotoManager.App.Race
                 left.Add(PointGeo(g, HalfWidth, 0.03f));
                 right.Add(PointGeo(g, -HalfWidth, 0.03f));
             }
-            asphalt.Strip(left, right, Asphalt, AsphaltDark, 6);
+            asphalt.Strip(left, right, Asphalt);
+            for (int side = -1; side <= 1; side += 2)
+            {
+                GeoStrip(ground, n, side * HalfWidth, side * (HalfWidth + 14), 0.01f, Verge);
+                GeoStrip(details, n, side * (HalfWidth - 0.25), side * (HalfWidth - 0.5), 0.045f, EdgeLine);
+            }
 
             // Kerbs and gravel traps on corners.
             foreach (var seg in track.Segments)
@@ -121,7 +124,7 @@ namespace MotoManager.App.Race
                 double b = a + 2 * HalfWidth / 8;
                 for (int row = 0; row < 2; row++)
                 {
-                    var col = (k + row) % 2 == 0 ? Line : new Color32(20, 20, 20, 255);
+                    var col = (k + row) % 2 == 0 ? Paint : new Color32(20, 20, 20, 255);
                     double d0 = track.Length - 1 + row, d1 = d0 + 1;
                     details.Quad(Point(d0, a, 0.06f), Point(d1, a, 0.06f), Point(d1, b, 0.06f), Point(d0, b, 0.06f), col);
                 }
@@ -131,7 +134,7 @@ namespace MotoManager.App.Race
                 int row = slot / 3, colIdx = slot % 3;
                 double d = track.Length - (8 + row * 9 + colIdx * 2.5);
                 double lat = (colIdx - 1) * 0.55 * HalfWidth;
-                details.Quad(Point(d - 0.15, lat - 1, 0.06f), Point(d + 0.15, lat - 1, 0.06f), Point(d + 0.15, lat + 1, 0.06f), Point(d - 0.15, lat + 1, 0.06f), Line);
+                details.Quad(Point(d - 0.15, lat - 1, 0.06f), Point(d + 0.15, lat - 1, 0.06f), Point(d + 0.15, lat + 1, 0.06f), Point(d - 0.15, lat + 1, 0.06f), Paint);
             }
 
             BuildPitLane(details);
@@ -140,6 +143,21 @@ namespace MotoManager.App.Race
             ground.ToObject("Ground", transform);
             asphalt.ToObject("Tarmac", transform);
             details.ToObject("Details", transform);
+        }
+
+        /// <summary>A strip all the way round the drawn loop between two lateral offsets.</summary>
+        private void GeoStrip(MeshBuilder mb, int n, double latA, double latB, float height, Color32 color)
+        {
+            var a = new List<Vector3>(n + 1);
+            var b = new List<Vector3>(n + 1);
+            for (int i = 0; i <= n; i++)
+            {
+                double g = Geometry.GeometricLength * i / n;
+                a.Add(PointGeo(g, latA, height));
+                b.Add(PointGeo(g, latB, height));
+            }
+            if (latA < latB) mb.Strip(b, a, color);
+            else mb.Strip(a, b, color);
         }
 
         /// <summary>A strip following the track between two lateral offsets, from distance a to b (wraps).</summary>

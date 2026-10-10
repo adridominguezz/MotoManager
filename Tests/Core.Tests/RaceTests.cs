@@ -156,6 +156,28 @@ namespace MotoManager.Tests
         }
 
         [Fact]
+        public void TheRacingLineStaysOnTrackAndApexesOnTheInside()
+        {
+            var db = TestData.Db;
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            int corners = 0, inside = 0;
+            foreach (var c in db.Circuits.Values)
+            {
+                var track = TrackModel.Get(c);
+                var line = new RacingLine(new TrackGeometry(track), 6);
+                for (double d = 0; d < track.Length; d += 3) Assert.InRange(Math.Abs(line.OffsetAt(d)), 0, line.Limit + 1e-9);
+                foreach (var seg in track.Segments)
+                {
+                    if (!seg.IsCorner || Math.Abs(seg.AngleDeg) < 60) continue;
+                    corners++;
+                    if (line.OffsetAt(seg.Start + seg.Length * 0.5) * Math.Sign(seg.AngleDeg) > 0) inside++;
+                }
+            }
+            _out.WriteLine(inside + "/" + corners + " apexes inside, " + sw.ElapsedMilliseconds + " ms for all circuits");
+            Assert.True(inside > corners * 0.8, inside + "/" + corners);
+        }
+
+        [Fact]
         public void IncidentFuelAndTireRatesAreRealistic()
         {
             int races = 10, crashes = 0, failures = 0, finishers = 0, outOfFuel = 0, overtakes = 0;

@@ -31,6 +31,8 @@ namespace MotoManager.App.Race
         public RaceReplay Replay { get; private set; }
         public bool IsReplay { get; private set; }
         private const int MaxStepsPerFrame = 600;
+        /// <summary>Camera distance beyond which riders are drawn as dots.</summary>
+        public const float MarkerDistance = 260f;
 
         public static RaceView Create(RaceSimulation sim, string title, Action<RaceSimulation> onClosed)
         {
@@ -120,7 +122,9 @@ namespace MotoManager.App.Race
             }
             float alpha = Sim.IsFinished ? 1f : Mathf.Clamp01((float)(_accumulator / step));
 
-            float scale = Mathf.Clamp(Cam.Distance / 55f, 1f, 7f);
+            // Far away the bikes become dots (constant size on screen); close up, real bikes.
+            bool markers = Cam.Distance > MarkerDistance;
+            float scale = markers ? Cam.Distance * 0.012f : Mathf.Clamp(Cam.Distance / 55f, 1f, 4f);
             double length = Sim.Track.Length;
             for (int i = 0; i < Bikes.Count; i++)
             {
@@ -129,7 +133,7 @@ namespace MotoManager.App.Race
                 if (delta < -length * 0.5) delta += length;
                 if (delta > length * 0.5) delta -= length;
                 double d = r.PrevDistance + delta * alpha;
-                Bikes[i].UpdateVisual(Track, d, dt, scale);
+                Bikes[i].UpdateVisual(Track, d, dt, scale, markers, Sim.Time, i == SelectedRider);
             }
 
             if (Sim.IsFinished && !_resultsShown && !IsReplay)

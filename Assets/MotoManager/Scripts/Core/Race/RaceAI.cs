@@ -20,7 +20,7 @@ namespace MotoManager.Core.Race
 
         public void OnLap(RiderRaceState r)
         {
-            if (!r.Entry.AutoManaged || r.Status != RaceStatus.Racing) return;
+            if (r.Status != RaceStatus.Racing) return;
             int lapsLeft = _sim.TotalLaps - r.Lap;
             var a = r.Entry.Rider.Attributes;
 
@@ -49,7 +49,10 @@ namespace MotoManager.Core.Race
             else r.Mode = RiderMode.Balanced;
         }
 
-        /// <summary>Called a few times per second: weather reaction (pit for wets / slicks).</summary>
+        /// <summary>
+        /// Called a few times per second: flag-to-flag reaction to the weather (swap bikes for wets / slicks where the
+        /// rules allow it). Riders decide this themselves on track, the player's included: there is no pit call.
+        /// </summary>
         public void Periodic()
         {
             var rules = _sim.Rules;
@@ -59,7 +62,7 @@ namespace MotoManager.Core.Race
             double wet = _sim.Weather.TrackWetness;
             foreach (var r in _sim.Riders)
             {
-                if (!r.Entry.AutoManaged || r.Status != RaceStatus.Racing || r.PitRequest != PitRequestType.None) continue;
+                if (r.Status != RaceStatus.Racing || r.PitRequest != PitRequestType.None) continue;
                 if (r.Lap < 0) continue;
                 int lapsLeft = _sim.TotalLaps - r.Lap;
                 var a = r.Entry.Rider.Attributes;

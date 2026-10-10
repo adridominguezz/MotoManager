@@ -46,7 +46,7 @@ namespace MotoManager.App.Race
                 cam = go.AddComponent<Camera>();
             }
             cam.clearFlags = CameraClearFlags.SolidColor;
-            cam.backgroundColor = new Color32(40, 70, 44, 255);
+            cam.backgroundColor = TrackRenderer.Grass;
             cam.fieldOfView = 40;
             cam.nearClipPlane = 1f;
             cam.farClipPlane = 8000f;
