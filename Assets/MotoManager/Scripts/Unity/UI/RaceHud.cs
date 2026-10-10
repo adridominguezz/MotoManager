@@ -29,6 +29,8 @@ namespace MotoManager.App.UI
         private readonly List<Image> _speedButtons = new List<Image>();
         private RectTransform _tagLayer;
         private RectTransform _results;
+        private RectTransform _commandArea;
+        private RectTransform _replayBar;
         private float _towerTimer;
         private int _feedCount = -1;
         private readonly List<RiderCommandPanel> _panels = new List<RiderCommandPanel>();
@@ -155,12 +157,14 @@ namespace MotoManager.App.UI
             // Pit-wall cards for the player's riders (bottom right).
             var players = new List<RiderRaceState>();
             foreach (var r in sim.Riders) if (r.Entry.IsPlayer) players.Add(r);
+            _commandArea = UiFactory.Rect("Commands", _root);
+            UiFactory.Stretch(_commandArea);
             if (players.Count > 0)
             {
                 float h = 0.44f / players.Count;
                 for (int i = 0; i < players.Count; i++)
                 {
-                    var area = UiFactory.Rect("Command" + i, _root);
+                    var area = UiFactory.Rect("Command" + i, _commandArea);
                     UiFactory.Place(area, 0.7f, 0.005f + h * (players.Count - 1 - i), 0.995f, 0.005f + h * (players.Count - i) - 0.006f);
                     _panels.Add(new RiderCommandPanel(_view, players[i], area));
                 }
@@ -174,6 +178,7 @@ namespace MotoManager.App.UI
 
         private void UpdateAdvice()
         {
+            if (_view.IsReplay) return;
             var sim = _view.Sim;
             bool added = false;
             foreach (var r in sim.Riders)
@@ -347,8 +352,40 @@ namespace MotoManager.App.UI
                 var t = UiFactory.Label("Time", row, time, Theme.FontSmall, TextAnchor.MiddleRight, Theme.TextDim);
                 UiFactory.Place(t.rectTransform, 0.72f, 0, 1, 1);
             }
+            var replay = UiFactory.Button("Replay", _results, "Watch replay", () => _view.StartReplay(), Theme.PanelLight);
+            UiFactory.Place((RectTransform)replay.transform, 0.05f, 0.02f, 0.45f, 0.1f);
             var cont = UiFactory.Button("Continue", _results, "Continue", () => _view.Close(), Theme.Accent);
-            UiFactory.Place((RectTransform)cont.transform, 0.3f, 0.02f, 0.7f, 0.1f);
+            UiFactory.Place((RectTransform)cont.transform, 0.55f, 0.02f, 0.95f, 0.1f);
+        }
+
+        public void EnterReplay()
+        {
+            if (_results != null) _results.gameObject.SetActive(false);
+            _commandArea.gameObject.SetActive(false);
+            if (_replayBar == null)
+            {
+                var bar = UiFactory.Panel("Replay", _root, new Color(0.06f, 0.07f, 0.09f, 0.88f));
+                _replayBar = bar.rectTransform;
+                UiFactory.Place(_replayBar, 0.7f, 0.005f, 0.995f, 0.12f);
+                var label = UiFactory.Label("Label", _replayBar, "REPLAY", Theme.FontNormal, TextAnchor.MiddleCenter, Theme.Warning);
+                UiFactory.Place(label.rectTransform, 0, 0.55f, 1, 1);
+                var back = UiFactory.Button("Back", _replayBar, "-1 lap", () => _view.SeekLaps(-1), Theme.PanelLight, Theme.FontSmall);
+                UiFactory.Place((RectTransform)back.transform, 0.02f, 0.06f, 0.32f, 0.52f);
+                var fwd = UiFactory.Button("Fwd", _replayBar, "+1 lap", () => _view.SeekLaps(1), Theme.PanelLight, Theme.FontSmall);
+                UiFactory.Place((RectTransform)fwd.transform, 0.35f, 0.06f, 0.65f, 0.52f);
+                var exit = UiFactory.Button("Exit", _replayBar, "Results", () => _view.ExitReplay(), Theme.Accent, Theme.FontSmall);
+                UiFactory.Place((RectTransform)exit.transform, 0.68f, 0.06f, 0.98f, 0.52f);
+            }
+            _replayBar.gameObject.SetActive(true);
+            _feedCount = -1;
+        }
+
+        public void ExitReplay()
+        {
+            if (_replayBar != null) _replayBar.gameObject.SetActive(false);
+            _commandArea.gameObject.SetActive(true);
+            if (_results != null) _results.gameObject.SetActive(true);
+            _feedCount = -1;
         }
 
         private static RiderRaceState FindRider(RaceSimulation sim, string riderId)

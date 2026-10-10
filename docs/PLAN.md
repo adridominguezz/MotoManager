@@ -187,8 +187,11 @@ Convenciones que se mantienen en todas las fases:
   ataques y penalizaciones; previsión de lluvia probabilística según el ingeniero de datos; diálogo
   previo con parrilla, previsión y elección de neumático delantero/trasero con recomendación.
 
-### Sesión 5.3 — Replays y rendimiento
+### Sesión 5.3 — Replays y rendimiento ✅ (rendimiento en dispositivo pendiente)
 - Replay por semilla + log de comandos, cámara libre/TV, perfilado en Android de gama baja.
+- Resultado: `RaceReplay` (núcleo, probado) guarda la configuración inicial y el log de órdenes y
+  re-simula la carrera idéntica, con saltos de ±1 vuelta; "Ver replay" en los resultados con velocidad
+  y cámaras. El perfilado en un Android real queda para cuando se pruebe en dispositivo (Fase 7).
 
 ## Fase 6 — Interfaz de gestión (2–3 sesiones)
 

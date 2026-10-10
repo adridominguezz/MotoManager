@@ -11,6 +11,12 @@ namespace MotoManager.App.Race
     public class BikeVisual : MonoBehaviour
     {
         public RiderRaceState State { get; private set; }
+
+        /// <summary>Points the visual at another simulation's rider (replays / seeking).</summary>
+        public void Rebind(RiderRaceState state)
+        {
+            State = state;
+        }
         public Color PrimaryColor { get; private set; }
         public Transform Body { get; private set; }
 

@@ -26,6 +26,10 @@ namespace MotoManager.App.Race
         private double _accumulator;
         private Action<RaceSimulation> _onClosed;
         private bool _resultsShown;
+        private RaceSimulation _liveSim;
+
+        public RaceReplay Replay { get; private set; }
+        public bool IsReplay { get; private set; }
         private const int MaxStepsPerFrame = 600;
 
         public static RaceView Create(RaceSimulation sim, string title, Action<RaceSimulation> onClosed)
@@ -33,6 +37,8 @@ namespace MotoManager.App.Race
             var go = new GameObject("RaceView");
             var view = go.AddComponent<RaceView>();
             view.Sim = sim;
+            view._liveSim = sim;
+            view.Replay = RaceReplay.Begin(sim);
             view._onClosed = onClosed;
             view.Track = TrackRenderer.Create(sim.Track, go.transform);
             foreach (var r in sim.Riders) view.Bikes.Add(BikeVisual.Create(r, go.transform));
@@ -103,15 +109,51 @@ namespace MotoManager.App.Race
                 Bikes[i].UpdateVisual(Track, d, dt, scale);
             }
 
-            if (Sim.IsFinished && !_resultsShown)
+            if (Sim.IsFinished && !_resultsShown && !IsReplay)
             {
                 _resultsShown = true;
+                Replay.Finish(Sim);
                 Hud.ShowResults();
             }
         }
 
+        /// <summary>Re-simulates the finished race from the start (deterministic replay).</summary>
+        public void StartReplay()
+        {
+            IsReplay = true;
+            UseSimulation(Replay.CreateSimulation());
+            Speed = 2;
+            Hud.EnterReplay();
+        }
+
+        public void ExitReplay()
+        {
+            IsReplay = false;
+            UseSimulation(_liveSim);
+            Hud.ExitReplay();
+        }
+
+        /// <summary>Jumps by whole laps in the replay (re-simulates headless up to the target tick).</summary>
+        public void SeekLaps(int laps)
+        {
+            if (!IsReplay) return;
+            double lap = Sim.Riders.Count > 0 && Sim.Riders[0].ReferenceLap > 0 ? Sim.Riders[0].ReferenceLap : 100;
+            long ticksPerLap = (long)(lap / Sim.Config.TimeStep);
+            long target = Math.Max(0, Math.Min(Replay.TotalTicks, Sim.Tick + laps * ticksPerLap));
+            UseSimulation(Replay.CreateAt(target));
+        }
+
+        private void UseSimulation(RaceSimulation sim)
+        {
+            Sim = sim;
+            _accumulator = 0;
+            for (int i = 0; i < Bikes.Count; i++) Bikes[i].Rebind(sim.Riders[i]);
+        }
+
         public void Close()
         {
+            if (IsReplay) UseSimulation(_liveSim);
+            Sim = _liveSim;
             Destroy(Hud.gameObject);
             if (Cam != null) Destroy(Cam);
             Destroy(gameObject);

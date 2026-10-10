@@ -96,6 +96,28 @@ namespace MotoManager.Tests
         }
 
         [Fact]
+        public void ReplayObjectReproducesTheRaceAndCanSeek()
+        {
+            var cfg = MakeRace("motogp", "misano", 9, 0.1);
+            var live = new RaceSimulation(cfg);
+            var replay = RaceReplay.Begin(live);
+            while (!live.IsFinished)
+            {
+                if (live.Tick == 500) live.Enqueue(new RaceCommand { RiderIndex = 2, Type = RaceCommandType.SetPace, Pace = PaceMode.Push });
+                live.Step();
+            }
+            replay.Finish(live);
+            // The weekend mutates its entries for the next session: the replay must not care.
+            foreach (var e in cfg.Entries) { e.GridPosition = 99; e.AutoManaged = false; e.FrontCompound = TireCompound.Rain; }
+            var again = replay.CreateSimulation();
+            again.RunToEnd();
+            Assert.Equal(Fingerprint(live), Fingerprint(again));
+            var mid = replay.CreateAt(live.Tick / 2);
+            Assert.Equal(live.Tick / 2, mid.Tick);
+            Assert.False(mid.IsFinished);
+        }
+
+        [Fact]
         public void LapTimeDoesNotDependOnTimeStep()
         {
             double Lap(double dt)
