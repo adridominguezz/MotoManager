@@ -68,12 +68,10 @@ namespace MotoManager.Core.Career
             // Is the seat attractive enough?
             var currentTeam = world.GetTeam(rider.TeamId);
             var currentCat = db.GetCategory(rider.CategoryId);
-            double offerUtility = cat.Prestige + team.Reputation * 0.3 + (team.Status == TeamStatus.Factory ? 6 : 0) +
-                                  (cat.Pyramid == Pyramid.GrandPrix ? 1 : -1) * (rider.Personality.GrandPrixPreference - 50) * 0.3;
+            double offerUtility = TransferMarket.SeatUtility(world, cat, team, rider);
             if (!renewal && currentCat != null && currentCat.Simulated && currentTeam != null)
             {
-                double now = currentCat.Prestige + currentTeam.Reputation * 0.3 + (currentTeam.Status == TeamStatus.Factory ? 6 : 0) +
-                             (currentCat.Pyramid == Pyramid.GrandPrix ? 1 : -1) * (rider.Personality.GrandPrixPreference - 50) * 0.3;
+                double now = TransferMarket.SeatUtility(world, currentCat, currentTeam, rider);
                 if (offerUtility + (salary / Math.Max(1, result.AskingSalary) - 1) * 20 < now - 5)
                     return Reject(result, rider.FullName + " prefers the current situation.");
             }

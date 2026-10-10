@@ -151,6 +151,21 @@ namespace MotoManager.Tests
         }
 
         [Fact]
+        public void ASponsorCanBackSeveralTeamsButNeverTheSameTeamTwice()
+        {
+            var db = TestData.Db;
+            var world = WorldFactory.Create(db, new NewGameOptions { Seed = 47 });
+            var redbull = world.Teams.Values.Where(t => t.Sponsors.Any(d => d.SponsorId == "redbull")).Select(t => t.Id).ToList();
+            _out.WriteLine("Red Bull backs: " + string.Join(", ", redbull));
+            Assert.True(redbull.Count >= 3);
+            Assert.True(redbull.Count <= SponsorService.MaxTeams(db.Sponsors["redbull"]));
+            foreach (var t in world.Teams.Values)
+                Assert.Equal(t.Sponsors.Count, t.Sponsors.Select(d => d.SponsorId).Distinct().Count());
+            var c = SponsorService.Commitments(world);
+            Assert.False(c.CanApproach(db.Sponsors["redbull"], redbull[0]));
+        }
+
+        [Fact]
         public void MissedObjectivesCostMoneyWhenTheDealSaysSo()
         {
             var (game, team) = Career("aspar_moto3", 46);

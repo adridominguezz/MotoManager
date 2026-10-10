@@ -8,6 +8,41 @@ using MotoManager.Core.World;
 namespace MotoManager.Core.Economy
 {
     /// <summary>
+    /// A sponsor can back several teams at once (Red Bull across a whole ladder, a lubricant brand in two
+    /// categories) up to its own limit, but never two deals or offers with the same team.
+    /// </summary>
+    public class SponsorCommitments
+    {
+        private readonly Dictionary<string, int> _teams = new Dictionary<string, int>();
+        private readonly HashSet<string> _pairs = new HashSet<string>();
+
+        public void Add(string sponsorId, string teamId)
+        {
+            if (!_pairs.Add(sponsorId + "|" + teamId)) return;
+            int n;
+            _teams.TryGetValue(sponsorId, out n);
+            _teams[sponsorId] = n + 1;
+        }
+
+        public int Teams(string sponsorId)
+        {
+            int n;
+            return _teams.TryGetValue(sponsorId, out n) ? n : 0;
+        }
+
+        public bool With(string sponsorId, string teamId)
+        {
+            return _pairs.Contains(sponsorId + "|" + teamId);
+        }
+
+        /// <summary>The sponsor has room for another team and is not already with this one.</summary>
+        public bool CanApproach(SponsorTemplate s, string teamId)
+        {
+            return !With(s.Id, teamId) && Teams(s.Id) < SponsorService.MaxTeams(s);
+        }
+    }
+
+    /// <summary>
     /// Sponsor deals: what a sponsor is worth to a team, signing, per-race and season objectives, penalties and
     /// renewals. Sponsors are independent of teams; offers come from <see cref="SponsorMarket"/>.
     /// </summary>
@@ -30,14 +65,20 @@ namespace MotoManager.Core.Economy
             return list;
         }
 
-        /// <summary>Sponsors already backing a team or with a pending offer.</summary>
-        public static HashSet<string> Engaged(WorldState world)
+        public static int MaxTeams(SponsorTemplate s)
         {
-            var set = new HashSet<string>();
+            return s.MaxTeams > 0 ? s.MaxTeams : (s.Tier <= 1 ? 3 : 2);
+        }
+
+        /// <summary>Who each sponsor backs (running or future deals) or has an open offer with.</summary>
+        public static SponsorCommitments Commitments(WorldState world)
+        {
+            var c = new SponsorCommitments();
             foreach (var t in world.Teams.Values)
-                foreach (var d in t.Sponsors) set.Add(d.SponsorId);
-            foreach (var o in world.SponsorOffers) set.Add(o.SponsorId);
-            return set;
+                foreach (var d in t.Sponsors)
+                    if (d.EndSeason >= world.Season) c.Add(d.SponsorId, t.Id);
+            foreach (var o in world.SponsorOffers) c.Add(o.SponsorId, o.TeamId);
+            return c;
         }
 
         /// <summary>Weight of a category for a sponsor (its weighted preference list, or its pyramid).</summary>

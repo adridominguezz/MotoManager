@@ -237,7 +237,33 @@
     "seasonGainCap": 0,
     "costMultiplier": 1.0,
     "concessions": true,
-    "balanceOfPerformance": false
+    "balanceOfPerformance": false,
+    "concessionTiers": [
+      {
+        "name": "A",
+        "minShare": 0.85,
+        "developmentFactor": 0.8,
+        "unfreezes": false
+      },
+      {
+        "name": "B",
+        "minShare": 0.6,
+        "developmentFactor": 1.0,
+        "unfreezes": false
+      },
+      {
+        "name": "C",
+        "minShare": 0.35,
+        "developmentFactor": 1.25,
+        "unfreezes": false
+      },
+      {
+        "name": "D",
+        "minShare": 0.0,
+        "developmentFactor": 1.6,
+        "unfreezes": true
+      }
+    ]
   },
   "testing": {
     "privateTestDays": 0,

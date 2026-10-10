@@ -114,6 +114,8 @@ namespace MotoManager.Core.Data
         /// keen it is to sign. Empty = no preference beyond <see cref="Pyramids"/>.
         /// </summary>
         public Dictionary<string, double> CategoryPreference = new Dictionary<string, double>();
+        /// <summary>Most teams the sponsor backs at the same time (0 = by tier: 3 for title-level brands, 2 otherwise).</summary>
+        public int MaxTeams;
         /// <summary>Two sponsors of an exclusive industry cannot back the same team.</summary>
         public bool IndustryExclusive = true;
         /// <summary>Share of one season's payment paid once at signing.</summary>

@@ -100,7 +100,10 @@ namespace MotoManager.Tests
             var alone = ViabilityService.Evaluate(world, db, new TeamPlan { CategoryId = "worldssp", Capital = org.Cash });
             var withOrg = ViabilityService.Evaluate(world, db, new TeamPlan { CategoryId = "worldssp", Capital = org.Cash, Organisation = org });
             Assert.Equal(alone.OperatingCost, withOrg.OperatingCost, 2);
-            Assert.True(withOrg.MinCashConfirmed < alone.MinCashConfirmed, "existing teams' costs must weigh on an expansion");
+            // The organisation's existing teams (their costs and their income) are part of the projection.
+            Assert.True(withOrg.Forecast.Costs > alone.Forecast.Costs + 1, "existing teams' costs must weigh on an expansion");
+            Assert.True(withOrg.Forecast.ConfirmedIncome > alone.Forecast.ConfirmedIncome);
+            Assert.True(withOrg.Forecast.Points.Count > alone.Forecast.Points.Count);
         }
     }
 }

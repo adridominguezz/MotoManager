@@ -14,11 +14,30 @@ namespace MotoManager.Core.World
         public double Reputation = 60;
         /// <summary>Yearly R&amp;D money across all programmes (euros).</summary>
         public double DevelopmentBudget = 20000000;
+        /// <summary>
+        /// 0-100: financial muscle of the group behind the racing department (motorcycle sales). Caps how much it
+        /// can spend on racing and how hard it can respond to a crisis. Honda and Yamaha are the largest.
+        /// </summary>
+        public double FinancialStrength = 50;
+
+        /// <summary>Most the group would spend on racing development per season.</summary>
+        public double MaxDevelopmentBudget { get { return 15e6 + FinancialStrength * 0.65e6; } }
+
         /// <summary>0-100: how well the company turns money into lap time.</summary>
         public double EngineeringStrength = 60;
         /// <summary>categoryId -> base bike id the manufacturer supplies in that category.</summary>
         public Dictionary<string, string> Programs = new Dictionary<string, string>();
         public bool HasConcessions;
+        /// <summary>categoryId -> development multiplier from the concession tier.</summary>
+        public Dictionary<string, double> DevelopmentFactor = new Dictionary<string, double>();
+        /// <summary>categoryId -> concession tier name.</summary>
+        public Dictionary<string, string> ConcessionTier = new Dictionary<string, string>();
+
+        public double FactorIn(string categoryId)
+        {
+            double f;
+            return categoryId != null && DevelopmentFactor.TryGetValue(categoryId, out f) ? f : 1.0;
+        }
         public string Color = "#CCCCCC";
     }
 

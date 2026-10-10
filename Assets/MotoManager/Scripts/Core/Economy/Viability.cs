@@ -182,10 +182,10 @@ namespace MotoManager.Core.Economy
         public static double SponsorMarketEstimate(WorldState world, GameDatabase db, ChampionshipCategory cat, double reputation)
         {
             var probe = new Team { Id = "_new", CategoryId = cat.Id, Reputation = reputation };
-            var engaged = SponsorService.Engaged(world);
+            var engaged = SponsorService.Commitments(world);
             var values = new List<double>();
             foreach (var s in SponsorService.AllTemplates(world, db))
-                if (!engaged.Contains(s.Id) && SponsorService.Interest(world, db, s, probe, cat) > 0.3) values.Add(SponsorService.ValueFor(s, probe, cat));
+                if (engaged.CanApproach(s, probe.Id) && SponsorService.Interest(world, db, s, probe, cat) > 0.3) values.Add(SponsorService.ValueFor(s, probe, cat));
             values.Sort((a, b) => b.CompareTo(a));
             double total = 0;
             for (int i = 0; i < values.Count && i < 2; i++) total += values[i];

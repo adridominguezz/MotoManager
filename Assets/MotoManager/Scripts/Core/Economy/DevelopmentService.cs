@@ -142,6 +142,9 @@ namespace MotoManager.Core.Economy
                 {
                     if (failed) value = 0;
                     else value *= MathX.Clamp(1 + rng.Gaussian(0, p.Risk * 0.5) + (eng - 50) / 250.0, 0.2, 1.8);
+                    // Concession tier of the manufacturer (more testing and freedom for those behind).
+                    var maker = world.GetManufacturer(team.ManufacturerId);
+                    if (maker != null) value *= maker.FactorIn(team.CategoryId);
                 }
                 else
                 {
@@ -193,7 +196,7 @@ namespace MotoManager.Core.Economy
                 if (bike == null || m == null) continue;
                 bool concessions = rules.Development.Concessions && m.HasConcessions;
                 // Manufacturer support, the team's own engineering and its development push (see TeamAI).
-                double strength = m.EngineeringStrength / 100.0 * Career.TeamAI.InSeasonDevelopmentFactor(team);
+                double strength = m.EngineeringStrength / 100.0 * Career.TeamAI.InSeasonDevelopmentFactor(team) * m.FactorIn(categoryId);
                 double chance = Career.TeamAI.InSeasonUpdateChance(team);
                 foreach (var comp in new List<string>(bike.Components.Keys))
                 {
@@ -203,6 +206,104 @@ namespace MotoManager.Core.Economy
                     double gain = rng.Range(0, 1.0) * strength * (100 - level) / 35.0;
                     ApplyEffects(world, db, team, bike, new Dictionary<string, double> { { comp, Math.Round(gain, 2) } });
                 }
+            }
+        }
+
+        /// <summary>
+        /// Concessions from the constructors' standings. With tiers in the rules each manufacturer gets the tier its
+        /// share of the leader's points earns (development multiplier, possibly unfrozen engines); without tiers the
+        /// classic rule applies (below 35% of the leader: concessions).
+        /// </summary>
+        public static void UpdateConcessions(WorldState world, GameDatabase db)
+        {
+            var cats = new List<string>(world.Championships.Keys);
+            cats.Sort(StringComparer.Ordinal);
+            foreach (var catId in cats)
+            {
+                var champ = world.Championships[catId];
+                var rules = db.GetRules(catId, world.Season);
+                if (rules == null || !rules.Development.Concessions) continue;
+                var table = champ.SortedManufacturers();
+                double max = table.Count > 0 ? Math.Max(1, table[0].Points) : 1;
+                var points = new Dictionary<string, double>();
+                foreach (var e in table) points[e.Id] = e.Points;
+                foreach (var m in world.Manufacturers.Values)
+                {
+                    if (!m.Programs.ContainsKey(catId)) continue;
+                    double p;
+                    double share = points.TryGetValue(m.Id, out p) ? p / max : 0;
+                    var tiers = rules.Development.ConcessionTiers;
+                    if (tiers.Count == 0)
+                    {
+                        m.HasConcessions = share < 0.35;
+                        m.DevelopmentFactor[catId] = 1.0;
+                        continue;
+                    }
+                    var tier = tiers[tiers.Count - 1];
+                    foreach (var t in tiers)
+                        if (share >= t.MinShare) { tier = t; break; }
+                    m.DevelopmentFactor[catId] = tier.DevelopmentFactor;
+                    m.ConcessionTier[catId] = tier.Name;
+                    m.HasConcessions = tier.Unfreezes;
+                }
+            }
+        }
+
+        /// <summary>
+        /// How manufacturers react to a season: those left behind in their flagship category may invest and hire
+        /// engineers; dominant ones may lose key people to rivals; everything drifts back towards the middle over
+        /// time. Fortunes change through these decisions, not through scripted turns.
+        /// </summary>
+        public static void ManufacturerSeasonReview(WorldState world, GameDatabase db, DeterministicRandom rng)
+        {
+            var makers = new List<Manufacturer>(world.Manufacturers.Values);
+            makers.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));
+            foreach (var m in makers)
+            {
+                ChampionshipCategory flagship = null;
+                foreach (var catId in m.Programs.Keys)
+                {
+                    var c = db.GetCategory(catId);
+                    if (c != null && c.Simulated && !c.IsCup && (flagship == null || c.Prestige > flagship.Prestige)) flagship = c;
+                }
+                if (flagship == null) continue;
+                ChampionshipState champ;
+                if (!world.Championships.TryGetValue(flagship.Id, out champ) || champ.Rounds.Count == 0) continue;
+                var table = champ.SortedManufacturers();
+                double max = table.Count > 0 ? Math.Max(1, table[0].Points) : 1;
+                double share = 0;
+                bool leader = false;
+                for (int i = 0; i < table.Count; i++)
+                    if (table[i].Id == m.Id)
+                    {
+                        share = table[i].Points / max;
+                        leader = i == 0;
+                    }
+
+                double before = m.EngineeringStrength;
+                // Big groups can afford to react to a bad season; small ones often cannot.
+                if (share < 0.6 && rng.Chance(0.2 + m.FinancialStrength / 200.0))
+                {
+                    // Restructuring: more money and new engineers.
+                    m.DevelopmentBudget = Math.Min(m.MaxDevelopmentBudget, m.DevelopmentBudget * rng.Range(1.1, 1.3));
+                    m.EngineeringStrength += rng.Range(1, 4) * (0.5 + m.FinancialStrength / 100.0);
+                    // ...and a bigger budget for its works team, to sign the riders it needs.
+                    foreach (var t in world.TeamsInCategory(flagship.Id))
+                        if (t.ManufacturerId == m.Id && t.Status == TeamStatus.Factory && !t.IsPlayer) t.SeasonBudget = Math.Round(t.SeasonBudget * 1.2);
+                    if (flagship.Tier == 1)
+                        world.AddNews(m.Name + " steps up its racing programme", m.Name + " increases its budget and hires engineers after a difficult " + world.Season + ".", flagship.Id);
+                }
+                else if (leader && rng.Chance(0.5))
+                {
+                    // Success attracts rivals' offers to key engineers.
+                    m.EngineeringStrength -= rng.Range(0.5, 2.5);
+                }
+                // Long-term drift towards the middle and some unpredictability.
+                m.EngineeringStrength += (68 - m.EngineeringStrength) * 0.05 + rng.Gaussian(0, 1.2);
+                m.EngineeringStrength = Math.Round(MathX.Clamp(m.EngineeringStrength, 35, 95), 1);
+                if (m.DevelopmentBudget > m.MaxDevelopmentBudget * 0.7) m.DevelopmentBudget *= 0.97;
+                if (flagship.Tier == 1 && m.EngineeringStrength - before <= -3)
+                    world.AddNews(m.Name + " loses key engineers", "Rivals have recruited part of " + m.Name + "'s technical staff.", flagship.Id);
             }
         }
 
@@ -237,19 +338,8 @@ namespace MotoManager.Core.Economy
         /// </summary>
         public static void WinterDevelopment(WorldState world, GameDatabase db, DeterministicRandom rng)
         {
-            // Concessions from constructor standings (MotoGP-style).
-            foreach (var champ in world.Championships.Values)
-            {
-                var rules = db.GetRules(champ.CategoryId, world.Season);
-                if (!rules.Development.Concessions) continue;
-                var table = champ.SortedManufacturers();
-                double max = table.Count > 0 ? Math.Max(1, table[0].Points) : 1;
-                foreach (var entry in table)
-                {
-                    var m = world.GetManufacturer(entry.Id);
-                    if (m != null) m.HasConcessions = entry.Points / max < 0.35;
-                }
-            }
+            UpdateConcessions(world, db);
+            var resetNews = new HashSet<string>();
 
             var baseBikes = new Dictionary<string, Motorcycle>();
             foreach (var m in world.Manufacturers.Values)
@@ -265,12 +355,28 @@ namespace MotoManager.Core.Economy
                     double money = MathX.Clamp(m.DevelopmentBudget / 30000000.0, 0.2, 1.6);
                     if (catDef != null && catDef.Tier > 1) money = 0.85 + 0.15 * money;
                     double cap = rules.Development.SeasonGainCap > 0 ? rules.Development.SeasonGainCap * 0.6 : double.MaxValue;
+                    // A new technical era: much of the accumulated advantage is lost and everyone starts again
+                    // around what their engineering department can do.
+                    var nextRules = db.GetRules(kv.Key, world.Season + 1);
+                    double reset = nextRules != null && nextRules.Id != rules.Id ? nextRules.Development.RegulationReset : 0;
+                    if (reset > 0)
+                    {
+                        foreach (var comp in new List<string>(bike.Components.Keys))
+                        {
+                            if (comp == "SpecEngine") continue;
+                            double target = 50 + m.EngineeringStrength * 0.4 + rng.Gaussian(0, 3);
+                            bike.Components[comp] = MathX.Clamp(bike.Components[comp] + (target - bike.Components[comp]) * reset, 1, 99);
+                        }
+                        if (resetNews.Add(kv.Key) && catDef != null)
+                            world.AddNews(catDef.Name + " enters a new technical era", "New regulations from " + (world.Season + 1) + ": the established order is reshuffled.", kv.Key, true);
+                    }
+                    double factor = m.FactorIn(kv.Key);
                     foreach (var comp in new List<string>(bike.Components.Keys))
                     {
                         bool frozen = comp == "Engine" && rules.Engine.DevelopmentFrozen && !concessions;
                         if (comp == "SpecEngine" || frozen) continue;
                         double level = bike.Components[comp];
-                        double gain = rng.Gaussian(1.2, 1.2) * (m.EngineeringStrength / 70.0) * money * (100 - level) / 30.0;
+                        double gain = rng.Gaussian(1.2, 1.2) * (m.EngineeringStrength / 70.0) * money * factor * (100 - level) / 30.0;
                         if (concessions) gain += rng.Range(0.5, 2.0);
                         gain = Math.Min(gain, cap);
                         bike.Components[comp] = MathX.Clamp(level + gain, 1, 99);

@@ -8,7 +8,15 @@
     "engineeringStrength": 92,
     "color": "#C8102E",
     "hasConcessions": false,
-    "dataConfidence": "approximate ratings"
+    "dataConfidence": "approximate ratings",
+    "concessionTier": {
+      "motogp": "A"
+    },
+    "developmentFactor": {
+      "motogp": 0.8
+    },
+    "financialStrength": 70,
+    "financialNote": "estimated from the size of the group's motorcycle business (Honda and Yamaha the largest)"
   },
   {
     "id": "aprilia",
@@ -19,7 +27,15 @@
     "engineeringStrength": 84,
     "color": "#1D1D1B",
     "hasConcessions": false,
-    "dataConfidence": "approximate ratings"
+    "dataConfidence": "approximate ratings",
+    "concessionTier": {
+      "motogp": "B"
+    },
+    "developmentFactor": {
+      "motogp": 1.0
+    },
+    "financialStrength": 62,
+    "financialNote": "estimated from the size of the group's motorcycle business (Honda and Yamaha the largest)"
   },
   {
     "id": "ktm",
@@ -30,29 +46,53 @@
     "engineeringStrength": 80,
     "color": "#FF6600",
     "hasConcessions": false,
-    "dataConfidence": "approximate ratings"
+    "dataConfidence": "approximate ratings",
+    "concessionTier": {
+      "motogp": "B"
+    },
+    "developmentFactor": {
+      "motogp": 1.0
+    },
+    "financialStrength": 50,
+    "financialNote": "estimated from the size of the group's motorcycle business (Honda and Yamaha the largest)"
   },
   {
     "id": "yamaha",
     "name": "Yamaha",
     "country": "JP",
     "reputation": 86,
-    "developmentBudget": 38000000.0,
+    "developmentBudget": 52000000.0,
     "engineeringStrength": 78,
     "color": "#0A3D91",
     "hasConcessions": true,
-    "dataConfidence": "approximate ratings"
+    "dataConfidence": "approximate ratings",
+    "concessionTier": {
+      "motogp": "D"
+    },
+    "developmentFactor": {
+      "motogp": 1.6
+    },
+    "financialStrength": 90,
+    "financialNote": "estimated from the size of the group's motorcycle business (Honda and Yamaha the largest)"
   },
   {
     "id": "honda",
     "name": "Honda",
     "country": "JP",
     "reputation": 90,
-    "developmentBudget": 40000000.0,
+    "developmentBudget": 60000000.0,
     "engineeringStrength": 79,
     "color": "#E4002B",
-    "hasConcessions": true,
-    "dataConfidence": "approximate ratings"
+    "hasConcessions": false,
+    "dataConfidence": "approximate ratings",
+    "concessionTier": {
+      "motogp": "C"
+    },
+    "developmentFactor": {
+      "motogp": 1.25
+    },
+    "financialStrength": 100,
+    "financialNote": "estimated from the size of the group's motorcycle business (Honda and Yamaha the largest)"
   },
   {
     "id": "bmw",
@@ -63,7 +103,9 @@
     "engineeringStrength": 80,
     "color": "#0066B1",
     "hasConcessions": false,
-    "dataConfidence": "approximate ratings"
+    "dataConfidence": "approximate ratings",
+    "financialStrength": 85,
+    "financialNote": "estimated from the size of the group's motorcycle business (Honda and Yamaha the largest)"
   },
   {
     "id": "kawasaki",
@@ -74,7 +116,9 @@
     "engineeringStrength": 68,
     "color": "#3AAA35",
     "hasConcessions": false,
-    "dataConfidence": "approximate ratings"
+    "dataConfidence": "approximate ratings",
+    "financialStrength": 75,
+    "financialNote": "estimated from the size of the group's motorcycle business (Honda and Yamaha the largest)"
   },
   {
     "id": "bimota",
@@ -85,7 +129,9 @@
     "engineeringStrength": 70,
     "color": "#B5121B",
     "hasConcessions": false,
-    "dataConfidence": "approximate ratings"
+    "dataConfidence": "approximate ratings",
+    "financialStrength": 30,
+    "financialNote": "estimated from the size of the group's motorcycle business (Honda and Yamaha the largest)"
   },
   {
     "id": "triumph",
@@ -96,7 +142,9 @@
     "engineeringStrength": 70,
     "color": "#1F2A44",
     "hasConcessions": false,
-    "dataConfidence": "approximate ratings"
+    "dataConfidence": "approximate ratings",
+    "financialStrength": 50,
+    "financialNote": "estimated from the size of the group's motorcycle business (Honda and Yamaha the largest)"
   },
   {
     "id": "mvagusta",
@@ -107,7 +155,9 @@
     "engineeringStrength": 64,
     "color": "#B01E2D",
     "hasConcessions": false,
-    "dataConfidence": "approximate ratings"
+    "dataConfidence": "approximate ratings",
+    "financialStrength": 25,
+    "financialNote": "estimated from the size of the group's motorcycle business (Honda and Yamaha the largest)"
   },
   {
     "id": "kalex",
@@ -118,7 +168,9 @@
     "engineeringStrength": 82,
     "color": "#0055A4",
     "hasConcessions": false,
-    "dataConfidence": "approximate ratings"
+    "dataConfidence": "approximate ratings",
+    "financialStrength": 20,
+    "financialNote": "estimated from the size of the group's motorcycle business (Honda and Yamaha the largest)"
   },
   {
     "id": "boscoscuro",
@@ -129,7 +181,9 @@
     "engineeringStrength": 79,
     "color": "#E30613",
     "hasConcessions": false,
-    "dataConfidence": "approximate ratings"
+    "dataConfidence": "approximate ratings",
+    "financialStrength": 15,
+    "financialNote": "estimated from the size of the group's motorcycle business (Honda and Yamaha the largest)"
   },
   {
     "id": "husqvarna",
@@ -140,7 +194,9 @@
     "engineeringStrength": 72,
     "color": "#1F3A93",
     "hasConcessions": false,
-    "dataConfidence": "approximate ratings"
+    "dataConfidence": "approximate ratings",
+    "financialStrength": 45,
+    "financialNote": "estimated from the size of the group's motorcycle business (Honda and Yamaha the largest)"
   },
   {
     "id": "cfmoto",
@@ -151,7 +207,9 @@
     "engineeringStrength": 66,
     "color": "#00A3E0",
     "hasConcessions": false,
-    "dataConfidence": "approximate ratings"
+    "dataConfidence": "approximate ratings",
+    "financialStrength": 50,
+    "financialNote": "estimated from the size of the group's motorcycle business (Honda and Yamaha the largest)"
   },
   {
     "id": "qjmotor",
@@ -162,6 +220,8 @@
     "engineeringStrength": 58,
     "color": "#D71920",
     "hasConcessions": false,
-    "dataConfidence": "approximate ratings"
+    "dataConfidence": "approximate ratings",
+    "financialStrength": 50,
+    "financialNote": "estimated from the size of the group's motorcycle business (Honda and Yamaha the largest)"
   }
 ]

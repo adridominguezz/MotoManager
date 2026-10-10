@@ -317,6 +317,27 @@ namespace MotoManager.Core.Data
         /// <summary>Production categories: the organiser adjusts engine performance of dominant / struggling manufacturers.</summary>
         public bool BalanceOfPerformance;
         public double BalanceStep = 1.0;
+        /// <summary>
+        /// Graded concessions (MotoGP style): manufacturers are ranked by their share of the leader's points; each
+        /// tier multiplies development and the lowest ones may develop frozen parts. Ordered from the top tier down.
+        /// </summary>
+        public List<ConcessionTier> ConcessionTiers = new List<ConcessionTier>();
+        /// <summary>
+        /// When these rules start a new technical era (0-1): how much of the old development advantage is lost as
+        /// every manufacturer starts over around its engineering capability.
+        /// </summary>
+        public double RegulationReset = 0;
+    }
+
+    [Serializable]
+    public class ConcessionTier
+    {
+        public string Name;
+        /// <summary>Minimum share of the leading manufacturer's points to be in this tier.</summary>
+        public double MinShare;
+        public double DevelopmentFactor = 1.0;
+        /// <summary>Frozen components (engine) may be developed.</summary>
+        public bool Unfreezes;
     }
 
     [Serializable]

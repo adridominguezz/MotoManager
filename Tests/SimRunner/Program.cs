@@ -206,6 +206,7 @@ namespace MotoManager.Tools
                 }
                 if (Environment.GetEnvironmentVariable("SIM_ECON") == "1") Economy(game, db, "motogp");
                 if (Environment.GetEnvironmentVariable("SIM_ECON") == "2") CategoryEconomy(game, db);
+                if (Environment.GetEnvironmentVariable("SIM_MAKERS") == "1") Makers(game, db, "motogp");
                 var summary = game.EndSeason();
                 Console.WriteLine($"  -> retired {summary.Retired.Count}, market moves {summary.Market.Moves.Count(m => !m.Renewal)}, generated {summary.Market.GeneratedRiders}, youth {summary.YouthIntake}");
             }
@@ -249,6 +250,23 @@ namespace MotoManager.Tools
                 double funding = totals.ContainsKey(LedgerKind.OwnerFunding) ? totals[LedgerKind.OwnerFunding].Cash : 0;
                 double net = totals.Values.Where(v => v.Kind != LedgerKind.OwnerFunding).Sum(v => v.Cash);
                 Console.WriteLine($"    {t.ShortName,-12} budget {t.SeasonBudget / 1e6,6:0.0}M  spent {MotoManager.Core.Economy.Accounts.SpentThisSeason(w, t) / 1e6,6:0.0}M  org cash {org.Cash / 1e6,7:0.0}M  org net {net / 1e6,6:0.0}M  tech {t.Personality.TechnicalLevel,5:0.0}  bike {bike.Components.Values.Average(),5:0.0}");
+            }
+        }
+
+        /// <summary>SIM_MAKERS=1: per manufacturer in a category, bike level (factory team), engineering, concession tier and best riders.</summary>
+        static void Makers(GameController game, GameDatabase db, string catId)
+        {
+            var w = game.World;
+            var champ = w.Championships[catId];
+            foreach (var e in champ.SortedManufacturers())
+            {
+                var m = w.GetManufacturer(e.Id);
+                var teams = w.TeamsInCategory(catId).Where(t => t.ManufacturerId == e.Id).ToList();
+                double bike = teams.Max(t => w.GetBike(t.BikeId).Components.Values.Average());
+                var riders = teams.SelectMany(t => t.RiderIds).Select(id => w.GetRider(id)).OrderByDescending(r => r.Attributes.Overall).Take(2);
+                string tier;
+                m.ConcessionTier.TryGetValue(catId, out tier);
+                Console.WriteLine($"    {e.Id,-9} pts {e.Points,4:0}  bike {bike,5:0.0}  eng {m.EngineeringStrength,5:0.0}  budget {m.DevelopmentBudget / 1e6,5:0}M  tier {tier}  bikes {teams.Count}  best: {string.Join(", ", riders.Select(r => r.ShortName + " " + r.Attributes.Overall.ToString("0")))}");
             }
         }
 

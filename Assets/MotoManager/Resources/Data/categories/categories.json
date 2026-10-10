@@ -1,5 +1,5 @@
 [
-  { "id": "motogp", "name": "MotoGP", "shortName": "MotoGP", "pyramid": "GrandPrix", "tier": 1, "rulesBySeason": { "2026": "motogp_2026" },
+  { "id": "motogp", "name": "MotoGP", "shortName": "MotoGP", "pyramid": "GrandPrix", "tier": 1, "rulesBySeason": { "2026": "motogp_2026", "2027": "motogp_2027" },
     "calendarGroup": "grandprix", "feederCategories": ["moto2", "worldsbk"], "simulated": true, "minAge": 18, "maxEntryAge": 99, "prestige": 100, "color": "#E10600" },
   { "id": "moto2", "name": "Moto2", "shortName": "Moto2", "pyramid": "GrandPrix", "tier": 2, "rulesBySeason": { "2026": "moto2_2026" },
     "calendarGroup": "grandprix", "feederCategories": ["moto3", "worldssp"], "simulated": true, "minAge": 16, "maxEntryAge": 99, "prestige": 62, "color": "#2B7DE9" },

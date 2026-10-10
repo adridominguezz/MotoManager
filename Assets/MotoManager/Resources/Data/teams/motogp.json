@@ -128,7 +128,7 @@
     "bikeId": "yamaha_m1v4_26",
     "country": "JP",
     "reputation": 86,
-    "seasonBudget": 34000000.0,
+    "seasonBudget": 40000000.0,
     "colors": {
       "primary": "#0A3D91",
       "secondary": "#000000"
@@ -162,7 +162,7 @@
     "bikeId": "honda_rc213v_26",
     "country": "JP",
     "reputation": 88,
-    "seasonBudget": 36000000.0,
+    "seasonBudget": 42000000.0,
     "colors": {
       "primary": "#E4002B",
       "secondary": "#00843D"

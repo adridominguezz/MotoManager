@@ -332,6 +332,23 @@ Orden: E1 → E2 → M1 → E3 → E4 → 8.4 → E5 → M2 → E6 → E7 → 8.
   que cubren los fabricantes.
 - Pantalla de patrocinio con los contratos, su estado y las ofertas con sus acciones (ES/EN). 46 tests en verde.
 
+### Sesión E2c — Patrocinadores con varios equipos y ciclos de dominio ✅
+- Un patrocinador puede respaldar a varios equipos a la vez, hasta su límite (`MaxTeams`; Red Bull, Monster,
+  Liqui Moly, CFMoto y ELF con sus equipos reales), pero nunca dos veces al mismo equipo.
+- Concesiones por niveles en MotoGP (A ≥85 %, B ≥60 %, C ≥35 %, D: multiplican el desarrollo y en D se descongela
+  el motor), con los niveles iniciales de 2026 (Ducati A, Aprilia y KTM B, Honda C, Yamaha D). Se aplican también a
+  los proyectos del jugador.
+- Reacción de los fabricantes cada invierno: los que se quedan atrás pueden invertir, fichar ingenieros y subir el
+  presupuesto de su equipo oficial; los dominantes pueden perder técnicos; todo tiende con el tiempo hacia la media.
+  Limitado por la nueva **capacidad financiera** del grupo (Honda 100, Yamaha 90: los que más motos venden).
+- Reglamento de MotoGP 2027 (850 cc, menos aerodinámica, sin dispositivos de altura): fichero `motogp_2027` con
+  `RegulationReset` 0,5. Se pierde la mitad de la ventaja acumulada; la física se mantiene como en 2026.
+- Mercado: en las categorías reinas los pilotos eligen entre los equipos que los quieren (aceptación diferida) según
+  la moto (su nivel real), el equipo, el dinero y sus preferencias. El equipo más prestigioso ya no elige primero
+  siempre. La utilidad de una plaza se calcula en un solo sitio (mercado de la IA y ofertas del jugador).
+- Resultado en 3 semillas × 10 temporadas: campeones de MotoGP con Ducati, Honda, Aprilia, Yamaha y KTM, y
+  rotación también en WorldSBK. Antes, Ducati ganaba 18–20 de cada 20 títulos. 47 tests en verde.
+
 ## Pendiente de especificación
 
 Recibidas las secciones 49–105; ver la Fase 8.

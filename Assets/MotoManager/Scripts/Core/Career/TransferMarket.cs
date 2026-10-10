@@ -112,15 +112,25 @@ namespace MotoManager.Core.Career
             }
             seats.Sort(CompareSeats);
 
-            // 4. Fill.
+            // 4. Fill. Top-category seats are matched first with riders choosing among the teams that want them
+            // (bike, team, money); the rest cascades down, most prestigious seat first.
             var levels = CategoryLevels(world, db);
+            var matched = TopCategoryMatching(world, db, seats, nextDate, season, levels);
+            var reserved = new HashSet<string>();
+            foreach (var r in matched.Values) reserved.Add(r.Id);
             for (int s = 0; s < seats.Count; s++)
             {
                 var seat = seats[s];
                 Rider best = null;
                 double bestScore = double.MinValue;
-                foreach (var r in SortedRiders(world))
+                if (matched.TryGetValue(seat, out best))
                 {
+                    reserved.Remove(best.Id);
+                    bestScore = 0;
+                }
+                else foreach (var r in SortedRiders(world))
+                {
+                    if (reserved.Contains(r.Id)) continue;
                     if (!Eligible(world, db, seat, r, nextDate, season)) continue;
                     if (!RiderAccepts(world, db, seat, r, season, nextDate)) continue;
                     double score = TeamScore(world, db, seat, r, nextDate, levels) + rng.Gaussian(0, 1.5);
@@ -173,6 +183,96 @@ namespace MotoManager.Core.Career
             RebuildRosters(world);
             ReportNews(world, db, report);
             return report;
+        }
+
+        // ------------------------------------------------------------------ top-category matching
+
+        /// <summary>
+        /// Deferred acceptance for the open seats of the top categories: each rider approaches the seats he likes
+        /// best (bike, team, money, preferences), each seat keeps the rider its team rates highest. The most
+        /// prestigious team therefore no longer gets first pick: a star goes where the offer suits him, and a
+        /// manufacturer that builds a better bike or pays more can attract him. Deterministic.
+        /// </summary>
+        private static Dictionary<Seat, Rider> TopCategoryMatching(WorldState world, GameDatabase db, List<Seat> seats, DateTime nextDate, int season, Dictionary<string, double> levels)
+        {
+            var held = new Dictionary<Seat, Rider>();
+            var top = new List<Seat>();
+            foreach (var s in seats) if (s.Category.Tier == 1 && !s.Category.IsCup) top.Add(s);
+            if (top.Count == 0) return held;
+
+            var prefs = new Dictionary<string, List<Seat>>();
+            var score = new Dictionary<Seat, Dictionary<string, double>>();
+            foreach (var s in top) score[s] = new Dictionary<string, double>();
+            var riders = new List<Rider>();
+            foreach (var r in SortedRiders(world))
+            {
+                var acceptable = new List<KeyValuePair<Seat, double>>();
+                foreach (var s in top)
+                {
+                    if (!Eligible(world, db, s, r, nextDate, season) || !RiderAccepts(world, db, s, r, season, nextDate)) continue;
+                    acceptable.Add(new KeyValuePair<Seat, double>(s, OfferUtility(world, s, r)));
+                    // Fixed per pair noise so the result does not depend on the order of proposals.
+                    var noise = new DeterministicRandom(DeterministicRandom.Combine(world.MasterSeed, DeterministicRandom.Hash(season + "|" + s.Team.Id + "|" + r.Id)));
+                    score[s][r.Id] = TeamScore(world, db, s, r, nextDate, levels) + noise.Gaussian(0, 1.5);
+                }
+                if (acceptable.Count == 0) continue;
+                acceptable.Sort((a, b) =>
+                {
+                    int c = b.Value.CompareTo(a.Value);
+                    return c != 0 ? c : string.CompareOrdinal(a.Key.Team.Id, b.Key.Team.Id);
+                });
+                var list = new List<Seat>();
+                foreach (var kv in acceptable) list.Add(kv.Key);
+                prefs[r.Id] = list;
+                riders.Add(r);
+            }
+
+            // Only riders a team would actually want (above the level it would otherwise accept) take part.
+            var next = new Dictionary<string, int>();
+            var queue = new Queue<Rider>();
+            riders.Sort((a, b) =>
+            {
+                int c = b.Attributes.Overall.CompareTo(a.Attributes.Overall);
+                return c != 0 ? c : string.CompareOrdinal(a.Id, b.Id);
+            });
+            foreach (var r in riders)
+            {
+                next[r.Id] = 0;
+                queue.Enqueue(r);
+            }
+            while (queue.Count > 0)
+            {
+                var r = queue.Dequeue();
+                var list = prefs[r.Id];
+                while (next[r.Id] < list.Count)
+                {
+                    var s = list[next[r.Id]++];
+                    Rider current;
+                    double mine = score[s][r.Id];
+                    double level;
+                    if (levels.TryGetValue(s.Category.Id, out level) && r.Attributes.Overall < level - 10) continue;
+                    if (!held.TryGetValue(s, out current))
+                    {
+                        held[s] = r;
+                        break;
+                    }
+                    if (mine > score[s][current.Id])
+                    {
+                        held[s] = r;
+                        queue.Enqueue(current);
+                        break;
+                    }
+                }
+            }
+            return held;
+        }
+
+        /// <summary>A seat's appeal to a rider including the money the team can pay him.</summary>
+        private static double OfferUtility(WorldState world, Seat seat, Rider r)
+        {
+            double demand = Math.Max(1, SalaryDemand(r, seat.Rules));
+            double pay = AgreedSalary(seat.Team, r, seat.Rules) / demand;
+            return SeatUtility(world, seat.Category, seat.Team, r) + (pay - 1) * 15;
         }
 
         // ------------------------------------------------------------------ evaluation
@@ -271,21 +371,61 @@ namespace MotoManager.Core.Career
             return true;
         }
 
-        private static double SeatUtility(ChampionshipCategory cat, Team team, Rider r)
+        /// <summary>
+        /// How attractive a seat is to a rider: category prestige, team standing, factory status, GP/SBK preference
+        /// and how competitive the bike has just been (riders follow the machine that is winning).
+        /// </summary>
+        public static double SeatUtility(WorldState world, ChampionshipCategory cat, Team team, Rider r)
         {
             double u = cat.Prestige + team.Reputation * 0.3 + (team.Status == TeamStatus.Factory ? 6 : 0);
             double pref = (r.Personality.GrandPrixPreference - 50) * 0.3;
             u += cat.Pyramid == Pyramid.GrandPrix ? pref : -pref;
+            u += (BikeAppeal(world, cat.Id, team) - 0.5) * 16;
             return u;
+        }
+
+        /// <summary>
+        /// 0-1: how good the team's machinery is reckoned to be in the paddock: mostly the bike itself compared with
+        /// the best in the category, partly the manufacturer's recent results.
+        /// </summary>
+        public static double BikeAppeal(WorldState world, string categoryId, Team team)
+        {
+            var bike = world.GetBike(team.BikeId);
+            double mine = bike != null && bike.Components.Count > 0 ? Average(bike) : 0;
+            double best = 0;
+            foreach (var t in world.TeamsInCategory(categoryId))
+            {
+                var b = world.GetBike(t.BikeId);
+                if (b != null && b.Components.Count > 0) best = Math.Max(best, Average(b));
+            }
+            double machine = best > 0 ? MathX.Clamp01(1 - (best - mine) / 8.0) : 0.5;
+            double results = 0.5;
+            ChampionshipState champ;
+            if (team.ManufacturerId != null && world.Championships.TryGetValue(categoryId ?? "", out champ) && champ.Rounds.Count >= 3)
+            {
+                var table = champ.SortedManufacturers();
+                results = 0.2;
+                if (table.Count > 0 && table[0].Points > 0)
+                    foreach (var e in table)
+                        if (e.Id == team.ManufacturerId) results = MathX.Clamp01(e.Points / table[0].Points);
+            }
+            return machine * 0.7 + results * 0.3;
+        }
+
+        private static double Average(Motorcycle b)
+        {
+            double sum = 0;
+            foreach (var v in b.Components.Values) sum += v;
+            return sum / b.Components.Count;
         }
 
         private static bool RiderAccepts(WorldState world, GameDatabase db, Seat seat, Rider r, int season, DateTime nextDate)
         {
-            double offer = SeatUtility(seat.Category, seat.Team, r);
+            double offer = SeatUtility(world, seat.Category, seat.Team, r);
             var current = db.GetCategory(r.CategoryId);
             var currentTeam = world.GetTeam(r.TeamId);
             if (IsCommitted(r, season) && current != null && currentTeam != null)
-                return offer > SeatUtility(current, currentTeam, r) + 8;
+                return offer > SeatUtility(world, current, currentTeam, r) + 8;
             if (current != null && current.Simulated)
             {
                 // Established riders would rather stop than drop far down the ladder.

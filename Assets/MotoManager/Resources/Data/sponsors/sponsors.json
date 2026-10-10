@@ -57,7 +57,8 @@
       }
     ],
     "contractSeasons": 3,
-    "dataConfidence": "real brands, invented amounts and objectives"
+    "dataConfidence": "real brands, invented amounts and objectives",
+    "maxTeams": 4
   },
   {
     "id": "redbull",
@@ -68,7 +69,11 @@
     "minTeamReputation": 75,
     "pyramids": [],
     "homeTeams": [
-      "ktm_factory"
+      "ktm_factory",
+      "tech3_motogp",
+      "ajo_moto2",
+      "ajo_moto3",
+      "tech3_moto3"
     ],
     "preferredNationalities": [],
     "objectives": [
@@ -86,7 +91,8 @@
       }
     ],
     "contractSeasons": 3,
-    "dataConfidence": "real brands, invented amounts and objectives"
+    "dataConfidence": "real brands, invented amounts and objectives",
+    "maxTeams": 6
   },
   {
     "id": "castrol",
@@ -286,7 +292,8 @@
     "minTeamReputation": 50,
     "pyramids": [],
     "homeTeams": [
-      "intact_moto2"
+      "intact_moto2",
+      "intact_moto3"
     ],
     "preferredNationalities": [
       "DE"
@@ -300,7 +307,8 @@
       }
     ],
     "contractSeasons": 2,
-    "dataConfidence": "real brands, invented amounts and objectives"
+    "dataConfidence": "real brands, invented amounts and objectives",
+    "maxTeams": 3
   },
   {
     "id": "elf",
@@ -311,7 +319,8 @@
     "minTeamReputation": 55,
     "pyramids": [],
     "homeTeams": [
-      "marcvds_moto2"
+      "marcvds_moto2",
+      "marcvds_sbk"
     ],
     "preferredNationalities": [
       "FR",
@@ -326,7 +335,8 @@
       }
     ],
     "contractSeasons": 2,
-    "dataConfidence": "real brands, invented amounts and objectives"
+    "dataConfidence": "real brands, invented amounts and objectives",
+    "maxTeams": 3
   },
   {
     "id": "cfmoto_sp",
@@ -339,7 +349,8 @@
       "GrandPrix"
     ],
     "homeTeams": [
-      "aspar_moto2"
+      "aspar_moto2",
+      "aspar_moto3"
     ],
     "preferredNationalities": [
       "CN"
@@ -353,7 +364,8 @@
       }
     ],
     "contractSeasons": 2,
-    "dataConfidence": "real brands, invented amounts and objectives"
+    "dataConfidence": "real brands, invented amounts and objectives",
+    "maxTeams": 3
   },
   {
     "id": "bluecru",

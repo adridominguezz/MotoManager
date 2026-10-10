@@ -51,11 +51,11 @@ namespace MotoManager.Core.Economy
         /// <summary>Winter turnover: some invented sponsors that backed nobody leave the sport, new ones arrive.</summary>
         public static void SeasonRefresh(WorldState world, GameDatabase db, DeterministicRandom rng)
         {
-            var engaged = SponsorService.Engaged(world);
+            var engaged = SponsorService.Commitments(world);
             var ids = new List<string>(world.Sponsors.Keys);
             ids.Sort(StringComparer.Ordinal);
             foreach (var id in ids)
-                if (!engaged.Contains(id) && rng.Chance(0.25)) world.Sponsors.Remove(id);
+                if (engaged.Teams(id) == 0 && rng.Chance(0.25)) world.Sponsors.Remove(id);
             world.SponsorOffers.RemoveAll(o => o.StartSeason < world.Season);
             EnsurePool(world, db, rng);
         }
@@ -115,7 +115,7 @@ namespace MotoManager.Core.Economy
         {
             world.SponsorOffers.RemoveAll(o => o.ExpiresAfterEvent < world.EventsCompleted);
             AiDecisions(world, db);
-            var engaged = SponsorService.Engaged(world);
+            var engaged = SponsorService.Commitments(world);
             int season = winter ? world.Season + 1 : world.Season;
             var teams = new List<Team>(world.Teams.Values);
             teams.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));
@@ -129,19 +129,19 @@ namespace MotoManager.Core.Economy
                 if (free <= 0 || !rng.Chance(winter ? 0.9 : ApproachChance)) continue;
                 var offer = Approach(world, db, team, cat, season, engaged, rng);
                 if (offer == null) continue;
-                engaged.Add(offer.SponsorId);
+                engaged.Add(offer.SponsorId, team.Id);
                 world.SponsorOffers.Add(offer);
                 if (team.IsPlayer) world.AddNews(offer.Name + " wants to sponsor " + team.Name, "Offer: " + MathX.FormatMoney(offer.PaymentPerSeason) + " per season for " + offer.Seasons + " season(s).", team.CategoryId, true);
             }
         }
 
-        private static SponsorOffer Approach(WorldState world, GameDatabase db, Team team, ChampionshipCategory cat, int season, HashSet<string> engaged, DeterministicRandom rng)
+        private static SponsorOffer Approach(WorldState world, GameDatabase db, Team team, ChampionshipCategory cat, int season, SponsorCommitments engaged, DeterministicRandom rng)
         {
             var candidates = new List<SponsorTemplate>();
             var weights = new Dictionary<string, double>();
             foreach (var s in SponsorService.AllTemplates(world, db))
             {
-                if (engaged.Contains(s.Id)) continue;
+                if (!engaged.CanApproach(s, team.Id)) continue;
                 if (SponsorService.IndustryConflict(team, s.Industry, s.IndustryExclusive, season, season + s.ContractSeasons - 1)) continue;
                 double interest = SponsorService.Interest(world, db, s, team, cat);
                 if (interest <= 0.05) continue;
@@ -289,6 +289,8 @@ namespace MotoManager.Core.Economy
                 return Fail("No free sponsor slot.");
             if (SponsorService.IndustryConflict(team, o.Industry, o.IndustryExclusive, o.StartSeason, last))
                 return Fail("Another sponsor of the same industry (" + o.Industry + ") has exclusivity.");
+            foreach (var d in team.Sponsors)
+                if (d.SponsorId == o.SponsorId && d.EndSeason >= o.StartSeason) return Fail(o.Name + " already sponsors the team.");
             world.SponsorOffers.Remove(o);
             SponsorService.Sign(world, team, o);
             if (team.IsPlayer) world.AddNews(o.Name + " signs with " + team.Name, MathX.FormatMoney(o.PaymentPerSeason) + " per season until " + last + ".", team.CategoryId, true);
@@ -344,18 +346,18 @@ namespace MotoManager.Core.Economy
         {
             var teams = new List<Team>(world.Teams.Values);
             teams.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));
-            var engaged = SponsorService.Engaged(world);
+            var engaged = SponsorService.Commitments(world);
             foreach (var team in teams)
             {
                 var cat = db.GetCategory(team.CategoryId);
                 if (cat == null || !cat.Simulated || cat.IsCup || team.Sponsors.Count > 0) continue;
                 var home = new List<SponsorTemplate>();
                 foreach (var s in db.Sponsors.Values)
-                    if (s.HomeTeams.Contains(team.Id) && !engaged.Contains(s.Id)) home.Add(s);
+                    if (s.HomeTeams.Contains(team.Id) && !engaged.With(s.Id, team.Id)) home.Add(s);
                 home.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));
                 foreach (var s in home)
                 {
-                    engaged.Add(s.Id);
+                    engaged.Add(s.Id, team.Id);
                     var o = MakeOffer(world, db, team, cat, s, world.Season, rng, false);
                     if (o == null) continue;
                     o.SigningBonus = 0;
@@ -379,7 +381,7 @@ namespace MotoManager.Core.Economy
                     if (!rng.Chance(0.8)) continue;
                     var o = Approach(world, db, team, cat, world.Season, engaged, rng);
                     if (o == null) continue;
-                    engaged.Add(o.SponsorId);
+                    engaged.Add(o.SponsorId, team.Id);
                     o.SigningBonus = 0;
                     // Deals already running: they end at different times.
                     o.StartSeason = world.Season - rng.NextInt(0, Math.Max(1, o.Seasons));
