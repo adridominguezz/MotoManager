@@ -284,6 +284,8 @@ namespace MotoManager.Core.Career
                 if (!team.RiderIds.Contains(rider.Id)) team.RiderIds.Add(rider.Id);
                 if (rider.Number <= 0) rider.Number = RiderGenerator.FreeNumber(world, team.CategoryId, world.Rng.Fork("number-" + rider.Id));
                 if (seller != null && seller != team && !seller.IsPlayer) TransferMarket.FillVacancyNow(world, db, seller);
+                StaffService.AssignToRiders(world, team);
+                if (seller != null && seller != team) StaffService.AssignToRiders(world, seller);
                 world.AddNews(Txt.F("news.joins", "{0} joins {1}", rider.FullName, team.Name), Txt.F("news.contractUntil", "Contract until {0}.", c.EndSeason), team.CategoryId, true);
             }
             else

@@ -1157,5 +1157,8 @@
   "review.noOffers": "No team has come knocking… yet.",
   "review.offersNote": "They want you as their manager. Changing jobs mid-career comes in the next phase.",
   "review.champions": "Champions",
-  "review.continue": "Continue ►"
+  "review.continue": "Continue ►",
+  "staff.replaceNote": "Role full: hiring someone new replaces {0} (severance {1}).",
+  "staff.hireReplaceConfirm": "Confirm: {0} leaves ({1})",
+  "staff.hiredReplacing": "{0} hired; {1} leaves the team"
 }

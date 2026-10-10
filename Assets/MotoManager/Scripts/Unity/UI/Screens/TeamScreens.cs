@@ -181,32 +181,58 @@ namespace MotoManager.App.UI.Screens
             if (!string.IsNullOrEmpty(r.RealHistory)) Ui.Note(hist, r.RealHistory);
         }
 
-        /// <summary>Bar chart of race positions: taller is better; podiums in gold/silver/bronze, points in green.</summary>
+        /// <summary>
+        /// Line chart of race positions: higher is better, the points joined by a line. Podiums in gold, silver and
+        /// bronze, points finishes in green, the rest in blue; retirements are grey crosses at the bottom.
+        /// </summary>
         private static void PositionChart(Transform card, List<RaceDot> races)
         {
-            var area = UiFactory.Row(card, 260);
+            var area = UiFactory.Row(card, 270);
             int field = 1;
             foreach (var d in races) field = Math.Max(field, d.Field);
-            float wEach = 1f / Math.Max(races.Count, 12);
+            const float bottom = 0.14f, top = 0.9f;
+            // Guide lines: P1, P5, P10, P15 (points), last.
+            foreach (int guide in new[] { 1, 5, 10, 15 })
+            {
+                if (guide > field) continue;
+                float gy = bottom + (top - bottom) * (field - guide) / Math.Max(1f, field - 1);
+                var g = UiFactory.Panel("Guide", area, new Color(1, 1, 1, guide == 15 ? 0.14f : 0.06f));
+                g.rectTransform.anchorMin = new Vector2(0.06f, gy);
+                g.rectTransform.anchorMax = new Vector2(1f, gy);
+                g.rectTransform.offsetMin = new Vector2(0, -1);
+                g.rectTransform.offsetMax = new Vector2(0, 1);
+                var gl = UiFactory.Label("GuideLabel", area, "P" + guide, Theme.FontSmall - 8, TextAnchor.MiddleLeft, Theme.TextDim);
+                gl.rectTransform.anchorMin = new Vector2(0, gy - 0.05f);
+                gl.rectTransform.anchorMax = new Vector2(0.06f, gy + 0.05f);
+                gl.rectTransform.offsetMin = gl.rectTransform.offsetMax = Vector2.zero;
+            }
+            float wEach = 0.94f / Math.Max(races.Count, 8);
+            var line = UiFactory.Rect("Line", area).gameObject.AddComponent<LineGraphic>();
+            UiFactory.Stretch(line.rectTransform);
+            line.color = new Color(1, 1, 1, 0.45f);
+            line.raycastTarget = false;
             for (int i = 0; i < races.Count; i++)
             {
                 var d = races[i];
-                float h = d.Out ? 0.04f : Mathf.Lerp(0.08f, 1f, (float)(field - d.Position) / Math.Max(1, field - 1));
+                float x = 0.06f + wEach * (i + 0.5f);
+                float y = d.Out ? bottom : bottom + (top - bottom) * (field - d.Position) / Math.Max(1f, field - 1);
+                if (!d.Out) line.Points.Add(new Vector2(x, y));
                 Color c = d.Out ? new Color(0.45f, 0.48f, 0.55f) : d.Position == 1 ? new Color32(240, 190, 40, 255) : d.Position == 2 ? new Color32(200, 205, 215, 255) :
                     d.Position == 3 ? new Color32(205, 125, 60, 255) : d.Position <= 15 ? Theme.Good : new Color32(70, 110, 160, 255);
-                var bar = UiFactory.Panel("Bar", area, c, true);
-                bar.rectTransform.anchorMin = new Vector2(i * wEach + wEach * 0.15f, 0.14f);
-                bar.rectTransform.anchorMax = new Vector2((i + 1) * wEach - wEach * 0.15f, 0.14f + 0.72f * h);
-                bar.rectTransform.offsetMin = bar.rectTransform.offsetMax = Vector2.zero;
-                var label = UiFactory.Label("Pos", area, d.Out ? "X" : d.Position.ToString(), Theme.FontSmall - 6, TextAnchor.LowerCenter);
-                label.rectTransform.anchorMin = new Vector2(i * wEach, 0.14f + 0.72f * h);
-                label.rectTransform.anchorMax = new Vector2((i + 1) * wEach, 0.14f + 0.72f * h + 0.12f);
-                label.rectTransform.offsetMin = label.rectTransform.offsetMax = Vector2.zero;
+                var dot = UiFactory.Panel("Dot", area, c, true);
+                UiFactory.Round(dot, 4f);
+                dot.rectTransform.anchorMin = dot.rectTransform.anchorMax = new Vector2(x, y);
+                dot.rectTransform.sizeDelta = new Vector2(18, 18);
+                var label = UiFactory.Label("Pos", area, d.Out ? "X" : d.Position.ToString(), Theme.FontSmall - 6, TextAnchor.LowerCenter, d.Out ? Theme.TextDim : Theme.Text);
+                label.rectTransform.anchorMin = label.rectTransform.anchorMax = new Vector2(x, y);
+                label.rectTransform.sizeDelta = new Vector2(40, 24);
+                label.rectTransform.anchoredPosition = new Vector2(0, 20);
                 var round = UiFactory.Label("Round", area, d.Label, Theme.FontSmall - 8, TextAnchor.UpperCenter, Theme.TextDim);
-                round.rectTransform.anchorMin = new Vector2(i * wEach, 0);
-                round.rectTransform.anchorMax = new Vector2((i + 1) * wEach, 0.13f);
+                round.rectTransform.anchorMin = new Vector2(x - wEach * 0.5f, 0);
+                round.rectTransform.anchorMax = new Vector2(x + wEach * 0.5f, 0.1f);
                 round.rectTransform.offsetMin = round.rectTransform.offsetMax = Vector2.zero;
             }
+            line.SetVerticesDirty();
         }
 
         private void RiderView(RectTransform list, WorldState world, Team team, Rider r)
@@ -278,6 +304,7 @@ namespace MotoManager.App.UI.Screens
         public override string Title { get { return Loc.T("tab.staff"); } }
         private StaffRole? _hiringRole;
         private string _confirmFire;
+        private string _confirmHire;
         private int _view;
 
         public override void Build(RectTransform content)
@@ -333,7 +360,7 @@ namespace MotoManager.App.UI.Screens
                     s.FullName, Fmt.Rating(s.Skill), MathX.FormatMoney(s.Salary),
                     expiring ? Theme.WarnText(s.ContractEndSeason.ToString()) : s.ContractEndSeason.ToString(), ""
                 });
-                bool perRider = StaffService.IsPerRider(s.Role) && team.RiderIds.Count > 1;
+                bool perRider = StaffService.PerRider(s.Role) && team.RiderIds.Count > 1;
                 int parts = perRider ? 3 : 2;
                 int part = 0;
                 if (perRider)
@@ -442,6 +469,8 @@ namespace MotoManager.App.UI.Screens
             UiFactory.Paragraph(detail, "<b>" + Loc.T("staff.impact") + "</b>  " + Loc.T("roleimpact." + sel), Theme.FontSmall);
             Ui.Note(detail, Loc.T("staff.advice." + coverage[sel]));
             double current = bestSkill[sel];
+            var replaces = StaffMarket.WouldReplace(world, team, sel);
+            if (replaces != null) Ui.Note(detail, Theme.WarnText(Loc.T("staff.replaceNote", replaces.FullName, MathX.FormatMoney(StaffMarket.SeveranceCost(world, replaces)))));
             int shown = 0;
             foreach (var c in StaffMarket.Candidates(world, Game.Db, team, sel))
             {
@@ -450,10 +479,21 @@ namespace MotoManager.App.UI.Screens
                 string delta = current < 0 ? Theme.GoodText(Loc.T("staff.newRole")) :
                     c.Skill > current ? Theme.GoodText("+" + (c.Skill - current).ToString("0") + " " + Loc.T("staff.vsCurrent")) : Theme.Dim(Loc.T("staff.noBetter"));
                 Ui.Item(detail, c.FullName + "  " + Theme.Dim(c.Nationality), Loc.T("staff.line", c.Experience, MathX.FormatMoney(c.Salary)) + "\n" + delta, Fmt.Rating(c.Skill),
-                    UiFactory.Primary(Loc.T("staff.hireButton"), () =>
+                    UiFactory.Primary(_confirmHire == cand.Id && replaces != null
+                        ? Loc.T("staff.hireReplaceConfirm", replaces.LastName, MathX.FormatMoney(StaffMarket.SeveranceCost(world, replaces)))
+                        : Loc.T("staff.hireButton"), () =>
                     {
+                        // Replacing someone needs a second tap that shows who goes and the severance.
+                        var who = StaffMarket.WouldReplace(world, team, cand.Role);
+                        if (who != null && _confirmHire != cand.Id)
+                        {
+                            _confirmHire = cand.Id;
+                            Shell.Refresh();
+                            return;
+                        }
+                        _confirmHire = null;
                         StaffMarket.Hire(world, team, cand);
-                        Shell.Toast(Loc.T("staff.hired", cand.FullName, Loc.T("role." + cand.Role)));
+                        Shell.Toast(who != null ? Loc.T("staff.hiredReplacing", cand.FullName, who.FullName) : Loc.T("staff.hired", cand.FullName, Loc.T("role." + cand.Role)));
                         Shell.Refresh();
                     }));
             }

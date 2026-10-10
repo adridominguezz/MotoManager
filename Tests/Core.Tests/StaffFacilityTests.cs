@@ -136,5 +136,21 @@ namespace MotoManager.Tests
             Assert.InRange(review.Confidence, 0, 100);
             Assert.Contains(review.ObjectiveMet ? MotoManager.Core.Career.ReviewReason.ObjectiveMet : MotoManager.Core.Career.ReviewReason.ObjectiveMissed, review.Reasons);
         }
+
+        [Fact]
+        public void StaffOfARiderWhoLeavesMovesToTheNewRider()
+        {
+            var game = GameController.NewGame(TestData.Db, new NewGameOptions { Seed = 33, PlayerTeamId = "aspar_moto2" });
+            var w = game.World;
+            var team = w.PlayerTeam;
+            var leaving = w.GetRider(team.RiderIds[1]);
+            var engineer = team.StaffIds.Select(id => w.Staff[id]).First(s => s.Role == StaffRole.RaceEngineer && s.AssignedRiderId == leaving.Id);
+            MotoManager.Core.Career.Contracts.Terminate(w, game.Db, team, leaving);
+            Assert.Null(engineer.AssignedRiderId);
+            // A new rider arrives: the free engineer works with him.
+            var free = w.Riders.Values.First(r => r.TeamId == null && !r.IsRetired && r.CategoryId == "moto2");
+            MotoManager.Core.Career.TransferMarket.SignNow(w, game.Db, team, free, w.Season);
+            Assert.Equal(free.Id, engineer.AssignedRiderId);
+        }
     }
 }

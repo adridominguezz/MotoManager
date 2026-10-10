@@ -244,6 +244,7 @@ namespace MotoManager.Core.Career
             team.RiderIds.Remove(r.Id);
             r.TeamId = null;
             r.Contract = null;
+            StaffService.AssignToRiders(world, team);
             world.AddNews(Txt.F("news.releases", "{0} releases {1}", team.Name, r.FullName), Txt.F("news.terminationCost", "Termination cost: {0}.", MathX.FormatMoney(cost)), team.CategoryId, team.IsPlayer);
             return cost;
         }

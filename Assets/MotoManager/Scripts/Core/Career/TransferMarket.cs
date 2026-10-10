@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using MotoManager.Core.Common;
 using MotoManager.Core.Data;
+using MotoManager.Core.Economy;
 using MotoManager.Core.World;
 
 namespace MotoManager.Core.Career
@@ -611,6 +612,8 @@ namespace MotoManager.Core.Career
             r.Contract = NewContract(team, r, world.Season, lastSeason - world.Season + 1, AgreedSalary(team, r, rules), FundingFor(world, db, team, r));
             if (!team.RiderIds.Contains(r.Id)) team.RiderIds.Add(r.Id);
             if (r.Number <= 0 || NumberTaken(world, r)) r.Number = RiderGenerator.FreeNumber(world, team.CategoryId, world.Rng.Fork("number-" + r.Id));
+            StaffService.AssignToRiders(world, team);
+            if (old != null && old != team) StaffService.AssignToRiders(world, old);
         }
 
         /// <summary>How much a team values a rider for one of its seats next season (for tools and tests).</summary>

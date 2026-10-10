@@ -153,19 +153,13 @@ namespace MotoManager.Core.Economy
             AssignToRiders(world, team);
         }
 
-        /// <summary>Roles that work with one rider (race engineer, lead mechanic).</summary>
-        public static bool IsPerRider(StaffRole role)
-        {
-            return role == StaffRole.RaceEngineer || role == StaffRole.Mechanic;
-        }
-
         /// <summary>
         /// Puts a race engineer or mechanic with another rider of the team. If someone in the same role already works
         /// with that rider, the two swap.
         /// </summary>
         public static bool Assign(WorldState world, Team team, StaffMember member, string riderId)
         {
-            if (member == null || !IsPerRider(member.Role) || !team.RiderIds.Contains(riderId) || member.AssignedRiderId == riderId) return false;
+            if (member == null || !PerRider(member.Role) || !team.RiderIds.Contains(riderId) || member.AssignedRiderId == riderId) return false;
             foreach (var id in team.StaffIds)
             {
                 StaffMember other;
@@ -199,6 +193,17 @@ namespace MotoManager.Core.Economy
             if (count == 0) return RoleCoverage.Optional;
             if (bestSkill < usual - 8) return RoleCoverage.Weak;
             return RoleCoverage.Covered;
+        }
+
+        /// <summary>
+        /// Keeps every team's race engineers and mechanics with riders who are still in the team (after transfers,
+        /// releases, retirements and the winter market): anyone whose rider left moves to a rider without one.
+        /// </summary>
+        public static void SyncAll(WorldState world)
+        {
+            var ids = new List<string>(world.Teams.Keys);
+            ids.Sort(StringComparer.Ordinal);
+            foreach (var id in ids) AssignToRiders(world, world.Teams[id]);
         }
 
         /// <summary>Race engineers and lead mechanics are paired with riders (in order).</summary>
@@ -327,20 +332,34 @@ namespace MotoManager.Core.Economy
         /// Hires a candidate on a two-season contract (signing fee 10% of a season). For roles held by one person the
         /// current holder is released; per-rider roles replace the weakest holder only when the crew is full.
         /// </summary>
-        public static StaffMember Hire(WorldState world, Team team, StaffMember candidate, GameDatabase db = null)
+        /// <summary>
+        /// Who a new hire in this role would replace (the weakest holder) when the role is already full: one per
+        /// rider for race engineers and mechanics, one for every other role. Null when there is room.
+        /// </summary>
+        public static StaffMember WouldReplace(WorldState world, Team team, StaffRole role)
         {
             var holders = new List<StaffMember>();
             foreach (var id in team.StaffIds)
             {
                 StaffMember s;
-                if (world.Staff.TryGetValue(id, out s) && s.Role == candidate.Role) holders.Add(s);
+                if (world.Staff.TryGetValue(id, out s) && s.Role == role) holders.Add(s);
             }
-            int limit = StaffService.PerRider(candidate.Role) ? Math.Max(1, team.RiderIds.Count) : 1;
-            if (holders.Count >= limit)
+            int limit = StaffService.PerRider(role) ? Math.Max(1, team.RiderIds.Count) : 1;
+            if (holders.Count < limit) return null;
+            holders.Sort((a, b) =>
             {
-                holders.Sort((a, b) => a.Skill.CompareTo(b.Skill));
-                Fire(world, team, holders[0].Id);
-            }
+                int c = a.Skill.CompareTo(b.Skill);
+                return c != 0 ? c : string.CompareOrdinal(a.Id, b.Id);
+            });
+            return holders[0];
+        }
+
+        /// <summary>Hires the candidate; if the role is full, the weakest holder is released (severance paid) and the new person takes over their rider.</summary>
+        public static StaffMember Hire(WorldState world, Team team, StaffMember candidate, GameDatabase db = null)
+        {
+            var replaced = WouldReplace(world, team, candidate.Role);
+            string rider = replaced != null ? replaced.AssignedRiderId : null;
+            if (replaced != null) Fire(world, team, replaced.Id);
             var hired = new StaffMember
             {
                 Id = world.NewId("staff"), FirstName = candidate.FirstName, LastName = candidate.LastName, Role = candidate.Role,
@@ -349,6 +368,7 @@ namespace MotoManager.Core.Economy
             };
             world.Staff[hired.Id] = hired;
             team.StaffIds.Add(hired.Id);
+            if (rider != null && team.RiderIds.Contains(rider)) hired.AssignedRiderId = rider;
             StaffService.AssignToRiders(world, team);
             Accounts.Post(world, team, LedgerKind.StaffSigning, -Math.Round(hired.Salary * 0.1), hired.FullName);
             world.AddNews(Txt.F("news.joins", "{0} joins {1}", hired.FullName, team.Name), Txt.F("news.staffJoinsBody", "New {0}.", Txt.Name("role." + hired.Role, hired.Role.ToString())), team.CategoryId);

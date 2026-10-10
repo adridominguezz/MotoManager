@@ -1157,5 +1157,8 @@
   "review.noOffers": "Ningún equipo ha llamado a tu puerta… por ahora.",
   "review.offersNote": "Te quieren como mánager. Cambiar de equipo durante la carrera llegará en la próxima fase.",
   "review.champions": "Campeones",
-  "review.continue": "Continuar ►"
+  "review.continue": "Continuar ►",
+  "staff.replaceNote": "Puesto completo: contratar a alguien nuevo sustituye a {0} (indemnización {1}).",
+  "staff.hireReplaceConfirm": "Confirmar: sale {0} ({1})",
+  "staff.hiredReplacing": "{0} contratado; {1} deja el equipo"
 }

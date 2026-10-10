@@ -188,6 +188,7 @@ namespace MotoManager.Core.Season
             World.EventsCompleted++;
             SponsorMarket.AfterEvent(World, Db, rng);
             ContractService.AiApproaches(World, Db, rng);
+            StaffService.SyncAll(World);
             World.LastEventDate = ev.Plan.Round.Date;
         }
 
@@ -199,7 +200,9 @@ namespace MotoManager.Core.Season
 
         public SeasonSummary EndSeason()
         {
-            return SeasonEndProcessor.Process(World, Db);
+            var summary = SeasonEndProcessor.Process(World, Db);
+            StaffService.SyncAll(World);
+            return summary;
         }
 
         /// <summary>Simulates all remaining events of the season headless (player weekend included).</summary>
