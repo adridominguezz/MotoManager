@@ -1,0 +1,141 @@
+using System.IO;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+
+namespace MotoManager.EditorTools
+{
+    /// <summary>
+    /// One-click project configuration, so ProjectSettings never need to be edited by hand:
+    /// Android player settings, the bootstrap scene and the build settings scene list.
+    /// Runs automatically the first time the project is opened.
+    /// </summary>
+    [InitializeOnLoad]
+    public static class ProjectSetup
+    {
+        public const string ScenePath = "Assets/MotoManager/Scenes/Main.unity";
+        public const string BundleId = "com.adridominguez.motomanager";
+        private const string DoneKey = "MotoManager.ProjectSetup.v1";
+
+        static ProjectSetup()
+        {
+            EditorApplication.delayCall += () =>
+            {
+                if (EditorPrefs.GetBool(DoneKey + "|" + Application.dataPath, false)) return;
+                ConfigureAll();
+                EditorPrefs.SetBool(DoneKey + "|" + Application.dataPath, true);
+            };
+        }
+
+        [MenuItem("MotoManager/Configure project (Android + scene)")]
+        public static void ConfigureAll()
+        {
+            ConfigureAndroid();
+            EnsureScene();
+            Debug.Log("MotoManager: project configured for Android.");
+        }
+
+        public static void ConfigureAndroid()
+        {
+            PlayerSettings.companyName = "Adrian Dominguez";
+            PlayerSettings.productName = "Motorcycle Motorsport Manager";
+            PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, BundleId);
+            PlayerSettings.bundleVersion = "0.1.0";
+            PlayerSettings.Android.bundleVersionCode = 1;
+
+            // IL2CPP + ARM64: required by Google Play and much faster than Mono for the simulation.
+            PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
+            PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
+            PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel24;
+            PlayerSettings.SetApiCompatibilityLevel(BuildTargetGroup.Android, ApiCompatibilityLevel.NET_Standard_2_0);
+            PlayerSettings.stripEngineCode = true;
+#if UNITY_2019_1_OR_NEWER
+            // (Guarded only so the out-of-Unity compile check, which uses 2018 reference assemblies, passes.)
+            PlayerSettings.SetManagedStrippingLevel(BuildTargetGroup.Android, ManagedStrippingLevel.Low);
+#endif
+
+            // Races are viewed in landscape on phones and tablets.
+            PlayerSettings.defaultInterfaceOrientation = UIOrientation.AutoRotation;
+            PlayerSettings.allowedAutorotateToLandscapeLeft = true;
+            PlayerSettings.allowedAutorotateToLandscapeRight = true;
+            PlayerSettings.allowedAutorotateToPortrait = false;
+            PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
+
+#if UNITY_2019_1_OR_NEWER
+            PlayerSettings.Android.startInFullscreen = true;
+            PlayerSettings.Android.renderOutsideSafeArea = false;
+#endif
+            PlayerSettings.runInBackground = false;
+            PlayerSettings.SetMobileMTRendering(BuildTargetGroup.Android, true);
+            PlayerSettings.gpuSkinning = false;
+
+            // Light visuals: no need for HDR or high MSAA on mobile.
+            QualitySettings.antiAliasing = 2;
+            QualitySettings.shadows = ShadowQuality.HardOnly;
+            QualitySettings.shadowDistance = 120;
+        }
+
+        /// <summary>The scene is intentionally almost empty: everything is created by GameBootstrap at runtime.</summary>
+        public static void EnsureScene()
+        {
+            if (!File.Exists(ScenePath))
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(ScenePath));
+                var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+                var cam = new GameObject("Main Camera");
+                cam.tag = "MainCamera";
+                var camera = cam.AddComponent<Camera>();
+                camera.clearFlags = CameraClearFlags.SolidColor;
+                camera.backgroundColor = new Color32(14, 17, 22, 255);
+                cam.AddComponent<AudioListener>();
+                var light = new GameObject("Sun");
+                var l = light.AddComponent<Light>();
+                l.type = LightType.Directional;
+                l.intensity = 1.1f;
+                light.transform.rotation = Quaternion.Euler(55, -30, 0);
+                EditorSceneManager.SaveScene(scene, ScenePath);
+            }
+            EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
+        }
+    }
+
+    /// <summary>Command-line and menu builds. CLI: Unity -batchmode -quit -projectPath . -executeMethod MotoManager.EditorTools.BuildScript.BuildAndroid</summary>
+    public static class BuildScript
+    {
+        [MenuItem("MotoManager/Build Android APK")]
+        public static void BuildAndroid()
+        {
+            ProjectSetup.ConfigureAll();
+#if UNITY_2019_1_OR_NEWER
+            EditorUserBuildSettings.buildAppBundle = false;
+#endif
+            Build("Builds/Android/MotoManager.apk");
+        }
+
+        [MenuItem("MotoManager/Build Android App Bundle (Play Store)")]
+        public static void BuildAndroidBundle()
+        {
+            ProjectSetup.ConfigureAll();
+#if UNITY_2019_1_OR_NEWER
+            EditorUserBuildSettings.buildAppBundle = true;
+#endif
+            Build("Builds/Android/MotoManager.aab");
+        }
+
+        private static void Build(string path)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
+            var options = new BuildPlayerOptions
+            {
+                scenes = new[] { ProjectSetup.ScenePath },
+                locationPathName = path,
+                target = BuildTarget.Android,
+                options = BuildOptions.None
+            };
+            var report = BuildPipeline.BuildPlayer(options);
+            Debug.Log("MotoManager build: " + report.summary.result + " -> " + path + " (" + report.summary.totalSize / (1024 * 1024) + " MB)");
+            if (Application.isBatchMode && report.summary.result != UnityEditor.Build.Reporting.BuildResult.Succeeded)
+                EditorApplication.Exit(1);
+        }
+    }
+}

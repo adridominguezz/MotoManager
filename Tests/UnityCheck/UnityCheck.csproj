@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Compile check for the Unity layer outside Unity: builds Assets/MotoManager/Scripts/Unity and Editor against
+    Unity reference assemblies from NuGet (development aid only; the game is built by Unity itself).
+  -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <NoWarn>CS0618;CS0649;CS0414</NoWarn>
+    <DefineConstants>$(DefineConstants);UNITY_EDITOR;UNITY_ANDROID;UNITY_2021_3_OR_NEWER</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../Assets/MotoManager/Scripts/Unity/**/*.cs" />
+    <Compile Include="../../Assets/MotoManager/Scripts/Editor/**/*.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../CoreLib/MotoManager.Core.csproj" />
+    <PackageReference Include="UnityEngine.Modules" Version="2021.3.33" />
+    <PackageReference Include="Unity3D.UnityEngine.UI" Version="2020.3.21" />
+    <!-- Editor API: referenced from the package cache to avoid a version clash with the runtime packages.
+         Restore it once with: dotnet add package Unity3D.UnityEditor -v 2018.1.6-f1 (in a scratch project). -->
+    <Reference Include="UnityEditor">
+      <HintPath>$(NuGetPackageRoot)unity3d.unityeditor/2018.1.6-f1/lib/UnityEditor.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+</Project>

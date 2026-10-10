@@ -1,0 +1,14 @@
+{
+  "name": "MotoManager.Editor",
+  "rootNamespace": "MotoManager.EditorTools",
+  "references": ["MotoManager.Core", "MotoManager.App"],
+  "includePlatforms": ["Editor"],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

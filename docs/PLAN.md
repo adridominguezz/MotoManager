@@ -128,7 +128,7 @@ Convenciones que se mantienen en todas las fases:
   desarrollo invernal en categorías con tope. Resultado: relevo generacional (Márquez → Acosta y
   nuevos talentos), varios fabricantes campeones en cada categoría, niveles y edades estables.
 
-## Fase 4 — Proyecto Unity base (1 sesión)
+## Fase 4 — Proyecto Unity base (1 sesión) ✅
 
 - `Packages/manifest.json` (Unity 2022.3 LTS, uGUI, Newtonsoft oficial), `ProjectSettings`
   mínimos, `.asmdef` (`MotoManager.Core` sin referencias a motor, `MotoManager.Unity`,
@@ -136,6 +136,15 @@ Convenciones que se mantienen en todas las fases:
 - `ResourcesDataSource`, `GameBootstrap`, escena generada por script de editor, ajustes Android
   (IL2CPP, ARM64, 60/30 FPS objetivo).
 - Proyecto de comprobación de compilación contra ensamblados de referencia de Unity.
+- Resultado: `Packages/manifest.json` (uGUI + Newtonsoft oficial), Unity 2022.3 LTS, asmdefs
+  (`MotoManager.Core` sin motor, `MotoManager.App`, `MotoManager.Editor`), `link.xml` y tipos AOT para
+  IL2CPP. Arranque sin escena cableada (`GameBootstrap`), datos desde `Resources` parseados en un hilo,
+  `GameSession` con trabajo pesado en segundo plano, guardado atómico con autoguardado al pausar,
+  60/30 FPS adaptativo, kit de UI por código y una pantalla de prueba (nueva carrera deportiva,
+  continuar, simular evento/temporada, clasificación, noticias). Editor: configuración Android
+  automática, escena de arranque y builds APK/AAB (menú y línea de comandos).
+- **Pendiente de verificar en tu máquina**: primera apertura en Unity y build real en un dispositivo
+  (aquí solo se ha comprobado la compilación contra ensamblados de referencia).
 
 ## Fase 5 — Carrera visual (2–3 sesiones) ★ requisito principal
 

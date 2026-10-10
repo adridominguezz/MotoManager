@@ -1,0 +1,4 @@
+<linker>
+  <!-- The simulation core is (de)serialised by reflection (data files and save games): keep it whole under IL2CPP. -->
+  <assembly fullname="MotoManager.Core" preserve="all" />
+</linker>
