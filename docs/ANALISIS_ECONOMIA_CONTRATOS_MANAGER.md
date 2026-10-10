@@ -278,3 +278,31 @@ Prioridad: E1 y E2 son la base de todo, porque sin dinero único y sin el evalua
 8. **Compatibilidad de partidas.** *Recomendado:* migrar v1→v2. La partida antigua pasa a «manager empleado del equipo que manejaba», con un perfil por defecto. La alternativa, ya que el juego no está publicado, es no admitir partidas v1.
 9. **Autonomía del manager.** *Recomendado:* tres niveles (limitada, estándar, completa) con umbrales en los datos.
 10. **Plazos de negociación.** *Recomendado:* las ofertas (patrocinio, traspaso, empleo) caducan tras N eventos del calendario. No usar días reales.
+
+---
+
+## 9. Respuestas del usuario (primera ronda)
+
+| # | Decisión | Respuesta |
+|---|---|---|
+| 1 | Organización como dueña del dinero | Pendiente: se pidió una aclaración (ver respuesta en el chat) |
+| 2 | Entrada en categorías | **Rookies Cup:** se puede ser manager dentro del equipo único del organizador; se gestionan piloto(s), entrenamientos y piezas, pero no se funda. **Equipo propio:** cualquier otra categoría, según el presupuesto (en parrillas cerradas, la plaza se compra y su coste va en el presupuesto de entrada) |
+| 3 | Managers de la IA | Sí |
+| 4 | Préstamos simples | Sí |
+| 5 | Tesorería por evento y por temporada | Sí |
+| 6 | Quiebra: venta o cierre, la partida continúa | Sí, con **impacto fuerte en la reputación** del manager |
+| 7 | Datos estimados y marcados | Sí |
+| 8 | Migración de partidas | **No hace falta:** no existen partidas guardadas. Se mantiene el número de versión y las claves de idempotencia |
+| 9 | Niveles de autonomía | Pendiente: se pidió una aclaración |
+| 10 | Caducidad de ofertas por eventos | Sí |
+
+**Nueva regla: no hay ventana de traspasos.** En cualquier momento de la temporada:
+
+- Se puede firmar un contrato para la temporada siguiente (precontrato).
+- Se puede cambiar de equipo de inmediato, rompiendo el contrato con las vías del §5.4 (cláusula, acuerdo entre equipos o rescisión).
+
+Consecuencias para el plan:
+
+- El mercado deja de ejecutarse solo al final de temporada. La IA lo evalúa **tras cada evento**: renovaciones anticipadas, precontratos, sustituciones a mitad de temporada (lesión, despido, fichaje) y traspasos inmediatos con compensación. La cascada de fin de temporada se queda solo para cubrir las plazas que sigan vacías.
+- Los cambios a mitad de temporada mueven los puntos del piloto con él (puntos de piloto) y los dejan en el equipo (puntos de equipo). Las inscripciones del siguiente evento se reconstruyen.
+- Hace falta un límite por reglamento en los datos (por ejemplo, número de sustituciones por temporada), si la categoría lo tiene.
