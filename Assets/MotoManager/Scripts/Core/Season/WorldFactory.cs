@@ -88,6 +88,7 @@ namespace MotoManager.Core.Season
             TeamAI.EnsureAll(world, db);
             SponsorMarket.EnsurePool(world, db, rng);
             SponsorMarket.InitialDeals(world, db, rng);
+            MerchService.InitialShops(world, db);
             if (options.PlayerTeamId != null) SetPlayerTeam(world, options.PlayerTeamId);
             InitialKnowledge(world);
             world.AddNews("Season " + options.StartSeason + " begins", "The " + options.StartSeason + " grids are set.", null, true);

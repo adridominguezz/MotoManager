@@ -78,6 +78,7 @@ namespace MotoManager.Core.Career
 
             summary.YouthIntake = YouthIntake(world, db, rng);
             Accounts.CloseSeason(world);
+            MerchService.SeasonEnd(world, db);
             RollOver(world, db);
             TransferMarket.RebuildRosters(world);
             AssignSeasonBudgets(world, db);

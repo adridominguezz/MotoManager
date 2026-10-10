@@ -397,6 +397,14 @@ namespace MotoManager.Core.Data
         public double TypicalSponsorDeal = 500000;
         /// <summary>Most sponsor deals a team can hold at once.</summary>
         public int SponsorSlots = 3;
+        /// <summary>Units an average team sells per event of a T-shirt-like product at its reference price.</summary>
+        public double MerchAudience = 0;
+        /// <summary>Fan base of an average team in the category (demand saturates around it).</summary>
+        public double FansReference = 50000;
+        /// <summary>Running the shop (online store, trackside stand) per season, if anything is on sale.</summary>
+        public double MerchShopCostPerSeason = 0;
+        /// <summary>Share of each sale spent on packing, payment fees and shipping.</summary>
+        public double MerchFulfilmentShare = 0.1;
         public string DataConfidence = "estimated";
     }
 }

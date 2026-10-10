@@ -284,7 +284,11 @@
     "safetyReserveFraction": 0.15,
     "dataConfidence": "estimated: entry, slot, equipment and cost scales are not public figures",
     "typicalSponsorDeal": 600000,
-    "sponsorSlots": 3
+    "sponsorSlots": 3,
+    "merchAudience": 300,
+    "fansReference": 80000,
+    "merchShopCostPerSeason": 50000,
+    "merchFulfilmentShare": 0.12
   },
   "notes": [
     "Production-derived: homologated frame and engine, organiser balancing via rev limits and concessions.",

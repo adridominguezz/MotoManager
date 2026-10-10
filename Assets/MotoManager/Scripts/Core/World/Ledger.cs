@@ -28,6 +28,13 @@ namespace MotoManager.Core.World
         SlotPurchase,
         Equipment,
         BikePurchase,
+        MerchSales,
+        /// <summary>Cost of the units sold (not a cash movement: the cash left when the stock was bought).</summary>
+        MerchCostOfSales,
+        /// <summary>Buying or producing stock (cash out; it becomes inventory, not an expense).</summary>
+        MerchStock,
+        MerchOperations,
+        MerchRoyalty,
         Other
     }
 

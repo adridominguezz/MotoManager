@@ -349,6 +349,35 @@ Orden: E1 → E2 → M1 → E3 → E4 → 8.4 → E5 → M2 → E6 → E7 → 8.
 - Resultado en 3 semillas × 10 temporadas: campeones de MotoGP con Ducati, Honda, Aprilia, Yamaha y KTM, y
   rotación también en WorldSBK. Antes, Ducati ganaba 18–20 de cada 20 títulos. 47 tests en verde.
 
+### Sesión M1 — Tienda oficial de merchandising ✅
+- Catálogo en datos (`merchandise/products.json`, 16 productos con coste y precio estimados): camisetas, gorras,
+  sudaderas, chaquetas, mochilas, llaveros, tazas, pósteres, miniaturas, réplica del mono; productos con la marca
+  del fabricante (solo equipos oficiales, con un 15 % de royalty). Los productos de piloto, de victoria y de
+  campeonato ya están definidos, pero se activan en M2.
+- Demanda por producto y evento, con límites:
+  - Audiencia de la categoría.
+  - Tamaño de la afición, con rendimiento decreciente (como mucho el doble de la media).
+  - Interés temporal tras victorias, podios y títulos, que se disipa.
+  - Atractivo del producto.
+  - Precio, con una sensibilidad distinta para cada tipo de comprador. Un precio muy bajo da como mucho 2,5 veces
+    la demanda normal.
+- Contabilidad coherente con el libro:
+  - Comprar stock convierte caja en inventario (no es gasto).
+  - Una venta anota el ingreso y el coste de lo vendido (sin movimiento de caja).
+  - Gastos de tienda, envío y royalties.
+  - El stock sin vender conserva su valor al cambiar de temporada; liquidarlo a un mayorista tiene pérdida.
+  - Ventas perdidas por falta de stock.
+- La IA gestiona su tienda con las mismas reglas: productos básicos y reposición según la demanda prevista.
+- Afición y el interés por los resultados guardados por equipo. El merchandising cuenta como ingreso probable en la
+  previsión de caja, nunca como confirmado.
+- Pantalla «Tienda» (ES/EN):
+  - Resumen de la temporada y productos ordenados por beneficio.
+  - Por producto: precio con su previsión a varios precios, ventas por evento y pedidos con coste, cobertura,
+    stock que probablemente sobrará y caja después, antes de confirmar.
+  - Catálogo para añadir productos.
+- Los presupuestos de los equipos oficiales quedan limitados por la capacidad financiera del fabricante. 52 tests
+  en verde.
+
 ## Pendiente de especificación
 
 Recibidas las secciones 49–105; ver la Fase 8.

@@ -36,7 +36,9 @@ namespace MotoManager.Tests
             Assert.Equal(world.Teams["marcvds_moto2"].OrganisationId, world.Teams["marcvds_sbk"].OrganisationId);
             var ducati = world.GetOrganisation("ducati_corse");
             Assert.Equal(OwnerKind.Manufacturer, ducati.Owner);
-            Assert.Equal(ducati.TeamIds.Sum(id => world.Teams[id].SeasonBudget), ducati.Cash, 0);
+            // Opening cash is the teams' budgets; everything since (initial stock, signing bonuses) is in the ledger.
+            Assert.Equal(ducati.TeamIds.Sum(id => world.Teams[id].SeasonBudget), ducati.SeasonOpeningCash, 0);
+            Assert.Equal(ducati.SeasonOpeningCash + Accounts.SeasonCashFlow(world, ducati.Id), ducati.Cash, 2);
             Assert.Equal(OwnerKind.Organiser, world.OrganisationOf(world.Teams["rookies_cup"]).Owner);
         }
 

@@ -94,6 +94,7 @@ namespace MotoManager.App.UI.Screens
             Register(new TeamScreen());
             Register(new BikeScreen());
             Register(new FinanceScreen());
+            Register(new ShopScreen());
             Register(new MarketScreen());
             Register(new StandingsScreen());
             Register(new CalendarScreen());

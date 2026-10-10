@@ -289,7 +289,8 @@ namespace MotoManager.Core.Economy
                     m.EngineeringStrength += rng.Range(1, 4) * (0.5 + m.FinancialStrength / 100.0);
                     // ...and a bigger budget for its works team, to sign the riders it needs.
                     foreach (var t in world.TeamsInCategory(flagship.Id))
-                        if (t.ManufacturerId == m.Id && t.Status == TeamStatus.Factory && !t.IsPlayer) t.SeasonBudget = Math.Round(t.SeasonBudget * 1.2);
+                        if (t.ManufacturerId == m.Id && t.Status == TeamStatus.Factory && !t.IsPlayer)
+                            t.SeasonBudget = Math.Round(Math.Max(t.SeasonBudget, Math.Min(t.SeasonBudget * 1.2, m.MaxDevelopmentBudget)));
                     if (flagship.Tier == 1)
                         world.AddNews(m.Name + " steps up its racing programme", m.Name + " increases its budget and hires engineers after a difficult " + world.Season + ".", flagship.Id);
                 }

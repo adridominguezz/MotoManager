@@ -135,7 +135,8 @@ namespace MotoManager.Core.Economy
                 var rules = db.GetRules(cat.Id, world.Season);
                 int total = Math.Max(1, Season.GameController.RoundsInSeason(world, db, cat.Id));
                 flows.AddRange(TeamFlows(CostProfile.Of(world, team), rules, RemainingRounds(world, db, cat.Id), total,
-                    ExpectedPosition(world, team), ExpectedSponsorBonuses(team), team.ShortName ?? team.Name));
+                    ExpectedPosition(world, team), ExpectedSponsorBonuses(team) + MerchService.ExpectedNetPerEvent(world, db, team) * total,
+                    team.ShortName ?? team.Name));
             }
             return Build(org.Cash, flows);
         }

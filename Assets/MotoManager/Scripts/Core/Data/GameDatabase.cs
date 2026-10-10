@@ -27,6 +27,7 @@ namespace MotoManager.Core.Data
         public readonly Dictionary<string, DevelopmentTemplate> DevelopmentTemplates = new Dictionary<string, DevelopmentTemplate>();
         public readonly Dictionary<string, Organisation> Organisations = new Dictionary<string, Organisation>();
         public SponsorNameParts SponsorNames = new SponsorNameParts();
+        public readonly Dictionary<string, ProductTemplate> Products = new Dictionary<string, ProductTemplate>();
         public SimulationTuning Tuning = new SimulationTuning();
 
         public CategoryRules GetRules(string categoryId, int season)

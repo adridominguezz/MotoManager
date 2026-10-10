@@ -249,7 +249,11 @@
     "safetyReserveFraction": 0.15,
     "dataConfidence": "estimated: entry, slot, equipment and cost scales are not public figures",
     "typicalSponsorDeal": 600000,
-    "sponsorSlots": 3
+    "sponsorSlots": 3,
+    "merchAudience": 250,
+    "fansReference": 60000,
+    "merchShopCostPerSeason": 40000,
+    "merchFulfilmentShare": 0.12
   },
   "notes": [
     "Spec Triumph 765 triple, spec electronics without traction control.",

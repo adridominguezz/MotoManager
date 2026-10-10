@@ -202,8 +202,11 @@ namespace MotoManager.Core.Season
                         if (e.TeamId == team.Id && e.Status == ResultStatus.Finished && e.Position - 1 < rules.Economy.PrizeMoneyByPosition.Count)
                             prize += rules.Economy.PrizeMoneyByPosition[e.Position - 1];
                 }
-                double bonus = SponsorService.EvaluateRace(World, team, ConditionEvaluator.TeamRace(weekend.Result, team.Id));
+                var outcome = ConditionEvaluator.TeamRace(weekend.Result, team.Id);
+                double bonus = SponsorService.EvaluateRace(World, team, outcome);
                 FinanceService.ApplyRound(World, Db, team, rounds, rules, crashes, prize, bonus);
+                var shopRng = new DeterministicRandom(DeterministicRandom.Combine(World.MasterSeed, DeterministicRandom.Hash("merch|" + World.Season + "|" + weekend.Round.Round + "|" + team.Id)));
+                MerchService.AfterEvent(World, Db, team, rules, rounds, outcome, shopRng);
             }
         }
 

@@ -164,6 +164,8 @@ namespace MotoManager.Core.World
         public string DataConfidence = "approximate";
         /// <summary>AI character (generated when missing from the data).</summary>
         public TeamPersonality Personality;
+        /// <summary>Official shop and fan base.</summary>
+        public TeamShop Shop = new TeamShop();
 
         public int Facility(FacilityType type)
         {
