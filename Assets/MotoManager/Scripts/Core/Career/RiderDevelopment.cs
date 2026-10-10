@@ -129,6 +129,7 @@ namespace MotoManager.Core.Career
             int wins = rider.TotalWins();
             if (rider.Reputation > 45 || wins > 0)
                 world.AddNews(rider.FullName + " retires", rider.FullName + " (" + rider.Nationality + ") ends a career with " + wins + " wins and " + rider.TotalPodiums() + " podiums. " + reason, rider.CategoryId, rider.Reputation > 70);
+            Contracts.Close(world, rider, ContractEnd.Retired);
             rider.TeamId = null;
             rider.Contract = null;
         }

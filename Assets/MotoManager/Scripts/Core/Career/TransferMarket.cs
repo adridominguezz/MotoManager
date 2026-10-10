@@ -59,6 +59,7 @@ namespace MotoManager.Core.Career
                 if (team == null || c.StartSeason != next) continue;
                 var old = world.GetTeam(r.TeamId);
                 if (old != null) old.RiderIds.Remove(r.Id);
+                Contracts.Close(world, r, r.TeamId == team.Id ? ContractEnd.Renewed : ContractEnd.Expired);
                 report.Moves.Add(new MarketMove { RiderId = r.Id, FromTeamId = r.TeamId, FromCategoryId = r.CategoryId, ToTeamId = team.Id, ToCategoryId = team.CategoryId, Renewal = r.TeamId == team.Id });
                 r.TeamId = team.Id;
                 r.CategoryId = team.CategoryId;
@@ -93,6 +94,7 @@ namespace MotoManager.Core.Career
                 {
                     var rules = db.GetRules(cat.Id, season);
                     // A rider who has become good enough for the seat no longer pays for it.
+                    Contracts.Close(world, r, ContractEnd.Renewed);
                     r.Contract = NewContract(team, r, next, TeamAI.ContractYears(team, r.AgeOn(nextDate), rng), AgreedSalary(team, r, rules),
                         FundingFor(world, db, team, r, levels));
                     report.Moves.Add(new MarketMove { RiderId = r.Id, FromTeamId = team.Id, ToTeamId = team.Id, FromCategoryId = cat.Id, ToCategoryId = cat.Id, Renewal = true });
@@ -155,12 +157,14 @@ namespace MotoManager.Core.Career
                 {
                     move.FromTeamId = best.TeamId;
                     move.FromCategoryId = best.CategoryId;
-                    // Buyout: the rider still had a deal elsewhere -> that seat opens and is filled later.
+                    // Buyout: the rider still had a deal elsewhere -> the fee is paid and that seat opens, filled later.
                     if (IsCommitted(best, season) && best.TeamId != null && best.TeamId != seat.Team.Id)
                     {
                         move.Buyout = true;
                         var oldTeam = world.GetTeam(best.TeamId);
                         var oldCat = oldTeam != null ? db.GetCategory(oldTeam.CategoryId) : null;
+                        double fee = Math.Max(0, Contracts.FeeToTake(world, db, best, seat.Team, next));
+                        Contracts.PayAndRelease(world, db, best, seat.Team, fee, Contracts.ReleaseClause(best) > 0 && fee == Contracts.ReleaseClause(best));
                         if (oldTeam != null && oldCat != null && oldCat.Simulated)
                         {
                             var vacancy = MakeSeat(oldTeam, oldCat, db.GetRules(oldCat.Id, season));
@@ -404,11 +408,10 @@ namespace MotoManager.Core.Career
             if (IsCommitted(r, season))
             {
                 if (r.TeamId == seat.Team.Id) return false;
-                // Only a clear step up justifies breaking an existing deal.
-                var current = db.GetCategory(r.CategoryId);
-                if (current == null || cat.Prestige < current.Prestige + 10) return false;
-                var currentTeam = world.GetTeam(r.TeamId);
-                if (currentTeam != null && currentTeam.IsPlayer) return false;
+                // Under contract for next season: only through a fee the buyer can pay (release clause or agreed
+                // value), or an exit clause. The player's riders go only through their release clause.
+                double fee = Contracts.FeeToTake(world, db, r, seat.Team, season + 1);
+                if (fee < 0 || !Contracts.CanPay(world, seat.Team, fee)) return false;
             }
             // Talent-pool riders need a stepping stone before a top category, unless already at that level.
             var origin = db.GetCategory(r.CategoryId);
@@ -516,6 +519,9 @@ namespace MotoManager.Core.Career
             if (cat.Pyramid == Pyramid.Superbike && age > 35) score -= (age - 35) * 1.5;
 
             var from2 = db.GetCategory(r.CategoryId);
+            // Cup riders normally move on to the category the cup feeds (Rookies -> Moto3). Skipping a step is
+            // possible but rare: only an exceptional rider overcomes this.
+            if (from2 != null && from2.IsCup && from2.Id != cat.Id && !cat.FeederCategories.Contains(from2.Id)) score -= 10;
             if (from2 != null && from2.Pyramid != cat.Pyramid && r.Reputation < 75) score -= 3;
             bool sameManufacturer = r.Contract != null && r.Contract.ManufacturerId != null && r.Contract.ManufacturerId == seat.Team.ManufacturerId;
             if (sameManufacturer) score += 3;
@@ -527,6 +533,12 @@ namespace MotoManager.Core.Career
 
             // Money the rider brings: decisive for small teams in small categories, irrelevant at the top.
             score += BackingValue(world, db, seat.Team, r, levels);
+
+            if (IsCommitted(r, nextDate.Year - 1) && r.TeamId != seat.Team.Id)
+            {
+                double fee = Math.Max(0, Contracts.FeeToTake(world, db, r, seat.Team, nextDate.Year));
+                score -= fee / Math.Max(1, seat.Team.SeasonBudget) * 20;
+            }
 
             double demand = SalaryDemand(r, seat.Rules);
             double affordable = TeamAI.SalaryCeiling(seat.Team);
@@ -568,6 +580,7 @@ namespace MotoManager.Core.Career
         /// <summary>Signs a rider for a team from now until the end of the given season (immediate seat).</summary>
         public static void SignNow(WorldState world, GameDatabase db, Team team, Rider r, int lastSeason)
         {
+            Contracts.Close(world, r, ContractEnd.Expired);
             var rules = db.GetRules(team.CategoryId, world.Season);
             var old = world.GetTeam(r.TeamId);
             if (old != null) old.RiderIds.Remove(r.Id);
@@ -591,6 +604,7 @@ namespace MotoManager.Core.Career
 
         private static void Sign(WorldState world, GameDatabase db, Seat seat, Rider r, int next, DeterministicRandom rng, Dictionary<string, double> levels)
         {
+            Contracts.Close(world, r, ContractEnd.Expired);
             var oldTeam = world.GetTeam(r.TeamId);
             if (oldTeam != null) oldTeam.RiderIds.Remove(r.Id);
             r.TeamId = seat.Team.Id;
@@ -604,30 +618,34 @@ namespace MotoManager.Core.Career
 
         private static Contract NewContract(Team team, Rider r, int start, int years, double salary, double funding)
         {
-            return new Contract
+            var c = new Contract
             {
+                Id = "ctr_" + r.Id + "_" + team.Id + "_" + start,
                 RiderFunding = funding,
                 TeamId = team.Id,
                 ManufacturerId = team.ManufacturerId,
                 StartSeason = start,
                 EndSeason = start + Math.Max(1, years) - 1,
                 SalaryPerSeason = salary,
-                WinBonus = Math.Round(salary * 0.05),
-                PodiumBonus = Math.Round(salary * 0.02),
                 FactoryBacked = team.Status == TeamStatus.Factory
             };
+            Contracts.StandardTerms(c);
+            // Valued riders get a release clause their team sets high.
+            if (salary > 0) c.Clauses.Add(new ContractClause { Type = ClauseType.ReleaseClause, Amount = Math.Round(salary * Math.Max(1, years) * 2.5 / 1000) * 1000 });
+            return c;
         }
 
         /// <summary>Standard race bonuses (estimated: real terms are not public) for contracts that have none.</summary>
-        public static void StandardBonuses(Contract c)
+        public static void StandardBonuses(Contract c, string riderId)
         {
-            if (c == null || c.WinBonus > 0 || c.PodiumBonus > 0) return;
-            c.WinBonus = Math.Round(c.SalaryPerSeason * 0.05);
-            c.PodiumBonus = Math.Round(c.SalaryPerSeason * 0.02);
+            if (c == null || c.RaceBonuses.Count > 0) return;
+            if (c.Id == null) c.Id = "ctr_init_" + riderId + "_" + c.TeamId;
+            Contracts.StandardTerms(c);
         }
 
         private static void Release(WorldState world, Rider r, MarketReport report)
         {
+            Contracts.Close(world, r, ContractEnd.Expired);
             var team = world.GetTeam(r.TeamId);
             if (team != null) team.RiderIds.Remove(r.Id);
             r.TeamId = null;

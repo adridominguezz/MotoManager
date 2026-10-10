@@ -82,17 +82,16 @@ namespace MotoManager.Core.Career
             var contract = new Contract
             {
                 TeamId = team.Id, ManufacturerId = team.ManufacturerId, StartSeason = next, EndSeason = next + years - 1,
-                SalaryPerSeason = salary, WinBonus = Math.Round(salary * 0.05), PodiumBonus = Math.Round(salary * 0.02),
+                Id = "ctr_" + rider.Id + "_" + team.Id + "_" + next, SalaryPerSeason = salary,
                 FactoryBacked = team.Status == TeamStatus.Factory, RiderFunding = TransferMarket.FundingFor(world, db, team, rider)
             };
+            Contracts.StandardTerms(contract);
             if (renewal)
             {
-                // Extension of the current deal (keeps him under contract, no seat change).
-                rider.Contract.EndSeason = contract.EndSeason;
-                rider.Contract.SalaryPerSeason = salary;
-                rider.Contract.RiderFunding = contract.RiderFunding;
+                // A new contract from next season: the current one is not rewritten (this season's terms stay).
+                rider.FutureContract = contract;
                 rider.Morale = Math.Min(100, rider.Morale + 5);
-                world.AddNews(rider.FullName + " extends with " + team.Name, "New deal until " + contract.EndSeason + ".", team.CategoryId, true);
+                world.AddNews(rider.FullName + " extends with " + team.Name, "New deal from " + next + " until " + contract.EndSeason + ".", team.CategoryId, true);
             }
             else
             {

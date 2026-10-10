@@ -165,26 +165,6 @@ namespace MotoManager.Core.Economy
             return (org != null ? org.Cash : 0) - before;
         }
 
-        /// <summary>
-        /// Race bonuses from riders' contracts: a win pays the win bonus, 2nd and 3rd the podium bonus (a win does not
-        /// also pay the podium bonus). Only riders racing for the team that holds their contract.
-        /// </summary>
-        public static double PayRaceBonuses(WorldState world, Team team, List<ResultEntry> raceClassification)
-        {
-            double total = 0;
-            foreach (var e in raceClassification)
-            {
-                if (e.TeamId != team.Id || e.Status != ResultStatus.Finished || e.Position > 3) continue;
-                var r = world.GetRider(e.RiderId);
-                if (r == null || r.Contract == null || r.Contract.TeamId != team.Id) continue;
-                double bonus = e.Position == 1 ? r.Contract.WinBonus : r.Contract.PodiumBonus;
-                if (bonus <= 0) continue;
-                Accounts.Post(world, team, LedgerKind.RiderBonus, -bonus, r.FullName + " P" + e.Position);
-                total += bonus;
-            }
-            return total;
-        }
-
         /// <summary>Prize money a team can expect per event when its riders finish around the given positions.</summary>
         public static double ExpectedPrizePerEvent(CategoryRules rules, double expectedPosition, int riders)
         {

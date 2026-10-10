@@ -35,6 +35,7 @@ namespace MotoManager.Core.Career
 
             FinalizeChampionships(world, db, summary);
             TeamAI.SeasonReview(world, db, rng);
+            Contracts.PaySeasonBonuses(world, db);
             SponsorsAndReputation(world, db, rng);
             TeamAI.OffseasonInvestment(world, db);
 
@@ -62,6 +63,8 @@ namespace MotoManager.Core.Career
                 }
             }
 
+            // Contract clauses (extensions, options, exit clauses) act before the market opens.
+            Contracts.EvaluateSeasonEnd(world, db, rng);
             DevelopmentService.ManufacturerSeasonReview(world, db, rng);
             DevelopmentService.WinterDevelopment(world, db, rng);
             summary.Market = TransferMarket.Run(world, db, rng);

@@ -484,6 +484,7 @@ namespace MotoManager.Core.Career
             {
                 var r = world.GetRider(id);
                 if (r == null) continue;
+                Contracts.Close(world, r, ContractEnd.TeamWithdrew);
                 r.TeamId = null;
                 r.Contract = null;
             }

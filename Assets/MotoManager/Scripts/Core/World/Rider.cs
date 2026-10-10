@@ -139,19 +139,120 @@ namespace MotoManager.Core.World
         public double GrandPrixPreference = 60;
     }
 
+    /// <summary>A bonus tier: paid when a result is at position <see cref="MaxPosition"/> or better.</summary>
+    [Serializable]
+    public class PositionBonus
+    {
+        public int MaxPosition;
+        public double Amount;
+    }
+
+    public enum ClauseType
+    {
+        /// <summary>Any team may free the rider by paying <see cref="ContractClause.Amount"/> to the current team.</summary>
+        ReleaseClause,
+        /// <summary>Automatic extension when a season objective is met in the contract's last season.</summary>
+        PerformanceExtension,
+        /// <summary>The team may extend the contract before it expires (decided at the end of the last season).</summary>
+        TeamOption,
+        /// <summary>The rider may extend the contract before it expires.</summary>
+        RiderOption,
+        /// <summary>The rider may leave without a fee for a team in a more prestigious category.</summary>
+        ExitForHigherCategory,
+        /// <summary>The rider may leave at the end of a season in which the team missed its objective.</summary>
+        ExitIfTeamMissesObjective
+    }
+
+    /// <summary>A contract clause with real effects (evaluated by the contract rules, never just text).</summary>
+    [Serializable]
+    public class ContractClause
+    {
+        public ClauseType Type;
+        /// <summary>Release clause price.</summary>
+        public double Amount;
+        /// <summary>Seasons added by an extension or option.</summary>
+        public int ExtraSeasons = 1;
+        /// <summary>Salary of the added seasons (0 = keep the current salary).</summary>
+        public double Salary;
+        /// <summary>Performance extension: championship position needed (the rider's position).</summary>
+        public int ChampionshipTopN;
+        /// <summary>Set when the team has exercised its option during the last season.</summary>
+        public bool Exercised;
+    }
+
     [Serializable]
     public class Contract
     {
+        public string Id;
         public string TeamId;
         public string ManufacturerId;
         public int StartSeason;
         public int EndSeason;
         public double SalaryPerSeason;
-        public double WinBonus;
-        public double PodiumBonus;
+        /// <summary>Paid once when the contract is signed.</summary>
+        public double SigningBonus;
+        /// <summary>Per race (main races): only the best matching tier is paid (a win does not also pay the podium tier).</summary>
+        public List<PositionBonus> RaceBonuses = new List<PositionBonus>();
+        /// <summary>At season end by championship position: only the best matching tier.</summary>
+        public List<PositionBonus> ChampionshipBonuses = new List<PositionBonus>();
+        /// <summary>At season end, per championship point.</summary>
+        public double PointBonus;
+        public double PoleBonus;
+        public List<ContractClause> Clauses = new List<ContractClause>();
+        /// <summary>Share of the salary of the remaining full seasons owed if the team ends the contract early.</summary>
+        public double TerminationShare = 0.5;
         public bool FactoryBacked;
         /// <summary>Money the rider's backers pay the team per season while the contract runs.</summary>
         public double RiderFunding;
+
+        public ContractClause Clause(ClauseType type)
+        {
+            foreach (var c in Clauses) if (c.Type == type) return c;
+            return null;
+        }
+
+        public double RaceBonusFor(int position)
+        {
+            double best = 0;
+            foreach (var b in RaceBonuses) if (position <= b.MaxPosition && b.Amount > best) best = b.Amount;
+            return best;
+        }
+
+        public double ChampionshipBonusFor(int position)
+        {
+            double best = 0;
+            foreach (var b in ChampionshipBonuses) if (position > 0 && position <= b.MaxPosition && b.Amount > best) best = b.Amount;
+            return best;
+        }
+    }
+
+    public enum ContractEnd
+    {
+        Expired,
+        Renewed,
+        Extended,
+        OptionExercised,
+        Released,
+        ReleaseClause,
+        Transfer,
+        ExitClause,
+        Retired,
+        TeamWithdrew
+    }
+
+    /// <summary>One contract in a rider's history, kept forever.</summary>
+    [Serializable]
+    public class ContractRecord
+    {
+        public string TeamId;
+        public string TeamName;
+        public string CategoryId;
+        public int StartSeason;
+        public int EndSeason;
+        public double SalaryPerSeason;
+        public ContractEnd Reason;
+        /// <summary>Transfer fee, release clause or severance involved (0 if none).</summary>
+        public double Fee;
     }
 
     /// <summary>One season of a rider's career, kept forever.</summary>
@@ -202,6 +303,7 @@ namespace MotoManager.Core.World
         /// <summary>Signed deal that starts next season (applied by the market at season end).</summary>
         public Contract FutureContract;
         public List<SeasonRecord> CareerHistory = new List<SeasonRecord>();
+        public List<ContractRecord> ContractHistory = new List<ContractRecord>();
         public List<string> Titles = new List<string>();
         /// <summary>Free text summary of real-world history before the snapshot.</summary>
         public string RealHistory;

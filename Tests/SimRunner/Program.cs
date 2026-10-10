@@ -208,6 +208,9 @@ namespace MotoManager.Tools
                 if (Environment.GetEnvironmentVariable("SIM_ECON") == "2") CategoryEconomy(game, db);
                 if (Environment.GetEnvironmentVariable("SIM_MAKERS") == "1") Makers(game, db, "motogp");
                 var summary = game.EndSeason();
+                if (Environment.GetEnvironmentVariable("SIM_MOVES") == "1")
+                    foreach (var g in summary.Market.Moves.Where(m => m.Buyout).GroupBy(m => m.FromCategoryId + "->" + m.ToCategoryId).OrderByDescending(g => g.Count()))
+                        Console.WriteLine($"     buyouts {g.Key}: {g.Count()}");
                 Console.WriteLine($"  -> retired {summary.Retired.Count}, market moves {summary.Market.Moves.Count(m => !m.Renewal)}, generated {summary.Market.GeneratedRiders}, youth {summary.YouthIntake}");
             }
             if (years > 1)

@@ -414,6 +414,32 @@ Orden: E1 → E2 → M1 → E3 → E4 → 8.4 → E5 → M2 → E6 → E7 → 8.
 - Interfaz: la lista libre de equipos se sustituye por el flujo de perfil → camino → empleo o fundación, con su
   comparación de categorías (ES/EN), y la pantalla de equipo muestra tu situación de manager. 59 tests en verde.
 
+### Sesión E4a — Contratos avanzados: reglas, cláusulas, traspasos ✅
+- Contrato con identificador:
+  - Prima de firma.
+  - Primas por carrera en tramos (solo se paga el mejor tramo: una victoria no cobra además el podio).
+  - Prima de pole, primas por posición final y por punto.
+  - Porcentaje de indemnización.
+- Cláusulas con efecto real (`Contracts`):
+  - Cláusula de rescisión.
+  - Extensión por rendimiento (posición en el campeonato).
+  - Opción del equipo: la IA decide; el jugador la ejerce durante la temporada.
+  - Opción del piloto.
+  - Salida libre hacia una categoría superior.
+  - Salida si el equipo no cumple su objetivo.
+- Orden en el cierre de temporada: resultados → primas de temporada (una sola vez por piloto) → extensión por
+  rendimiento → opción del equipo → opción del piloto → cláusulas de salida → mercado. Una cláusula usada
+  desaparece.
+- Rescisión unilateral: lo que queda de la temporada en curso más el porcentaje pactado de las siguientes.
+- Fichar a un piloto con contrato exige pagar: su cláusula de rescisión o su valor negociado (salario pendiente ×
+  su importancia). Los pilotos del jugador solo salen por su cláusula. El mercado de la IA paga y cobra traspasos
+  con las mismas reglas (desaparecen los «buyouts» gratis y la regla de +10 de prestigio).
+- Renovar crea un contrato nuevo desde la temporada siguiente; ya no se reescribe el contrato en curso.
+- Historial de contratos de cada piloto: equipo, fechas, salario, motivo de salida y cantidad pagada.
+- Los pilotos de una copa suben normalmente a la categoría que alimenta (Rookies → Moto3); saltar un escalón
+  es posible pero poco frecuente.
+- 64 tests en verde; los traspasos cuadran (lo que paga el comprador lo cobra el vendedor).
+
 ## Pendiente de especificación
 
 Recibidas las secciones 49–105; ver la Fase 8.

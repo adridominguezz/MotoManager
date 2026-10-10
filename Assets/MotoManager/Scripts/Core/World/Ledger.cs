@@ -29,6 +29,11 @@ namespace MotoManager.Core.World
         Equipment,
         BikePurchase,
         ManagerSalary,
+        /// <summary>Paid to end a rider's contract early.</summary>
+        RiderSeverance,
+        /// <summary>Paid or received for a rider under contract (release clause or agreed fee).</summary>
+        TransferFee,
+        RiderSigningBonus,
         /// <summary>Capital the owner puts into the organisation (not income).</summary>
         OwnerInvestment,
         LoanDrawdown,

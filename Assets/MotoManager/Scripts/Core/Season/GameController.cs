@@ -197,11 +197,11 @@ namespace MotoManager.Core.Season
                 foreach (var session in weekend.Result.Sessions)
                 {
                     if (session.Type != SessionType.Race) continue;
-                    FinanceService.PayRaceBonuses(World, team, session.Classification);
                     foreach (var e in session.Classification)
                         if (e.TeamId == team.Id && e.Status == ResultStatus.Finished && e.Position - 1 < rules.Economy.PrizeMoneyByPosition.Count)
                             prize += rules.Economy.PrizeMoneyByPosition[e.Position - 1];
                 }
+                Contracts.PayRaceBonuses(World, team, weekend.Result);
                 var outcome = ConditionEvaluator.TeamRace(weekend.Result, team.Id);
                 double bonus = SponsorService.EvaluateRace(World, team, outcome);
                 FinanceService.ApplyRound(World, Db, team, rounds, rules, crashes, prize, bonus);

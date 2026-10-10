@@ -45,16 +45,23 @@ namespace MotoManager.Tests
         }
 
         [Fact]
-        public void RenewalExtendsTheCurrentContract()
+        public void RenewalIsANewContractFromNextSeason()
         {
             var (game, team) = NewCareer("ducati_lenovo");
             var world = game.World;
             var rider = world.GetRider(team.RiderIds[0]);
+            var current = rider.Contract;
+            double salaryNow = current.SalaryPerSeason;
             double ask = ContractService.AskingSalary(world, game.Db, team, rider);
             var res = ContractService.Offer(world, game.Db, team, rider, ask, 3);
             Assert.True(res.Accepted, res.Message);
-            Assert.Equal(world.Season + 3, rider.Contract.EndSeason);
-            Assert.Null(rider.FutureContract);
+            // This season's terms are not rewritten.
+            Assert.Same(current, rider.Contract);
+            Assert.Equal(salaryNow, rider.Contract.SalaryPerSeason);
+            Assert.NotNull(rider.FutureContract);
+            Assert.Equal(world.Season + 1, rider.FutureContract.StartSeason);
+            Assert.Equal(world.Season + 3, rider.FutureContract.EndSeason);
+            Assert.Equal(team.Id, rider.FutureContract.TeamId);
         }
 
         [Fact]

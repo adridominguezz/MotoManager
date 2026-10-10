@@ -127,7 +127,7 @@ namespace MotoManager.Core.Season
                     SalaryPerSeason = c.SalaryPerSeason, FactoryBacked = c.FactoryBacked
                 };
                 // Real bonus terms are not public: standard estimated bonuses.
-                TransferMarket.StandardBonuses(r.Contract);
+                TransferMarket.StandardBonuses(r.Contract, r.Id);
             }
             foreach (var r in Sorted(world.Riders.Values))
             {
@@ -146,7 +146,7 @@ namespace MotoManager.Core.Season
                         TeamId = team.Id, ManufacturerId = team.ManufacturerId, StartSeason = season, EndSeason = season + (int)(DeterministicRandom.Hash(r.Id) % 2),
                         SalaryPerSeason = TransferMarket.SalaryDemand(r, rules), FactoryBacked = team.Status == TeamStatus.Factory
                     };
-                    TransferMarket.StandardBonuses(r.Contract);
+                    TransferMarket.StandardBonuses(r.Contract, r.Id);
                 }
             }
         }
@@ -271,7 +271,7 @@ namespace MotoManager.Core.Season
                         TeamId = team.Id, ManufacturerId = team.ManufacturerId, StartSeason = world.Season, EndSeason = world.Season + rng.NextInt(0, 2),
                         SalaryPerSeason = TransferMarket.SalaryDemand(r, rules), FactoryBacked = team.Status == TeamStatus.Factory
                     };
-                    TransferMarket.StandardBonuses(r.Contract);
+                    TransferMarket.StandardBonuses(r.Contract, r.Id);
                     r.Contract.RiderFunding = TransferMarket.FundingFor(world, db, team, r, levels);
                     world.Riders[r.Id] = r;
                     team.RiderIds.Add(r.Id);
