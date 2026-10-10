@@ -43,7 +43,7 @@ namespace MotoManager.App.UI
             var team = rider.Entry.Team;
             var teamColor = UiFactory.ParseColor(team != null ? team.Colors.Primary : null, Theme.Accent);
 
-            var bg = UiFactory.Panel("Rider " + rider.Entry.Rider.Code, parent, new Color(0.043f, 0.075f, 0.125f, 0.92f), true);
+            var bg = UiFactory.Panel("Rider " + rider.Entry.Rider.Code, parent, new Color(0.035f, 0.038f, 0.047f, 0.92f), true);
             UiFactory.Stretch(bg.rectTransform);
             var root = bg.rectTransform;
 
@@ -68,10 +68,11 @@ namespace MotoManager.App.UI
             }
 
             // Number badge in team colour (left); front and rear tyre and fuel (right); orders below.
-            var badge = UiFactory.Panel("Badge", root, teamColor, true);
+            var badge = UiFactory.Panel("Badge", root, teamColor);
+            UiFactory.Chamfer(badge, 1.6f);
             UiFactory.Place(badge.rectTransform, 0.03f, 0.37f, 0.25f, 0.63f);
             var num = UiFactory.Label("Number", badge.transform, rider.Entry.Rider.Number.ToString(), Theme.FontLarge + 4, TextAnchor.MiddleCenter, Color.white);
-            num.fontStyle = FontStyle.Bold;
+            num.fontStyle = FontStyle.BoldAndItalic;
             num.gameObject.AddComponent<Outline>().effectColor = new Color(0, 0, 0, 0.6f);
             UiFactory.Stretch(num.rectTransform);
             _status = UiFactory.Label("Name", root, rider.Entry.Rider.ShortName, Theme.FontSmall - 6, TextAnchor.MiddleCenter, Theme.TextDim);
@@ -206,9 +207,9 @@ namespace MotoManager.App.UI
             _status.color = string.IsNullOrEmpty(status) ? Theme.TextDim : Theme.Warning;
 
             _pace.GetComponentInChildren<Text>().text = "»  " + Loc.T("cmd.pace." + (r.Pace == PaceMode.Conserve ? "save" : r.Pace == PaceMode.Push ? "push" : "normal"));
-            _pace.image.color = r.Pace == PaceMode.Push ? Theme.Accent : r.Pace == PaceMode.Conserve ? new Color32(46, 140, 90, 255) : Theme.PanelLight;
+            _pace.image.color = r.Pace == PaceMode.Push ? Theme.Accent : r.Pace == PaceMode.Conserve ? new Color32(48, 112, 78, 255) : Theme.PanelLight;
             _mode.GetComponentInChildren<Text>().text = "»  " + Loc.T("cmd.mode." + (r.Mode == RiderMode.Attack ? "attack" : r.Mode == RiderMode.Defend ? "defend" : "normal"));
-            _mode.image.color = r.Mode == RiderMode.Attack ? Theme.Accent : r.Mode == RiderMode.Defend ? new Color32(52, 110, 200, 255) : Theme.PanelLight;
+            _mode.image.color = r.Mode == RiderMode.Attack ? Theme.Accent : r.Mode == RiderMode.Defend ? new Color32(78, 92, 116, 255) : Theme.PanelLight;
             _auto.image.color = r.Entry.AutoManaged ? Theme.Good : Theme.PanelLight;
         }
     }

@@ -48,41 +48,50 @@ namespace MotoManager.App.UI
             UiFactory.Stretch(dim.rectTransform);
             dim.gameObject.AddComponent<Button>().onClick.AddListener(Next);
 
-            var card = UiFactory.Panel("Card", root, new Color32(110, 160, 190, 255), true);
+            // Pit-radio card: graphite panel with angled corners, an accent strip on top and a light message plate.
+            var card = UiFactory.Panel("Card", root, Theme.Panel);
+            UiFactory.Chamfer(card, 1.2f);
             UiFactory.Place(card.rectTransform, 0.24f, 0.08f, 0.76f, 0.38f);
             card.raycastTarget = false;
-            UiFactory.Gradient(card, 1.2f, 0.78f);
-            UiFactory.DropShadow(card, 0.5f, 8);
-            card.gameObject.AddComponent<Outline>().effectColor = new Color(1, 1, 1, 0.15f);
+            UiFactory.Gradient(card, 1.1f, 0.92f);
+            UiFactory.DropShadow(card, 0.5f, 5);
+            card.gameObject.AddComponent<Outline>().effectColor = new Color(1, 1, 1, 0.1f);
+            var strip = UiFactory.Decor("Accent", card.transform, Theme.Accent);
+            strip.rectTransform.anchorMin = new Vector2(0, 1);
+            strip.rectTransform.anchorMax = new Vector2(0.6f, 1);
+            strip.rectTransform.offsetMin = new Vector2(0, -4);
+            strip.rectTransform.offsetMax = Vector2.zero;
+            UiFactory.Gradient(strip, Color.white, new Color(1, 1, 1, 0), true);
 
-            // Avatar: initial on a round badge with a gold ring, name and role.
-            var avatar = UiFactory.Panel("Avatar", card.transform, new Color32(40, 60, 90, 255), true);
+            // Avatar: initial on a dark badge with an accent rim, name and role.
+            var avatar = UiFactory.Panel("Avatar", card.transform, Theme.Background);
+            UiFactory.Chamfer(avatar, 2f);
             UiFactory.Place(avatar.rectTransform, 0.03f, 0.3f, 0.24f, 0.92f);
             avatar.raycastTarget = false;
-            UiFactory.Gradient(avatar, 1.35f, 0.75f);
+            UiFactory.Gradient(avatar, 1.2f, 0.9f);
             var ring = avatar.gameObject.AddComponent<Outline>();
-            ring.effectColor = new Color32(250, 210, 40, 200);
-            ring.effectDistance = new Vector2(3, -3);
-            var initial = UiFactory.Label("Initial", avatar.transform, Name.Substring(0, 1), Theme.FontTitle, TextAnchor.MiddleCenter, new Color32(250, 210, 40, 255));
-            initial.fontStyle = FontStyle.Bold;
+            ring.effectColor = Theme.Alpha(Theme.Accent, 0.85f);
+            ring.effectDistance = new Vector2(2, -2);
+            var initial = UiFactory.Label("Initial", avatar.transform, Name.Substring(0, 1), Theme.FontTitle, TextAnchor.MiddleCenter, Theme.Text);
+            initial.fontStyle = FontStyle.BoldAndItalic;
             UiFactory.DropShadow(initial, 0.5f, 3);
             UiFactory.Stretch(initial.rectTransform);
-            var who = UiFactory.Label("Who", card.transform, Loc.T("assistant.role") + "\n<b>" + Name + "</b>", Theme.FontSmall, TextAnchor.MiddleCenter, Color.white);
+            var who = UiFactory.Label("Who", card.transform, Theme.Caps(Loc.T("assistant.role")) + "\n<b>" + Name + "</b>", Theme.FontSmall, TextAnchor.MiddleCenter, Color.white);
             who.supportRichText = true;
             UiFactory.DropShadow(who, 0.4f, 1.5f);
             UiFactory.Place(who.rectTransform, 0.01f, 0.03f, 0.26f, 0.3f);
 
-            var bubble = UiFactory.Panel("Bubble", card.transform, new Color32(222, 232, 238, 255), true);
+            var bubble = UiFactory.Panel("Bubble", card.transform, new Color32(232, 234, 238, 255));
+            UiFactory.Chamfer(bubble, 2f);
             UiFactory.Place(bubble.rectTransform, 0.28f, 0.06f, 0.97f, 0.94f);
             bubble.raycastTarget = false;
-            UiFactory.Gradient(bubble, 1.08f, 0.94f);
-            UiFactory.DropShadow(bubble, 0.25f, 3);
-            _text = UiFactory.Label("Text", bubble.transform, "", Theme.FontNormal - 2, TextAnchor.MiddleLeft, new Color32(25, 35, 50, 255));
+            UiFactory.Gradient(bubble, 1.04f, 0.96f);
+            _text = UiFactory.Label("Text", bubble.transform, "", Theme.FontNormal - 2, TextAnchor.MiddleLeft, new Color32(16, 18, 22, 255));
             _text.supportRichText = true;
             UiFactory.Place(_text.rectTransform, 0.05f, 0.05f, 0.95f, 0.95f);
 
-            var tap = UiFactory.Label("Tap", root, Loc.T("assistant.tap"), Theme.FontNormal, TextAnchor.MiddleCenter, new Color32(250, 190, 40, 255));
-            tap.fontStyle = FontStyle.Bold;
+            var tap = UiFactory.Label("Tap", root, Theme.Caps(Loc.T("assistant.tap")), Theme.FontNormal, TextAnchor.MiddleCenter, Theme.Timing);
+            tap.fontStyle = FontStyle.BoldAndItalic;
             tap.gameObject.AddComponent<Outline>().effectColor = new Color(0, 0, 0, 0.6f);
             UiFactory.Place(tap.rectTransform, 0.3f, 0.01f, 0.7f, 0.075f);
             ShowCurrent();

@@ -32,31 +32,37 @@ namespace MotoManager.App.UI
             Theme.SetAccent(Theme.Accent);
             var bg = UiFactory.Panel("Background", root, Theme.Background);
             UiFactory.Stretch(bg.rectTransform);
-            UiFactory.Gradient(bg, 1.5f, 0.85f);
+            UiFactory.Gradient(bg, 1.3f, 0.88f);
+            var weave = UiFactory.Pattern("Carbon", bg.transform, UiFactory.CarbonSprite, new Color(1, 1, 1, 0.025f), 10);
+            UiFactory.Stretch(weave.rectTransform);
 
-            var left = UiFactory.Panel("Left", bg.transform, Theme.Panel);
+            var left = UiFactory.Panel("Left", bg.transform, Color.Lerp(Theme.Background, Theme.Panel, 0.7f));
             UiFactory.Place(left.rectTransform, 0, 0, 0.36f, 1);
-            UiFactory.Gradient(left, 1.3f, 0.8f);
-            UiFactory.DropShadow(left, 0.5f, 0).effectDistance = new Vector2(8, 0);
-            // Livery stripes behind the menu, clipped to the panel, and a red edge on its right side.
+            UiFactory.Gradient(left, 1.12f, 0.9f);
+            UiFactory.DropShadow(left, 0.5f, 0).effectDistance = new Vector2(6, 0);
+            // A chequered band and a thin accent line slanting behind the menu, clipped to the panel, and an accent
+            // edge on its right side.
             var livery = UiFactory.Rect("Livery", left.transform);
             UiFactory.Stretch(livery);
             livery.gameObject.AddComponent<RectMask2D>();
-            for (int i = 0; i < 3; i++)
-            {
-                var band = UiFactory.Decor("Band", livery, i == 1 ? new Color(1, 1, 1, 0.05f) : Theme.Alpha(Theme.Accent, 0.12f));
-                band.rectTransform.anchorMin = band.rectTransform.anchorMax = new Vector2(0.62f + i * 0.16f, 0.3f);
-                band.rectTransform.sizeDelta = new Vector2(i == 1 ? 26 : 70, 1600);
-                band.rectTransform.localRotation = Quaternion.Euler(0, 0, -28);
-            }
+            var flag = UiFactory.Pattern("Chequered", livery, UiFactory.CheckerSprite, new Color(1, 1, 1, 0.07f), 40);
+            flag.rectTransform.anchorMin = flag.rectTransform.anchorMax = new Vector2(0.86f, 0.3f);
+            flag.rectTransform.sizeDelta = new Vector2(80, 1600);
+            flag.rectTransform.localRotation = Quaternion.Euler(0, 0, -24);
+            var band = UiFactory.Decor("Band", livery, Theme.Alpha(Theme.Accent, 0.35f));
+            band.rectTransform.anchorMin = band.rectTransform.anchorMax = new Vector2(0.86f, 0.3f);
+            band.rectTransform.anchoredPosition = new Vector2(-70, 0);
+            band.rectTransform.sizeDelta = new Vector2(6, 1600);
+            band.rectTransform.localRotation = Quaternion.Euler(0, 0, -24);
             var edge = UiFactory.Decor("Edge", left.transform, Theme.Accent);
             edge.rectTransform.anchorMin = new Vector2(1, 0);
             edge.rectTransform.anchorMax = new Vector2(1, 1);
-            edge.rectTransform.offsetMin = new Vector2(-4, 0);
+            edge.rectTransform.offsetMin = new Vector2(-3, 0);
             edge.rectTransform.offsetMax = Vector2.zero;
             UiFactory.Gradient(edge, Color.white, new Color(1, 1, 1, 0.15f));
-            var title = UiFactory.Label("Title", left.transform, "<b>MOTORCYCLE</b>\nMOTORSPORT\n<color=" + Theme.BadHex + "><b>MANAGER</b></color>", Theme.FontTitle, TextAnchor.UpperLeft);
+            var title = UiFactory.Label("Title", left.transform, "<b>MOTORCYCLE</b>\nMOTORSPORT\n<color=#" + ColorUtility.ToHtmlStringRGB(Theme.Accent) + "><b>MANAGER</b></color>", Theme.FontTitle, TextAnchor.UpperLeft);
             title.supportRichText = true;
+            title.fontStyle = FontStyle.Italic;
             UiFactory.DropShadow(title, 0.6f, 3);
             UiFactory.Place(title.rectTransform, 0.08f, 0.66f, 0.95f, 0.95f);
             _status = UiFactory.Label("Status", left.transform, "", Theme.FontSmall + 2, TextAnchor.UpperLeft, Theme.TextDim);

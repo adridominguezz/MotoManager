@@ -46,11 +46,18 @@ namespace MotoManager.App.UI
 
             var bg = UiFactory.Panel("Dim", root, new Color(0, 0, 0, 0.75f));
             UiFactory.Stretch(bg.rectTransform);
-            var panel = UiFactory.Panel("Panel", root, Theme.Panel, true);
+            var panel = UiFactory.Panel("Panel", root, Theme.Panel);
+            UiFactory.Chamfer(panel, 1.2f);
+            UiFactory.Gradient(panel, 1.06f, 0.94f);
+            panel.gameObject.AddComponent<Outline>().effectColor = new Color(1, 1, 1, 0.08f);
             UiFactory.Place(panel.rectTransform, 0.18f, 0.1f, 0.82f, 0.9f);
             var p = panel.rectTransform;
 
             var title = UiFactory.Label("Title", p, Loc.Round(w.Round.Name) + " · " + Loc.Or("session." + session.Name, session.Name) + " · " + Loc.T("pre.laps", laps), Theme.FontLarge, TextAnchor.MiddleCenter);
+            UiFactory.RaceTitle(title);
+            title.resizeTextForBestFit = true;
+            title.resizeTextMinSize = Theme.FontNormal - 2;
+            title.resizeTextMaxSize = Theme.FontLarge;
             UiFactory.Place(title.rectTransform, 0.02f, 0.88f, 0.98f, 0.98f);
             string conditions = Loc.T(weather.InitialWetness > 0.35 ? "pre.wet" : "pre.dry", model.AirTemp.ToString("0"), model.TrackTemp.ToString("0")) +
                                 "\n" + Loc.T("pre.forecast", (rain * 100).ToString("0"));

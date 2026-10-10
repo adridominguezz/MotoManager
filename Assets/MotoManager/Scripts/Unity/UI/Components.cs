@@ -16,25 +16,19 @@ namespace MotoManager.App.UI
         /// <summary>A rounded card with an optional title and subtitle; add rows to the returned transform.</summary>
         public static RectTransform Card(Transform list, string title = null, string subtitle = null, Color? color = null)
         {
-            var img = UiFactory.Panel("Card", list, color ?? Theme.Card, true);
+            var img = UiFactory.Panel("Card", list, color ?? Theme.Card);
             var rt = img.rectTransform;
-            // Depth: lighter at the top, a soft shadow below (only on opaque cards, where it cannot show through).
-            UiFactory.Gradient(img, 1.14f, 0.9f);
-            if (img.color.a > 0.95f) UiFactory.DropShadow(img, 0.45f, 5);
-            // A wash of the section colour fading down from the top edge: every card carries the section's tint.
-            var wash = UiFactory.Decor("Wash", rt, Theme.Alpha(Theme.CurrentAccent, 0.2f), true);
-            wash.rectTransform.anchorMin = new Vector2(0, 1);
-            wash.rectTransform.anchorMax = new Vector2(1, 1);
-            wash.rectTransform.pivot = new Vector2(0.5f, 1);
-            wash.rectTransform.offsetMin = new Vector2(0, -64);
-            wash.rectTransform.offsetMax = Vector2.zero;
-            UiFactory.Gradient(wash, Color.white, new Color(1, 1, 1, 0));
-            // Fine highlight along the top edge (light catching the rim).
-            var rim = UiFactory.Decor("Rim", rt, new Color(1, 1, 1, 0.08f));
+            // Flat graphite panel with angled corners (top right, bottom left), a barely-there shade and a short
+            // hard shadow (only on opaque cards, where it cannot show through).
+            UiFactory.Chamfer(img, 1.4f);
+            UiFactory.Gradient(img, 1.05f, 0.95f);
+            if (img.color.a > 0.95f) UiFactory.DropShadow(img, 0.35f, 3);
+            // Fine highlight along the top edge, stopping before the angled corner.
+            var rim = UiFactory.Decor("Rim", rt, new Color(1, 1, 1, 0.06f));
             rim.rectTransform.anchorMin = new Vector2(0, 1);
             rim.rectTransform.anchorMax = new Vector2(1, 1);
-            rim.rectTransform.offsetMin = new Vector2(14, -2);
-            rim.rectTransform.offsetMax = new Vector2(-14, 0);
+            rim.rectTransform.offsetMin = new Vector2(0, -1);
+            rim.rectTransform.offsetMax = new Vector2(-16, 0);
             var layout = rt.gameObject.AddComponent<VerticalLayoutGroup>();
             layout.padding = new RectOffset(18, 18, 14, 16);
             layout.spacing = 8;
@@ -45,22 +39,43 @@ namespace MotoManager.App.UI
             if (title != null)
             {
                 var row = UiFactory.Row(rt, subtitle != null ? 70 : 44);
-                var t = UiFactory.Label("Title", row, "<b>" + title + "</b>" + (subtitle != null ? "\n" + Theme.Dim("<size=" + (Theme.FontSmall - 2) + ">" + subtitle + "</size>") : ""),
+                // Faint diagonal hatching in the top-right corner of the title band (a livery / pit-board detail).
+                var hatch = UiFactory.Pattern("Hatch", row, UiFactory.StripesSprite, new Color(1, 1, 1, 0.045f), 18);
+                hatch.rectTransform.anchorMin = new Vector2(1, 0);
+                hatch.rectTransform.anchorMax = new Vector2(1, 1);
+                hatch.rectTransform.pivot = new Vector2(1, 0.5f);
+                hatch.rectTransform.offsetMin = new Vector2(-150, 0);
+                hatch.rectTransform.offsetMax = new Vector2(-14, 0);
+                UiFactory.Gradient(hatch, new Color(1, 1, 1, 0), Color.white, true);
+                // Upper-case bold italic title (racing graphics), the subtitle in plain dimmed type below.
+                var t = UiFactory.Label("Title", row, "<b>" + Theme.Caps(title) + "</b>" + (subtitle != null ? "\n" + Theme.Dim("<i><size=" + (Theme.FontSmall - 2) + ">" + subtitle + "</size></i>") : ""),
                     Theme.FontNormal, TextAnchor.MiddleLeft);
                 t.supportRichText = true;
+                t.fontStyle = FontStyle.Italic;
+                // Upper case is wider: a long title shrinks a little rather than being cut on narrow cards.
+                t.resizeTextForBestFit = true;
+                t.resizeTextMinSize = Theme.FontSmall - 2;
+                t.resizeTextMaxSize = Theme.FontNormal;
                 UiFactory.DropShadow(t, 0.35f, 1.5f);
                 UiFactory.Stretch(t.rectTransform);
-                t.rectTransform.offsetMin = new Vector2(16, 0);
-                // Accent tab beside the title and a hairline under the title block.
-                var tab = UiFactory.Decor("TitleAccent", row, Theme.CurrentAccent, true);
-                tab.pixelsPerUnitMultiplier = 6f;
-                UiFactory.Place(tab.rectTransform, 0, 0.18f, 0, 0.82f);
-                tab.rectTransform.offsetMax = new Vector2(5, 0);
-                var hair = UiFactory.Decor("Divider", row, Theme.Divider);
+                t.rectTransform.offsetMin = new Vector2(26, 0);
+                // Slanted accent tag beside the title and an accent rule under the title block fading to the right.
+                var tab = UiFactory.Decor("TitleAccent", row, Theme.CurrentAccent);
+                UiFactory.Slant(tab, 3.2f);
+                UiFactory.Place(tab.rectTransform, 0, 0.22f, 0, 0.78f);
+                tab.rectTransform.offsetMin = new Vector2(-4, 0);
+                tab.rectTransform.offsetMax = new Vector2(12, 0);
+                if (subtitle != null)
+                {
+                    tab.rectTransform.anchorMin = new Vector2(0, 0.56f);
+                    tab.rectTransform.anchorMax = new Vector2(0, 0.92f);
+                }
+                var hair = UiFactory.Decor("Divider", row, Theme.Alpha(Theme.CurrentAccent, 0.8f));
                 hair.rectTransform.anchorMin = new Vector2(0, 0);
                 hair.rectTransform.anchorMax = new Vector2(1, 0);
-                hair.rectTransform.offsetMin = new Vector2(0, -4);
+                hair.rectTransform.offsetMin = new Vector2(-18, -4);
                 hair.rectTransform.offsetMax = new Vector2(0, -2);
+                UiFactory.Gradient(hair, Color.white, new Color(1, 1, 1, 0), true);
             }
             return rt;
         }
@@ -71,30 +86,28 @@ namespace MotoManager.App.UI
             var row = UiFactory.Row(list, 118);
             for (int i = 0; i < items.Length; i++)
             {
-                // Each tile takes a colour of the palette: a tinted body, a bright cap and a faint glow from the cap.
-                var hue = Theme.Palette[i % Theme.Palette.Length];
-                var tile = UiFactory.Panel("Kpi", row, Color.Lerp(Theme.PanelLight, hue, 0.13f), true);
+                // Timing-screen tile: a near-black recessed body, a short accent speed stripe on the top-left edge
+                // (the first tile carries the accent, the others neutral steel) and big bold italic figures.
+                var tile = UiFactory.Panel("Kpi", row, Color.Lerp(Theme.Background, Theme.Panel, 0.6f));
+                UiFactory.Chamfer(tile, 2.4f);
                 UiFactory.Place(tile.rectTransform, (float)i / items.Length, 0, (float)(i + 1) / items.Length, 1, 5);
-                UiFactory.Gradient(tile, 1.18f, 0.82f);
-                UiFactory.DropShadow(tile, 0.4f, 4);
-                var glow = UiFactory.Decor("Glow", tile.transform, Theme.Alpha(hue, 0.22f), true);
-                UiFactory.Place(glow.rectTransform, 0, 0.45f, 1, 1);
-                UiFactory.Gradient(glow, Color.white, new Color(1, 1, 1, 0));
-                var cap = UiFactory.Decor("Cap", tile.transform, hue, true);
-                cap.pixelsPerUnitMultiplier = 8f;
+                UiFactory.Gradient(tile, 1.08f, 0.94f);
+                tile.gameObject.AddComponent<Outline>().effectColor = new Color(1, 1, 1, 0.06f);
+                var cap = UiFactory.Decor("Cap", tile.transform, i == 0 ? Theme.CurrentAccent : Theme.Palette[(i - 1) % Theme.Palette.Length]);
+                UiFactory.Slant(cap, 4f);
                 cap.rectTransform.anchorMin = new Vector2(0, 1);
-                cap.rectTransform.anchorMax = new Vector2(1, 1);
-                cap.rectTransform.offsetMin = new Vector2(16, -5);
-                cap.rectTransform.offsetMax = new Vector2(-16, 0);
+                cap.rectTransform.anchorMax = new Vector2(0.42f, 1);
+                cap.rectTransform.offsetMin = new Vector2(10, -5);
+                cap.rectTransform.offsetMax = new Vector2(0, -1);
                 var v = UiFactory.Label("Value", tile.transform, items[i][0], Theme.FontLarge - 4, TextAnchor.MiddleCenter);
                 v.supportRichText = true;
-                v.fontStyle = FontStyle.Bold;
+                v.fontStyle = FontStyle.BoldAndItalic;
                 UiFactory.DropShadow(v, 0.45f, 2);
                 v.resizeTextForBestFit = true;
                 v.resizeTextMinSize = Theme.FontSmall - 6;
                 v.resizeTextMaxSize = Theme.FontLarge - 4;
                 UiFactory.Place(v.rectTransform, 0, 0.38f, 1, 0.95f);
-                var c = UiFactory.Label("Caption", tile.transform, items[i][1], Theme.FontSmall - 4, TextAnchor.MiddleCenter, Color.Lerp(Theme.TextDim, Color.white, 0.2f));
+                var c = UiFactory.Label("Caption", tile.transform, Theme.Caps(items[i][1]), Theme.FontSmall - 4, TextAnchor.MiddleCenter, Color.Lerp(Theme.TextDim, Color.white, 0.2f));
                 c.supportRichText = true;
                 c.resizeTextForBestFit = true;
                 c.resizeTextMinSize = Theme.FontSmall - 10;
@@ -116,16 +129,16 @@ namespace MotoManager.App.UI
             {
                 int idx = i;
                 bool on = i == selected;
-                // Selected pill: filled with the section colour, bold, with a light rim; the others stay quiet.
-                var b = UiFactory.Button("Chip", row, labels[i], () => onSelect(idx), on ? Theme.CurrentAccent : Color.Lerp(Theme.Panel, Theme.PanelLight, 0.7f), Theme.FontSmall - 2);
-                UiFactory.Place((RectTransform)b.transform, (float)i / labels.Count, 0, (float)(i + 1) / labels.Count, 1, 4);
+                // Slanted segments like the tabs of a timing screen: the selected one filled with the accent, bold
+                // italic; the others dark graphite with grey type.
+                var b = UiFactory.Button("Chip", row, labels[i], () => onSelect(idx), on ? Theme.CurrentAccent : Color.Lerp(Theme.Panel, Theme.PanelLight, 0.55f), Theme.FontSmall - 2);
+                UiFactory.Slant(b.image, 2.6f);
+                UiFactory.Place((RectTransform)b.transform, (float)i / labels.Count, 0, (float)(i + 1) / labels.Count, 1, 3);
                 var text = b.GetComponentInChildren<Text>();
-                if (on)
-                {
-                    text.fontStyle = FontStyle.Bold;
-                    b.gameObject.AddComponent<Outline>().effectColor = new Color(1, 1, 1, 0.18f);
-                }
-                else text.color = Color.Lerp(Theme.TextDim, Color.white, 0.25f);
+                text.rectTransform.offsetMin = new Vector2(8, 0);
+                text.rectTransform.offsetMax = new Vector2(-8, 0);
+                if (on) text.fontStyle = FontStyle.BoldAndItalic;
+                else text.color = Color.Lerp(Theme.TextDim, Color.white, 0.2f);
             }
         }
 
@@ -141,15 +154,23 @@ namespace MotoManager.App.UI
             l.resizeTextMinSize = Theme.FontSmall - 8;
             l.resizeTextMaxSize = Theme.FontSmall;
             UiFactory.Place(l.rectTransform, 0, 0, 0.45f, 1);
-            // Recessed track (darker at the top) with a glossy fill (lighter at the top).
-            var back = UiFactory.Panel("Back", row, new Color(0, 0, 0, 0.32f), true);
-            UiFactory.Place(back.rectTransform, 0.46f, 0.28f, 0.86f, 0.72f);
-            UiFactory.Gradient(back, new Color(1, 1, 1, 1.25f), new Color(1, 1, 1, 0.8f));
-            var fill = UiFactory.Panel("Fill", back.transform, color ?? Theme.Good, true);
-            UiFactory.Gradient(fill, 1.3f, 0.78f);
+            // Flat, square-cut gauge: a dark track with quarter ticks and a solid fill brightening towards its tip
+            // (like a rev / telemetry bar).
+            var back = UiFactory.Panel("Back", row, new Color(0, 0, 0, 0.45f));
+            UiFactory.Place(back.rectTransform, 0.46f, 0.3f, 0.86f, 0.7f);
+            var fill = UiFactory.Panel("Fill", back.transform, color ?? Theme.Good);
+            UiFactory.Gradient(fill, new Color(0.8f, 0.8f, 0.8f, 1), Color.white, true);
             fill.rectTransform.anchorMin = Vector2.zero;
             fill.rectTransform.anchorMax = new Vector2(Mathf.Clamp01((float)fraction), 1);
             fill.rectTransform.offsetMin = fill.rectTransform.offsetMax = Vector2.zero;
+            for (int k = 1; k < 4; k++)
+            {
+                var tick = UiFactory.Decor("Tick", back.transform, new Color(0, 0, 0, 0.55f));
+                tick.rectTransform.anchorMin = new Vector2(k * 0.25f, 0);
+                tick.rectTransform.anchorMax = new Vector2(k * 0.25f, 1);
+                tick.rectTransform.offsetMin = new Vector2(-1, 0);
+                tick.rectTransform.offsetMax = new Vector2(1, 0);
+            }
             var v = UiFactory.Label("Value", row, value, Theme.FontSmall, TextAnchor.MiddleRight);
             v.supportRichText = true;
             UiFactory.Place(v.rectTransform, 0.87f, 0, 1, 1);
@@ -158,7 +179,7 @@ namespace MotoManager.App.UI
         /// <summary>Colour for a 0-100 rating.</summary>
         public static Color RatingColor(double v)
         {
-            return v >= 75 ? Theme.Good : v >= 55 ? new Color32(110, 170, 240, 255) : v >= 40 ? Theme.Warning : Theme.Bad;
+            return v >= 75 ? Theme.Good : v >= 55 ? Theme.Info : v >= 40 ? Theme.Warning : Theme.Bad;
         }
 
         /// <summary>
@@ -169,12 +190,12 @@ namespace MotoManager.App.UI
         {
             var row = UiFactory.Rect("Item", list);
             var bg = row.gameObject.AddComponent<Image>();
-            UiFactory.Round(bg);
-            bg.color = new Color(1, 1, 1, 0.05f);
+            UiFactory.Chamfer(bg, 3f);
+            bg.color = new Color(1, 1, 1, 0.045f);
             bg.raycastTarget = false;
-            // Slightly brighter at the top, fading down, with a section-coloured marker on the left edge.
-            UiFactory.Gradient(bg, new Color(1, 1, 1, 1.3f), new Color(1, 1, 1, 0.6f));
-            UiFactory.SideStripe(row, Theme.Alpha(Theme.CurrentAccent, 0.85f), 4, 14);
+            // Flat row with a thin square steel marker on the left edge (timing-tower entry); the accent stays for
+            // titles, selection and the main actions.
+            UiFactory.SideStripe(row, Theme.Steel, 3, 10);
             var h = row.gameObject.AddComponent<HorizontalLayoutGroup>();
             h.padding = new RectOffset(16, 10, 10, 10);
             h.spacing = 10;
@@ -221,7 +242,7 @@ namespace MotoManager.App.UI
         public static void Expander(Transform list, string key, string title, Action<Transform> build, Action refresh)
         {
             bool open = Open.Contains(key);
-            // The arrow takes the section colour; an open section is lit a little more than a closed one.
+            // The arrow takes the accent; an open section is lit a little more than a closed one.
             var b = UiFactory.Button("Expander", list, Theme.AccentText(open ? "▼" : "►") + "  " + title, () =>
             {
                 if (!Open.Remove(key)) Open.Add(key);
@@ -232,6 +253,7 @@ namespace MotoManager.App.UI
             label.supportRichText = true;
             label.alignment = TextAnchor.MiddleLeft;
             label.color = open ? Theme.Text : Color.Lerp(Theme.TextDim, Color.white, 0.15f);
+            label.fontStyle = open ? FontStyle.Bold : FontStyle.Normal;
             label.rectTransform.offsetMin = new Vector2(16, 0);
             if (!open) return;
             var inner = UiFactory.Rect("ExpanderContent", list);

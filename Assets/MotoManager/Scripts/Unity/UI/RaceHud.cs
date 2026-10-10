@@ -59,6 +59,7 @@ namespace MotoManager.App.UI
             public Image Background;
             public Image TeamBar;
             public Text Position;
+            public Image PosBlock;
             public Text Name;
             public Text Gap;
             public Text Tires;
@@ -116,11 +117,24 @@ namespace MotoManager.App.UI
             }
 
             // Top bar
-            var top = UiFactory.Panel("TopBar", _root, new Color(0.043f, 0.075f, 0.125f, 0.85f));
+            var top = UiFactory.Panel("TopBar", _root, new Color(0.035f, 0.038f, 0.047f, 0.85f));
             UiFactory.Place(top.rectTransform, 0, 0.93f, 1, 1);
-            var titleText = UiFactory.Label("Title", top.transform, title, Theme.FontNormal, TextAnchor.MiddleLeft);
+            // Broadcast-style bar: a thin accent rule along its base and bold italic upper-case title and lap count.
+            var topLine = UiFactory.Decor("AccentLine", top.transform, Theme.Accent);
+            topLine.rectTransform.anchorMin = new Vector2(0, 0);
+            topLine.rectTransform.anchorMax = new Vector2(1, 0);
+            topLine.rectTransform.offsetMin = Vector2.zero;
+            topLine.rectTransform.offsetMax = new Vector2(0, 2);
+            UiFactory.Gradient(topLine, Color.white, new Color(1, 1, 1, 0.05f), true);
+            var titleText = UiFactory.Label("Title", top.transform, Theme.Caps(title), Theme.FontNormal, TextAnchor.MiddleLeft);
+            titleText.supportRichText = true;
+            titleText.fontStyle = FontStyle.BoldAndItalic;
+            titleText.resizeTextForBestFit = true;
+            titleText.resizeTextMinSize = Theme.FontSmall - 4;
+            titleText.resizeTextMaxSize = Theme.FontNormal;
             UiFactory.Place(titleText.rectTransform, 0.01f, 0, 0.3f, 1);
             _lapText = UiFactory.Label("Lap", top.transform, "", Theme.FontLarge, TextAnchor.MiddleCenter);
+            _lapText.fontStyle = FontStyle.BoldAndItalic;
             UiFactory.Place(_lapText.rectTransform, 0.3f, 0, 0.45f, 1);
             _conditions = UiFactory.Label("Conditions", top.transform, "", Theme.FontSmall, TextAnchor.MiddleLeft, Theme.TextDim);
             UiFactory.Place(_conditions.rectTransform, 0.45f, 0, 0.66f, 1);
@@ -142,7 +156,7 @@ namespace MotoManager.App.UI
             UiFactory.Place((RectTransform)skip.transform, 0.957f, 0.1f, 0.995f, 0.9f);
 
             // Timing tower
-            var tower = UiFactory.Panel("Tower", _root, new Color(0.043f, 0.075f, 0.125f, 0.9f), true);
+            var tower = UiFactory.Panel("Tower", _root, new Color(0.035f, 0.038f, 0.047f, 0.9f), true);
             UiFactory.Place(tower.rectTransform, 0.005f, 0.005f, 0.22f, 0.855f);
             _tower = tower.rectTransform;
             float rowH = 1f / Mathf.Max(sim.Riders.Count, 18);
@@ -156,8 +170,15 @@ namespace MotoManager.App.UI
                 var button = bg.gameObject.AddComponent<Button>();
                 int index = i;
                 button.onClick.AddListener(() => OnRowClicked(index));
-                row.Position = UiFactory.Label("Pos", row.Rect, "", Theme.FontSmall, TextAnchor.MiddleRight);
-                UiFactory.Place(row.Position.rectTransform, 0, 0, 0.12f, 1);
+                // Position number in a light block with dark type (TV timing tower).
+                var posBlock = UiFactory.Panel("PosBlock", row.Rect, new Color(0.9f, 0.91f, 0.93f, 1f));
+                posBlock.raycastTarget = false;
+                UiFactory.Slant(posBlock, 4f);
+                UiFactory.Place(posBlock.rectTransform, 0.01f, 0.1f, 0.125f, 0.9f);
+                row.Position = UiFactory.Label("Pos", posBlock.transform, "", Theme.FontSmall, TextAnchor.MiddleCenter, new Color32(12, 13, 16, 255));
+                row.Position.fontStyle = FontStyle.BoldAndItalic;
+                UiFactory.Stretch(row.Position.rectTransform);
+                row.PosBlock = posBlock;
                 row.TeamBar = UiFactory.Panel("Team", row.Rect, Color.white);
                 UiFactory.Place(row.TeamBar.rectTransform, 0.14f, 0.15f, 0.16f, 0.85f);
                 row.Name = UiFactory.Label("Name", row.Rect, "", Theme.FontSmall, TextAnchor.MiddleLeft);
@@ -188,7 +209,7 @@ namespace MotoManager.App.UI
             UiFactory.Place((RectTransform)_gapButton.transform, 0.11f, 0.865f, 0.22f, 0.925f, 3);
 
             // Event feed
-            var feedBg = UiFactory.Panel("Feed", _root, new Color(0.043f, 0.075f, 0.125f, 0.7f));
+            var feedBg = UiFactory.Panel("Feed", _root, new Color(0.035f, 0.038f, 0.047f, 0.7f));
             UiFactory.Place(feedBg.rectTransform, 0.26f, 0.005f, 0.74f, 0.11f);
             _feed = UiFactory.Label("FeedText", feedBg.transform, "", Theme.FontSmall - 2, TextAnchor.LowerCenter);
             UiFactory.Place(_feed.rectTransform, 0.01f, 0.02f, 0.99f, 0.98f);
@@ -218,10 +239,11 @@ namespace MotoManager.App.UI
             _bannerBg = UiFactory.Panel("Banner", _root, new Color(0, 0, 0, 0));
             _bannerBg.raycastTarget = false;
             UiFactory.Place(_bannerBg.rectTransform, 0.02f, 0.1f, 0.6f, 0.3f);
-            var tag = UiFactory.Panel("RaceDay", _bannerBg.transform, new Color32(150, 80, 200, 235), true);
+            var tag = UiFactory.Panel("RaceDay", _bannerBg.transform, Theme.Accent);
+            UiFactory.Slant(tag, 1.6f);
             UiFactory.Place(tag.rectTransform, 0, 0.55f, 0.36f, 0.95f);
-            var tagText = UiFactory.Label("Text", tag.transform, Loc.T("race.day"), Theme.FontNormal, TextAnchor.MiddleCenter);
-            tagText.fontStyle = FontStyle.Bold;
+            var tagText = UiFactory.Label("Text", tag.transform, Theme.Caps(Loc.T("race.day")), Theme.FontNormal, TextAnchor.MiddleCenter);
+            tagText.fontStyle = FontStyle.BoldAndItalic;
             UiFactory.Stretch(tagText.rectTransform);
             _banner = UiFactory.Label("Circuit", _bannerBg.transform, "", Theme.FontTitle - 6, TextAnchor.MiddleLeft);
             _banner.fontStyle = FontStyle.Bold;
@@ -358,7 +380,9 @@ namespace MotoManager.App.UI
                 row.Name.color = r.Entry.IsPlayer ? Theme.Warning : Theme.Text;
                 row.Gap.text = GapText(sim, r, p);
                 row.Tires.text = CompoundLetter(r.Front.Compound) + "/" + CompoundLetter(r.Rear.Compound);
-                row.Background.color = r.Index == _view.SelectedRider ? new Color(1, 1, 1, 0.12f) : new Color(1, 1, 1, 0);
+                // Alternate rows lightly shaded; the followed rider lit; the leader's block in timing yellow.
+                row.Background.color = r.Index == _view.SelectedRider ? new Color(1, 1, 1, 0.14f) : new Color(1, 1, 1, p % 2 == 1 ? 0.035f : 0f);
+                row.PosBlock.color = p == 0 ? Theme.Timing : new Color(0.9f, 0.91f, 0.93f, 1f);
             }
         }
 
@@ -467,7 +491,7 @@ namespace MotoManager.App.UI
             _commandArea.gameObject.SetActive(false);
             if (_replayBar == null)
             {
-                var bar = UiFactory.Panel("Replay", _root, new Color(0.043f, 0.075f, 0.125f, 0.88f));
+                var bar = UiFactory.Panel("Replay", _root, new Color(0.035f, 0.038f, 0.047f, 0.88f));
                 _replayBar = bar.rectTransform;
                 UiFactory.Place(_replayBar, 0.7f, 0.005f, 0.995f, 0.12f);
                 var label = UiFactory.Label("Label", _replayBar, Loc.T("replay.title"), Theme.FontNormal, TextAnchor.MiddleCenter, Theme.Warning);

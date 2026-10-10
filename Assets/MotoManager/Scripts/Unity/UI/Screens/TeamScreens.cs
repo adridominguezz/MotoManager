@@ -218,7 +218,7 @@ namespace MotoManager.App.UI.Screens
                 float y = d.Out ? bottom : bottom + (top - bottom) * (field - d.Position) / Math.Max(1f, field - 1);
                 if (!d.Out) line.Points.Add(new Vector2(x, y));
                 Color c = d.Out ? new Color(0.45f, 0.48f, 0.55f) : d.Position == 1 ? new Color32(240, 190, 40, 255) : d.Position == 2 ? new Color32(200, 205, 215, 255) :
-                    d.Position == 3 ? new Color32(205, 125, 60, 255) : d.Position <= 15 ? Theme.Good : new Color32(70, 110, 160, 255);
+                    d.Position == 3 ? new Color32(205, 125, 60, 255) : d.Position <= 15 ? Theme.Good : (Color)Theme.Steel;
                 var dot = UiFactory.Panel("Dot", area, c, true);
                 UiFactory.Round(dot, 4f);
                 dot.rectTransform.anchorMin = dot.rectTransform.anchorMax = new Vector2(x, y);
@@ -450,7 +450,7 @@ namespace MotoManager.App.UI.Screens
                 {
                     (selected ? "<b>" : "") + Loc.T("role." + role) + (selected ? "</b>" : ""), Badge(coverage[role]),
                     bestSkill[role] >= 0 ? Fmt.Rating(bestSkill[role]) : "-"
-                }, false, selected ? new Color(0.9f, 0.22f, 0.23f, 0.22f) : (Color?)null);
+                }, false, selected ? Theme.Alpha(Theme.Accent, 0.22f) : (Color?)null);
                 var pick = row.gameObject.AddComponent<UnityEngine.UI.Button>();
                 pick.onClick.AddListener(() => { _hiringRole = r; Shell.Refresh(); });
                 var img = row.GetComponent<UnityEngine.UI.Image>();

@@ -35,7 +35,7 @@ namespace MotoManager.App.UI
             var world = game.World;
             var team = review != null ? world.GetTeam(review.TeamId) : null;
             var title = UiFactory.Label("Title", root, "<b>" + Loc.T("review.title", summary.Season) + "</b>" + (team != null ? "   " + Theme.Dim(team.Name) : ""), Theme.FontLarge - 2, TextAnchor.MiddleLeft);
-            title.supportRichText = true;
+            UiFactory.RaceTitle(title);
             UiFactory.Place(title.rectTransform, 0.03f, 0.89f, 0.97f, 0.98f);
 
             var list = UiFactory.ScrollList("Review", root);
