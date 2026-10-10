@@ -442,19 +442,28 @@ namespace MotoManager.App.UI.Screens
             var game = Session.Game;
             var team = game.World.PlayerTeam;
             string summary = "";
+            EventDigest digest = null;
             Session.Run(Loc.T("busy.event"), () =>
             {
                 if (team != null) game.SimulateUntilEventFor(team.CategoryId);
                 var ev = game.BeginNextEvent();
                 if (ev == null) return;
-                if (ev.PlayerWeekend != null) ev.PlayerWeekend.HeadlessTimeStep = true;
+                // The team's weekend is recorded session by session for the summary.
+                var w = ev.PlayerWeekend;
+                if (w != null)
+                {
+                    w.HeadlessTimeStep = true;
+                    digest = EventDigest.Run(game, w);
+                }
                 game.CompleteEvent(ev);
+                if (digest != null) digest.Finish(game, w.CategoryId);
                 summary = Loc.T("home.simulated", Loc.Round(ev.Plan.Round.Name));
             }, () =>
             {
                 LastResult = summary;
                 Session.Save();
                 Refresh();
+                if (digest != null) EventSummaryPanel.Show(digest, Refresh);
             });
         }
 

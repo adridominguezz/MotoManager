@@ -10,6 +10,37 @@ namespace MotoManager.Tests
     public class GameLoopTests
     {
         [Fact]
+        public void AQuickSimulatedWeekendRecordedSessionBySessionCountsLikeAnyOther()
+        {
+            var game = GameController.NewGame(TestData.Db, new NewGameOptions { Seed = 31, PlayerTeamId = "aspar_moto3" });
+            var team = game.World.PlayerTeam;
+            game.SimulateUntilEventFor(team.CategoryId);
+            var ev = game.BeginNextEvent();
+            var w = ev.PlayerWeekend;
+            Assert.NotNull(w);
+            int races = 0;
+            while (!w.IsComplete)
+            {
+                var s = w.CurrentSession;
+                if (s.Type == MotoManager.Core.Data.SessionType.Race || s.Type == MotoManager.Core.Data.SessionType.Sprint)
+                {
+                    var sim = w.CreateRaceSimulation(game.Db.Tuning.BackgroundTimeStep);
+                    sim.RunToEnd();
+                    w.CompleteRace(sim);
+                    var rep = MotoManager.Core.Race.RaceAnalysis.Analyze(sim, sim.Riders.First(r => r.Entry.IsPlayer).Index, 3);
+                    Assert.True(rep.Grid > 0);
+                    races++;
+                }
+                else Assert.NotNull(w.RunCurrentHeadless());
+            }
+            game.CompleteEvent(ev);
+            Assert.True(races > 0);
+            var champ = game.World.Championships[team.CategoryId];
+            Assert.Single(champ.Rounds);
+            Assert.True(champ.Riders.Values.Sum(r => r.Points) > 0);
+        }
+
+        [Fact]
         public void DataValidates()
         {
             Assert.Empty(TestData.Db.Validate());
