@@ -80,10 +80,15 @@ Convenciones que se mantienen en todas las fases:
 - Corrección del motor de carrera: la diferencia de ritmo (vuelta de referencia por piloto/moto)
   ahora influye en intentar y lograr adelantamientos; antes la moto rápida se quedaba en el tren.
 
-### Sesión 2.2 — Pilotos y contratos
+### Sesión 2.2 — Pilotos y contratos ✅
 - `riders/` con pilotos reales (MotoGP completo; Moto2/Moto3/WSBK/WSSP lo más completo posible),
   fecha de nacimiento, nacionalidad, atributos estimados, estilos, historial resumido.
 - `contracts/` separados de los pilotos. Campo `dataConfidence` para marcar lo que hay que verificar.
+- Resultado: 76 pilotos reales (MotoGP 22 completo, WorldSBK 18, Moto2 18, Moto3 12, WorldSSP 6;
+  Rookies y el resto de plazas, generados) y 76 contratos. Fuente editable: `Tools/build_riders.py`
+  (perfil = nivel + puntos fuertes; si se regenera, sobrescribe los JSON de `riders/` y `contracts/`).
+- Equilibrio: forma del fin de semana + afinidad piloto/circuito + moral. Temporada de prueba:
+  M. Márquez campeón con 13 victorias de 22 (antes ganaba las 22).
 
 ### Sesión 2.3 — Calendarios, nombres, patrocinadores, personal y plantillas de desarrollo
 - `calendar/` 2026 GP (22 rondas, Rookies en su subconjunto) y SBK; `names/` por nacionalidad con

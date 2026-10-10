@@ -108,6 +108,7 @@ namespace MotoManager.Core.Season
                 FrontCompound = e.FrontCompound,
                 RearCompound = e.RearCompound,
                 SetupQuality = e.SetupQuality,
+                Form = e.Form,
                 IsPlayer = e.IsPlayer,
                 AutoManaged = true
             };

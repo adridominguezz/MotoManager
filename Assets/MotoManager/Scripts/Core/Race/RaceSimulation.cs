@@ -140,7 +140,7 @@ namespace MotoManager.Core.Race
             cfg.Entries.Add(new RaceEntry
             {
                 Rider = entry.Rider, Team = entry.Team, Bike = entry.Bike, ManufacturerId = entry.ManufacturerId,
-                FrontCompound = entry.FrontCompound, RearCompound = entry.RearCompound, SetupQuality = entry.SetupQuality, GridPosition = 1
+                FrontCompound = entry.FrontCompound, RearCompound = entry.RearCompound, SetupQuality = entry.SetupQuality, Form = entry.Form, GridPosition = 1
             });
             var sim = new RaceSimulation(cfg);
             var st = sim.Riders[0];
@@ -507,6 +507,7 @@ namespace MotoManager.Core.Race
             if (r.Pace == PaceMode.Push) u *= Tuning.PushUsage;
             else if (r.Pace == PaceMode.Conserve) u *= Tuning.ConserveUsage;
             u *= 0.994 + 0.006 * MathX.Clamp01(r.Entry.SetupQuality);
+            u *= r.Entry.Form;
             if (Config.SessionType == SessionType.Qualifying)
                 u *= 1 + 0.004 * MathX.Centered(r.Entry.Rider.Attributes.QualifyingSkill) + (r.Entry.Rider.HasStyle(RidingStyle.QualifyingSpecialist) ? 0.002 : 0);
             else

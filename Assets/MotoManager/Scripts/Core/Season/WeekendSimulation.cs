@@ -92,12 +92,27 @@ namespace MotoManager.Core.Season
                         ManufacturerId = team.ManufacturerId,
                         IsPlayer = team.IsPlayer,
                         AutoManaged = !team.IsPlayer,
-                        SetupQuality = InitialSetup(rider, team)
+                        SetupQuality = InitialSetup(rider, team),
+                        Form = WeekendForm(rider)
                     };
                     Entries.Add(entry);
                 }
             }
             Entries.Sort((a, b) => string.CompareOrdinal(a.Rider.Id, b.Rider.Id));
+        }
+
+        /// <summary>
+        /// Riders are not machines: weekend form varies, some tracks suit a rider better than others (stable per
+        /// rider/circuit pair) and morale matters. Keeps dominant riders beatable.
+        /// </summary>
+        private double WeekendForm(Rider rider)
+        {
+            ulong h = DeterministicRandom.Combine(DeterministicRandom.Hash(rider.Id), DeterministicRandom.Hash(Circuit.Id));
+            double affinity = ((h >> 11) * (1.0 / 9007199254740992.0) * 2 - 1) * 0.004;
+            double consistency = rider.Attributes.Consistency;
+            double form = _rng.Gaussian(0, 0.004 * (1.5 - consistency / 100.0));
+            double morale = (rider.Morale - 60) / 100.0 * 0.003;
+            return 1 + MathX.Clamp(affinity + form + morale, -0.015, 0.015);
         }
 
         private double InitialSetup(Rider rider, Team team)

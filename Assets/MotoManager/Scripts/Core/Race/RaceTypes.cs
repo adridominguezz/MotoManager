@@ -38,6 +38,8 @@ namespace MotoManager.Core.Race
         public TireCompound SpareCompound = TireCompound.Rain;
         /// <summary>0..1 how well the bike is set up for this circuit (from practice).</summary>
         public double SetupQuality = 0.5;
+        /// <summary>Weekend form and circuit affinity (multiplier on limit usage, ~0.99-1.01).</summary>
+        public double Form = 1.0;
         public bool IsPlayer;
         /// <summary>When true the AI makes the in-race decisions even for a player rider.</summary>
         public bool AutoManaged = true;

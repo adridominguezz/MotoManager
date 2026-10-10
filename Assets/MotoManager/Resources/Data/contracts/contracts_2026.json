@@ -1,0 +1,726 @@
+[
+  {
+    "riderId": "marc_marquez",
+    "teamId": "ducati_lenovo",
+    "manufacturerId": "ducati",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 12000000.0,
+    "factoryBacked": true,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "bagnaia",
+    "teamId": "ducati_lenovo",
+    "manufacturerId": "ducati",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 7000000.0,
+    "factoryBacked": true,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "alex_marquez",
+    "teamId": "gresini_motogp",
+    "manufacturerId": "ducati",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 2500000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "aldeguer",
+    "teamId": "gresini_motogp",
+    "manufacturerId": "ducati",
+    "startSeason": 2025,
+    "endSeason": 2027,
+    "salaryPerSeason": 1000000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "di_giannantonio",
+    "teamId": "vr46_motogp",
+    "manufacturerId": "ducati",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 1500000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "morbidelli",
+    "teamId": "vr46_motogp",
+    "manufacturerId": "ducati",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 1500000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "bezzecchi",
+    "teamId": "aprilia_racing",
+    "manufacturerId": "aprilia",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 3000000.0,
+    "factoryBacked": true,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "martin",
+    "teamId": "aprilia_racing",
+    "manufacturerId": "aprilia",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 8000000.0,
+    "factoryBacked": true,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "raul_fernandez",
+    "teamId": "trackhouse_motogp",
+    "manufacturerId": "aprilia",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 1000000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "ogura",
+    "teamId": "trackhouse_motogp",
+    "manufacturerId": "aprilia",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 800000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "acosta",
+    "teamId": "ktm_factory",
+    "manufacturerId": "ktm",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 3000000.0,
+    "factoryBacked": true,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "binder",
+    "teamId": "ktm_factory",
+    "manufacturerId": "ktm",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 3000000.0,
+    "factoryBacked": true,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "bastianini",
+    "teamId": "tech3_motogp",
+    "manufacturerId": "ktm",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 2000000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "vinales",
+    "teamId": "tech3_motogp",
+    "manufacturerId": "ktm",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 2500000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "quartararo",
+    "teamId": "yamaha_factory",
+    "manufacturerId": "yamaha",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 12000000.0,
+    "factoryBacked": true,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "rins",
+    "teamId": "yamaha_factory",
+    "manufacturerId": "yamaha",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 3000000.0,
+    "factoryBacked": true,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "miller",
+    "teamId": "pramac_motogp",
+    "manufacturerId": "yamaha",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 1500000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "razgatlioglu",
+    "teamId": "pramac_motogp",
+    "manufacturerId": "yamaha",
+    "startSeason": 2025,
+    "endSeason": 2027,
+    "salaryPerSeason": 2000000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "mir",
+    "teamId": "honda_hrc",
+    "manufacturerId": "honda",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 4000000.0,
+    "factoryBacked": true,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "marini",
+    "teamId": "honda_hrc",
+    "manufacturerId": "honda",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 1500000.0,
+    "factoryBacked": true,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "zarco",
+    "teamId": "lcr_motogp",
+    "manufacturerId": "honda",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 1500000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "moreira",
+    "teamId": "lcr_motogp",
+    "manufacturerId": "honda",
+    "startSeason": 2025,
+    "endSeason": 2027,
+    "salaryPerSeason": 700000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "bulega",
+    "teamId": "aruba_ducati",
+    "manufacturerId": "ducati",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 1200000.0,
+    "factoryBacked": true,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "lecuona",
+    "teamId": "aruba_ducati",
+    "manufacturerId": "ducati",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 600000.0,
+    "factoryBacked": true,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "bautista",
+    "teamId": "barni_sbk",
+    "manufacturerId": "ducati",
+    "startSeason": 2025,
+    "endSeason": 2027,
+    "salaryPerSeason": 600000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "montella",
+    "teamId": "barni_sbk",
+    "manufacturerId": "ducati",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 250000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "sam_lowes",
+    "teamId": "marcvds_sbk",
+    "manufacturerId": "ducati",
+    "startSeason": 2025,
+    "endSeason": 2027,
+    "salaryPerSeason": 350000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "iannone",
+    "teamId": "goeleven_sbk",
+    "manufacturerId": "ducati",
+    "startSeason": 2025,
+    "endSeason": 2027,
+    "salaryPerSeason": 300000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "petrucci",
+    "teamId": "bmw_sbk",
+    "manufacturerId": "bmw",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 700000.0,
+    "factoryBacked": true,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "oliveira",
+    "teamId": "bmw_sbk",
+    "manufacturerId": "bmw",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 1000000.0,
+    "factoryBacked": true,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "van_der_mark",
+    "teamId": "bonovo_sbk",
+    "manufacturerId": "bmw",
+    "startSeason": 2025,
+    "endSeason": 2027,
+    "salaryPerSeason": 300000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "locatelli",
+    "teamId": "yamaha_sbk",
+    "manufacturerId": "yamaha",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 600000.0,
+    "factoryBacked": true,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "vierge",
+    "teamId": "yamaha_sbk",
+    "manufacturerId": "yamaha",
+    "startSeason": 2025,
+    "endSeason": 2027,
+    "salaryPerSeason": 400000.0,
+    "factoryBacked": true,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "gardner",
+    "teamId": "grt_sbk",
+    "manufacturerId": "yamaha",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 400000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "aegerter",
+    "teamId": "grt_sbk",
+    "manufacturerId": "yamaha",
+    "startSeason": 2025,
+    "endSeason": 2027,
+    "salaryPerSeason": 300000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "dixon",
+    "teamId": "honda_sbk",
+    "manufacturerId": "honda",
+    "startSeason": 2025,
+    "endSeason": 2027,
+    "salaryPerSeason": 500000.0,
+    "factoryBacked": true,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "chantra",
+    "teamId": "honda_sbk",
+    "manufacturerId": "honda",
+    "startSeason": 2025,
+    "endSeason": 2027,
+    "salaryPerSeason": 400000.0,
+    "factoryBacked": true,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "alex_lowes",
+    "teamId": "bimota_sbk",
+    "manufacturerId": "bimota",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 500000.0,
+    "factoryBacked": true,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "bassani",
+    "teamId": "bimota_sbk",
+    "manufacturerId": "bimota",
+    "startSeason": 2025,
+    "endSeason": 2027,
+    "salaryPerSeason": 350000.0,
+    "factoryBacked": true,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "gerloff",
+    "teamId": "puccetti_sbk",
+    "manufacturerId": "kawasaki",
+    "startSeason": 2025,
+    "endSeason": 2027,
+    "salaryPerSeason": 300000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "manuel_gonzalez",
+    "teamId": "intact_moto2",
+    "startSeason": 2025,
+    "endSeason": 2027,
+    "salaryPerSeason": 300000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "agius",
+    "teamId": "intact_moto2",
+    "startSeason": 2025,
+    "endSeason": 2027,
+    "salaryPerSeason": 150000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "canet",
+    "teamId": "fantic_moto2",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 300000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "baltus",
+    "teamId": "fantic_moto2",
+    "startSeason": 2025,
+    "endSeason": 2027,
+    "salaryPerSeason": 200000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "arbolino",
+    "teamId": "pramac_moto2",
+    "startSeason": 2025,
+    "endSeason": 2027,
+    "salaryPerSeason": 250000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "vietti",
+    "teamId": "speedrs_moto2",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 250000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "alonso",
+    "teamId": "aspar_moto2",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 300000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "holgado",
+    "teamId": "aspar_moto2",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 150000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "rueda",
+    "teamId": "ajo_moto2",
+    "startSeason": 2025,
+    "endSeason": 2027,
+    "salaryPerSeason": 200000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "veijer",
+    "teamId": "ajo_moto2",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 150000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "guevara",
+    "teamId": "pramac_moto2",
+    "startSeason": 2025,
+    "endSeason": 2027,
+    "salaryPerSeason": 150000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "roberts",
+    "teamId": "american_moto2",
+    "startSeason": 2025,
+    "endSeason": 2027,
+    "salaryPerSeason": 200000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "sasaki",
+    "teamId": "rw_moto2",
+    "startSeason": 2025,
+    "endSeason": 2027,
+    "salaryPerSeason": 120000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "salac",
+    "teamId": "marcvds_moto2",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 120000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "lopez",
+    "teamId": "speedrs_moto2",
+    "startSeason": 2025,
+    "endSeason": 2027,
+    "salaryPerSeason": 150000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "sergio_garcia",
+    "teamId": "pons_moto2",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 150000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "oncu",
+    "teamId": "msi_moto2",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 120000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "arenas",
+    "teamId": "italtrans_moto2",
+    "startSeason": 2025,
+    "endSeason": 2027,
+    "salaryPerSeason": 120000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "quiles",
+    "teamId": "aspar_moto3",
+    "startSeason": 2025,
+    "endSeason": 2027,
+    "salaryPerSeason": 60000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "carpe",
+    "teamId": "ajo_moto3",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 50000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "kelso",
+    "teamId": "boe_moto3",
+    "startSeason": 2025,
+    "endSeason": 2027,
+    "salaryPerSeason": 50000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "adrian_fernandez",
+    "teamId": "leopard_moto3",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 50000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "furusato",
+    "teamId": "asia_moto3",
+    "startSeason": 2025,
+    "endSeason": 2027,
+    "salaryPerSeason": 50000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "yamanaka",
+    "teamId": "msi_moto3",
+    "startSeason": 2025,
+    "endSeason": 2027,
+    "salaryPerSeason": 40000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "nepa",
+    "teamId": "sic58_moto3",
+    "startSeason": 2025,
+    "endSeason": 2027,
+    "salaryPerSeason": 40000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "lunetta",
+    "teamId": "sic58_moto3",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 40000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "bertelle",
+    "teamId": "levelup_moto3",
+    "startSeason": 2025,
+    "endSeason": 2027,
+    "salaryPerSeason": 40000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "pini",
+    "teamId": "intact_moto3",
+    "startSeason": 2025,
+    "endSeason": 2027,
+    "salaryPerSeason": 40000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "ogden",
+    "teamId": "gryd_moto3",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 40000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "esteban",
+    "teamId": "cip_moto3",
+    "startSeason": 2025,
+    "endSeason": 2027,
+    "salaryPerSeason": 40000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "manzi",
+    "teamId": "tenkate_ssp",
+    "startSeason": 2025,
+    "endSeason": 2027,
+    "salaryPerSeason": 150000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "masia",
+    "teamId": "orelac_ssp",
+    "startSeason": 2025,
+    "endSeason": 2027,
+    "salaryPerSeason": 120000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "debise",
+    "teamId": "gmt94_ssp",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 80000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "booth_amos",
+    "teamId": "ptr_ssp",
+    "startSeason": 2025,
+    "endSeason": 2027,
+    "salaryPerSeason": 80000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "mahias",
+    "teamId": "kawasaki_ssp",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 80000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  },
+  {
+    "riderId": "caricasulo",
+    "teamId": "mv_ssp",
+    "startSeason": 2025,
+    "endSeason": 2026,
+    "salaryPerSeason": 90000.0,
+    "factoryBacked": false,
+    "dataConfidence": "estimated"
+  }
+]
