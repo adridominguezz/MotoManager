@@ -117,9 +117,10 @@ namespace MotoManager.App.Race
             Marker = new GameObject("Marker").transform;
             Marker.SetParent(transform, false);
             var dot = new MeshBuilder();
-            dot.Disc(new Vector3(0, 0.6f, 0), 1.25f, new Color32(15, 15, 18, 255));
-            dot.Disc(new Vector3(0, 0.62f, 0), 1f, p);
-            dot.Disc(new Vector3(0, 0.64f, 0), 0.38f, s);
+            // Dark rim, a ring in the second team colour, and a plain centre where the HUD writes the position.
+            dot.Disc(new Vector3(0, 0.6f, 0), 1.32f, new Color32(15, 15, 18, 255));
+            dot.Disc(new Vector3(0, 0.61f, 0), 1.2f, s);
+            dot.Disc(new Vector3(0, 0.62f, 0), 1.02f, p);
             dot.ToObject("Dot", Marker);
             var halo = new MeshBuilder();
             halo.Disc(new Vector3(0, 0.55f, 0), 1.65f, new Color32(255, 200, 40, 255));

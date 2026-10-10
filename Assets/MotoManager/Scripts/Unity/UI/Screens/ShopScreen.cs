@@ -123,7 +123,7 @@ namespace MotoManager.App.UI.Screens
                     item.SoldSeason.ToString("N0", Loc.Culture), Money(item.RevenueSeason - item.CostOfSalesSeason), demand.ToString("0", Loc.Culture), ""
                 }, false, _selected == item.Id ? new Color(0.94f, 0.7f, 0.16f, 0.16f) : (Color?)null);
                 var b = UiFactory.Button("Select", row, Loc.T("shop.manage"), () => { _selected = it.Id; Shell.Refresh(); }, Theme.PanelLight, Theme.FontSmall - 4);
-                UiFactory.Place((RectTransform)b.transform, 0.88f, 0.08f, 1f, 0.92f);
+                UiFactory.InColumn(b, pw, pw.Length - 1);
             }
 
         }
@@ -144,7 +144,7 @@ namespace MotoManager.App.UI.Screens
                         if (it != null) _selected = it.Id;
                         Shell.Refresh();
                     }, Theme.Accent, Theme.FontSmall - 4);
-                    UiFactory.Place((RectTransform)b.transform, 0.84f, 0.08f, 1f, 0.92f);
+                    UiFactory.InColumn(b, cw, cw.Length - 1);
                 }
             }
         }
@@ -164,15 +164,15 @@ namespace MotoManager.App.UI.Screens
                 UiFactory.Act(item.Active ? Loc.T("shop.retire") : Loc.T("shop.reactivate"), () => { item.Active = !item.Active; Shell.Refresh(); }));
 
             // Price forecast (an estimate, not a promise).
-            var tw = new[] { 2f, 2f, 2f, 2.4f };
-            UiFactory.TableRow(list, 36, tw, new[] { Loc.T("shop.col.price"), Loc.T("shop.col.demand"), Loc.T("shop.col.margin"), Loc.T("shop.col.profitEvent") }, true);
+            var tw = new[] { 2f, 2f, 2f, 2.4f, 1.6f };
+            UiFactory.TableRow(list, 36, tw, new[] { Loc.T("shop.col.price"), Loc.T("shop.col.demand"), Loc.T("shop.col.margin"), Loc.T("shop.col.profitEvent"), "" }, true);
             foreach (var p in MerchService.PriceTable(world, db, team, item))
             {
                 var pp = p;
                 bool current = Math.Abs(p.Price - item.Price) < 0.01;
-                var row = UiFactory.TableRow(list, 40, tw, new[] { MathX.FormatMoney(p.Price) + (current ? " ◄" : ""), p.UnitsPerEvent.ToString("0", Loc.Culture), Money(p.MarginPerUnit), Money(p.ProfitPerEvent) });
+                var row = UiFactory.TableRow(list, 40, tw, new[] { MathX.FormatMoney(p.Price) + (current ? " ◄" : ""), p.UnitsPerEvent.ToString("0", Loc.Culture), Money(p.MarginPerUnit), Money(p.ProfitPerEvent), "" });
                 var b = UiFactory.Button("Use", row, Loc.T("shop.use"), () => { MerchService.SetPrice(db, item, pp.Price); Shell.Refresh(); }, Theme.PanelLight, Theme.FontSmall - 4);
-                UiFactory.Place((RectTransform)b.transform, 0.86f, 0.08f, 1f, 0.92f);
+                UiFactory.InColumn(b, tw, tw.Length - 1);
             }
 
             list = Ui.Card(rightCol, Loc.T("shop.order"));
@@ -210,7 +210,7 @@ namespace MotoManager.App.UI.Screens
                     Shell.Toast(MerchService.Order(world, db, team, item, qty) ? Loc.T("shop.ordered", qty) : Loc.T("shop.cannotAfford"));
                     Shell.Refresh();
                 }, p.Affordable ? Theme.Accent : Theme.PanelLight, Theme.FontSmall - 4);
-                UiFactory.Place((RectTransform)b.transform, 0.86f, 0.08f, 1f, 0.92f);
+                UiFactory.InColumn(b, ow, ow.Length - 1);
             }
             if (item.Stock > 0)
                 UiFactory.ButtonRow(list, 50, UiFactory.Act(Loc.T("shop.liquidate", MathX.FormatMoney(item.StockValue * 0.3)), () =>

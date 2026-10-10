@@ -11,9 +11,21 @@ namespace MotoManager.App
     {
         public const string AutoSlot = "autosave";
 
+        private static string _root;
+
+        /// <summary>
+        /// Reads the save folder on the main thread: Unity only allows Application.persistentDataPath there, and saving
+        /// and loading run on the worker thread.
+        /// </summary>
+        public static void Init()
+        {
+            if (_root == null) _root = Path.Combine(Application.persistentDataPath, "saves");
+        }
+
         public static string PathFor(string slot)
         {
-            return Path.Combine(Application.persistentDataPath, "saves", slot + ".json");
+            if (_root == null) Init();
+            return Path.Combine(_root, slot + ".json");
         }
 
         public static bool Exists(string slot)
@@ -48,7 +60,7 @@ namespace MotoManager.App
             }
             catch (Exception e)
             {
-                Debug.LogError("Could not load save " + slot + ": " + e.Message);
+                Debug.LogError("Could not load save " + slot + ": " + e);
                 return null;
             }
         }

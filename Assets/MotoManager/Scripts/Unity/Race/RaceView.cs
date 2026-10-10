@@ -168,7 +168,7 @@ namespace MotoManager.App.Race
 
             // Far away the bikes become dots (constant size on screen); close up, real bikes.
             bool markers = Cam.Distance > MarkerDistance;
-            float scale = markers ? Cam.Distance * 0.012f : Mathf.Clamp(Cam.Distance / 55f, 1f, 4f);
+            float scale = markers ? Cam.Distance * 0.014f : Mathf.Clamp(Cam.Distance / 55f, 1f, 4f);
             double length = Sim.Track.Length;
             for (int i = 0; i < Bikes.Count; i++)
             {

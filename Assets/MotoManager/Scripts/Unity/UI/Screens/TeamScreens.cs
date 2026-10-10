@@ -216,7 +216,7 @@ namespace MotoManager.App.UI.Screens
                     Shell.Toast(Loc.T("staff.renewed", member.FullName, member.ContractEndSeason, MathX.FormatMoney(member.Salary)));
                     Shell.Refresh();
                 }, Theme.PanelLight, Theme.FontSmall - 6);
-                UiFactory.Place((RectTransform)renew.transform, 0.775f, 0.06f, 0.885f, 0.94f, 2);
+                UiFactory.InColumn(renew, w, w.Length - 1, 0, 2);
                 var fire = UiFactory.Button("Fire", row, confirm ? Loc.T("staff.fireConfirm", MathX.FormatMoney(severance)) : Loc.T("staff.fire"), () =>
                 {
                     if (_confirmFire == member.Id)
@@ -228,7 +228,7 @@ namespace MotoManager.App.UI.Screens
                     else _confirmFire = member.Id;
                     Shell.Refresh();
                 }, confirm ? Theme.Accent : Theme.PanelLight, Theme.FontSmall - 6);
-                UiFactory.Place((RectTransform)fire.transform, 0.89f, 0.06f, 1f, 0.94f, 2);
+                UiFactory.InColumn(fire, w, w.Length - 1, 1, 2);
             }
         }
 

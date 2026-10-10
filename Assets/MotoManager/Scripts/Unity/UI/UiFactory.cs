@@ -315,6 +315,23 @@ namespace MotoManager.App.UI
             }
         }
 
+        /// <summary>
+        /// Places a button inside one column of a table row (the same widths as the row), optionally sharing the
+        /// column with other buttons, so it never covers the text of the other columns.
+        /// </summary>
+        public static void InColumn(Component button, float[] widths, int column, int part = 0, int parts = 1, float inset = 3)
+        {
+            float total = 0, start = 0;
+            for (int i = 0; i < widths.Length; i++)
+            {
+                if (i < column) start += widths[i];
+                total += widths[i];
+            }
+            float x0 = start / total, x1 = (start + widths[column]) / total;
+            float w = (x1 - x0) / parts;
+            Place((RectTransform)button.transform, x0 + w * part, 0.08f, x0 + w * (part + 1), 0.92f, inset);
+        }
+
         /// <summary>A single-line text field in a list row.</summary>
         public static InputField Input(Transform list, string label, string value, Action<string> onChanged, float height = 64)
         {

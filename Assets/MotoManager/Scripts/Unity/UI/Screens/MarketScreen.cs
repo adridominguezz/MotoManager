@@ -93,9 +93,9 @@ namespace MotoManager.App.UI.Screens
                     (world.GetKnowledge(team.Id, r.Id) * 100).ToString("0") + "%", ""
                 });
                 var scout = UiFactory.Button("Scout", row, scouted ? Loc.T("market.scouting") : Loc.T("market.scout"), () => ToggleScout(rider), scouted ? Theme.Good : Theme.PanelLight, Theme.FontSmall - 6);
-                UiFactory.Place((RectTransform)scout.transform, 0.795f, 0.06f, 0.895f, 0.94f, 2);
+                UiFactory.InColumn(scout, w, w.Length - 1, 0, 2);
                 var offer = UiFactory.Button("Offer", row, Loc.T("market.offer"), () => { _neg = new NegotiationState { RiderId = rider.Id }; Shell.Refresh(); }, Theme.Accent, Theme.FontSmall - 6);
-                UiFactory.Place((RectTransform)offer.transform, 0.9f, 0.06f, 1f, 0.94f, 2);
+                UiFactory.InColumn(offer, w, w.Length - 1, 1, 2);
             }
             if (riders.Count == 0) Ui.Note(card, Loc.T("market.empty"));
         }

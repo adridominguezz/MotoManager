@@ -89,7 +89,7 @@ namespace MotoManager.App.UI
                     bg.Finance.ToString("0"), bg.Relations.ToString("0"), bg.Commercial.ToString("0"), MathX.FormatMoney(bg.PersonalWealth), ""
                 }, false, chosen ? new Color(0.94f, 0.7f, 0.16f, 0.16f) : (Color?)null);
                 var button = UiFactory.Button("Pick", row, chosen ? "●" : Loc.T("career.choose"), () => { _background = b.Id; Render(); }, chosen ? Theme.Accent : Theme.PanelLight, Theme.FontSmall - 4);
-                UiFactory.Place((RectTransform)button.transform, 0.86f, 0.1f, 1f, 0.9f);
+                UiFactory.InColumn(button, w, w.Length - 1);
                 UiFactory.Paragraph(_list, "<color=#9AA4B2>" + Loc.T("background." + bg.Id + ".desc") + "</color>", Theme.FontSmall - 2);
             }
             UiFactory.ButtonRow(_list, 64, UiFactory.Primary(Loc.T("career.next"), () =>
@@ -144,7 +144,7 @@ namespace MotoManager.App.UI
                     var r = CareerService.AcceptJob(World, _game.Db, _manager, offer);
                     if (r.Ok) _session.StartCareer(_game);
                 }, Theme.Accent, Theme.FontSmall - 4);
-                UiFactory.Place((RectTransform)b.transform, 0.86f, 0.1f, 1f, 0.9f);
+                UiFactory.InColumn(b, w, w.Length - 1);
             }
             UiFactory.Paragraph(_list, "<color=#9AA4B2>" + Loc.T("career.jobs.note") + "</color>", Theme.FontSmall - 2);
             UiFactory.ButtonRow(_list, 56, UiFactory.Act(Loc.T("career.back"), () => { _step = Step.Path; Render(); }));
@@ -207,7 +207,7 @@ namespace MotoManager.App.UI
                 if (selectable)
                 {
                     var b = UiFactory.Button("Pick", row, Loc.T("career.choose"), () => { _category = rep.CategoryId; _supplier = null; Render(); }, Theme.PanelLight, Theme.FontSmall - 4);
-                    UiFactory.Place((RectTransform)b.transform, 0.86f, 0.1f, 1f, 0.9f);
+                    UiFactory.InColumn(b, w, w.Length - 1);
                 }
                 if (r.Reasons.Count > 0 && r.Verdict != Viability.Viable)
                 {

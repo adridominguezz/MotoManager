@@ -421,7 +421,9 @@ namespace MotoManager.Core.Race
         }
 
         /// <summary>Most a segment's drawn length may differ from the simulated one (visual speed stays within this).</summary>
-        public const double MinLengthScale = 0.8, MaxLengthScale = 1.3;
+        public const double MinLengthScale = 0.75, MaxLengthScale = 1.35;
+        /// <summary>Corners stretch less: a longer arc with the same sweep is a wider radius (a fast sweeper must not become a straight).</summary>
+        public const double MaxCornerScale = 1.35;
 
         /// <summary>
         /// Constrained minimum-change solve (Gauss-Newton on the closure): length factors a_i and corner sweep changes
@@ -435,7 +437,7 @@ namespace MotoManager.Core.Race
             var baseSweep = (double[])sweep.Clone();
             var isCorner = new bool[n];
             for (int i = 0; i < n; i++) isCorner[i] = track.Segments[i].IsCorner && Math.Abs(baseSweep[i]) > 1e-9;
-            const double AngleCost = 1500; // cost of 1 rad² of extra sweep, against metres x (relative length change)²
+            const double AngleCost = 4000; // cost of 1 rad² of extra sweep, against metres x (relative length change)²
             var a = new double[n];
             var d = new double[n];
             var frozenA = new bool[n];
@@ -498,13 +500,14 @@ namespace MotoManager.Core.Race
                         double na = 1 + wa * (ja[i] * y[0] + ja[n + i] * y[1] + ja[2 * n + i] * y[2]);
                         // Damped update keeps Gauss-Newton stable on the non-linear sweep terms.
                         a[i] += 0.7 * (na - a[i]);
-                        if (a[i] < MinLengthScale || a[i] > MaxLengthScale) { a[i] = Math.Max(MinLengthScale, Math.Min(MaxLengthScale, a[i])); frozenA[i] = true; clamped = true; }
+                        double maxA = isCorner[i] ? MaxCornerScale : MaxLengthScale;
+                        if (a[i] < MinLengthScale || a[i] > maxA) { a[i] = Math.Max(MinLengthScale, Math.Min(maxA, a[i])); frozenA[i] = true; clamped = true; }
                     }
                     if (isCorner[i] && !frozenD[i])
                     {
                         double nd = (jd[i] * y[0] + jd[n + i] * y[1] + jd[2 * n + i] * y[2]) / AngleCost;
                         d[i] += 0.7 * (nd - d[i]);
-                        double lim = Math.Max(0.12, Math.Min(0.6, Math.Abs(baseSweep[i]) * 0.45));
+                        double lim = Math.Max(0.02, Math.Min(0.6, Math.Abs(baseSweep[i]) * 0.45)); // never turns a corner the other way
                         if (Math.Abs(d[i]) > lim) { d[i] = Math.Sign(d[i]) * lim; frozenD[i] = true; clamped = true; }
                     }
                 }

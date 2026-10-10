@@ -661,12 +661,16 @@ namespace MotoManager.Core.Race
                     return move;
             }
 
-            // Stuck behind: match the rider in front.
+            // Stuck behind: match the rider in front. Just after being passed the gap is below the following
+            // distance; ease it open (ride slightly slower than the rider ahead) instead of stopping dead, which looked
+            // like the passed rider being yanked backwards.
             r.StuckTime += Config.TimeStep;
             double allowed = Math.Max(0, aheadProgress - minGap - myProgress);
             if (allowed < move)
             {
-                move = allowed;
+                double gapNow = aheadProgress - myProgress;
+                double follow = ahead.Speed * Config.TimeStep * 0.97;
+                move = gapNow > 1.0 ? Math.Max(allowed, Math.Min(move, follow)) : allowed;
                 r.Speed = Math.Min(r.Speed, ahead.Speed);
             }
             return move;

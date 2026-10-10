@@ -1061,5 +1061,19 @@
   "tut.race.1": "Race day! At the bottom you have a card for each of your riders: who's ahead and behind, the tyre, the fuel and the reliability.",
   "tut.race.2": "Use <b>Pace</b> to save or push, and <b>Attitude</b> to attack or defend. If you prefer, let the <b>engineer</b> decide.",
   "tut.race.3": "At the top you can change the speed, the camera (circuit, follow or sectors) and open the full <b>Standings</b>.",
-  "tut.race.4": "Tap a rider in the standings to follow them. Zoom out and riders become circles showing their position. Go for it!"
+  "tut.race.4": "Tap a rider in the standings to follow them. Zoom out and riders become circles showing their position. Go for it!",
+  "race.gap.leader": "Gap leader",
+  "race.gap.interval": "Interval",
+  "post.tab.classification": "Classification",
+  "post.k.grid": "Grid",
+  "post.k.finish": "Finish",
+  "post.k.gained": "Places",
+  "post.k.points": "Points",
+  "post.k.bestLap": "Best lap",
+  "post.k.topSpeed": "Top km/h",
+  "post.k.passes": "Passes made / suffered",
+  "post.k.errors": "Mistakes",
+  "post.sectorsMine": "Their best",
+  "post.sectorsBest": "Fastest",
+  "post.fastestLap": "fastest lap"
 }

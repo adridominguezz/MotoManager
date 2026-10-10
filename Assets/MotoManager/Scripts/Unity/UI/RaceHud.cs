@@ -34,6 +34,10 @@ namespace MotoManager.App.UI
         private Text _banner;
         private Image _bannerBg;
         private const string TowerPref = "MotoManager.RaceTower";
+        private const string GapPref = "MotoManager.RaceGapMode";
+        private Button _gapButton;
+        /// <summary>Gaps to the rider ahead (interval) instead of to the leader.</summary>
+        private static bool _gapToAhead;
         private readonly List<Image> _speedButtons = new List<Image>();
         private Button _camCircuit, _camFollow, _camSector;
         private RectTransform _tagLayer;
@@ -103,7 +107,7 @@ namespace MotoManager.App.UI
                 _plates.Add(plate);
                 _tags.Add(t);
                 // Number inside the far-view dot.
-                var n = UiFactory.Label("DotNumber", _tagLayer, "", Theme.FontSmall - 4, TextAnchor.MiddleCenter, Color.white);
+                var n = UiFactory.Label("DotNumber", _tagLayer, "", Theme.FontSmall, TextAnchor.MiddleCenter, Color.white);
                 n.fontStyle = FontStyle.Bold;
                 n.rectTransform.sizeDelta = new Vector2(48, 30);
                 n.rectTransform.anchorMin = n.rectTransform.anchorMax = Vector2.zero;
@@ -173,7 +177,15 @@ namespace MotoManager.App.UI
             var sector = _camSector = UiFactory.Button("Sector", _root, Loc.T("race.tower.sector"), () => _view.NextSectorView(), Theme.PanelLight, Theme.FontSmall);
             UiFactory.Place((RectTransform)sector.transform, 0.925f, 0.865f, 0.995f, 0.925f, 3);
             _towerButton = UiFactory.Button("TowerToggle", _root, Loc.T("race.standings"), () => SetTower(!_tower.gameObject.activeSelf), Theme.PanelLight, Theme.FontSmall);
-            UiFactory.Place((RectTransform)_towerButton.transform, 0.005f, 0.865f, 0.14f, 0.925f, 3);
+            UiFactory.Place((RectTransform)_towerButton.transform, 0.005f, 0.865f, 0.11f, 0.925f, 3);
+            try { _gapToAhead = PlayerPrefs.GetInt(GapPref, 0) == 1; } catch (System.Exception) { }
+            _gapButton = UiFactory.Button("GapMode", _root, "", () =>
+            {
+                _gapToAhead = !_gapToAhead;
+                try { PlayerPrefs.SetInt(GapPref, _gapToAhead ? 1 : 0); } catch (System.Exception) { }
+                RefreshTower();
+            }, Theme.PanelLight, Theme.FontSmall - 2);
+            UiFactory.Place((RectTransform)_gapButton.transform, 0.11f, 0.865f, 0.22f, 0.925f, 3);
 
             // Event feed
             var feedBg = UiFactory.Panel("Feed", _root, new Color(0.043f, 0.075f, 0.125f, 0.7f));
@@ -193,13 +205,8 @@ namespace MotoManager.App.UI
                 for (int i = 0; i < players.Count; i++)
                 {
                     var area = UiFactory.Rect("Command" + i, _commandArea);
-                    if (i == 0) UiFactory.Place(area, 0.005f, 0.005f, 0.25f, 0.55f);
-                    else
-                    {
-                        float h = 0.55f / (players.Count - 1);
-                        UiFactory.Place(area, 0.75f, 0.005f + h * (players.Count - 1 - i), 0.995f, 0.005f + h * (players.Count - i) - 0.006f);
-                    }
                     if (i == 0) _leftCard = area;
+                    else UiFactory.Place(area, 0.755f, 0.005f + 0.37f * (i - 1), 0.995f, 0.37f * i);
                     _panels.Add(new RiderCommandPanel(_view, players[i], area));
                 }
                 var session = GameSession.Instance;
@@ -232,7 +239,13 @@ namespace MotoManager.App.UI
         public void SetTower(bool on)
         {
             _tower.gameObject.SetActive(on);
-            if (_leftCard != null) _leftCard.gameObject.SetActive(!on);
+            // With the standings open, the first rider's card moves to the right, above the second one.
+            if (_leftCard != null)
+            {
+                if (on) UiFactory.Place(_leftCard, 0.755f, 0.005f + 0.37f * (_panels.Count - 1), 0.995f, 0.37f * _panels.Count);
+                else UiFactory.Place(_leftCard, 0.005f, 0.005f, 0.245f, 0.37f);
+            }
+            _gapButton.gameObject.SetActive(on);
             _towerButton.image.color = on ? Theme.Accent : Theme.PanelLight;
             try { PlayerPrefs.SetInt(TowerPref, on ? 1 : 0); } catch (System.Exception) { }
         }
@@ -328,6 +341,7 @@ namespace MotoManager.App.UI
 
         private void RefreshTower()
         {
+            if (_gapButton != null) _gapButton.GetComponentInChildren<Text>().text = Loc.T(_gapToAhead ? "race.gap.interval" : "race.gap.leader");
             var sim = _view.Sim;
             for (int p = 0; p < _rows.Count; p++)
             {
@@ -359,7 +373,7 @@ namespace MotoManager.App.UI
             }
             if (position == 0) return r.Status == RaceStatus.Finished ? MathX.FormatLapTime(r.FinishTime) : Loc.T("tower.leader");
             if (r.LapsDown > 0) return Loc.T(r.LapsDown > 1 ? "tower.laps" : "tower.lap", r.LapsDown);
-            return MathX.FormatGap(r.GapToLeader);
+            return MathX.FormatGap(_gapToAhead ? r.GapToAhead : r.GapToLeader);
         }
 
         public static string CompoundLetter(TireCompound c)

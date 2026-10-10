@@ -37,6 +37,7 @@ namespace MotoManager.App
             Instance = go.AddComponent<GameSession>();
             go.AddComponent<FrameRateGovernor>();
             UI.Loc.Install();
+            SaveManager.Init();
             return Instance;
         }
 
@@ -105,7 +106,7 @@ namespace MotoManager.App
             {
                 var world = SaveManager.Load(SaveManager.AutoSlot);
                 if (world != null) game = new GameController(Db, world);
-            }, () => SetGame(game));
+            }, () => SetGame(game), e => SetGame(null));
         }
 
         public void Save()
