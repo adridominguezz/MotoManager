@@ -28,6 +28,7 @@ namespace MotoManager.Tools
                 Txt.Culture = new System.Globalization.CultureInfo(lang);
             }
             if (mode == "news") return News(db, args);
+            if (mode == "visspeed") return VisualSpeed(db);
             if (mode == "laps") return Laps(db, args);
             if (mode == "race") return RaceTest(db, args);
             if (mode == "calibrate") return Calibrate(db, root, args);
@@ -85,6 +86,28 @@ namespace MotoManager.Tools
             var sim = new RaceSimulation(cfg);
             sim.RunToEnd();
             foreach (var e in sim.Events.Where(e => e.Important).Take(15)) Console.WriteLine("  L" + e.Lap + " " + e.Detail);
+            return 0;
+        }
+
+        /// <summary>visspeed: how much faster or slower bikes look on the drawn circuit than they really go (geo/sim length per segment).</summary>
+        static int VisualSpeed(GameDatabase db)
+        {
+            foreach (var c in db.Circuits.Values.OrderBy(c => c.Id))
+            {
+                var t = TrackModel.Get(c);
+                var g = new TrackGeometry(t);
+                double min = 9, max = 0;
+                string where = "";
+                foreach (var s in t.Segments)
+                {
+                    double a = g.ToGeometric(s.Start + 0.01), b = g.ToGeometric(s.End - 0.01);
+                    if (b < a) b += g.GeometricLength;
+                    double ratio = (b - a) / Math.Max(0.1, s.Length - 0.02);
+                    if (ratio < min) { min = ratio; where = (s.IsCorner ? "T" + s.CornerNumber : "straight") + " " + s.Length.ToString("0") + "m"; }
+                    max = Math.Max(max, ratio);
+                }
+                Console.WriteLine($"{c.Id,-16} min {min:0.00} ({where})  max {max:0.00}  closure {g.ClosureError:0}m");
+            }
             return 0;
         }
 

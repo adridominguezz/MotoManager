@@ -343,34 +343,16 @@ namespace MotoManager.Core.Race
             EndPoint(track, headings, sweep, _geoLength, out ex, out ey);
             ClosureError = Math.Sqrt(ex * ex + ey * ey);
 
-            // Weighted least squares on straight lengths: minimise sum(d_i^2 / l_i) s.t. sum(d_i * u_i) = -e
-            for (int iter = 0; iter < 3; iter++)
+            // Close the loop by spreading small changes over every segment's length and every corner's sweep
+            // (minimum weighted change), so no part of the drawing runs much faster or slower than the simulation.
+            CloseLoop(track, sweep, _geoLength);
+            double hh = 0;
+            for (int i = 0; i < n; i++)
             {
-                double a11 = 0, a12 = 0, a22 = 0;
-                for (int i = 0; i < n; i++)
-                {
-                    if (track.Segments[i].IsCorner) continue;
-                    double ux = Math.Cos(headings[i]), uy = Math.Sin(headings[i]);
-                    double l = _geoLength[i];
-                    a11 += l * ux * ux;
-                    a12 += l * ux * uy;
-                    a22 += l * uy * uy;
-                }
-                double det = a11 * a22 - a12 * a12;
-                if (Math.Abs(det) < 1e-9) break;
-                double lx = (-ex * a22 + ey * a12) / det;
-                double ly = (-ey * a11 + ex * a12) / det;
-                for (int i = 0; i < n; i++)
-                {
-                    if (track.Segments[i].IsCorner) continue;
-                    double ux = Math.Cos(headings[i]), uy = Math.Sin(headings[i]);
-                    double l = _geoLength[i];
-                    double d = l * (ux * lx + uy * ly);
-                    double min = track.Segments[i].Length * 0.35;
-                    _geoLength[i] = Math.Max(min, l + d);
-                }
-                EndPoint(track, headings, sweep, _geoLength, out ex, out ey);
+                headings[i] = hh;
+                hh += sweep[i];
             }
+            EndPoint(track, headings, sweep, _geoLength, out ex, out ey);
             ResidualError = Math.Sqrt(ex * ex + ey * ey);
 
             _geoStart = new double[n];
@@ -436,6 +418,146 @@ namespace MotoManager.Core.Race
                 MinY = Math.Min(MinY, Y[k]);
                 MaxY = Math.Max(MaxY, Y[k]);
             }
+        }
+
+        /// <summary>Most a segment's drawn length may differ from the simulated one (visual speed stays within this).</summary>
+        public const double MinLengthScale = 0.8, MaxLengthScale = 1.3;
+
+        /// <summary>
+        /// Constrained minimum-change solve (Gauss-Newton on the closure): length factors a_i and corner sweep changes
+        /// d_i minimise sum(len_i (a_i-1)^2) + K sum(d_i^2) subject to end point = start and total turn unchanged.
+        /// Variables that hit their bounds are frozen and the rest re-solved.
+        /// </summary>
+        private static void CloseLoop(TrackModel track, double[] sweep, double[] len)
+        {
+            int n = len.Length;
+            var baseLen = (double[])len.Clone();
+            var baseSweep = (double[])sweep.Clone();
+            var isCorner = new bool[n];
+            for (int i = 0; i < n; i++) isCorner[i] = track.Segments[i].IsCorner && Math.Abs(baseSweep[i]) > 1e-9;
+            const double AngleCost = 1500; // cost of 1 rad² of extra sweep, against metres x (relative length change)²
+            var a = new double[n];
+            var d = new double[n];
+            var frozenA = new bool[n];
+            var frozenD = new bool[n];
+            for (int i = 0; i < n; i++) a[i] = 1;
+            var cur = new double[n];
+            var sw = new double[n];
+            var ja = new double[3 * n];
+            var jd = new double[3 * n];
+            for (int iter = 0; iter < 40; iter++)
+            {
+                double ex, ey, turn;
+                Apply(baseLen, baseSweep, a, d, cur, sw);
+                Chain(cur, sw, out ex, out ey);
+                turn = 0;
+                for (int i = 0; i < n; i++) turn += d[i];
+                if (Math.Abs(ex) + Math.Abs(ey) < 0.5 && Math.Abs(turn) < 1e-7) break;
+
+                // Jacobian of (ex, ey, turn) by finite differences.
+                const double h = 1e-5;
+                for (int i = 0; i < n; i++)
+                {
+                    double x1, y1;
+                    cur[i] = baseLen[i] * (a[i] + h);
+                    Chain(cur, sw, out x1, out y1);
+                    cur[i] = baseLen[i] * a[i];
+                    ja[i] = (x1 - ex) / h; ja[n + i] = (y1 - ey) / h; ja[2 * n + i] = 0;
+                    if (!isCorner[i]) { jd[i] = jd[n + i] = jd[2 * n + i] = 0; continue; }
+                    sw[i] = baseSweep[i] + d[i] + h;
+                    Chain(cur, sw, out x1, out y1);
+                    sw[i] = baseSweep[i] + d[i];
+                    jd[i] = (x1 - ex) / h; jd[n + i] = (y1 - ey) / h; jd[2 * n + i] = 1;
+                }
+                // Minimum-norm step towards zero deviation subject to J x = -c, where deviation z = (a-1, d).
+                // x = -z + Winv J^T y,  (J Winv J^T) y = J z - c
+                var M = new double[3, 3];
+                var rhs = new double[3];
+                double[] c = { ex, ey, turn };
+                for (int r = 0; r < 3; r++) rhs[r] = -c[r];
+                for (int i = 0; i < n; i++)
+                {
+                    double wa = frozenA[i] ? 0 : 1.0 / Math.Max(1, baseLen[i]);
+                    double wd = !isCorner[i] || frozenD[i] ? 0 : 1.0 / AngleCost;
+                    for (int r = 0; r < 3; r++)
+                    {
+                        rhs[r] += ja[r * n + i] * (a[i] - 1) + jd[r * n + i] * d[i];
+                        if (frozenA[i]) rhs[r] -= ja[r * n + i] * (a[i] - 1);
+                        if (frozenD[i]) rhs[r] -= jd[r * n + i] * d[i];
+                        for (int k = 0; k < 3; k++) M[r, k] += ja[r * n + i] * wa * ja[k * n + i] + jd[r * n + i] * wd * jd[k * n + i];
+                    }
+                }
+                double[] y;
+                if (!Solve3(M, rhs, out y)) break;
+                bool clamped = false;
+                for (int i = 0; i < n; i++)
+                {
+                    if (!frozenA[i])
+                    {
+                        double wa = 1.0 / Math.Max(1, baseLen[i]);
+                        double na = 1 + wa * (ja[i] * y[0] + ja[n + i] * y[1] + ja[2 * n + i] * y[2]);
+                        // Damped update keeps Gauss-Newton stable on the non-linear sweep terms.
+                        a[i] += 0.7 * (na - a[i]);
+                        if (a[i] < MinLengthScale || a[i] > MaxLengthScale) { a[i] = Math.Max(MinLengthScale, Math.Min(MaxLengthScale, a[i])); frozenA[i] = true; clamped = true; }
+                    }
+                    if (isCorner[i] && !frozenD[i])
+                    {
+                        double nd = (jd[i] * y[0] + jd[n + i] * y[1] + jd[2 * n + i] * y[2]) / AngleCost;
+                        d[i] += 0.7 * (nd - d[i]);
+                        double lim = Math.Max(0.12, Math.Min(0.6, Math.Abs(baseSweep[i]) * 0.45));
+                        if (Math.Abs(d[i]) > lim) { d[i] = Math.Sign(d[i]) * lim; frozenD[i] = true; clamped = true; }
+                    }
+                }
+                if (clamped) continue;
+            }
+            Apply(baseLen, baseSweep, a, d, len, sweep);
+        }
+
+        private static void Apply(double[] baseLen, double[] baseSweep, double[] a, double[] d, double[] len, double[] sweep)
+        {
+            for (int i = 0; i < len.Length; i++)
+            {
+                len[i] = baseLen[i] * a[i];
+                sweep[i] = baseSweep[i] + d[i];
+            }
+        }
+
+        private static void Chain(double[] len, double[] sweep, out double x, out double y)
+        {
+            x = 0;
+            y = 0;
+            double h = 0;
+            for (int i = 0; i < len.Length; i++)
+            {
+                Advance(h, sweep[i], len[i], ref x, ref y);
+                h += sweep[i];
+            }
+        }
+
+        private static bool Solve3(double[,] m, double[] b, out double[] x)
+        {
+            x = new double[3];
+            var a = new double[3, 4];
+            for (int r = 0; r < 3; r++)
+            {
+                for (int c = 0; c < 3; c++) a[r, c] = m[r, c];
+                a[r, 3] = b[r];
+            }
+            for (int col = 0; col < 3; col++)
+            {
+                int piv = col;
+                for (int r = col + 1; r < 3; r++) if (Math.Abs(a[r, col]) > Math.Abs(a[piv, col])) piv = r;
+                if (Math.Abs(a[piv, col]) < 1e-12) return false;
+                for (int c = 0; c < 4; c++) { double t = a[col, c]; a[col, c] = a[piv, c]; a[piv, c] = t; }
+                for (int r = 0; r < 3; r++)
+                {
+                    if (r == col) continue;
+                    double f = a[r, col] / a[col, col];
+                    for (int c = col; c < 4; c++) a[r, c] -= f * a[col, c];
+                }
+            }
+            for (int r = 0; r < 3; r++) x[r] = a[r, 3] / a[r, r];
+            return true;
         }
 
         private double[] _segStartX;

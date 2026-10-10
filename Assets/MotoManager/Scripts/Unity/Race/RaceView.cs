@@ -136,6 +136,20 @@ namespace MotoManager.App.Race
                 Bikes[i].UpdateVisual(Track, d, dt, scale, markers, Sim.Time, i == SelectedRider);
             }
 
+            // The followed rider is out of the race: follow the next of the player's riders, or the leader.
+            if (Cam.Mode == CameraMode.Follow && !Bikes[SelectedRider].Visible)
+            {
+                int next = -1;
+                for (int i = 0; i < Bikes.Count; i++)
+                    if (Bikes[i].Visible && Sim.Riders[i].Entry.IsPlayer) { next = i; break; }
+                if (next < 0)
+                {
+                    var leader = Sim.RiderAtPosition(1);
+                    if (leader != null && Bikes[leader.Index].Visible) next = leader.Index;
+                }
+                if (next >= 0) Select(next);
+            }
+
             if (Sim.IsFinished && !_resultsShown && !IsReplay)
             {
                 _resultsShown = true;

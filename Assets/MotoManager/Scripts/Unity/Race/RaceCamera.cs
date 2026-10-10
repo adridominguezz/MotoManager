@@ -30,6 +30,9 @@ namespace MotoManager.App.Race
         private float _yaw;
         private Bounds _trackBounds;
         private Vector2 _lastPointer;
+        private Vector2 _pressStart;
+        /// <summary>Pixels a finger must travel before a touch becomes a pan (taps never lose the followed rider).</summary>
+        private const float DragThreshold = 40f;
         private bool _dragging;
         private float _lastPinch;
 
@@ -106,7 +109,14 @@ namespace MotoManager.App.Race
                 targetDistance = OverviewDistance();
                 _yaw = Mathf.LerpAngle(_yaw, 0, 1 - Mathf.Exp(-dt * 2));
             }
-            _focus = Vector3.Lerp(_focus, targetFocus, 1 - Mathf.Exp(-dt * (Mode == CameraMode.Follow ? 8 : 3)));
+            _focus = Vector3.Lerp(_focus, targetFocus, 1 - Mathf.Exp(-dt * (Mode == CameraMode.Follow ? 14 : 3)));
+            if (Mode == CameraMode.Follow && Target != null)
+            {
+                // At 4x/8x the bike covers a lot of ground per frame: never let it drift out of the frame.
+                Vector3 off = _focus - targetFocus;
+                float maxOff = _distance * 0.06f;
+                if (off.magnitude > maxOff) _focus = targetFocus + off.normalized * maxOff;
+            }
             _distance = Mathf.Lerp(_distance, targetDistance, 1 - Mathf.Exp(-dt * 4));
             var rot = Quaternion.Euler(Pitch, _yaw, 0);
             transform.position = _focus - rot * Vector3.forward * _distance;
@@ -144,10 +154,11 @@ namespace MotoManager.App.Race
             Vector2 pos = Input.touchCount == 1 ? Input.GetTouch(0).position : (Vector2)Input.mousePosition;
             if (down && !UI.RaceHud.PointerOverUi(pos))
             {
+                if (!_dragging) _pressStart = pos;
                 if (_dragging)
                 {
                     Vector2 delta = pos - _lastPointer;
-                    if (delta.sqrMagnitude > 4 && Mode != CameraMode.Free) Mode = CameraMode.Free;
+                    if (Mode != CameraMode.Free && (pos - _pressStart).magnitude > DragThreshold) Mode = CameraMode.Free;
                     if (Mode == CameraMode.Free)
                     {
                         float k = _distance / Screen.height * 1.2f;
