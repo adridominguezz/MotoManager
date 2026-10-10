@@ -1,0 +1,206 @@
+{
+  "id": "rookies_2026",
+  "categoryId": "rookies",
+  "season": 2026,
+  "bikeClassId": "cup_spec",
+  "maxEntries": 26,
+  "ridersPerTeam": 2,
+  "raceDistanceKm": 50,
+  "slipstreamFactor": 1.7,
+  "riderInfluence": 1.6,
+  "allowsRemount": true,
+  "engine": {
+    "type": "Single",
+    "displacementCc": 250,
+    "maxCylinders": 1,
+    "approxPowerKw": 38,
+    "enginesPerSeason": 0,
+    "specEngine": true,
+    "specSupplier": "KTM",
+    "revLimit": 13000,
+    "developmentFrozen": true
+  },
+  "chassis": {
+    "minWeightKg": 0,
+    "minCombinedWeightKg": 145,
+    "averageRiderKg": 55,
+    "productionDerived": false
+  },
+  "physics": {
+    "topSpeedKph": 232,
+    "lateralGrip": 1.15,
+    "brakingG": 1.1,
+    "tractionG": 0.68,
+    "maxLeanDeg": 58,
+    "bikeSpread": 0.0
+  },
+  "fuel": {
+    "tankLimitLitres": 0,
+    "sprintTankLimitLitres": 0,
+    "consumptionPerKm": 0.05
+  },
+  "tires": {
+    "supplier": "Pirelli",
+    "warmerTemperature": 60,
+    "wearScale": 1.0,
+    "frontAllocation": 6,
+    "rearAllocation": 7,
+    "compounds": [
+      {
+        "compound": "Medium",
+        "grip": 1.0,
+        "wearRate": 0.8,
+        "optimalTempMin": 84,
+        "optimalTempMax": 114,
+        "warmupTime": 32,
+        "heat": 1.0,
+        "wetGrip": 0.35,
+        "dryGrip": 1.0,
+        "dryWearMultiplier": 1
+      },
+      {
+        "compound": "Rain",
+        "isWet": true,
+        "grip": 1.0,
+        "wearRate": 0.9,
+        "optimalTempMin": 25,
+        "optimalTempMax": 65,
+        "warmupTime": 25,
+        "heat": 0.8,
+        "wetGrip": 0.72,
+        "dryGrip": 0.85,
+        "dryWearMultiplier": 4.5
+      }
+    ]
+  },
+  "electronics": {
+    "specEcu": true,
+    "tractionControl": false,
+    "launchControl": false,
+    "rideHeightDevices": false,
+    "assistLevel": 0.0
+  },
+  "aerodynamics": {
+    "allowed": false,
+    "updatesPerSeason": 0,
+    "influence": 0
+  },
+  "pitLane": {
+    "speedLimitKph": 60,
+    "allowsBikeSwap": false,
+    "allowsTireChange": true,
+    "allowsRefuel": false,
+    "bikeSwapTimeS": 0,
+    "tireChangeTimeS": 40,
+    "longLapLossS": 2.8
+  },
+  "qualifying": {
+    "format": "SingleSession",
+    "directToFinal": 0,
+    "advanceFromFirst": 0,
+    "sessionMinutes": 30,
+    "flyingLapsPerRun": 3,
+    "runs": 2,
+    "preferredCompound": "Medium"
+  },
+  "weekend": {
+    "sessions": [
+      {
+        "id": "fp1",
+        "name": "Free Practice",
+        "type": "Practice",
+        "durationMinutes": 30
+      },
+      {
+        "id": "q",
+        "name": "Qualifying",
+        "type": "Qualifying",
+        "durationMinutes": 30
+      },
+      {
+        "id": "r1",
+        "name": "Race 1",
+        "type": "Race",
+        "distanceFraction": 1.0,
+        "pointsSystem": "race"
+      },
+      {
+        "id": "r2",
+        "name": "Race 2",
+        "type": "Race",
+        "distanceFraction": 1.0,
+        "pointsSystem": "race"
+      }
+    ]
+  },
+  "pointsSystems": {
+    "race": [
+      25,
+      20,
+      16,
+      13,
+      11,
+      10,
+      9,
+      8,
+      7,
+      6,
+      5,
+      4,
+      3,
+      2,
+      1
+    ]
+  },
+  "penalties": {
+    "trackLimitsWarnings": 4,
+    "infractions": {
+      "TrackLimits": {
+        "type": "LongLap"
+      },
+      "LastLapTrackLimits": {
+        "type": "PositionDrop",
+        "positions": 1
+      },
+      "JumpStart": {
+        "type": "LongLap"
+      },
+      "PitLaneSpeeding": {
+        "type": "RideThrough"
+      },
+      "UnsafeRelease": {
+        "type": "LongLap"
+      },
+      "IrresponsibleRiding": {
+        "type": "LongLap"
+      },
+      "FuelLimit": {
+        "type": "Disqualification"
+      }
+    }
+  },
+  "development": {
+    "allowedComponents": [],
+    "seasonGainCap": 0,
+    "costMultiplier": 0,
+    "concessions": false,
+    "balanceOfPerformance": false
+  },
+  "testing": {
+    "privateTestDays": 0,
+    "testRidersAllowed": true
+  },
+  "economy": {
+    "participationIncomePerSeason": 0,
+    "travelCostPerRound": 15000,
+    "crashRepairCost": 4000,
+    "engineCost": 0,
+    "bikeLeasePerSeason": 0,
+    "prizeMoneyByPosition": [],
+    "typicalRiderSalary": 0
+  },
+  "notes": [
+    "Identical KTM RC 250 R machines run by the organiser.",
+    "Two races per event; a talent showcase rather than a team championship."
+  ]
+}

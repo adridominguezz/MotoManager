@@ -1,0 +1,283 @@
+{
+  "id": "worldsbk_2026",
+  "categoryId": "worldsbk",
+  "season": 2026,
+  "bikeClassId": "production_sbk",
+  "maxEntries": 26,
+  "ridersPerTeam": 2,
+  "raceDistanceKm": 95,
+  "slipstreamFactor": 1.0,
+  "riderInfluence": 1.0,
+  "allowsRemount": true,
+  "engine": {
+    "type": "ProductionDerived",
+    "displacementCc": 1000,
+    "maxCylinders": 4,
+    "approxPowerKw": 172,
+    "enginesPerSeason": 7,
+    "specEngine": false,
+    "revLimit": 15500,
+    "developmentFrozen": true
+  },
+  "chassis": {
+    "minWeightKg": 168,
+    "minCombinedWeightKg": 0,
+    "averageRiderKg": 70,
+    "productionDerived": true,
+    "homologatedFrame": true
+  },
+  "physics": {
+    "topSpeedKph": 322,
+    "lateralGrip": 1.24,
+    "brakingG": 1.28,
+    "tractionG": 0.86,
+    "maxLeanDeg": 62,
+    "bikeSpread": 0.8
+  },
+  "fuel": {
+    "tankLimitLitres": 0,
+    "sprintTankLimitLitres": 0,
+    "consumptionPerKm": 0.19
+  },
+  "tires": {
+    "supplier": "Pirelli",
+    "warmerTemperature": 80,
+    "wearScale": 1.0,
+    "frontAllocation": 6,
+    "rearAllocation": 7,
+    "compounds": [
+      {
+        "compound": "Soft",
+        "grip": 1.035,
+        "wearRate": 1.7249999999999999,
+        "optimalTempMin": 78,
+        "optimalTempMax": 106,
+        "warmupTime": 26,
+        "heat": 1.04,
+        "wetGrip": 0.36,
+        "dryGrip": 1.0,
+        "dryWearMultiplier": 1
+      },
+      {
+        "compound": "Medium",
+        "grip": 1.0,
+        "wearRate": 1.15,
+        "optimalTempMin": 84,
+        "optimalTempMax": 114,
+        "warmupTime": 32,
+        "heat": 1.0,
+        "wetGrip": 0.35,
+        "dryGrip": 1.0,
+        "dryWearMultiplier": 1
+      },
+      {
+        "compound": "Hard",
+        "grip": 0.975,
+        "wearRate": 0.828,
+        "optimalTempMin": 90,
+        "optimalTempMax": 122,
+        "warmupTime": 40,
+        "heat": 0.96,
+        "wetGrip": 0.33,
+        "dryGrip": 1.0,
+        "dryWearMultiplier": 1
+      },
+      {
+        "compound": "Intermediate",
+        "isWet": true,
+        "grip": 1.0,
+        "wearRate": 1.0,
+        "optimalTempMin": 40,
+        "optimalTempMax": 85,
+        "warmupTime": 28,
+        "heat": 0.9,
+        "wetGrip": 0.62,
+        "dryGrip": 0.92,
+        "dryWearMultiplier": 2.6
+      },
+      {
+        "compound": "Rain",
+        "isWet": true,
+        "grip": 1.0,
+        "wearRate": 0.9,
+        "optimalTempMin": 25,
+        "optimalTempMax": 65,
+        "warmupTime": 25,
+        "heat": 0.8,
+        "wetGrip": 0.72,
+        "dryGrip": 0.85,
+        "dryWearMultiplier": 4.5
+      }
+    ]
+  },
+  "electronics": {
+    "specEcu": false,
+    "tractionControl": true,
+    "launchControl": true,
+    "rideHeightDevices": false,
+    "assistLevel": 0.5
+  },
+  "aerodynamics": {
+    "allowed": true,
+    "updatesPerSeason": 1,
+    "influence": 0.4
+  },
+  "pitLane": {
+    "speedLimitKph": 60,
+    "allowsBikeSwap": false,
+    "allowsTireChange": true,
+    "allowsRefuel": false,
+    "bikeSwapTimeS": 0,
+    "tireChangeTimeS": 26,
+    "longLapLossS": 2.8
+  },
+  "qualifying": {
+    "format": "SingleSession",
+    "directToFinal": 0,
+    "advanceFromFirst": 0,
+    "sessionMinutes": 15,
+    "flyingLapsPerRun": 2,
+    "runs": 2,
+    "preferredCompound": "Soft"
+  },
+  "weekend": {
+    "sessions": [
+      {
+        "id": "fp1",
+        "name": "Free Practice 1",
+        "type": "Practice",
+        "durationMinutes": 45
+      },
+      {
+        "id": "fp2",
+        "name": "Free Practice 2",
+        "type": "Practice",
+        "durationMinutes": 45
+      },
+      {
+        "id": "sp",
+        "name": "Tissot Superpole",
+        "type": "Qualifying",
+        "durationMinutes": 15
+      },
+      {
+        "id": "r1",
+        "name": "Race 1",
+        "type": "Race",
+        "distanceFraction": 1.0,
+        "pointsSystem": "race"
+      },
+      {
+        "id": "spr",
+        "name": "Superpole Race",
+        "type": "Sprint",
+        "distanceFraction": 0.45,
+        "pointsSystem": "superpole"
+      },
+      {
+        "id": "r2",
+        "name": "Race 2",
+        "type": "Race",
+        "distanceFraction": 1.0,
+        "pointsSystem": "race",
+        "gridSource": "QualifyingWithPreviousRaceTop",
+        "gridFromPreviousRaceTop": 9,
+        "previousRaceSessionId": "spr"
+      }
+    ]
+  },
+  "pointsSystems": {
+    "race": [
+      25,
+      20,
+      16,
+      13,
+      11,
+      10,
+      9,
+      8,
+      7,
+      6,
+      5,
+      4,
+      3,
+      2,
+      1
+    ],
+    "superpole": [
+      12,
+      9,
+      7,
+      6,
+      5,
+      4,
+      3,
+      2,
+      1
+    ]
+  },
+  "penalties": {
+    "trackLimitsWarnings": 3,
+    "infractions": {
+      "TrackLimits": {
+        "type": "LongLap"
+      },
+      "LastLapTrackLimits": {
+        "type": "PositionDrop",
+        "positions": 1
+      },
+      "JumpStart": {
+        "type": "DoubleLongLap"
+      },
+      "PitLaneSpeeding": {
+        "type": "RideThrough"
+      },
+      "UnsafeRelease": {
+        "type": "TimePenalty",
+        "timeSeconds": 5
+      },
+      "IrresponsibleRiding": {
+        "type": "LongLap"
+      }
+    }
+  },
+  "development": {
+    "allowedComponents": [
+      "Chassis",
+      "Electronics",
+      "Suspension",
+      "Brakes",
+      "Aerodynamics",
+      "Reliability"
+    ],
+    "seasonGainCap": 8,
+    "costMultiplier": 0.5,
+    "concessions": true,
+    "balanceOfPerformance": true,
+    "balanceStep": 1.0
+  },
+  "testing": {
+    "privateTestDays": 0,
+    "testRidersAllowed": true
+  },
+  "economy": {
+    "participationIncomePerSeason": 900000,
+    "travelCostPerRound": 120000,
+    "crashRepairCost": 35000,
+    "engineCost": 60000,
+    "bikeLeasePerSeason": 800000,
+    "prizeMoneyByPosition": [
+      25000,
+      18000,
+      14000,
+      10000,
+      8000
+    ],
+    "typicalRiderSalary": 450000
+  },
+  "notes": [
+    "Production-derived: homologated frame and engine, organiser balancing via rev limits and concessions.",
+    "Three races per round: Race 1, Superpole Race, Race 2 (front rows of Race 2 set by the Superpole Race).",
+    "Flag-to-flag with wheel change."
+  ]
+}

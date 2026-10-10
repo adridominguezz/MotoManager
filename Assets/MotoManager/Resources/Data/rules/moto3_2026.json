@@ -1,0 +1,245 @@
+{
+  "id": "moto3_2026",
+  "categoryId": "moto3",
+  "season": 2026,
+  "bikeClassId": "lightweight_moto3",
+  "maxEntries": 30,
+  "ridersPerTeam": 2,
+  "raceDistanceKm": 92,
+  "slipstreamFactor": 1.8,
+  "riderInfluence": 1.4,
+  "allowsRemount": true,
+  "engine": {
+    "type": "Single",
+    "displacementCc": 250,
+    "maxCylinders": 1,
+    "approxPowerKw": 43,
+    "enginesPerSeason": 6,
+    "specEngine": false,
+    "revLimit": 13500,
+    "developmentFrozen": false
+  },
+  "chassis": {
+    "minWeightKg": 0,
+    "minCombinedWeightKg": 152,
+    "averageRiderKg": 60,
+    "productionDerived": false
+  },
+  "physics": {
+    "topSpeedKph": 243,
+    "lateralGrip": 1.165,
+    "brakingG": 1.12,
+    "tractionG": 0.7,
+    "maxLeanDeg": 60,
+    "bikeSpread": 0.45
+  },
+  "fuel": {
+    "tankLimitLitres": 0,
+    "sprintTankLimitLitres": 0,
+    "consumptionPerKm": 0.06
+  },
+  "tires": {
+    "supplier": "Pirelli",
+    "warmerTemperature": 80,
+    "wearScale": 1.0,
+    "frontAllocation": 6,
+    "rearAllocation": 7,
+    "compounds": [
+      {
+        "compound": "Soft",
+        "grip": 1.03,
+        "wearRate": 1.275,
+        "optimalTempMin": 78,
+        "optimalTempMax": 106,
+        "warmupTime": 26,
+        "heat": 1.04,
+        "wetGrip": 0.36,
+        "dryGrip": 1.0,
+        "dryWearMultiplier": 1
+      },
+      {
+        "compound": "Medium",
+        "grip": 1.0,
+        "wearRate": 0.85,
+        "optimalTempMin": 84,
+        "optimalTempMax": 114,
+        "warmupTime": 32,
+        "heat": 1.0,
+        "wetGrip": 0.35,
+        "dryGrip": 1.0,
+        "dryWearMultiplier": 1
+      },
+      {
+        "compound": "Hard",
+        "grip": 0.98,
+        "wearRate": 0.612,
+        "optimalTempMin": 90,
+        "optimalTempMax": 122,
+        "warmupTime": 40,
+        "heat": 0.96,
+        "wetGrip": 0.33,
+        "dryGrip": 1.0,
+        "dryWearMultiplier": 1
+      },
+      {
+        "compound": "Rain",
+        "isWet": true,
+        "grip": 1.0,
+        "wearRate": 0.9,
+        "optimalTempMin": 25,
+        "optimalTempMax": 65,
+        "warmupTime": 25,
+        "heat": 0.8,
+        "wetGrip": 0.72,
+        "dryGrip": 0.85,
+        "dryWearMultiplier": 4.5
+      }
+    ]
+  },
+  "electronics": {
+    "specEcu": true,
+    "tractionControl": false,
+    "launchControl": false,
+    "rideHeightDevices": false,
+    "assistLevel": 0.05
+  },
+  "aerodynamics": {
+    "allowed": true,
+    "updatesPerSeason": 0,
+    "influence": 0.2
+  },
+  "pitLane": {
+    "speedLimitKph": 60,
+    "allowsBikeSwap": false,
+    "allowsTireChange": true,
+    "allowsRefuel": false,
+    "bikeSwapTimeS": 0,
+    "tireChangeTimeS": 32,
+    "longLapLossS": 2.8
+  },
+  "qualifying": {
+    "format": "Knockout",
+    "directToFinal": 14,
+    "advanceFromFirst": 4,
+    "sessionMinutes": 15,
+    "flyingLapsPerRun": 2,
+    "runs": 2,
+    "preferredCompound": "Soft"
+  },
+  "weekend": {
+    "sessions": [
+      {
+        "id": "fp1",
+        "name": "Free Practice 1",
+        "type": "Practice",
+        "durationMinutes": 35
+      },
+      {
+        "id": "pr",
+        "name": "Practice",
+        "type": "Practice",
+        "durationMinutes": 35
+      },
+      {
+        "id": "q",
+        "name": "Qualifying",
+        "type": "Qualifying",
+        "durationMinutes": 30
+      },
+      {
+        "id": "wup",
+        "name": "Warm Up",
+        "type": "WarmUp",
+        "durationMinutes": 10
+      },
+      {
+        "id": "race",
+        "name": "Moto3 Race",
+        "type": "Race",
+        "distanceFraction": 1.0,
+        "pointsSystem": "race"
+      }
+    ]
+  },
+  "pointsSystems": {
+    "race": [
+      25,
+      20,
+      16,
+      13,
+      11,
+      10,
+      9,
+      8,
+      7,
+      6,
+      5,
+      4,
+      3,
+      2,
+      1
+    ]
+  },
+  "penalties": {
+    "trackLimitsWarnings": 4,
+    "infractions": {
+      "TrackLimits": {
+        "type": "LongLap"
+      },
+      "LastLapTrackLimits": {
+        "type": "PositionDrop",
+        "positions": 1
+      },
+      "JumpStart": {
+        "type": "LongLap"
+      },
+      "PitLaneSpeeding": {
+        "type": "RideThrough"
+      },
+      "UnsafeRelease": {
+        "type": "LongLap"
+      },
+      "IrresponsibleRiding": {
+        "type": "LongLap"
+      },
+      "FuelLimit": {
+        "type": "Disqualification"
+      }
+    }
+  },
+  "development": {
+    "allowedComponents": [
+      "Chassis",
+      "Suspension",
+      "Aerodynamics",
+      "Reliability"
+    ],
+    "seasonGainCap": 4,
+    "costMultiplier": 0.18,
+    "concessions": false,
+    "balanceOfPerformance": false
+  },
+  "testing": {
+    "privateTestDays": 0,
+    "testRidersAllowed": true
+  },
+  "economy": {
+    "participationIncomePerSeason": 800000,
+    "travelCostPerRound": 80000,
+    "crashRepairCost": 12000,
+    "engineCost": 0,
+    "bikeLeasePerSeason": 250000,
+    "prizeMoneyByPosition": [
+      15000,
+      11000,
+      8000,
+      6000,
+      5000
+    ],
+    "typicalRiderSalary": 80000
+  },
+  "notes": [
+    "250cc single cylinder; minimum weight bike + rider.",
+    "Groups and slipstream decide most races."
+  ]
+}

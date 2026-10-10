@@ -1,0 +1,4 @@
+[
+  { "id": "grandprix", "name": "FIM Grand Prix World Championship", "pyramid": "GrandPrix", "categories": ["motogp", "moto2", "moto3", "rookies"] },
+  { "id": "superbike", "name": "FIM Superbike World Championship", "pyramid": "Superbike", "categories": ["worldsbk", "worldssp"] }
+]

@@ -1,0 +1,134 @@
+[
+  {
+    "id": "prototype_gp",
+    "name": "MotoGP prototype",
+    "description": "Pure racing prototype. Everything is built by the factory; aerodynamics and electronics are major differentiators.",
+    "components": ["Engine", "Chassis", "Aerodynamics", "Electronics", "Suspension", "Brakes", "Cooling", "Reliability"],
+    "productionBaseShare": 0,
+    "performanceWeights": {
+      "Power": { "Engine": 0.8, "Electronics": 0.1, "Cooling": 0.1 },
+      "TopSpeed": { "Engine": 0.55, "Aerodynamics": 0.45 },
+      "Acceleration": { "Engine": 0.35, "Electronics": 0.35, "Aerodynamics": 0.3 },
+      "Braking": { "Brakes": 0.55, "Chassis": 0.25, "Aerodynamics": 0.2 },
+      "CornerEntry": { "Chassis": 0.5, "Suspension": 0.3, "Brakes": 0.2 },
+      "MidCorner": { "Chassis": 0.55, "Suspension": 0.25, "Aerodynamics": 0.2 },
+      "CornerExit": { "Electronics": 0.4, "Chassis": 0.3, "Suspension": 0.3 },
+      "Traction": { "Electronics": 0.5, "Suspension": 0.3, "Chassis": 0.2 },
+      "Stability": { "Chassis": 0.4, "Aerodynamics": 0.35, "Suspension": 0.25 },
+      "TireWear": { "Electronics": 0.35, "Suspension": 0.35, "Chassis": 0.3 },
+      "FuelEfficiency": { "Engine": 0.6, "Electronics": 0.4 },
+      "Reliability": { "Reliability": 0.6, "Cooling": 0.25, "Engine": 0.15 },
+      "WetPerformance": { "Electronics": 0.5, "Chassis": 0.3, "Suspension": 0.2 }
+    }
+  },
+  {
+    "id": "spec_moto2",
+    "name": "Moto2 (spec engine)",
+    "description": "Single supplier 765cc triple and spec electronics without traction control. Teams compete on chassis and set-up.",
+    "components": ["SpecEngine", "Chassis", "Suspension", "Brakes", "Aerodynamics", "Reliability"],
+    "productionBaseShare": 0,
+    "performanceWeights": {
+      "Power": { "SpecEngine": 1.0 },
+      "TopSpeed": { "SpecEngine": 0.7, "Aerodynamics": 0.3 },
+      "Acceleration": { "SpecEngine": 0.5, "Chassis": 0.3, "Suspension": 0.2 },
+      "Braking": { "Brakes": 0.4, "Chassis": 0.4, "Suspension": 0.2 },
+      "CornerEntry": { "Chassis": 0.6, "Suspension": 0.4 },
+      "MidCorner": { "Chassis": 0.65, "Suspension": 0.35 },
+      "CornerExit": { "Chassis": 0.5, "Suspension": 0.5 },
+      "Traction": { "Chassis": 0.45, "Suspension": 0.55 },
+      "Stability": { "Chassis": 0.6, "Suspension": 0.3, "Aerodynamics": 0.1 },
+      "TireWear": { "Chassis": 0.5, "Suspension": 0.5 },
+      "FuelEfficiency": { "SpecEngine": 1.0 },
+      "Reliability": { "Reliability": 0.7, "SpecEngine": 0.3 },
+      "WetPerformance": { "Chassis": 0.5, "Suspension": 0.5 }
+    }
+  },
+  {
+    "id": "lightweight_moto3",
+    "name": "Moto3 single cylinder",
+    "description": "250cc single-cylinder prototypes, tiny performance gaps; slipstream and positioning dominate.",
+    "components": ["Engine", "Chassis", "Suspension", "Aerodynamics", "Reliability"],
+    "productionBaseShare": 0,
+    "performanceWeights": {
+      "Power": { "Engine": 1.0 },
+      "TopSpeed": { "Engine": 0.65, "Aerodynamics": 0.35 },
+      "Acceleration": { "Engine": 0.6, "Chassis": 0.4 },
+      "Braking": { "Chassis": 0.6, "Suspension": 0.4 },
+      "CornerEntry": { "Chassis": 0.6, "Suspension": 0.4 },
+      "MidCorner": { "Chassis": 0.6, "Suspension": 0.4 },
+      "CornerExit": { "Chassis": 0.5, "Suspension": 0.3, "Engine": 0.2 },
+      "Traction": { "Chassis": 0.5, "Suspension": 0.5 },
+      "Stability": { "Chassis": 0.6, "Aerodynamics": 0.4 },
+      "TireWear": { "Chassis": 0.5, "Suspension": 0.5 },
+      "FuelEfficiency": { "Engine": 1.0 },
+      "Reliability": { "Reliability": 0.7, "Engine": 0.3 },
+      "WetPerformance": { "Chassis": 0.6, "Suspension": 0.4 }
+    }
+  },
+  {
+    "id": "cup_spec",
+    "name": "One-make cup bike",
+    "description": "Identical machines prepared by the organiser. Only the rider makes the difference.",
+    "components": ["Engine", "Chassis", "Reliability"],
+    "productionBaseShare": 0,
+    "performanceWeights": {
+      "Power": { "Engine": 1.0 },
+      "TopSpeed": { "Engine": 1.0 },
+      "Acceleration": { "Engine": 1.0 },
+      "Braking": { "Chassis": 1.0 },
+      "CornerEntry": { "Chassis": 1.0 },
+      "MidCorner": { "Chassis": 1.0 },
+      "CornerExit": { "Chassis": 1.0 },
+      "Traction": { "Chassis": 1.0 },
+      "Stability": { "Chassis": 1.0 },
+      "TireWear": { "Chassis": 1.0 },
+      "FuelEfficiency": { "Engine": 1.0 },
+      "Reliability": { "Reliability": 1.0 },
+      "WetPerformance": { "Chassis": 1.0 }
+    }
+  },
+  {
+    "id": "production_sbk",
+    "name": "WorldSBK production-derived",
+    "description": "Derived from homologated road bikes: the street model's engine and frame set the baseline, development is restricted to what the homologation allows. Electronics and suspension are the main tuning tools.",
+    "components": ["ProductionEngine", "Chassis", "Electronics", "Aerodynamics", "Suspension", "Brakes", "Reliability"],
+    "productionBaseShare": 0.4,
+    "performanceWeights": {
+      "Power": { "ProductionEngine": 0.9, "Electronics": 0.1 },
+      "TopSpeed": { "ProductionEngine": 0.7, "Aerodynamics": 0.3 },
+      "Acceleration": { "ProductionEngine": 0.4, "Electronics": 0.5, "Chassis": 0.1 },
+      "Braking": { "Brakes": 0.6, "Chassis": 0.3, "Suspension": 0.1 },
+      "CornerEntry": { "Chassis": 0.45, "Suspension": 0.4, "Brakes": 0.15 },
+      "MidCorner": { "Chassis": 0.5, "Suspension": 0.5 },
+      "CornerExit": { "Electronics": 0.5, "Suspension": 0.3, "Chassis": 0.2 },
+      "Traction": { "Electronics": 0.55, "Suspension": 0.45 },
+      "Stability": { "Chassis": 0.5, "Suspension": 0.3, "Aerodynamics": 0.2 },
+      "TireWear": { "Electronics": 0.5, "Suspension": 0.5 },
+      "FuelEfficiency": { "ProductionEngine": 0.5, "Electronics": 0.5 },
+      "Reliability": { "Reliability": 0.7, "ProductionEngine": 0.3 },
+      "WetPerformance": { "Electronics": 0.6, "Chassis": 0.2, "Suspension": 0.2 }
+    }
+  },
+  {
+    "id": "production_ssp",
+    "name": "WorldSSP production-derived",
+    "description": "Next-generation supersport bikes (600-955cc) balanced by the organiser. Even closer to the road bike than WorldSBK.",
+    "components": ["ProductionEngine", "Chassis", "Electronics", "Suspension", "Brakes", "Reliability"],
+    "productionBaseShare": 0.55,
+    "performanceWeights": {
+      "Power": { "ProductionEngine": 1.0 },
+      "TopSpeed": { "ProductionEngine": 0.85, "Chassis": 0.15 },
+      "Acceleration": { "ProductionEngine": 0.6, "Electronics": 0.4 },
+      "Braking": { "Brakes": 0.6, "Chassis": 0.4 },
+      "CornerEntry": { "Chassis": 0.5, "Suspension": 0.5 },
+      "MidCorner": { "Chassis": 0.5, "Suspension": 0.5 },
+      "CornerExit": { "Electronics": 0.4, "Suspension": 0.4, "Chassis": 0.2 },
+      "Traction": { "Electronics": 0.5, "Suspension": 0.5 },
+      "Stability": { "Chassis": 0.6, "Suspension": 0.4 },
+      "TireWear": { "Electronics": 0.4, "Suspension": 0.6 },
+      "FuelEfficiency": { "ProductionEngine": 0.6, "Electronics": 0.4 },
+      "Reliability": { "Reliability": 0.7, "ProductionEngine": 0.3 },
+      "WetPerformance": { "Electronics": 0.5, "Chassis": 0.25, "Suspension": 0.25 }
+    }
+  }
+]

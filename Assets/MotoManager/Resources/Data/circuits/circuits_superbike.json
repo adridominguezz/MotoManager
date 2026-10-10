@@ -1,0 +1,102 @@
+[
+  {
+    "id": "most",
+    "name": "Autodrom Most",
+    "shortName": "Most",
+    "country": "CZ",
+    "city": "Most",
+    "lengthM": 4212,
+    "layout": "S560 R110@30:tl S300 L70@69 R90@52 S240 R100@40 S280 L80@46 S200 R80@69 S300 R70@103 L50@115 S200 R100@34 S260 L60@69 R120@32 S400",
+    "abrasiveness": 0.5,
+    "surfaceGrip": 0.5,
+    "averageAirTempC": 23,
+    "rainChance": 0.22,
+    "pitEntryBeforeLineM": 250,
+    "pitExitAfterLineM": 200,
+    "longLapLossS": 2.6,
+    "referenceLaps": {
+      "worldsbk": 93.0,
+      "worldssp": 96.5
+    }
+  },
+  {
+    "id": "donington",
+    "name": "Donington Park",
+    "shortName": "Donington",
+    "country": "GB",
+    "city": "Castle Donington",
+    "lengthM": 4023,
+    "layout": "S380 R84@92:tl S180 L40@306 R76@183 S240 R84@92 S350 L60@183 S220 R101@61 L80@107 S260 R50@138 S300 R126@37 S300 L90@40 S150 R101@34 S260 L60@69 R67@46 S300",
+    "abrasiveness": 0.48,
+    "surfaceGrip": 0.5,
+    "averageAirTempC": 18,
+    "rainChance": 0.35,
+    "pitEntryBeforeLineM": 240,
+    "pitExitAfterLineM": 200,
+    "longLapLossS": 2.5,
+    "referenceLaps": {
+      "worldsbk": 87.5,
+      "worldssp": 91.0
+    }
+  },
+  {
+    "id": "magnycours",
+    "name": "Circuit de Nevers Magny-Cours",
+    "shortName": "Magny-Cours",
+    "country": "FR",
+    "city": "Magny-Cours",
+    "lengthM": 4411,
+    "layout": "S500 R58@159 S120 R65@63 S600 R124@19 S500 L80@106 R44@53 S150 R116@21 S300 L70@42 R58@32 S200 R44@85 L70@63 S300 R80@27 S120 L60@42 R51@42 S360",
+    "abrasiveness": 0.5,
+    "surfaceGrip": 0.48,
+    "averageAirTempC": 21,
+    "rainChance": 0.28,
+    "pitEntryBeforeLineM": 260,
+    "pitExitAfterLineM": 210,
+    "longLapLossS": 2.7,
+    "referenceLaps": {
+      "worldsbk": 98.0,
+      "worldssp": 101.5
+    }
+  },
+  {
+    "id": "cremona",
+    "name": "Cremona Circuit",
+    "shortName": "Cremona",
+    "country": "IT",
+    "city": "San Martino del Lago",
+    "lengthM": 3754,
+    "layout": "S650 R93@18:tl L60@27 S280 R103@23 S300 R83@27 S220 L70@32 R93@23 S350 R114@18 S200 L80@25 R72@29 S150 L50@36 R62@32 S360",
+    "abrasiveness": 0.5,
+    "surfaceGrip": 0.48,
+    "averageAirTempC": 25,
+    "rainChance": 0.18,
+    "pitEntryBeforeLineM": 250,
+    "pitExitAfterLineM": 210,
+    "longLapLossS": 2.5,
+    "referenceLaps": {
+      "worldsbk": 89.0,
+      "worldssp": 92.5
+    }
+  },
+  {
+    "id": "estoril",
+    "name": "Circuito do Estoril",
+    "shortName": "Estoril",
+    "country": "PT",
+    "city": "Estoril",
+    "lengthM": 4182,
+    "layout": "S700 R71@34:tl S200 R79@22 S350 R64@50 S300 L90@29 S120 R93@18 S280 L70@50 R57@38 S200 L80@42 R79@23 S260 R50@101 S150 R107@34 S500",
+    "abrasiveness": 0.52,
+    "surfaceGrip": 0.48,
+    "averageAirTempC": 21,
+    "rainChance": 0.18,
+    "pitEntryBeforeLineM": 250,
+    "pitExitAfterLineM": 210,
+    "longLapLossS": 2.6,
+    "referenceLaps": {
+      "worldsbk": 96.5,
+      "worldssp": 100.0
+    }
+  }
+]

@@ -1,0 +1,248 @@
+{
+  "id": "moto2_2026",
+  "categoryId": "moto2",
+  "season": 2026,
+  "bikeClassId": "spec_moto2",
+  "maxEntries": 30,
+  "ridersPerTeam": 2,
+  "raceDistanceKm": 98,
+  "slipstreamFactor": 1.25,
+  "riderInfluence": 1.25,
+  "allowsRemount": true,
+  "engine": {
+    "type": "SpecTriple",
+    "displacementCc": 765,
+    "maxCylinders": 3,
+    "approxPowerKw": 105,
+    "enginesPerSeason": 0,
+    "specEngine": true,
+    "specSupplier": "Triumph",
+    "revLimit": 14000,
+    "developmentFrozen": true
+  },
+  "chassis": {
+    "minWeightKg": 0,
+    "minCombinedWeightKg": 217,
+    "averageRiderKg": 66,
+    "productionDerived": false
+  },
+  "physics": {
+    "topSpeedKph": 300,
+    "lateralGrip": 1.19,
+    "brakingG": 1.22,
+    "tractionG": 0.8,
+    "maxLeanDeg": 62,
+    "bikeSpread": 0.55
+  },
+  "fuel": {
+    "tankLimitLitres": 0,
+    "sprintTankLimitLitres": 0,
+    "consumptionPerKm": 0.12
+  },
+  "tires": {
+    "supplier": "Pirelli",
+    "warmerTemperature": 80,
+    "wearScale": 1.0,
+    "frontAllocation": 6,
+    "rearAllocation": 7,
+    "compounds": [
+      {
+        "compound": "Soft",
+        "grip": 1.03,
+        "wearRate": 1.5,
+        "optimalTempMin": 78,
+        "optimalTempMax": 106,
+        "warmupTime": 26,
+        "heat": 1.04,
+        "wetGrip": 0.36,
+        "dryGrip": 1.0,
+        "dryWearMultiplier": 1
+      },
+      {
+        "compound": "Medium",
+        "grip": 1.0,
+        "wearRate": 1.0,
+        "optimalTempMin": 84,
+        "optimalTempMax": 114,
+        "warmupTime": 32,
+        "heat": 1.0,
+        "wetGrip": 0.35,
+        "dryGrip": 1.0,
+        "dryWearMultiplier": 1
+      },
+      {
+        "compound": "Hard",
+        "grip": 0.98,
+        "wearRate": 0.72,
+        "optimalTempMin": 90,
+        "optimalTempMax": 122,
+        "warmupTime": 40,
+        "heat": 0.96,
+        "wetGrip": 0.33,
+        "dryGrip": 1.0,
+        "dryWearMultiplier": 1
+      },
+      {
+        "compound": "Rain",
+        "isWet": true,
+        "grip": 1.0,
+        "wearRate": 0.9,
+        "optimalTempMin": 25,
+        "optimalTempMax": 65,
+        "warmupTime": 25,
+        "heat": 0.8,
+        "wetGrip": 0.72,
+        "dryGrip": 0.85,
+        "dryWearMultiplier": 4.5
+      }
+    ]
+  },
+  "electronics": {
+    "specEcu": true,
+    "tractionControl": false,
+    "launchControl": false,
+    "rideHeightDevices": false,
+    "assistLevel": 0.1
+  },
+  "aerodynamics": {
+    "allowed": true,
+    "updatesPerSeason": 0,
+    "influence": 0.3
+  },
+  "pitLane": {
+    "speedLimitKph": 60,
+    "allowsBikeSwap": false,
+    "allowsTireChange": true,
+    "allowsRefuel": false,
+    "bikeSwapTimeS": 0,
+    "tireChangeTimeS": 32,
+    "longLapLossS": 2.8
+  },
+  "qualifying": {
+    "format": "Knockout",
+    "directToFinal": 14,
+    "advanceFromFirst": 4,
+    "sessionMinutes": 15,
+    "flyingLapsPerRun": 2,
+    "runs": 2,
+    "preferredCompound": "Soft"
+  },
+  "weekend": {
+    "sessions": [
+      {
+        "id": "fp1",
+        "name": "Free Practice 1",
+        "type": "Practice",
+        "durationMinutes": 40
+      },
+      {
+        "id": "pr",
+        "name": "Practice",
+        "type": "Practice",
+        "durationMinutes": 40
+      },
+      {
+        "id": "q",
+        "name": "Qualifying",
+        "type": "Qualifying",
+        "durationMinutes": 30
+      },
+      {
+        "id": "wup",
+        "name": "Warm Up",
+        "type": "WarmUp",
+        "durationMinutes": 10
+      },
+      {
+        "id": "race",
+        "name": "Moto2 Race",
+        "type": "Race",
+        "distanceFraction": 1.0,
+        "pointsSystem": "race"
+      }
+    ]
+  },
+  "pointsSystems": {
+    "race": [
+      25,
+      20,
+      16,
+      13,
+      11,
+      10,
+      9,
+      8,
+      7,
+      6,
+      5,
+      4,
+      3,
+      2,
+      1
+    ]
+  },
+  "penalties": {
+    "trackLimitsWarnings": 4,
+    "infractions": {
+      "TrackLimits": {
+        "type": "LongLap"
+      },
+      "LastLapTrackLimits": {
+        "type": "PositionDrop",
+        "positions": 1
+      },
+      "JumpStart": {
+        "type": "LongLap"
+      },
+      "PitLaneSpeeding": {
+        "type": "RideThrough"
+      },
+      "UnsafeRelease": {
+        "type": "LongLap"
+      },
+      "IrresponsibleRiding": {
+        "type": "LongLap"
+      },
+      "FuelLimit": {
+        "type": "Disqualification"
+      }
+    }
+  },
+  "development": {
+    "allowedComponents": [
+      "Chassis",
+      "Suspension",
+      "Brakes",
+      "Aerodynamics",
+      "Reliability"
+    ],
+    "seasonGainCap": 6,
+    "costMultiplier": 0.35,
+    "concessions": false,
+    "balanceOfPerformance": false
+  },
+  "testing": {
+    "privateTestDays": 0,
+    "testRidersAllowed": true
+  },
+  "economy": {
+    "participationIncomePerSeason": 1200000,
+    "travelCostPerRound": 110000,
+    "crashRepairCost": 25000,
+    "engineCost": 0,
+    "bikeLeasePerSeason": 450000,
+    "prizeMoneyByPosition": [
+      30000,
+      22000,
+      16000,
+      12000,
+      10000
+    ],
+    "typicalRiderSalary": 250000
+  },
+  "notes": [
+    "Spec Triumph 765 triple, spec electronics without traction control.",
+    "Minimum weight applies to bike + rider.",
+    "Wet races: wheel change in the pits (verify against the current FIM regulations)."
+  ]
+}

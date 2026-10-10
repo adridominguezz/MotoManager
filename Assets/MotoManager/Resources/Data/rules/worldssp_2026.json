@@ -1,0 +1,251 @@
+{
+  "id": "worldssp_2026",
+  "categoryId": "worldssp",
+  "season": 2026,
+  "bikeClassId": "production_ssp",
+  "maxEntries": 32,
+  "ridersPerTeam": 2,
+  "raceDistanceKm": 85,
+  "slipstreamFactor": 1.25,
+  "riderInfluence": 1.2,
+  "allowsRemount": true,
+  "engine": {
+    "type": "ProductionDerived",
+    "displacementCc": 800,
+    "maxCylinders": 4,
+    "approxPowerKw": 105,
+    "enginesPerSeason": 0,
+    "specEngine": false,
+    "revLimit": 15000,
+    "developmentFrozen": true
+  },
+  "chassis": {
+    "minWeightKg": 161,
+    "minCombinedWeightKg": 0,
+    "averageRiderKg": 66,
+    "productionDerived": true,
+    "homologatedFrame": true
+  },
+  "physics": {
+    "topSpeedKph": 285,
+    "lateralGrip": 1.2,
+    "brakingG": 1.2,
+    "tractionG": 0.78,
+    "maxLeanDeg": 61,
+    "bikeSpread": 0.6
+  },
+  "fuel": {
+    "tankLimitLitres": 0,
+    "sprintTankLimitLitres": 0,
+    "consumptionPerKm": 0.13
+  },
+  "tires": {
+    "supplier": "Pirelli",
+    "warmerTemperature": 80,
+    "wearScale": 1.0,
+    "frontAllocation": 6,
+    "rearAllocation": 7,
+    "compounds": [
+      {
+        "compound": "Soft",
+        "grip": 1.03,
+        "wearRate": 1.5750000000000002,
+        "optimalTempMin": 78,
+        "optimalTempMax": 106,
+        "warmupTime": 26,
+        "heat": 1.04,
+        "wetGrip": 0.36,
+        "dryGrip": 1.0,
+        "dryWearMultiplier": 1
+      },
+      {
+        "compound": "Medium",
+        "grip": 1.0,
+        "wearRate": 1.05,
+        "optimalTempMin": 84,
+        "optimalTempMax": 114,
+        "warmupTime": 32,
+        "heat": 1.0,
+        "wetGrip": 0.35,
+        "dryGrip": 1.0,
+        "dryWearMultiplier": 1
+      },
+      {
+        "compound": "Hard",
+        "grip": 0.98,
+        "wearRate": 0.756,
+        "optimalTempMin": 90,
+        "optimalTempMax": 122,
+        "warmupTime": 40,
+        "heat": 0.96,
+        "wetGrip": 0.33,
+        "dryGrip": 1.0,
+        "dryWearMultiplier": 1
+      },
+      {
+        "compound": "Intermediate",
+        "isWet": true,
+        "grip": 1.0,
+        "wearRate": 1.0,
+        "optimalTempMin": 40,
+        "optimalTempMax": 85,
+        "warmupTime": 28,
+        "heat": 0.9,
+        "wetGrip": 0.62,
+        "dryGrip": 0.92,
+        "dryWearMultiplier": 2.6
+      },
+      {
+        "compound": "Rain",
+        "isWet": true,
+        "grip": 1.0,
+        "wearRate": 0.9,
+        "optimalTempMin": 25,
+        "optimalTempMax": 65,
+        "warmupTime": 25,
+        "heat": 0.8,
+        "wetGrip": 0.72,
+        "dryGrip": 0.85,
+        "dryWearMultiplier": 4.5
+      }
+    ]
+  },
+  "electronics": {
+    "specEcu": false,
+    "tractionControl": true,
+    "launchControl": false,
+    "rideHeightDevices": false,
+    "assistLevel": 0.35
+  },
+  "aerodynamics": {
+    "allowed": false,
+    "updatesPerSeason": 0,
+    "influence": 0.1
+  },
+  "pitLane": {
+    "speedLimitKph": 60,
+    "allowsBikeSwap": false,
+    "allowsTireChange": true,
+    "allowsRefuel": false,
+    "bikeSwapTimeS": 0,
+    "tireChangeTimeS": 26,
+    "longLapLossS": 2.8
+  },
+  "qualifying": {
+    "format": "SingleSession",
+    "directToFinal": 0,
+    "advanceFromFirst": 0,
+    "sessionMinutes": 15,
+    "flyingLapsPerRun": 2,
+    "runs": 2,
+    "preferredCompound": "Soft"
+  },
+  "weekend": {
+    "sessions": [
+      {
+        "id": "fp1",
+        "name": "Free Practice",
+        "type": "Practice",
+        "durationMinutes": 40
+      },
+      {
+        "id": "sp",
+        "name": "Superpole",
+        "type": "Qualifying",
+        "durationMinutes": 15
+      },
+      {
+        "id": "r1",
+        "name": "Race 1",
+        "type": "Race",
+        "distanceFraction": 1.0,
+        "pointsSystem": "race"
+      },
+      {
+        "id": "r2",
+        "name": "Race 2",
+        "type": "Race",
+        "distanceFraction": 1.0,
+        "pointsSystem": "race"
+      }
+    ]
+  },
+  "pointsSystems": {
+    "race": [
+      25,
+      20,
+      16,
+      13,
+      11,
+      10,
+      9,
+      8,
+      7,
+      6,
+      5,
+      4,
+      3,
+      2,
+      1
+    ]
+  },
+  "penalties": {
+    "trackLimitsWarnings": 3,
+    "infractions": {
+      "TrackLimits": {
+        "type": "LongLap"
+      },
+      "LastLapTrackLimits": {
+        "type": "PositionDrop",
+        "positions": 1
+      },
+      "JumpStart": {
+        "type": "DoubleLongLap"
+      },
+      "PitLaneSpeeding": {
+        "type": "RideThrough"
+      },
+      "UnsafeRelease": {
+        "type": "TimePenalty",
+        "timeSeconds": 5
+      },
+      "IrresponsibleRiding": {
+        "type": "LongLap"
+      }
+    }
+  },
+  "development": {
+    "allowedComponents": [
+      "Chassis",
+      "Electronics",
+      "Suspension",
+      "Brakes",
+      "Reliability"
+    ],
+    "seasonGainCap": 5,
+    "costMultiplier": 0.25,
+    "concessions": false,
+    "balanceOfPerformance": true,
+    "balanceStep": 1.5
+  },
+  "testing": {
+    "privateTestDays": 0,
+    "testRidersAllowed": true
+  },
+  "economy": {
+    "participationIncomePerSeason": 300000,
+    "travelCostPerRound": 60000,
+    "crashRepairCost": 15000,
+    "engineCost": 0,
+    "bikeLeasePerSeason": 200000,
+    "prizeMoneyByPosition": [
+      10000,
+      7000,
+      5000
+    ],
+    "typicalRiderSalary": 90000
+  },
+  "notes": [
+    "Next-generation supersport: mixed engine concepts balanced by the organiser (BoP)."
+  ]
+}

@@ -1,0 +1,173 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using MotoManager.Core.Common;
+using MotoManager.Core.Data;
+using MotoManager.Core.Race;
+using MotoManager.Core.World;
+
+namespace MotoManager.Tools
+{
+    public static class Program
+    {
+        public static int Main(string[] args)
+        {
+            string root = FindDataRoot();
+            var db = DataLoader.Load(new FileDataSource(root));
+            string mode = args.Length > 0 ? args[0] : "laps";
+            if (mode == "laps") return Laps(db, args);
+            if (mode == "race") return RaceTest(db, args);
+            if (mode == "calibrate") return Calibrate(db, root, args);
+            Console.WriteLine("usage: laps <rules> [circuit] | race <rules> <circuit> [seed]");
+            return 1;
+        }
+
+        public static string FindDataRoot()
+        {
+            var dir = AppContext.BaseDirectory;
+            while (dir != null)
+            {
+                var p = System.IO.Path.Combine(dir, "Assets", "MotoManager", "Resources", "Data");
+                if (System.IO.Directory.Exists(p)) return p;
+                dir = System.IO.Path.GetDirectoryName(dir);
+            }
+            throw new Exception("data root not found");
+        }
+
+        static RaceEntry AverageEntry(int i, double skill = 75)
+        {
+            var r = new Rider { Id = "r" + i, FirstName = "Test", LastName = "Rider" + i };
+            foreach (var n in RiderAttributes.Names) r.Attributes.Set(n, skill);
+            r.Attributes.Aggression = 50;
+            var bike = BikePerformance.Average();
+            for (int k = 0; k < bike.Values.Length; k++) bike.Values[k] = 70;
+            return new RaceEntry { Rider = r, Bike = bike, GridPosition = i + 1, SetupQuality = 0.6 };
+        }
+
+        static int Laps(GameDatabase db, string[] args)
+        {
+            string rulesId = args.Length > 1 ? args[1] : "motogp_2026";
+            var rules = db.Rules[rulesId];
+            var circuits = args.Length > 2 ? new List<CircuitDefinition> { db.Circuits[args[2]] } : db.Circuits.Values.OrderBy(c => c.Id).ToList();
+            foreach (var c in circuits)
+            {
+                var cfg = new RaceConfig { Rules = rules, Circuit = c, Tuning = db.Tuning, Laps = 3, TimeTrial = true, Seed = 7, TimeStep = 0.05, SessionType = SessionType.Practice };
+                cfg.Weather.AirTemp = c.AverageAirTempC;
+                var e = AverageEntry(0, 75);
+                for (int k = 0; k < e.Bike.Values.Length; k++) e.Bike.Values[k] = 65;
+                e.FrontCompound = TireCompound.Medium; e.RearCompound = TireCompound.Medium;
+                cfg.Entries.Add(e);
+                var sim = new RaceSimulation(cfg);
+                double vmax = 0;
+                while (!sim.IsFinished) { sim.Step(); vmax = Math.Max(vmax, sim.Riders[0].Speed); }
+                var t = TrackModel.Get(c);
+                var g = new TrackGeometry(t);
+                double turn = t.Segments.Sum(s => s.AngleDeg);
+                double refLap;
+                string cat = rules.CategoryId;
+                string refText = c.ReferenceLaps.TryGetValue(cat, out refLap) ? $"ref {MathX.FormatLapTime(refLap)} ratio {sim.Riders[0].BestLapTime / refLap:0.000}" : "ref n/a";
+                Console.WriteLine($"{c.Id,-16} best {MathX.FormatLapTime(sim.Riders[0].BestLapTime)} {refText}  vmax {vmax * 3.6:0} km/h  turn {turn:0}  closure {g.ClosureError:0}m resid {g.ResidualError:0}m geo {g.GeometricLength / t.Length * 100:0}%  corners {t.CornerCount}");
+            }
+            return 0;
+        }
+
+        static double ReferenceLap(GameDatabase db, CategoryRules rules, CircuitDefinition c)
+        {
+            var cfg = new RaceConfig { Rules = rules, Circuit = c, Tuning = db.Tuning, Laps = 3, TimeTrial = true, Seed = 7, TimeStep = 0.05, SessionType = SessionType.Practice };
+            cfg.Weather.AirTemp = c.AverageAirTempC;
+            var e = AverageEntry(0, 75);
+            for (int k = 0; k < e.Bike.Values.Length; k++) e.Bike.Values[k] = 65;
+            e.FrontCompound = TireCompound.Medium; e.RearCompound = TireCompound.Medium;
+            cfg.Entries.Add(e);
+            var sim = new RaceSimulation(cfg);
+            sim.RunToEnd();
+            return sim.Riders[0].BestLapTime;
+        }
+
+        static string ScaleRadii(string layout, double f)
+        {
+            var parts = layout.Split(' ');
+            for (int i = 0; i < parts.Length; i++)
+            {
+                var p = parts[i];
+                if (p[0] != 'L' && p[0] != 'R') continue;
+                int at = p.IndexOf('@');
+                int colon = p.IndexOf(':');
+                string radius = colon > 0 ? p.Substring(at + 1, colon - at - 1) : p.Substring(at + 1);
+                double r = double.Parse(radius, System.Globalization.CultureInfo.InvariantCulture);
+                int nr = Math.Max(10, (int)Math.Round(r * f));
+                parts[i] = p.Substring(0, at + 1) + nr + (colon > 0 ? p.Substring(colon) : "");
+            }
+            return string.Join(" ", parts);
+        }
+
+        /// <summary>Scales corner radii of every circuit so the reference rider matches the real race-pace lap.</summary>
+        static int Calibrate(GameDatabase db, string root, string[] args)
+        {
+            var rules = db.Rules[args.Length > 1 ? args[1] : "motogp_2026"];
+            string cat = rules.CategoryId;
+            var files = System.IO.Directory.GetFiles(System.IO.Path.Combine(root, "circuits"), "*.json");
+            foreach (var c in db.Circuits.Values.OrderBy(x => x.Id))
+            {
+                double target;
+                if (!c.ReferenceLaps.TryGetValue(cat, out target)) continue;
+                if (args.Length > 2 && args[2] != c.Id) continue;
+                string original = c.Layout;
+                double lo = 0.4, hi = 3.0, best = 1;
+                for (int it = 0; it < 18; it++)
+                {
+                    double mid = Math.Sqrt(lo * hi);
+                    var test = Newtonsoft.Json.JsonConvert.DeserializeObject<CircuitDefinition>(Newtonsoft.Json.JsonConvert.SerializeObject(c));
+                    test.Layout = ScaleRadii(original, mid);
+                    test.Id = c.Id + "_cal" + it;
+                    double lap;
+                    try { lap = ReferenceLap(db, rules, test); }
+                    catch { hi = mid; continue; }
+                    best = mid;
+                    if (lap > target) lo = mid; else hi = mid;
+                }
+                string layout = ScaleRadii(original, best);
+                foreach (var f in files)
+                {
+                    var text = System.IO.File.ReadAllText(f);
+                    if (text.Contains(original)) System.IO.File.WriteAllText(f, text.Replace(original, layout));
+                }
+                c.Layout = layout;
+                Console.WriteLine($"{c.Id,-16} radius x{best:0.00} -> {MathX.FormatLapTime(ReferenceLap(db, rules, c))} (ref {MathX.FormatLapTime(target)})");
+            }
+            return 0;
+        }
+
+        static int RaceTest(GameDatabase db, string[] args)
+        {
+            var rules = db.Rules[args.Length > 1 ? args[1] : "motogp_2026"];
+            var c = db.Circuits[args.Length > 2 ? args[2] : "mugello"];
+            ulong seed = args.Length > 3 ? ulong.Parse(args[3]) : 1;
+            var cfg = new RaceConfig { Rules = rules, Circuit = c, Tuning = db.Tuning, Seed = seed, TimeStep = 0.05 };
+            cfg.Laps = (int)Math.Round(rules.RaceDistanceKm * 1000 / c.LengthM);
+            cfg.FuelLimitLitres = rules.Fuel.TankLimitLitres;
+            cfg.Weather.AirTemp = c.AverageAirTempC;
+            var rng = new DeterministicRandom(seed);
+            for (int i = 0; i < 22; i++)
+            {
+                var e = AverageEntry(i, 70 + rng.Range(-8, 8));
+                for (int k = 0; k < e.Bike.Values.Length; k++) e.Bike.Values[k] = 60 + rng.Range(-10, 10);
+                cfg.Entries.Add(e);
+            }
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            var sim = new RaceSimulation(cfg);
+            sim.RunToEnd();
+            sw.Stop();
+            Console.WriteLine($"{c.Id} {cfg.Laps} laps, ticks {sim.Tick}, {sw.ElapsedMilliseconds} ms, weather {sim.Weather.Describe()}");
+            foreach (var r in sim.GetClassification())
+            {
+                var st = sim.Riders.First(x => x.Entry.Rider.Id == r.RiderId);
+                Console.WriteLine($"{r.Position,2} {r.RiderId,-4} grid {r.GridPosition,2} {r.Status,-8} {MathX.FormatLapTime(r.TotalTime)} gap {r.GapToWinner,7:0.000} best {MathX.FormatLapTime(r.BestLap)} wearF {st.Front.Wear:0.00} wearR {st.Rear.Wear:0.00} tF {st.Front.Temperature:0} tR {st.Rear.Temperature:0} fuel {st.Fuel:0.0} ovt {st.Overtakes} {r.Note}");
+            }
+            var counts = sim.Events.GroupBy(e => e.Type).Select(gp => gp.Key + ":" + gp.Count());
+            Console.WriteLine(string.Join(" ", counts));
+            foreach (var ev in sim.Events.Where(e => e.Important).Take(60)) Console.WriteLine("  " + ev);
+            return 0;
+        }
+    }
+}
