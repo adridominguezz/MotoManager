@@ -235,6 +235,28 @@ namespace MotoManager.App.UI
             }
         }
 
+        /// <summary>A single-line text field in a list row.</summary>
+        public static InputField Input(Transform list, string label, string value, Action<string> onChanged, float height = 64)
+        {
+            var row = Row(list, height);
+            var l = Label("Label", row, label, Theme.FontSmall, TextAnchor.MiddleLeft, Theme.TextDim);
+            Place(l.rectTransform, 0, 0, 0.3f, 1);
+            l.rectTransform.offsetMin = new Vector2(8, 0);
+            var box = Panel("Input", row, Theme.PanelLight);
+            Place(box.rectTransform, 0.3f, 0.1f, 1, 0.9f);
+            var text = Label("Text", box.transform, value ?? "", Theme.FontNormal, TextAnchor.MiddleLeft);
+            Stretch(text.rectTransform);
+            text.rectTransform.offsetMin = new Vector2(12, 0);
+            text.supportRichText = false;
+            text.raycastTarget = true;
+            var field = box.gameObject.AddComponent<InputField>();
+            field.textComponent = text;
+            field.text = value ?? "";
+            field.characterLimit = 40;
+            field.onValueChanged.AddListener(v => { if (onChanged != null) onChanged(v); });
+            return field;
+        }
+
         public static KeyValuePair<string, Action> Act(string label, Action action)
         {
             return new KeyValuePair<string, Action>(label, action);

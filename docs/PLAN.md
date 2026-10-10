@@ -392,6 +392,28 @@ Orden: E1 → E2 → M1 → E3 → E4 → 8.4 → E5 → M2 → E6 → E7 → 8.
 - En 6 temporadas: 4–9 pilotos de pago por parrilla en las categorías pequeñas, entre 4 y 13 puntos más lentos que
   el resto; prácticamente ninguno en MotoGP. 55 tests en verde.
 
+### Sesión E3 — Perfil del manager e inicio de carrera ✅
+- `ManagerProfile` (reputación, negociación, gestión deportiva, finanzas, contactos, comercial, dinero propio,
+  historial) separado de equipos y organizaciones. Hay 5 trayectorias iniciales en datos, con valores de diseño:
+  personal de equipo, expiloto, ingeniero, directivo y empresario.
+- Todos los equipos tienen un manager de la IA (personas inventadas).
+- **Empleado:** solo ofrecen trabajo los equipos con la plaza abierta (alrededor de un tercio), con un máximo de 6
+  ofertas y según tu reputación, gestión y contactos frente al tamaño del puesto. Un recién llegado encuentra
+  trabajo en las categorías pequeñas. Aceptar no transfiere la propiedad: la organización paga tu sueldo, que va a
+  tu dinero propio.
+- **Fundador:**
+  - Inviertes tu dinero (solo el tuyo, nunca el de la organización), pides un préstamo (importe y tipo según tus
+    finanzas y tu reputación) y recibes patrocinadores interesados, cada uno condicionado a una categoría.
+  - Viabilidad de cada categoría, incluidas las cuotas del préstamo. Solo se pueden elegir las viables o
+    arriesgadas, y las arriesgadas con aviso.
+  - Eliges el proveedor de motos. En las parrillas cerradas se compra la plaza del equipo privado más débil, que se
+    retira y deja libres a sus pilotos y su personal; en las abiertas se paga la inscripción.
+  - Todo queda en la contabilidad: inversión, préstamo, plaza, equipamiento y motos. Los pilotos se fichan entre los
+    libres que aceptan.
+- Las cuotas del préstamo se pagan por evento. La organización del jugador no recibe ayuda de propietarios externos.
+- Interfaz: la lista libre de equipos se sustituye por el flujo de perfil → camino → empleo o fundación, con su
+  comparación de categorías (ES/EN), y la pantalla de equipo muestra tu situación de manager. 59 tests en verde.
+
 ## Pendiente de especificación
 
 Recibidas las secciones 49–105; ver la Fase 8.

@@ -50,6 +50,16 @@ namespace MotoManager.App.UI.Screens
             if (team == null) return;
             var date = world.CurrentDate;
 
+            var me = world.PlayerManager;
+            if (me != null && me.Job != null)
+            {
+                UiFactory.Heading(list, Loc.T("manager.title", me.FullName));
+                var org = world.GetOrganisation(me.Job.OrganisationId);
+                string role = me.Job.Role == ManagerRole.OwnerManager ? Loc.T("manager.owner", org != null ? org.Name : "") :
+                    Loc.T("manager.employed", org != null ? org.Name : "", me.Job.EndSeason, MathX.FormatMoney(me.Job.SalaryPerSeason), Loc.T("autonomy." + me.Job.Autonomy));
+                UiFactory.Paragraph(list, role + "\n<color=#9AA4B2>" + Loc.T("manager.wealth", MathX.FormatMoney(me.PersonalWealth), me.Reputation.ToString("0")) + "</color>", Theme.FontSmall + 2);
+            }
+
             var pers = team.Personality;
             if (pers != null)
             {

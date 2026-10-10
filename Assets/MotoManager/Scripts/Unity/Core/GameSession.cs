@@ -78,6 +78,25 @@ namespace MotoManager.App
             }, () => SetGame(game));
         }
 
+        /// <summary>
+        /// Creates the 2026 world with nobody managing yet: the career start screens use it to show real job offers,
+        /// sponsors and category costs before the player commits.
+        /// </summary>
+        public void PrepareCareer(ulong seed, Action<GameController> ready)
+        {
+            GameController game = null;
+            Run("Creating the 2026 world", () =>
+            {
+                game = GameController.NewGame(Db, new NewGameOptions { Seed = seed });
+            }, () => ready(game));
+        }
+
+        /// <summary>The player has a team (hired or founded): the career begins.</summary>
+        public void StartCareer(GameController game)
+        {
+            SetGame(game);
+        }
+
         public void Continue()
         {
             GameController game = null;

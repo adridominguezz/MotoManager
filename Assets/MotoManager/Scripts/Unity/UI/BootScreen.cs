@@ -93,35 +93,12 @@ namespace MotoManager.App.UI
             var db = _session.Db;
             _status.text = db.Riders.Count + " riders, " + db.Teams.Count + " teams, " + db.Circuits.Count + " circuits loaded" +
                            (_session.DataErrors.Count > 0 ? "\n" + _session.DataErrors.Count + " data warnings (see log)" : "");
-            AddButton("New career", ShowTeamPicker, Theme.Accent);
-            if (SaveManager.Exists(SaveManager.AutoSlot)) AddButton("Continue", () => _session.Continue());
-        }
-
-        private void ShowTeamPicker()
-        {
-            UiFactory.Clear(_list);
-            _status.text = "Choose the team you will manage";
-            foreach (var cat in _session.Db.CategoriesOrdered())
+            AddButton(Loc.T("career.new"), () => _session.PrepareCareer((ulong)System.DateTime.Now.Ticks, game =>
             {
-                if (!cat.Simulated || cat.IsCup) continue;
-                var header = UiFactory.Row(_list, 56);
-                UiFactory.Stretch(UiFactory.Label("Header", header, cat.Name, Theme.FontLarge, TextAnchor.MiddleLeft, UiFactory.ParseColor(cat.Color, Theme.Accent)).rectTransform);
-                var teams = new List<Team>();
-                foreach (var t in _session.Db.Teams.Values)
-                    if (t.CategoryId == cat.Id) teams.Add(t);
-                teams.Sort((a, b) => b.Reputation.CompareTo(a.Reputation));
-                foreach (var t in teams)
-                {
-                    var team = t;
-                    var row = UiFactory.Row(_list, 72);
-                    var b = UiFactory.Button("Team", row, "", () => _session.NewGame(team.Id, (ulong)System.DateTime.Now.Ticks), UiFactory.ParseColor(team.Colors.Primary, Theme.PanelLight) * 0.55f);
-                    UiFactory.Stretch((RectTransform)b.transform);
-                    var label = b.GetComponentInChildren<Text>();
-                    label.alignment = TextAnchor.MiddleLeft;
-                    label.text = "   " + team.Name + "   <color=#9AA4B2>" + team.Status + " · budget " + MathX.FormatMoney(team.SeasonBudget) + "</color>";
-                    label.supportRichText = true;
-                }
-            }
+                UiFactory.Clear(_buttons);
+                new CareerStartFlow(_session, game, _list, _status).Render();
+            }), Theme.Accent);
+            if (SaveManager.Exists(SaveManager.AutoSlot)) AddButton("Continue", () => _session.Continue());
         }
 
         private void ShowCareer()
