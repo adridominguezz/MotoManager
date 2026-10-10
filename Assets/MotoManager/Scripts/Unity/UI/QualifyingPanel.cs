@@ -21,7 +21,7 @@ namespace MotoManager.App.UI
             var canvas = UiFactory.CreateCanvas("Qualifying", 20);
             var p = canvas.gameObject.AddComponent<QualifyingPanel>();
             p._onContinue = onContinue;
-            p.Build((RectTransform)canvas.transform, weekend, eventName);
+            p.Build(UiFactory.SafeRoot(canvas, Theme.Background), weekend, eventName);
         }
 
         private void Build(RectTransform root, WeekendSimulation weekend, string eventName)

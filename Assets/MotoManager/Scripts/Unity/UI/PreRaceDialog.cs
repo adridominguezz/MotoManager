@@ -26,7 +26,7 @@ namespace MotoManager.App.UI
             var dialog = canvas.gameObject.AddComponent<PreRaceDialog>();
             dialog._weekend = weekend;
             dialog._onStart = onStart;
-            dialog.Build((RectTransform)canvas.transform);
+            dialog.Build(UiFactory.SafeRoot(canvas));
             return dialog;
         }
 

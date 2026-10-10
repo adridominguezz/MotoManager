@@ -81,7 +81,7 @@ namespace MotoManager.App.UI.Screens
             var canvas = UiFactory.CreateCanvas("Management", 5);
             var shell = canvas.gameObject.AddComponent<ManagementShell>();
             shell.Session = session;
-            shell.Build((RectTransform)canvas.transform);
+            shell.Build(UiFactory.SafeRoot(canvas, Theme.Background));
             return shell;
         }
 

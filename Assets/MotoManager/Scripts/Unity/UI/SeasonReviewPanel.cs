@@ -19,7 +19,7 @@ namespace MotoManager.App.UI
             var canvas = UiFactory.CreateCanvas("SeasonReview", 30);
             var p = canvas.gameObject.AddComponent<SeasonReviewPanel>();
             p._done = done;
-            p.Build((RectTransform)canvas.transform, summary, game);
+            p.Build(UiFactory.SafeRoot(canvas, Theme.Background), summary, game);
         }
 
         private static string MoodColor(BoardMood m)

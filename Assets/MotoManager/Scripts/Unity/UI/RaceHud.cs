@@ -70,7 +70,7 @@ namespace MotoManager.App.UI
             var canvas = UiFactory.CreateCanvas("RaceHud", 10);
             var hud = canvas.gameObject.AddComponent<RaceHud>();
             hud._view = view;
-            hud._root = (RectTransform)canvas.transform;
+            hud._root = UiFactory.SafeRoot(canvas);
             hud.Build(title);
             return hud;
         }
@@ -89,8 +89,10 @@ namespace MotoManager.App.UI
             var sim = _view.Sim;
 
             // Name tags under everything else.
-            _tagLayer = UiFactory.Rect("Tags", _root);
+            // On the whole screen (they follow the riders), behind the HUD that stays in the safe area.
+            _tagLayer = UiFactory.Rect("Tags", _root.parent);
             UiFactory.Stretch(_tagLayer);
+            _tagLayer.SetAsFirstSibling();
             foreach (var r in sim.Riders)
             {
                 // Plate over the bike (close view): position, name, tyre and gap.
@@ -432,7 +434,7 @@ namespace MotoManager.App.UI
             var cam = _view.Cam.Camera;
             if (cam == null) return;
             var sim = _view.Sim;
-            var canvasRect = _root.rect;
+            var canvasRect = ((RectTransform)_tagLayer.parent).rect;
             float sx = canvasRect.width / Screen.width, sy = canvasRect.height / Screen.height;
             var leader = sim.RiderAtPosition(1);
             for (int i = 0; i < _tags.Count; i++)

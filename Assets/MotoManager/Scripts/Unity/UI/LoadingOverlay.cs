@@ -28,7 +28,7 @@ namespace MotoManager.App.UI
             {
                 var canvas = UiFactory.CreateCanvas("Loading", 60);
                 _current = canvas.gameObject.AddComponent<LoadingOverlay>();
-                _current.Build((RectTransform)canvas.transform);
+                _current.Build(UiFactory.SafeRoot(canvas, Theme.Background));
             }
             _current._task.text = task;
             _current._doneAt = -1;

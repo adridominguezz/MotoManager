@@ -15,7 +15,7 @@ namespace MotoManager.EditorTools
     {
         public const string ScenePath = "Assets/MotoManager/Scenes/Main.unity";
         public const string BundleId = "com.adridominguez.motomanager";
-        private const string DoneKey = "MotoManager.ProjectSetup.v1";
+        private const string DoneKey = "MotoManager.ProjectSetup.v2";
 
         static ProjectSetup()
         {
@@ -63,7 +63,9 @@ namespace MotoManager.EditorTools
 
 #if UNITY_2019_1_OR_NEWER
             PlayerSettings.Android.startInFullscreen = true;
-            PlayerSettings.Android.renderOutsideSafeArea = false;
+            // The game draws behind the notch and rounded corners; the interface keeps its content inside the
+            // safe area itself (UI/UiScale.cs, SafeArea), so backgrounds fill the whole screen.
+            PlayerSettings.Android.renderOutsideSafeArea = true;
 #endif
             PlayerSettings.runInBackground = false;
             PlayerSettings.SetMobileMTRendering(BuildTargetGroup.Android, true);

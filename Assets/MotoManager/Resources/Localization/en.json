@@ -1376,5 +1376,8 @@
   "news.moves": "{0} moves to {1}",
   "news.movesBody": "The team leaves {0} with {1} machinery.",
   "news.cashCrisis": "{0} is out of cash",
-  "news.cashCrisisBody": "Take an emergency loan, put in your own money or sell a team before the season ends, or a sale will be forced."
+  "news.cashCrisisBody": "Take an emergency loan, put in your own money or sell a team before the season ends, or a sale will be forced.",
+  "boot.size.small": "Small text",
+  "boot.size.normal": "Normal text",
+  "boot.size.large": "Large text"
 }

@@ -124,7 +124,7 @@ namespace MotoManager.App.UI
         /// <summary>Row of selectable pills (categories, filters, tabs inside a page).</summary>
         public static void Chips(Transform list, IList<string> labels, int selected, Action<int> onSelect, float height = 56)
         {
-            var row = UiFactory.Row(list, height);
+            var row = UiFactory.Row(list, UiScale.Touch(height));
             for (int i = 0; i < labels.Count; i++)
             {
                 int idx = i;

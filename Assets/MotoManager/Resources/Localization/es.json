@@ -1376,5 +1376,8 @@
   "news.moves": "{0} pasa a {1}",
   "news.movesBody": "El equipo deja {0} con motos {1}.",
   "news.cashCrisis": "{0} se queda sin dinero",
-  "news.cashCrisisBody": "Pide un préstamo de urgencia, pon dinero propio o vende un equipo antes de que acabe la temporada, o la venta será forzosa."
+  "news.cashCrisisBody": "Pide un préstamo de urgencia, pon dinero propio o vende un equipo antes de que acabe la temporada, o la venta será forzosa.",
+  "boot.size.small": "Texto pequeño",
+  "boot.size.normal": "Texto normal",
+  "boot.size.large": "Texto grande"
 }

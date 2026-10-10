@@ -586,6 +586,15 @@ que se quedan en pista, modelos toscos y opción de entrar a boxes (en motos no 
   fuerza; si no basta, quiebra con un golpe fuerte a la reputación. La partida continúa.
 - Las plazas vacías de cualquier equipo se completan antes de cada evento. 96 tests en verde.
 
+### Interfaz: estilo racing y adaptación al móvil ✅
+- Estilo racing: base negro carbono y grafito, un único acento (el color de tu equipo) y amarillo de cronometraje para
+  resaltar; títulos en mayúsculas y cursiva, esquinas cortadas, tablas tipo torre de tiempos, bandera a cuadros y
+  fibra de carbono sutiles. Desaparecen los colores por sección.
+- Móvil: la escala de la interfaz sale del tamaño físico de la pantalla (unos 2,6 mm para el texto normal), con
+  selector de tamaño (pequeño/normal/grande) en la pantalla inicial; filas con botones más altas en el móvil; todo el
+  contenido respeta la zona segura (notch, cámara, esquinas redondeadas, con margen mínimo) mientras los fondos llenan
+  la pantalla; umbral de arrastre de la cámara según la densidad.
+
 ## Pendiente de especificación
 
 Recibidas las secciones 49–105; ver la Fase 8.

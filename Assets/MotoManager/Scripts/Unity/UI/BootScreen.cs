@@ -21,7 +21,7 @@ namespace MotoManager.App.UI
             var canvas = UiFactory.CreateCanvas("BootCanvas");
             var screen = canvas.gameObject.AddComponent<BootScreen>();
             screen._session = session;
-            screen.Build(canvas.transform);
+            screen.Build(UiFactory.SafeRoot(canvas, Theme.Background));
             return screen;
         }
 
@@ -137,7 +137,7 @@ namespace MotoManager.App.UI
             }), SaveManager.Exists(SaveManager.AutoSlot) ? Theme.PanelLight : Theme.Accent);
 
             // Language.
-            var row = UiFactory.Row(_buttons, 64);
+            var row = UiFactory.Row(_buttons, UiScale.Touch(64));
             string[] langs = { "es", "en" };
             string[] names = { "Español", "English" };
             for (int i = 0; i < 2; i++)
@@ -145,6 +145,17 @@ namespace MotoManager.App.UI
                 string lang = langs[i];
                 var b = UiFactory.Button("Lang", row, names[i], () => Loc.SetLanguage(lang), Loc.Language == lang ? Theme.Accent : Theme.PanelLight, Theme.FontSmall);
                 UiFactory.Place((RectTransform)b.transform, i * 0.5f, 0, i * 0.5f + 0.5f, 1, 4);
+            }
+
+            // Interface size (phones start larger; the player can adjust).
+            var sizes = UiFactory.Row(_buttons, UiScale.Touch(64));
+            string[] sizeKeys = { "boot.size.small", "boot.size.normal", "boot.size.large" };
+            for (int i = 0; i < sizeKeys.Length; i++)
+            {
+                int level = i;
+                var b = UiFactory.Button("Size", sizes, Loc.T(sizeKeys[i]), () => { UiScale.UserLevel = level; ShowMainMenu(); },
+                    UiScale.UserLevel == level ? Theme.Accent : Theme.PanelLight, Theme.FontSmall);
+                UiFactory.Place((RectTransform)b.transform, i / 3f, 0, (i + 1) / 3f, 1, 4);
             }
 
             var intro = Ui.Card(_list, Loc.T("boot.welcome"), Loc.T("boot.welcomeSub"));

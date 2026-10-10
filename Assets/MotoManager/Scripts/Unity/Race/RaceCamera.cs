@@ -36,7 +36,8 @@ namespace MotoManager.App.Race
         private Vector2 _lastPointer;
         private Vector2 _pressStart;
         /// <summary>Pixels a finger must travel before a touch becomes a pan (taps never lose the followed rider).</summary>
-        private const float DragThreshold = 40f;
+        /// <summary>Movement that turns a touch into a drag: about 3 mm whatever the screen density.</summary>
+        private static float DragThreshold { get { return Screen.dpi > 1 ? Mathf.Max(40f, Screen.dpi * 0.12f) : 40f; } }
         private bool _dragging;
         private float _lastPinch;
 

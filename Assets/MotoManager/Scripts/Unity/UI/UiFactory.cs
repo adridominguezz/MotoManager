@@ -188,12 +188,33 @@ namespace MotoManager.App.UI
             var scaler = go.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920, 1080);
+            // Larger on phones (physical size), see UiScale.
             // Landscape phones: the height is always 1080 units and the width follows the screen, so every page
             // can be laid out to fit without scrolling.
             scaler.matchWidthOrHeight = 1f;
+            UiScale.Register(scaler);
             go.AddComponent<GraphicRaycaster>();
             EnsureEventSystem();
             return canvas;
+        }
+
+        /// <summary>
+        /// The part of a canvas that is safe for content (away from the camera notch, rounded corners and system
+        /// bars). An optional colour fills the whole screen behind it, so the margins match the screen's background.
+        /// </summary>
+        public static RectTransform SafeRoot(Canvas canvas, Color? bleed = null)
+        {
+            var root = (RectTransform)canvas.transform;
+            if (bleed.HasValue)
+            {
+                var fill = Panel("Bleed", root, bleed.Value);
+                Stretch(fill.rectTransform);
+                fill.raycastTarget = false;
+            }
+            var safe = Rect("Safe", root);
+            Stretch(safe);
+            safe.gameObject.AddComponent<SafeArea>();
+            return safe;
         }
 
         public static void EnsureEventSystem()
@@ -570,7 +591,8 @@ namespace MotoManager.App.UI
         /// </summary>
         public static RectTransform TableRow(Transform list, float height, float[] widths, string[] cells, bool header = false, Color? background = null, Color? textColor = null)
         {
-            var row = Row(list, height);
+            // Rows often carry a button: a little taller on a phone.
+            var row = Row(list, header ? height : UiScale.Handheld ? height * 1.12f : height);
             if (background.HasValue || header)
             {
                 var img = row.gameObject.AddComponent<Image>();
@@ -729,7 +751,7 @@ namespace MotoManager.App.UI
         /// <summary>A row of buttons sharing the width.</summary>
         public static void ButtonRow(Transform list, float height, params UiAct[] buttons)
         {
-            var row = Row(list, height);
+            var row = Row(list, UiScale.Touch(height));
             for (int i = 0; i < buttons.Length; i++)
             {
                 var b = Button("Button", row, buttons[i].Key, buttons[i].Value, buttons[i].Color, Theme.FontSmall + 2);
@@ -759,7 +781,7 @@ namespace MotoManager.App.UI
         /// <summary>A single-line text field in a list row.</summary>
         public static InputField Input(Transform list, string label, string value, Action<string> onChanged, float height = 64)
         {
-            var row = Row(list, height);
+            var row = Row(list, UiScale.Touch(height));
             var l = Label("Label", row, label, Theme.FontSmall, TextAnchor.MiddleLeft, Theme.TextDim);
             Place(l.rectTransform, 0, 0, 0.3f, 1);
             l.rectTransform.offsetMin = new Vector2(8, 0);
