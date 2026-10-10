@@ -159,12 +159,28 @@ namespace MotoManager.App.UI.Screens
             UiFactory.Place(_subHeader.rectTransform, 0.155f, 0.04f, 0.56f, 0.48f);
             _busy = UiFactory.Label("Busy", header.transform, "", Theme.FontSmall, TextAnchor.MiddleRight, Theme.Warning);
             UiFactory.Place(_busy.rectTransform, 0.3f, 0, 0.56f, 1);
-            var menu = UiFactory.Button("Menu", header.transform, Loc.T("shell.menu"), ExitToMenu, Theme.PanelLight, Theme.FontSmall);
-            UiFactory.Place((RectTransform)menu.transform, 0.57f, 0.16f, 0.665f, 0.84f, 4);
-            var save = UiFactory.Button("Save", header.transform, Loc.T("shell.save"), () => { Session.Save(); Toast(Loc.T("shell.saved")); }, Theme.PanelLight, Theme.FontSmall);
-            UiFactory.Place((RectTransform)save.transform, 0.67f, 0.16f, 0.77f, 0.84f, 4);
+            bool compact = UiScale.Compact;
+            if (compact)
+            {
+                // Small screens: no logo plate, the team line starts at the edge, and Save / Menu / text size live
+                // in one menu button.
+                plate.gameObject.SetActive(false);
+                hatch.gameObject.SetActive(false);
+                UiFactory.Place(_header.rectTransform, 0.1f, 0.48f, 0.66f, 0.96f);
+                UiFactory.Place(_subHeader.rectTransform, 0.1f, 0.04f, 0.66f, 0.48f);
+                UiFactory.Place(_busy.rectTransform, 0.3f, 0, 0.66f, 1);
+                var more = UiFactory.Button("MenuButton", header.transform, "☰", ToggleMenu, Theme.PanelLight, Theme.FontLarge);
+                UiFactory.Place((RectTransform)more.transform, 0.005f, 0.1f, 0.09f, 0.9f, 4);
+            }
+            else
+            {
+                var menu = UiFactory.Button("Menu", header.transform, Loc.T("shell.menu"), ExitToMenu, Theme.PanelLight, Theme.FontSmall);
+                UiFactory.Place((RectTransform)menu.transform, 0.57f, 0.16f, 0.665f, 0.84f, 4);
+                var save = UiFactory.Button("Save", header.transform, Loc.T("shell.save"), () => { Session.Save(); Toast(Loc.T("shell.saved")); }, Theme.PanelLight, Theme.FontSmall);
+                UiFactory.Place((RectTransform)save.transform, 0.67f, 0.16f, 0.77f, 0.84f, 4);
+            }
             var go = UiFactory.Button("Continue", header.transform, "", Continue, Theme.Accent, Theme.FontNormal);
-            UiFactory.Place((RectTransform)go.transform, 0.78f, 0.12f, 0.99f, 0.88f, 4);
+            UiFactory.Place((RectTransform)go.transform, compact ? 0.68f : 0.78f, 0.12f, 0.99f, 0.88f, 4);
             _continueLabel = go.GetComponentInChildren<Text>();
             _continueLabel.supportRichText = true;
             _continueLabel.fontStyle = FontStyle.Italic;
@@ -182,11 +198,12 @@ namespace MotoManager.App.UI.Screens
             edge.rectTransform.offsetMin = new Vector2(-2, 0);
             edge.rectTransform.offsetMax = Vector2.zero;
             var layout = rail.gameObject.AddComponent<VerticalLayoutGroup>();
-            layout.padding = new RectOffset(12, 12, 16, 16);
-            layout.spacing = 10;
+            layout.padding = compact ? new RectOffset(6, 6, 8, 8) : new RectOffset(12, 12, 16, 16);
+            layout.spacing = compact ? 5 : 10;
             layout.childControlHeight = true;
             layout.childControlWidth = true;
-            layout.childForceExpandHeight = false;
+            // Compact: the sections share the rail's height instead of overflowing it.
+            layout.childForceExpandHeight = compact;
 
             _tabs = UiFactory.Rect("Tabs", root);
             UiFactory.Place(_tabs, 0.15f, 0.82f, 0.99f, 0.885f);
@@ -217,14 +234,16 @@ namespace MotoManager.App.UI.Screens
             {
                 var section = s;
                 var b = UiFactory.Button("Nav", rail.transform, Loc.T(s.TitleKey), () => Show(section), Theme.PanelLight, Theme.FontSmall + 2);
-                b.gameObject.AddComponent<LayoutElement>().preferredHeight = 86;
+                var navLe = b.gameObject.AddComponent<LayoutElement>();
+                navLe.preferredHeight = compact ? 50 : 86;
+                if (compact) navLe.flexibleHeight = 1;
                 _navButtons.Add(b.GetComponent<Image>());
                 // Pit-board style entries: upper-case labels, a small slanted marker (accent when open, steel
                 // otherwise) and an accent bar on the left edge of the open section.
                 var label = b.GetComponentInChildren<Text>();
                 label.text = Theme.Caps(label.text);
                 label.alignment = TextAnchor.MiddleLeft;
-                label.rectTransform.offsetMin = new Vector2(46, 0);
+                label.rectTransform.offsetMin = new Vector2(compact ? 34 : 46, 0);
                 label.rectTransform.offsetMax = new Vector2(-6, 0);
                 label.resizeTextForBestFit = true;
                 label.resizeTextMinSize = Theme.FontSmall - 6;
@@ -233,7 +252,7 @@ namespace MotoManager.App.UI.Screens
                 var dot = UiFactory.Decor("Dot", b.transform, Theme.Steel);
                 UiFactory.Slant(dot, 5f);
                 dot.rectTransform.anchorMin = dot.rectTransform.anchorMax = new Vector2(0, 0.5f);
-                dot.rectTransform.anchoredPosition = new Vector2(26, 0);
+                dot.rectTransform.anchoredPosition = new Vector2(compact ? 18 : 26, 0);
                 dot.rectTransform.sizeDelta = new Vector2(14, 20);
                 _navDots.Add(dot);
                 var bar = UiFactory.SideStripe(b.transform, Theme.Accent, 5, 9);
@@ -262,6 +281,47 @@ namespace MotoManager.App.UI.Screens
             _headerLine.color = accent;
             if (_logo != null) _logo.text = LogoText();
             for (int i = 0; i < _livery.Count; i++) _livery[i].color = Theme.Alpha(accent, i == 0 ? 0.05f : 0.08f);
+            Refresh();
+        }
+
+        private RectTransform _menuPanel;
+
+        /// <summary>Compact header menu: save, back to the start screen, text size.</summary>
+        private void ToggleMenu()
+        {
+            if (_menuPanel != null)
+            {
+                Destroy(_menuPanel.gameObject);
+                _menuPanel = null;
+                return;
+            }
+            var root = (RectTransform)_toastBg.transform.parent;
+            var shade = UiFactory.Panel("MenuShade", root, new Color(0, 0, 0, 0.5f));
+            UiFactory.Stretch(shade.rectTransform);
+            shade.gameObject.AddComponent<Button>().onClick.AddListener(ToggleMenu);
+            _menuPanel = shade.rectTransform;
+            var panel = UiFactory.Panel("Menu", shade.transform, Theme.Panel);
+            UiFactory.Chamfer(panel, 1.6f);
+            UiFactory.Place(panel.rectTransform, 0.01f, 0.35f, 0.36f, 0.89f);
+            var v = panel.gameObject.AddComponent<VerticalLayoutGroup>();
+            v.padding = new RectOffset(12, 12, 12, 12);
+            v.spacing = 8;
+            v.childControlHeight = true;
+            v.childControlWidth = true;
+            v.childForceExpandHeight = true;
+            UiFactory.ButtonRow(panel.transform, 60, UiFactory.Act(Loc.T("shell.save"), () => { Session.Save(); Toast(Loc.T("shell.saved")); ToggleMenu(); }));
+            UiFactory.ButtonRow(panel.transform, 60, UiFactory.Act(Loc.T("shell.menu"), () => { ToggleMenu(); ExitToMenu(); }));
+            UiFactory.ButtonRow(panel.transform, 60,
+                UiFactory.Option("A-", UiScale.UserLevel == 0, () => SetTextSize(0)),
+                UiFactory.Option("A", UiScale.UserLevel == 1, () => SetTextSize(1)),
+                UiFactory.Option("A+", UiScale.UserLevel == 2, () => SetTextSize(2)));
+            _menuPanel.SetAsLastSibling();
+        }
+
+        private void SetTextSize(int level)
+        {
+            UiScale.UserLevel = level;
+            ToggleMenu();
             Refresh();
         }
 

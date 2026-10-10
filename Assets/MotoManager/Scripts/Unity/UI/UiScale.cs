@@ -14,6 +14,8 @@ namespace MotoManager.App.UI
     public static class UiScale
     {
         public const float DesignHeight = 1080;
+        /// <summary>Canvas height of a typical phone held in landscape.</summary>
+        public const float PhoneHeight = 760;
         private const string Pref = "MotoManager.UiScale";
         public static readonly float[] UserScales = { 0.85f, 1f, 1.18f };
         private static readonly List<CanvasScaler> Scalers = new List<CanvasScaler>();
@@ -36,6 +38,21 @@ namespace MotoManager.App.UI
             {
                 float inches = ScreenInches;
                 return Application.isMobilePlatform || (inches > 0 && inches < 4.5f);
+            }
+        }
+
+        /// <summary>
+        /// The game is a phone app: the small-screen layout (dense cards, explanations behind an info button, slim
+        /// header) is the layout everywhere, also in the editor so what is tested is what the phone shows. It can be
+        /// switched off for debugging only (PlayerPrefs MotoManager.Compact = -1).
+        /// </summary>
+        public static bool Compact
+        {
+            get
+            {
+                int forced = 0;
+                try { forced = PlayerPrefs.GetInt("MotoManager.Compact", 0); } catch (Exception) { }
+                return forced != -1;
             }
         }
 
@@ -71,12 +88,11 @@ namespace MotoManager.App.UI
         {
             get
             {
-                float h = DesignHeight;
-                if (Handheld)
-                {
-                    float inches = ScreenInches;
-                    h = inches > 0 ? Mathf.Clamp(inches * 270f, 700f, DesignHeight) : 760f;
-                }
+                // A phone in landscape: the canvas is ~760 units tall (text and buttons at a readable physical size).
+                // Real devices use their physical size (a tablet gets more room); the editor previews a phone.
+                float h = PhoneHeight;
+                float inches = ScreenInches;
+                if (Application.isMobilePlatform && inches > 0) h = Mathf.Clamp(inches * 270f, 700f, DesignHeight);
                 return h / UserScales[UserLevel];
             }
         }
@@ -84,7 +100,7 @@ namespace MotoManager.App.UI
         /// <summary>Height of a row with buttons: taller on a phone so fingers hit them.</summary>
         public static float Touch(float height)
         {
-            return Handheld ? height * 1.2f : height;
+            return Compact ? height * 1.2f : height;
         }
 
         public static void Register(CanvasScaler scaler)

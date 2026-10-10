@@ -15,8 +15,8 @@ namespace MotoManager.App.UI.Screens
     public class HubScreen : ScreenBase
     {
         public override string Title { get { return Loc.T("nav.home"); } }
-        private const int MaxTodo = 4;
-        private const int MaxNews = 4;
+        private static int MaxTodo { get { return UiScale.Compact ? 3 : 4; } }
+        private static int MaxNews { get { return UiScale.Compact ? 2 : 4; } }
 
         public override void Build(RectTransform content)
         {
@@ -39,7 +39,7 @@ namespace MotoManager.App.UI.Screens
             if (!string.IsNullOrEmpty(Shell.LastResult))
             {
                 var last = Ui.Card(right, Loc.T("home.last"));
-                UiFactory.Paragraph(last, FirstLines(Shell.LastResult, 4), Theme.FontSmall);
+                UiFactory.Paragraph(last, FirstLines(Shell.LastResult, UiScale.Compact ? 2 : 4), Theme.FontSmall);
             }
             if (team != null) TodoCard(right, world, team);
             NewsCard(right, world);

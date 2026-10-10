@@ -1392,5 +1392,6 @@
   "summary.col.pos": "Pos",
   "summary.col.pts": "Pts",
   "summary.col.grid": "Grid",
-  "summary.col.gap": "Gap"
+  "summary.col.gap": "Gap",
+  "ui.moreInfo": "More information"
 }

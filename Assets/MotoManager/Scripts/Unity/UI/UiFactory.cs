@@ -592,7 +592,7 @@ namespace MotoManager.App.UI
         public static RectTransform TableRow(Transform list, float height, float[] widths, string[] cells, bool header = false, Color? background = null, Color? textColor = null)
         {
             // Rows often carry a button: a little taller on a phone.
-            var row = Row(list, header ? height : UiScale.Handheld ? height * 1.12f : height);
+            var row = Row(list, header ? height : UiScale.Compact ? height * 1.12f : height);
             if (background.HasValue || header)
             {
                 var img = row.gameObject.AddComponent<Image>();
@@ -652,6 +652,13 @@ namespace MotoManager.App.UI
                     t.resizeTextMaxSize = Theme.FontSmall - 2;
                 }
                 t.supportRichText = true;
+                if (!header && UiScale.Compact)
+                {
+                    // Narrow columns on a phone: text shrinks a little rather than spilling into the next column.
+                    t.resizeTextForBestFit = true;
+                    t.resizeTextMinSize = Theme.FontSmall - 8;
+                    t.resizeTextMaxSize = Theme.FontSmall;
+                }
                 Place(t.rectTransform, x / total, 0, (x + widths[i]) / total, 1);
                 t.rectTransform.offsetMin = new Vector2(8, 0);
                 x += widths[i];

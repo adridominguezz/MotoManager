@@ -30,15 +30,18 @@ namespace MotoManager.App.UI
             rim.rectTransform.offsetMin = new Vector2(0, -1);
             rim.rectTransform.offsetMax = new Vector2(-16, 0);
             var layout = rt.gameObject.AddComponent<VerticalLayoutGroup>();
-            layout.padding = new RectOffset(18, 18, 14, 16);
-            layout.spacing = 8;
+            bool compact = UiScale.Compact;
+            layout.padding = compact ? new RectOffset(12, 12, 8, 10) : new RectOffset(18, 18, 14, 16);
+            layout.spacing = compact ? 5 : 8;
             layout.childControlHeight = true;
             layout.childControlWidth = true;
             layout.childForceExpandHeight = false;
             layout.childForceExpandWidth = true;
             if (title != null)
             {
-                var row = UiFactory.Row(rt, subtitle != null ? 70 : 44);
+                // Compact: the subtitle sits on the same line, right-aligned, to save a line on small screens.
+                bool inline = compact && subtitle != null;
+                var row = UiFactory.Row(rt, inline ? 42 : subtitle != null ? 70 : 44);
                 // Faint diagonal hatching in the top-right corner of the title band (a livery / pit-board detail).
                 var hatch = UiFactory.Pattern("Hatch", row, UiFactory.StripesSprite, new Color(1, 1, 1, 0.045f), 18);
                 hatch.rectTransform.anchorMin = new Vector2(1, 0);
@@ -48,7 +51,7 @@ namespace MotoManager.App.UI
                 hatch.rectTransform.offsetMax = new Vector2(-14, 0);
                 UiFactory.Gradient(hatch, new Color(1, 1, 1, 0), Color.white, true);
                 // Upper-case bold italic title (racing graphics), the subtitle in plain dimmed type below.
-                var t = UiFactory.Label("Title", row, "<b>" + Theme.Caps(title) + "</b>" + (subtitle != null ? "\n" + Theme.Dim("<i><size=" + (Theme.FontSmall - 2) + ">" + subtitle + "</size></i>") : ""),
+                var t = UiFactory.Label("Title", row, "<b>" + Theme.Caps(title) + "</b>" + (subtitle != null && !inline ? "\n" + Theme.Dim("<i><size=" + (Theme.FontSmall - 2) + ">" + subtitle + "</size></i>") : ""),
                     Theme.FontNormal, TextAnchor.MiddleLeft);
                 t.supportRichText = true;
                 t.fontStyle = FontStyle.Italic;
@@ -59,13 +62,23 @@ namespace MotoManager.App.UI
                 UiFactory.DropShadow(t, 0.35f, 1.5f);
                 UiFactory.Stretch(t.rectTransform);
                 t.rectTransform.offsetMin = new Vector2(26, 0);
+                if (inline)
+                {
+                    t.rectTransform.anchorMax = new Vector2(0.6f, 1);
+                    var st = UiFactory.Label("Subtitle", row, "<i>" + subtitle + "</i>", Theme.FontSmall - 2, TextAnchor.MiddleRight, Theme.TextDim);
+                    st.supportRichText = true;
+                    st.resizeTextForBestFit = true;
+                    st.resizeTextMinSize = Theme.FontSmall - 8;
+                    st.resizeTextMaxSize = Theme.FontSmall - 2;
+                    UiFactory.Place(st.rectTransform, 0.6f, 0, 1, 1);
+                }
                 // Slanted accent tag beside the title and an accent rule under the title block fading to the right.
                 var tab = UiFactory.Decor("TitleAccent", row, Theme.CurrentAccent);
                 UiFactory.Slant(tab, 3.2f);
                 UiFactory.Place(tab.rectTransform, 0, 0.22f, 0, 0.78f);
                 tab.rectTransform.offsetMin = new Vector2(-4, 0);
                 tab.rectTransform.offsetMax = new Vector2(12, 0);
-                if (subtitle != null)
+                if (subtitle != null && !inline)
                 {
                     tab.rectTransform.anchorMin = new Vector2(0, 0.56f);
                     tab.rectTransform.anchorMax = new Vector2(0, 0.92f);
@@ -83,7 +96,7 @@ namespace MotoManager.App.UI
         /// <summary>Big numbers with a caption (cash, position, points...). Each item: value, caption.</summary>
         public static void Kpis(Transform list, params string[][] items)
         {
-            var row = UiFactory.Row(list, 118);
+            var row = UiFactory.Row(list, UiScale.Compact ? 88 : 118);
             for (int i = 0; i < items.Length; i++)
             {
                 // Timing-screen tile: a near-black recessed body, a short accent speed stripe on the top-left edge
@@ -204,7 +217,7 @@ namespace MotoManager.App.UI
             h.childControlWidth = true;
             h.childForceExpandHeight = false;
             h.childForceExpandWidth = false;
-            row.gameObject.AddComponent<LayoutElement>().minHeight = 68;
+            row.gameObject.AddComponent<LayoutElement>().minHeight = UiScale.Compact ? 56 : 68;
 
             // Text takes the free width and wraps; its height sets the row height.
             var t = UiFactory.Label("Text", row, "<b>" + title + "</b>" + (string.IsNullOrEmpty(detail) ? "" : "\n" + Theme.Dim("<size=" + (Theme.FontSmall - 2) + ">" + detail + "</size>")),
@@ -278,16 +291,52 @@ namespace MotoManager.App.UI
             else Open.Remove(key);
         }
 
-        /// <summary>Muted note for empty lists and explanations.</summary>
+        /// <summary>
+        /// Muted note for empty lists and explanations. On small screens explanations are folded behind one
+        /// "more information" button per card (warnings stay visible), so the essentials fit.
+        /// </summary>
         public static void Note(Transform list, string text)
         {
+            if (UiScale.Compact && !IsAlert(text) && list.childCount > 1)
+            {
+                var block = list.Find("InfoBlock");
+                if (block == null)
+                {
+                    var holder = UiFactory.Rect("InfoBlock", list);
+                    var v = holder.gameObject.AddComponent<VerticalLayoutGroup>();
+                    v.spacing = 4;
+                    v.childControlHeight = true;
+                    v.childControlWidth = true;
+                    v.childForceExpandHeight = false;
+                    v.childForceExpandWidth = true;
+                    holder.gameObject.SetActive(false);
+                    var toggle = UiFactory.Button("InfoToggle", list, Theme.Dim("ⓘ  " + Loc.T("ui.moreInfo")), () =>
+                    {
+                        holder.gameObject.SetActive(!holder.gameObject.activeSelf);
+                        LayoutRebuilder.MarkLayoutForRebuild((RectTransform)list);
+                    }, new Color(1, 1, 1, 0.03f), Theme.FontSmall - 4);
+                    toggle.GetComponentInChildren<Text>().alignment = TextAnchor.MiddleLeft;
+                    toggle.GetComponentInChildren<Text>().supportRichText = true;
+                    toggle.gameObject.AddComponent<LayoutElement>().preferredHeight = 40;
+                    // The button comes first, the folded text right under it.
+                    toggle.transform.SetSiblingIndex(holder.GetSiblingIndex());
+                    block = holder;
+                }
+                UiFactory.Paragraph(block, Theme.Dim(text), Theme.FontSmall - 2);
+                return;
+            }
             UiFactory.Paragraph(list, Theme.Dim(text), Theme.FontSmall - 2);
+        }
+
+        private static bool IsAlert(string text)
+        {
+            return text != null && (text.Contains(Theme.WarnHex) || text.Contains(Theme.BadHex));
         }
 
         /// <summary>Two-column "label: value" line.</summary>
         public static void Line(Transform list, string label, string value, bool strong = false)
         {
-            var row = UiFactory.Row(list, 38);
+            var row = UiFactory.Row(list, UiScale.Compact ? 34 : 38);
             var l = UiFactory.Label("Label", row, strong ? "<b>" + label + "</b>" : label, Theme.FontSmall, TextAnchor.MiddleLeft, strong ? Theme.Text : Theme.TextDim);
             l.supportRichText = true;
             UiFactory.Place(l.rectTransform, 0, 0, 0.62f, 1);
@@ -303,7 +352,7 @@ namespace MotoManager.App.UI
         {
             var row = UiFactory.Rect("Columns", list);
             var h = row.gameObject.AddComponent<HorizontalLayoutGroup>();
-            h.spacing = 12;
+            h.spacing = UiScale.Compact ? 8 : 12;
             h.childControlHeight = true;
             h.childControlWidth = true;
             h.childForceExpandHeight = false;
@@ -317,7 +366,7 @@ namespace MotoManager.App.UI
         {
             var c = UiFactory.Rect("Column", parent);
             var v = c.gameObject.AddComponent<VerticalLayoutGroup>();
-            v.spacing = 12;
+            v.spacing = UiScale.Compact ? 8 : 12;
             v.childControlHeight = true;
             v.childControlWidth = true;
             v.childForceExpandHeight = false;
