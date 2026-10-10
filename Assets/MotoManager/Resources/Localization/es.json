@@ -1075,5 +1075,18 @@
   "post.k.errors": "Errores",
   "post.sectorsMine": "Sus mejores",
   "post.sectorsBest": "Más rápidos",
-  "post.fastestLap": "vuelta rápida"
+  "post.fastestLap": "vuelta rápida",
+  "shell.finishSeason": "Terminar temporada ►",
+  "busy.otherEvents": "Simulando otros campeonatos",
+  "card.front": "Del.",
+  "card.rear": "Tras.",
+  "quali.title": "Clasificación",
+  "quali.grid": "Sale",
+  "quali.best": "Mejor vuelta",
+  "quali.gap": "Dif. pole",
+  "quali.pole": "POLE",
+  "quali.row": "Fila {0} de la parrilla",
+  "quali.continue": "Ir a la carrera ►",
+  "team.optionDone": "Opción ejercida: {0} sigue la próxima temporada.",
+  "team.optionNoSeat": "No queda plaza libre para la próxima temporada."
 }

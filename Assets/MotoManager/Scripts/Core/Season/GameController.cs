@@ -69,22 +69,70 @@ namespace MotoManager.Core.Season
                     best = new EventPlan { Group = group, RoundIndex = idx, Round = round };
             }
             if (best == null) return null;
-            if (best.Round.Categories != null && best.Round.Categories.Count > 0)
+            FillCategories(best);
+            return best;
+        }
+
+        private void FillCategories(EventPlan plan)
+        {
+            if (plan.Round.Categories != null && plan.Round.Categories.Count > 0)
             {
-                best.Categories.AddRange(best.Round.Categories);
+                plan.Categories.AddRange(plan.Round.Categories);
             }
             else
             {
                 ChampionshipDefinition champ;
-                if (Db.Championships.TryGetValue(best.Group, out champ))
-                    foreach (var c in champ.Categories) best.Categories.Add(c);
+                if (Db.Championships.TryGetValue(plan.Group, out champ))
+                    foreach (var c in champ.Categories) plan.Categories.Add(c);
             }
-            best.Categories.RemoveAll(c =>
+            plan.Categories.RemoveAll(c =>
             {
                 var cat = Db.GetCategory(c);
                 return cat == null || !cat.Simulated;
             });
+        }
+
+        /// <summary>
+        /// The next event where this category races (null when its season is over). Events of other championships
+        /// before it still have to be simulated first: see <see cref="SimulateUntilEventFor"/>.
+        /// </summary>
+        public EventPlan PeekNextEventFor(string categoryId)
+        {
+            EventPlan best = null;
+            foreach (var kv in World.Calendars)
+            {
+                int idx;
+                World.NextRound.TryGetValue(kv.Key, out idx);
+                for (int i = idx; i < kv.Value.Rounds.Count; i++)
+                {
+                    var plan = new EventPlan { Group = kv.Key, RoundIndex = i, Round = kv.Value.Rounds[i] };
+                    FillCategories(plan);
+                    if (!plan.Categories.Contains(categoryId)) continue;
+                    if (best == null || plan.Round.Date < best.Round.Date) best = plan;
+                    break;
+                }
+            }
             return best;
+        }
+
+        /// <summary>
+        /// Simulates, in the background, every event before the next one of this category (other championships,
+        /// rounds it skips). Returns how many were simulated. When the category has no events left, simulates the rest
+        /// of the season.
+        /// </summary>
+        public int SimulateUntilEventFor(string categoryId, Action<LiveEvent> afterEvent = null)
+        {
+            int n = 0;
+            EventPlan next;
+            while ((next = PeekNextEvent()) != null && !next.Categories.Contains(categoryId))
+            {
+                var ev = BeginNextEvent();
+                if (ev.PlayerWeekend != null) ev.PlayerWeekend.HeadlessTimeStep = true;
+                CompleteEvent(ev);
+                if (afterEvent != null) afterEvent(ev);
+                n++;
+            }
+            return n;
         }
 
         public LiveEvent BeginNextEvent()

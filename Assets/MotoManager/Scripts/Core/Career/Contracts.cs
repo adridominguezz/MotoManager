@@ -148,6 +148,9 @@ namespace MotoManager.Core.Career
                     if (perf != null && pos > 0 && pos <= perf.ChampionshipTopN) used = perf;
                     else if (teamOption != null && (team.IsPlayer ? teamOption.Exercised : AiExercisesOption(world, db, team, r, rng))) used = teamOption;
                     else if (riderOption != null && RiderExercisesOption(world, db, r, riderOption, rng)) used = riderOption;
+                    // Extensions only fit if the team still has a seat for him next season (it may have signed
+                    // someone else meanwhile). An exercised option already holds its seat.
+                    if (used != null && !(used == teamOption && team.IsPlayer) && ContractService.SeatsFreeNextSeason(world, db, team) <= 0) used = null;
                     if (used != null)
                     {
                         Extend(world, db, r, used);

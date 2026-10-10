@@ -46,11 +46,11 @@ namespace MotoManager.App.UI.Screens
 
         private void NextEventCard(Transform parent, WorldState world, Team team)
         {
-            var next = Game.PeekNextEvent();
+            var next = Shell.NextOwnEvent();
             if (next == null)
             {
                 var over = Ui.Card(parent, Loc.T("home.seasonOver", world.Season), Loc.T("home.seasonOverInfo"));
-                UiFactory.ButtonRow(over, 72, UiFactory.Primary(Loc.T("shell.closeSeason"), Shell.CloseSeason));
+                UiFactory.ButtonRow(over, 72, Game.IsSeasonOver ? UiFactory.Primary(Loc.T("shell.closeSeason"), Shell.CloseSeason) : UiFactory.Primary(Loc.T("shell.finishSeason"), Shell.SimulateSeason));
                 return;
             }
             var circuit = Game.Db.GetCircuit(next.Round.CircuitId);
@@ -61,7 +61,7 @@ namespace MotoManager.App.UI.Screens
                 circuit.Name + " · " + next.Round.Date.ToString("d MMMM", Loc.Culture) + " · " + string.Join(", ", cats.ToArray()));
             if (racing)
                 UiFactory.ButtonRow(card, 72,
-                    UiFactory.Primary(Loc.T("shell.goRace"), Shell.Play),
+                    UiFactory.Primary(Loc.T("shell.goRace"), Shell.Continue),
                     UiFactory.Act(Loc.T("home.simulateEvent"), Shell.SimulateEvent),
                     UiFactory.Act(Loc.T("home.simulateSeasonShort"), Shell.SimulateSeason));
             else
@@ -142,12 +142,22 @@ namespace MotoManager.App.UI.Screens
         private void NewsCard(Transform parent, WorldState world)
         {
             var card = Ui.Card(parent, Loc.T("home.news"));
-            for (int i = 0; i < world.News.Count && i < MaxNews; i++)
+            // Only the team's own world (Grand Prix or Superbike) and general news.
+            var team = world.PlayerTeam;
+            var mine = team != null ? Game.Db.GetCategory(team.CategoryId) : null;
+            int shown = 0;
+            foreach (var n in world.News)
             {
-                var n = world.News[i];
+                if (shown >= MaxNews) break;
+                if (mine != null && n.CategoryId != null)
+                {
+                    var cat = Game.Db.GetCategory(n.CategoryId);
+                    if (cat != null && cat.Pyramid != mine.Pyramid) continue;
+                }
                 UiFactory.Paragraph(card, Theme.Dim(n.Date.ToString("dd MMM", Loc.Culture)) + "   " + (n.Important ? "<b>" + n.Headline + "</b>" : n.Headline), Theme.FontSmall);
+                shown++;
             }
-            if (world.News.Count == 0) Ui.Note(card, Loc.T("home.noNews"));
+            if (shown == 0) Ui.Note(card, Loc.T("home.noNews"));
         }
     }
 }

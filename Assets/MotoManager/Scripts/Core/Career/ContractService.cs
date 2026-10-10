@@ -67,9 +67,17 @@ namespace MotoManager.Core.Career
             {
                 if (r.IsRetired) continue;
                 if (r.FutureContract != null) { if (r.FutureContract.TeamId == team.Id) committed++; continue; }
-                if (r.TeamId == team.Id && TransferMarket.IsCommitted(r, world.Season)) committed++;
+                if (r.TeamId == team.Id && (TransferMarket.IsCommitted(r, world.Season) || OptionExercised(r, world.Season))) committed++;
             }
             return capacity - committed;
+        }
+
+        /// <summary>The team has exercised its option on a contract that ends this season: the rider stays next year.</summary>
+        public static bool OptionExercised(Rider r, int season)
+        {
+            if (r.IsRetired || r.Contract == null || r.Contract.EndSeason != season) return false;
+            var opt = r.Contract.Clause(ClauseType.TeamOption);
+            return opt != null && opt.Exercised;
         }
 
         public static int SeatsFreeNow(WorldState world, GameDatabase db, Team team)
@@ -167,7 +175,8 @@ namespace MotoManager.Core.Career
             if (!renewal && rider.CategoryId != cat.Id && age > cat.MaxEntryAge) return Reject(result, Txt.F("neg.r.tooOld", "Too old to enter {0}.", cat.ShortName));
             if (renewal && p.StartNow) return Reject(result, Txt.F("neg.r.alreadyHere", "He already races for you: renew from next season."));
             if (p.StartNow && SeatsFreeNow(world, db, team) <= 0) return Reject(result, Txt.F("neg.r.noSeatNow", "No free seat now: release a rider first."));
-            if (!p.StartNow && SeatsFreeNextSeason(world, db, team) <= 0 && !(renewal && !TransferMarket.IsCommitted(rider, world.Season)))
+            // A renewal needs a seat like any other signing: a rider whose contract ends does not hold one for next year.
+            if (!p.StartNow && SeatsFreeNextSeason(world, db, team) <= 0)
                 return Reject(result, Txt.F("neg.r.noSeatNext", "You have no free seat for next season."));
 
             // Under contract: a release clause, an exit clause or an agreement with his team is needed.
@@ -406,11 +415,12 @@ namespace MotoManager.Core.Career
         // ------------------------------------------------------------------ the player's own riders
 
         /// <summary>Exercises the team option in the contract's last season (applied at season end).</summary>
-        public static bool ExerciseOption(WorldState world, Team team, Rider rider)
+        public static bool ExerciseOption(WorldState world, GameDatabase db, Team team, Rider rider)
         {
             var c = rider.Contract;
             var opt = c != null && c.TeamId == team.Id ? c.Clause(ClauseType.TeamOption) : null;
-            if (opt == null || c.EndSeason != world.Season) return false;
+            if (opt == null || opt.Exercised || c.EndSeason != world.Season) return false;
+            if (SeatsFreeNextSeason(world, db, team) <= 0) return false;
             opt.Exercised = true;
             return true;
         }

@@ -190,7 +190,7 @@ namespace MotoManager.App.UI.Screens
             if (game == null) return;
             var world = game.World;
             var team = world.PlayerTeam;
-            var next = game.PeekNextEvent();
+            var next = NextOwnEvent();
             _header.text = "<b>" + (team != null ? team.Name : Loc.T("shell.spectator")) + "</b>" +
                            (team != null ? "    " + Theme.Money(Accounts.Cash(world, team)) : "");
             _subHeader.text = world.CurrentDate.ToString("d MMM yyyy", Loc.Culture) + "  ·  " + Loc.T("shell.season", world.Season) +
@@ -228,28 +228,52 @@ namespace MotoManager.App.UI.Screens
 
         // ------------------------------------------------------------------ main action
 
-        private string ContinueLabel()
+        /// <summary>The next event of the player's own championship (other championships run in the background).</summary>
+        public EventPlan NextOwnEvent()
         {
             var game = Session.Game;
-            var next = game.PeekNextEvent();
-            if (next == null) return Loc.T("shell.closeSeason");
             var team = game.World.PlayerTeam;
-            return team != null && next.Categories.Contains(team.CategoryId) ? Loc.T("shell.goRace") : Loc.T("shell.simulate");
+            return team != null ? game.PeekNextEventFor(team.CategoryId) : game.PeekNextEvent();
         }
 
-        /// <summary>The one button that moves the career forward: race the next event, simulate it, or close the season.</summary>
+        private string ContinueLabel()
+        {
+            if (NextOwnEvent() != null) return Loc.T("shell.goRace");
+            return Session.Game.IsSeasonOver ? Loc.T("shell.closeSeason") : Loc.T("shell.finishSeason");
+        }
+
+        /// <summary>
+        /// The one button that moves the career forward: race the team's next event (simulating other championships'
+        /// events before it in the background), or finish and close the season.
+        /// </summary>
         public void Continue()
         {
             var game = Session.Game;
-            var next = game.PeekNextEvent();
-            if (next == null)
+            if (NextOwnEvent() == null)
             {
-                CloseSeason();
+                if (game.IsSeasonOver) CloseSeason();
+                else SimulateSeason();
                 return;
             }
+            CatchUp(Play);
+        }
+
+        /// <summary>Runs the other championships' events up to the team's next one, then continues.</summary>
+        private void CatchUp(System.Action then)
+        {
+            var game = Session.Game;
             var team = game.World.PlayerTeam;
-            if (team != null && next.Categories.Contains(team.CategoryId)) Play();
-            else SimulateEvent();
+            var next = game.PeekNextEvent();
+            if (team == null || next == null || next.Categories.Contains(team.CategoryId))
+            {
+                then();
+                return;
+            }
+            Session.Run(Loc.T("busy.otherEvents"), () => game.SimulateUntilEventFor(team.CategoryId), () =>
+            {
+                Refresh();
+                then();
+            });
         }
 
         public void Play()
@@ -261,13 +285,18 @@ namespace MotoManager.App.UI.Screens
             }).Start();
         }
 
+        /// <summary>Simulates the team's next event without watching it (and the other championships' before it).</summary>
         public void SimulateEvent()
         {
             var game = Session.Game;
+            var team = game.World.PlayerTeam;
             string summary = "";
             Session.Run(Loc.T("busy.event"), () =>
             {
+                if (team != null) game.SimulateUntilEventFor(team.CategoryId);
                 var ev = game.BeginNextEvent();
+                if (ev == null) return;
+                if (ev.PlayerWeekend != null) ev.PlayerWeekend.HeadlessTimeStep = true;
                 game.CompleteEvent(ev);
                 summary = Loc.T("home.simulated", Loc.Round(ev.Plan.Round.Name));
             }, () =>

@@ -1075,5 +1075,18 @@
   "post.k.errors": "Mistakes",
   "post.sectorsMine": "Their best",
   "post.sectorsBest": "Fastest",
-  "post.fastestLap": "fastest lap"
+  "post.fastestLap": "fastest lap",
+  "shell.finishSeason": "Finish season ►",
+  "busy.otherEvents": "Simulating other championships",
+  "card.front": "Front",
+  "card.rear": "Rear",
+  "quali.title": "Qualifying",
+  "quali.grid": "Starts",
+  "quali.best": "Best lap",
+  "quali.gap": "Gap to pole",
+  "quali.pole": "POLE",
+  "quali.row": "Grid row {0}",
+  "quali.continue": "Go to the race ►",
+  "team.optionDone": "Option exercised: {0} stays next season.",
+  "team.optionNoSeat": "No free seat left for next season."
 }

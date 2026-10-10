@@ -109,5 +109,20 @@ namespace MotoManager.Tests
             game.CompleteEvent(ev);
             Assert.Equal(3, races);
         }
+
+        [Fact]
+        public void OtherChampionshipsRunInTheBackgroundUntilThePlayersNextEvent()
+        {
+            var game = GameController.NewGame(TestData.Db, new NewGameOptions { Seed = 77, PlayerTeamId = "aspar_moto2" });
+            var own = game.PeekNextEventFor("moto2");
+            Assert.NotNull(own);
+            Assert.Contains("moto2", own.Categories);
+            game.SimulateUntilEventFor("moto2");
+            var next = game.PeekNextEvent();
+            Assert.Contains("moto2", next.Categories);
+            Assert.Equal(own.Round.Date, next.Round.Date);
+            // Calling it again does nothing: the next event is already ours.
+            Assert.Equal(0, game.SimulateUntilEventFor("moto2"));
+        }
     }
 }

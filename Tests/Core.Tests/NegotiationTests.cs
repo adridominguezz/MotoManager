@@ -164,10 +164,45 @@ namespace MotoManager.Tests
             var r = w.GetRider(team.RiderIds[0]);
             r.Contract.Clauses.Add(new ContractClause { Type = ClauseType.TeamOption, ExtraSeasons = 1 });
             r.Contract.EndSeason = w.Season + 1;
-            Assert.False(ContractService.ExerciseOption(w, team, r));
+            Assert.False(ContractService.ExerciseOption(w, game.Db, team, r));
             r.Contract.EndSeason = w.Season;
-            Assert.True(ContractService.ExerciseOption(w, team, r));
+            Assert.True(ContractService.ExerciseOption(w, game.Db, team, r));
             Assert.True(r.Contract.Clause(ClauseType.TeamOption).Exercised);
+        }
+
+        [Fact]
+        public void ARiderWhoseContractEndsCannotBeRenewedOnceBothSeatsAreTaken()
+        {
+            var (game, team) = Career("aspar_moto2", 97);
+            var w = game.World;
+            var db = game.Db;
+            var stays = w.GetRider(team.RiderIds[0]);
+            var leaving = w.GetRider(team.RiderIds[1]);
+            stays.Contract.EndSeason = w.Season + 1;
+            leaving.Contract.EndSeason = w.Season;
+            leaving.Contract.Clauses.Clear();
+            leaving.Contract.Clauses.Add(new ContractClause { Type = ClauseType.PerformanceExtension, ChampionshipTopN = 99, ExtraSeasons = 1 });
+
+            // A new rider signs for next season: both seats are now taken.
+            var newcomer = Expiring(w, team);
+            var p = ContractService.DefaultProposal(w, db, team, newcomer);
+            p.Salary *= 1.5;
+            Assert.True(ContractService.Propose(w, db, team, newcomer, p).Accepted);
+            Assert.Equal(0, ContractService.SeatsFreeNextSeason(w, db, team));
+
+            // Renewing the leaving rider must be refused.
+            var renew = ContractService.DefaultProposal(w, db, team, leaving);
+            renew.Salary *= 1.5;
+            var answer = ContractService.Propose(w, db, team, leaving, renew);
+            Assert.False(answer.Accepted);
+            Assert.Null(leaving.FutureContract);
+
+            // Nor can the performance clause extend him at the end of the season.
+            while (!game.IsSeasonOver) game.CompleteEvent(game.BeginNextEvent());
+            game.EndSeason();
+            Assert.Equal(2, team.RiderIds.Count);
+            Assert.DoesNotContain(leaving.Id, team.RiderIds);
+            Assert.Contains(newcomer.Id, team.RiderIds);
         }
     }
 }

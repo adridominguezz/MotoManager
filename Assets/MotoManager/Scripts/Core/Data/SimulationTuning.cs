@@ -57,7 +57,7 @@ namespace MotoManager.Core.Data
         // --- Overtaking
         public double SlipstreamDragReduction = 0.16;
         public double SlipstreamRange = 35;
-        public double MinFollowGap = 6;
+        public double MinFollowGap = 2.8;
         public double OvertakeBaseChance = 0.25;
 
         // --- Reliability: failures per bike per race hour at Reliability 50

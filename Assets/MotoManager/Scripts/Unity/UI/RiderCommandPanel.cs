@@ -10,7 +10,7 @@ namespace MotoManager.App.UI
 {
     /// <summary>
     /// Pit-wall card for one of the player's riders (bottom corners of the race screen): the riders just ahead and
-    /// behind with the gaps, the rear tyre, fuel in laps against the laps left, the bike's reliability, and the two
+    /// behind with the gaps, front and rear tyre wear, fuel in laps against the laps left (where there is a tank limit), and the two
     /// orders that matter during a race (pace and attitude) plus handing the rider over to the engineer.
     /// There is no pit call: in bike racing riders only come in on their own for a flag-to-flag swap or a penalty.
     /// </summary>
@@ -24,12 +24,12 @@ namespace MotoManager.App.UI
         private readonly Text[] _rowGap = new Text[3];
         private readonly Image[] _rowBar = new Image[3];
         private readonly Image[] _rowBg = new Image[3];
-        private readonly Text _tyre;
-        private readonly Image _tyreBar;
+        private readonly Text _front;
+        private readonly Image _frontBar;
         private readonly Text _fuel;
         private readonly Image _fuelBar;
-        private readonly Text _reliability;
-        private readonly Image _reliabilityBar;
+        private readonly Text _rear;
+        private readonly Image _rearBar;
         private readonly Text _status;
         private readonly string _name;
         private readonly Button _pace;
@@ -67,7 +67,7 @@ namespace MotoManager.App.UI
                 UiFactory.Place(_rowGap[i].rectTransform, 0.74f, 0, 0.97f, 1);
             }
 
-            // Number badge in team colour (left); tyre, fuel and reliability (right); orders below.
+            // Number badge in team colour (left); front and rear tyre and fuel (right); orders below.
             var badge = UiFactory.Panel("Badge", root, teamColor, true);
             UiFactory.Place(badge.rectTransform, 0.03f, 0.37f, 0.25f, 0.63f);
             var num = UiFactory.Label("Number", badge.transform, rider.Entry.Rider.Number.ToString(), Theme.FontLarge + 4, TextAnchor.MiddleCenter, Color.white);
@@ -79,21 +79,21 @@ namespace MotoManager.App.UI
             _name = rider.Entry.Rider.ShortName;
 
             bool fuel = view.Sim.Config.FuelLimitLitres > 0;
-            _tyre = UiFactory.Label("Tyre", root, "", Theme.FontNormal, TextAnchor.MiddleLeft);
-            _tyre.supportRichText = true;
-            UiFactory.Place(_tyre.rectTransform, 0.31f, 0.54f, 0.97f, 0.63f);
-            _tyreBar = Bar(root, 0.31f, 0.52f);
+            // Front tyre, rear tyre (compound and how much is left) and, where there is a tank limit, fuel.
+            _front = UiFactory.Label("Front", root, "", Theme.FontSmall, TextAnchor.MiddleLeft);
+            _front.supportRichText = true;
+            UiFactory.Place(_front.rectTransform, 0.31f, 0.545f, 0.97f, 0.63f);
+            _frontBar = Bar(root, 0.31f, 0.525f);
+            _rear = UiFactory.Label("Rear", root, "", Theme.FontSmall, TextAnchor.MiddleLeft);
+            _rear.supportRichText = true;
+            UiFactory.Place(_rear.rectTransform, 0.31f, 0.43f, 0.97f, 0.515f);
+            _rearBar = Bar(root, 0.31f, 0.41f);
             _fuel = UiFactory.Label("Fuel", root, "", Theme.FontSmall - 2, TextAnchor.MiddleLeft);
             _fuel.supportRichText = true;
-            UiFactory.Place(_fuel.rectTransform, 0.31f, 0.42f, 0.97f, 0.5f);
-            _fuelBar = Bar(root, 0.31f, 0.4f);
+            UiFactory.Place(_fuel.rectTransform, 0.31f, 0.315f, 0.97f, 0.4f);
+            _fuelBar = Bar(root, 0.31f, 0.295f);
             _fuel.gameObject.SetActive(fuel);
             _fuelBar.transform.parent.gameObject.SetActive(fuel);
-            _reliability = UiFactory.Label("Rel", root, "", Theme.FontSmall - 4, TextAnchor.MiddleLeft);
-            _reliability.supportRichText = true;
-            float ry = fuel ? 0.3f : 0.42f;
-            UiFactory.Place(_reliability.rectTransform, 0.31f, ry, 0.97f, ry + 0.08f);
-            _reliabilityBar = Bar(root, 0.31f, ry - 0.02f);
 
             _pace = UiFactory.Button("Pace", root, "", CyclePace, Theme.PanelLight, Theme.FontSmall - 4);
             UiFactory.Place((RectTransform)_pace.transform, 0.02f, 0.135f, 0.5f, 0.27f, 3);
@@ -172,9 +172,13 @@ namespace MotoManager.App.UI
             Row(2, sim.RiderAtPosition(r.Position + 1), r);
 
             double rear = 1 - r.Rear.Wear;
-            _tyre.text = "<b>" + RaceHud.CompoundLetter(r.Rear.Compound) + "  " + (rear * 100).ToString("0") + "%</b>";
-            _tyreBar.rectTransform.anchorMax = new Vector2(Mathf.Clamp01((float)rear), 1);
-            _tyreBar.color = WearColor(r.Rear);
+            double front = 1 - r.Front.Wear;
+            _front.text = Theme.Dim(Loc.T("card.front")) + "  <b>" + RaceHud.CompoundLetter(r.Front.Compound) + "  " + (front * 100).ToString("0") + "%</b>";
+            _frontBar.rectTransform.anchorMax = new Vector2(Mathf.Clamp01((float)front), 1);
+            _frontBar.color = WearColor(r.Front);
+            _rear.text = Theme.Dim(Loc.T("card.rear")) + "  <b>" + RaceHud.CompoundLetter(r.Rear.Compound) + "  " + (rear * 100).ToString("0") + "%</b>";
+            _rearBar.rectTransform.anchorMax = new Vector2(Mathf.Clamp01((float)rear), 1);
+            _rearBar.color = WearColor(r.Rear);
 
             // Fuel in laps against the laps left (two-stroke era is long gone: every class has a tank limit).
             int lapsLeft = Math.Max(0, sim.TotalLaps - Math.Max(0, r.Lap));
@@ -195,11 +199,6 @@ namespace MotoManager.App.UI
                 _fuelBar.rectTransform.anchorMax = new Vector2(limit > 0 ? 1 : 0, 1);
             }
 
-            double rel = r.Entry.Bike != null ? r.Entry.Bike[PerfAttr.Reliability] + r.Entry.ReliabilityBonus : 60;
-            if (r.HasIssue) rel *= 0.5;
-            _reliability.text = Loc.T("card.reliability") + "  <b>" + rel.ToString("0") + "%</b>";
-            _reliabilityBar.rectTransform.anchorMax = new Vector2(Mathf.Clamp01((float)rel / 100f), 1);
-            _reliabilityBar.color = r.HasIssue ? Theme.Bad : rel < 50 ? Theme.Warning : Theme.Good;
 
             string status = r.HasIssue ? Loc.T("cmd.issue") : r.PendingLongLaps > 0 ? Loc.T("cmd.longLap", r.PendingLongLaps) :
                 r.Status != RaceStatus.Racing ? Loc.T("race.status." + r.Status) : "";

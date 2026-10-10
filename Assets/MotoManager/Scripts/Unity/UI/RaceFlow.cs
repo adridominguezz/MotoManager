@@ -18,6 +18,7 @@ namespace MotoManager.App.UI
         private readonly GameObject _menuToHide;
         private LiveEvent _event;
         private string _summary = "";
+        private bool _qualifyingShown;
 
         public RaceFlow(GameSession session, GameObject menuToHide, Action<string> onDone)
         {
@@ -55,6 +56,13 @@ namespace MotoManager.App.UI
             if (weekend != null && !weekend.IsComplete && weekend.CurrentIsRace)
             {
                 if (_menuToHide != null) _menuToHide.SetActive(false);
+                // First the qualifying result: where we start.
+                if (!_qualifyingShown && weekend.QualifyingOrder.Count > 0)
+                {
+                    _qualifyingShown = true;
+                    QualifyingPanel.Show(weekend, Loc.Round(_event.Plan.Round.Name), ShowNextRaceOrFinish);
+                    return;
+                }
                 PreRaceDialog.Show(weekend, () =>
                 {
                     var sim = weekend.CreateRaceSimulation(_session.Db.Tuning.VisualTimeStep);

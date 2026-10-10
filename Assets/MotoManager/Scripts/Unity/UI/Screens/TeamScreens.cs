@@ -145,7 +145,12 @@ namespace MotoManager.App.UI.Screens
             if (r.FutureContract == null) acts.Add(UiFactory.Primary(Loc.T("team.renew"), () => { _neg = new NegotiationState { RiderId = rider.Id }; Shell.Refresh(); }));
             var option = r.Contract != null ? r.Contract.Clause(ClauseType.TeamOption) : null;
             if (option != null && !option.Exercised && r.Contract.EndSeason == world.Season)
-                acts.Add(UiFactory.Act(Loc.T("team.option"), () => { ContractService.ExerciseOption(world, team, rider); Shell.Refresh(); }));
+                acts.Add(UiFactory.Act(Loc.T("team.option"), () =>
+                {
+                    bool ok = ContractService.ExerciseOption(world, Game.Db, team, rider);
+                    Shell.Toast(ok ? Loc.T("team.optionDone", rider.FullName) : Loc.T("team.optionNoSeat"), ok);
+                    Shell.Refresh();
+                }));
             double cost = Contracts.TerminationCost(world, Game.Db, r);
             bool confirm = _confirmRelease == r.Id;
             acts.Add(UiFactory.Option(Loc.T(confirm ? "team.releaseConfirm" : "team.release", MathX.FormatMoney(cost)), confirm, () =>
