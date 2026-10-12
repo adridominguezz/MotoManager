@@ -21,7 +21,15 @@ namespace MotoManager.App
         private readonly Gearbox _gearbox = new Gearbox();
         private AudioClip _click;
         private bool _racing;
-        private float _targetEngine, _targetField;
+        private float _targetEngine, _targetField, _fieldDensity;
+
+        /// <summary>One bike going past the listener: position in the pass (-1 to 1), duration, revs and level.</summary>
+        private class Pass
+        {
+            public float T = 1f, Wait, Duration = 2f, Rpm = 15000f, Level = 1f;
+        }
+
+        private readonly Pass[] _passes = { new Pass { Wait = 0.5f }, new Pass { Wait = 1.7f }, new Pass { Wait = 3.1f } };
 
         public static GameAudio Instance
         {
@@ -184,7 +192,8 @@ namespace MotoManager.App
             a._engine.Rpm = a._gearbox.Rpm;
             a._engine.Throttle = a._gearbox.Throttle;
             a._targetEngine = Mathf.Lerp(0.12f, 0.7f, closeness);
-            a._targetField = Mathf.Clamp01(0.1f + running * 0.01f) * Mathf.Lerp(1f, 0.55f, closeness);
+            a._targetField = Mathf.Lerp(0.35f, 0.18f, closeness);
+            a._fieldDensity = Mathf.Clamp01(running / 22f);
         }
 
         private void StopRace()
@@ -206,16 +215,39 @@ namespace MotoManager.App
             if (!_racing || _engine == null) return;
             float k = Mathf.Clamp01(Time.unscaledDeltaTime * 6);
             _engine.Volume = Mathf.Lerp(_engine.Volume, _targetEngine, k);
-            // The field: bikes at their own revs, coming and going (slow wandering of revs and level).
-            float t = Time.unscaledTime;
+            // The field: other bikes passing by. Each voice plays one pass at a time (a swell in, Doppler pitch from
+            // above to below as it goes past, then out) at near-full revs; passes come more often with more bikes.
+            float dt = Time.unscaledDeltaTime;
             for (int i = 0; i < _field.Length; i++)
             {
                 var f = _field[i];
-                float wander = Mathf.PerlinNoise(t * (0.35f + i * 0.13f), i * 3.7f);
-                f.Rpm = Mathf.Lerp(9000f, 16500f, wander);
-                f.Throttle = Mathf.PerlinNoise(t * 0.9f + i, 1.3f) > 0.4f ? 1f : 0.1f;
-                float target = _targetField * (0.25f + 0.75f * Mathf.PerlinNoise(t * 0.25f + i * 5f, 7.1f)) / _field.Length * 1.6f;
-                f.Volume = Mathf.Lerp(f.Volume, target, k);
+                var p = _passes[i];
+                if (p.T >= 1f)
+                {
+                    p.Wait -= dt;
+                    f.Volume = Mathf.Lerp(f.Volume, 0, k);
+                    if (p.Wait <= 0 && _targetField > 0)
+                    {
+                        p.T = -1f;
+                        p.Duration = UnityEngine.Random.Range(1.6f, 3.2f);
+                        p.Rpm = UnityEngine.Random.Range(13500f, 16800f);
+                        p.Level = UnityEngine.Random.Range(0.5f, 1f);
+                    }
+                    continue;
+                }
+                p.T += dt * 2f / p.Duration;
+                if (p.T >= 1f)
+                {
+                    // Next pass after a gap that shrinks with the number of bikes still running.
+                    p.Wait = UnityEngine.Random.Range(0.4f, 2.5f) * Mathf.Lerp(2.5f, 0.6f, _fieldDensity);
+                    continue;
+                }
+                float x = p.T * 3f;
+                float near = 1f / (1f + x * x);
+                f.Pitch = 1f - 0.07f * x / Mathf.Sqrt(x * x + 0.15f);
+                f.Rpm = p.Rpm + 300f * near;
+                f.Throttle = 1f;
+                f.Volume = _targetField * p.Level * near * 1.2f;
             }
             _crowd.volume = Mathf.Lerp(_crowd.volume, _targetField * 0.4f, k * 0.5f);
         }

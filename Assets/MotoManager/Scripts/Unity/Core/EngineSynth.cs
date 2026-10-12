@@ -4,10 +4,13 @@ using UnityEngine;
 namespace MotoManager.App
 {
     /// <summary>
-    /// A motorcycle engine synthesised in real time on the audio thread: combustion pulses at the firing rate of the
-    /// current revs (an uneven "big bang" firing order gives the growl), shaped by exhaust and airbox resonances,
-    /// with combustion rasp that grows with the throttle, crackles on the overrun and soft saturation. The game
-    /// thread only sets <see cref="Rpm"/>, <see cref="Throttle"/> and <see cref="Volume"/>.
+    /// A motorcycle engine synthesised in real time on the audio thread. Each cylinder firing sends a short, smooth
+    /// pressure pulse (an uneven "big bang" order gives the growl) into an exhaust pipe modelled as a waveguide: a
+    /// delay line the length of the pipe with an inverting, damped reflection at the open end. The pipe's comb of
+    /// resonances is what turns a pulse train into the "brap" of a real exhaust. Intake roar (filtered noise that
+    /// follows the throttle), overrun crackle, a muffler low-pass that opens with the throttle and gentle saturation
+    /// finish it. <see cref="Pitch"/> shifts everything (Doppler of a passing bike). The game thread only sets
+    /// <see cref="Rpm"/>, <see cref="Throttle"/>, <see cref="Pitch"/> and <see cref="Volume"/>.
     /// </summary>
     [RequireComponent(typeof(AudioSource))]
     public class EngineSynth : MonoBehaviour
@@ -15,43 +18,30 @@ namespace MotoManager.App
         public volatile float Rpm = 4000;
         public volatile float Throttle = 0.5f;
         public volatile float Volume;
-        /// <summary>Firing events per crank revolution / 2 (4-stroke): 4 cylinders = 2 per revolution.</summary>
+        public volatile float Pitch = 1f;
         public int Cylinders = 4;
-        /// <summary>Uneven firing (fraction of the cycle at which each cylinder fires).</summary>
+        /// <summary>Fraction of the 4-stroke cycle at which each cylinder fires.</summary>
         public float[] FiringOrder = { 0f, 0.25f, 0.5f, 0.75f };
+        /// <summary>Exhaust length in metres (longer = deeper).</summary>
+        public float PipeLength = 0.85f;
         public float Character = 1f;
         public int Seed = 1;
 
+        private const int MaxDelay = 2048;
         private int _rate = 44100;
         private double _cyclePhase;
-        private float _rpmNow = 4000, _thrNow = 0.5f, _volNow;
-        private System.Random _rng;
+        private float _rpmNow = 4000, _thrNow = 0.5f, _volNow, _pitchNow = 1;
         private uint _noise = 22222;
-        // Resonant filters (state variable): exhaust, airbox, body.
-        private Svf _exhaust, _airbox, _body;
-        private float _dc;
-        private float _pop;
-        private int _cylIndex;
-        private float _pulse;
-
-        private struct Svf
-        {
-            public float Low, Band;
-
-            /// <summary>Band-pass output of a Chamberlin state-variable filter.</summary>
-            public float Process(float input, float f, float q)
-            {
-                Low += f * Band;
-                float high = input - Low - q * Band;
-                Band += f * high;
-                return Band;
-            }
-        }
+        private readonly float[] _pipe = new float[MaxDelay];
+        private int _write;
+        private float _loopLp, _muffler, _muffler2, _intakeLp, _intakeBand, _dc, _prevOut, _pop;
+        // Pulse state: samples left and length of the current pressure pulse.
+        private float _pulsePos = -1, _pulseLen = 1, _pulseAmp;
+        private float _strengthJitter = 1;
 
         private void Awake()
         {
             _rate = AudioSettings.outputSampleRate;
-            _rng = new System.Random(Seed);
             _noise = (uint)(12345 + Seed * 7919);
             // The source plays a silent clip: the audio is written in OnAudioFilterRead.
             var src = GetComponent<AudioSource>();
@@ -71,65 +61,84 @@ namespace MotoManager.App
 
         private void OnAudioFilterRead(float[] data, int channels)
         {
-            float targetRpm = Rpm, targetThr = Throttle, targetVol = Volume;
+            float targetRpm = Rpm, targetThr = Throttle, targetVol = Volume, targetPitch = Pitch;
             float invRate = 1f / _rate;
+            // Pipe round trip: twice the length at the speed of sound in hot exhaust gas (~520 m/s).
+            float delay = Mathf.Clamp(2f * PipeLength / 520f * _rate, 8f, MaxDelay - 2);
             for (int i = 0; i < data.Length; i += channels)
             {
                 // Smooth parameter changes (revs move fast, but never step).
-                _rpmNow += (targetRpm - _rpmNow) * 0.0025f;
-                _thrNow += (targetThr - _thrNow) * 0.0015f;
+                _rpmNow += (targetRpm - _rpmNow) * 0.002f;
+                _thrNow += (targetThr - _thrNow) * 0.0012f;
                 _volNow += (targetVol - _volNow) * 0.001f;
+                _pitchNow += (targetPitch - _pitchNow) * 0.002f;
 
                 // One 4-stroke cycle = two crank revolutions.
-                double cycleHz = _rpmNow / 120.0;
+                double cycleHz = _rpmNow / 120.0 * _pitchNow;
                 double prev = _cyclePhase;
                 _cyclePhase += cycleHz * invRate;
                 if (_cyclePhase >= 1) _cyclePhase -= 1;
-
-                // A cylinder fires when the cycle passes its firing point: a sharp combustion pulse.
                 for (int c = 0; c < FiringOrder.Length && c < Cylinders; c++)
                 {
                     double at = FiringOrder[c];
                     bool crossed = prev <= _cyclePhase ? (prev < at && _cyclePhase >= at) : (prev < at || _cyclePhase >= at);
                     if (!crossed) continue;
-                    // Each cylinder a little different, louder under load.
-                    float strength = (0.55f + 0.45f * _thrNow) * (0.85f + 0.3f * (float)_rng.NextDouble()) * (c % 2 == 0 ? 1f : 0.9f);
-                    _pulse += strength;
-                    _cylIndex = c;
+                    // A new pressure pulse: about a third of the gap between firings, louder under load.
+                    float gap = (float)(_rate / (cycleHz * Cylinders));
+                    _pulseLen = Mathf.Clamp(gap * 0.38f, 6f, 600f);
+                    _pulsePos = 0;
+                    _strengthJitter = 0.94f + 0.12f * (Noise() * 0.5f + 0.5f);
+                    _pulseAmp = (0.35f + 0.65f * _thrNow) * _strengthJitter * (c % 2 == 0 ? 1f : 0.93f);
                     // Overrun: unburnt fuel pops in the exhaust when the throttle is shut at high revs.
-                    if (_thrNow < 0.15f && _rpmNow > 7000 && _rng.NextDouble() < 0.025) _pop = 0.9f + (float)_rng.NextDouble() * 0.6f;
+                    if (_thrNow < 0.2f && _rpmNow > 8000 && Noise() > 0.93f) _pop = 0.6f + 0.4f * (Noise() * 0.5f + 0.5f);
                 }
-                // Pulse decays quickly (a few milliseconds, shorter at high revs).
-                float tau = Mathf.Clamp(0.012f * 4000f / Mathf.Max(1000f, _rpmNow), 0.0012f, 0.006f);
-                _pulse *= Mathf.Exp(-invRate / tau);
+                float pulse = 0;
+                if (_pulsePos >= 0)
+                {
+                    // Raised-cosine pressure pulse with a little combustion roughness.
+                    float x = _pulsePos / _pulseLen;
+                    pulse = _pulseAmp * 0.5f * (1f - Mathf.Cos(2f * Mathf.PI * x)) * (1f + 0.25f * Noise() * _thrNow);
+                    _pulsePos += 1;
+                    if (_pulsePos >= _pulseLen) _pulsePos = -1;
+                }
 
-                // Combustion rasp: noise gated by the pulses, brighter with throttle.
-                float rasp = Noise() * _pulse * (0.25f + 0.55f * _thrNow);
-                float excite = _pulse + rasp;
+                // Exhaust waveguide: what comes back from the open end, damped and inverted, adds to the new pulse.
+                float readPos = _write - delay;
+                if (readPos < 0) readPos += MaxDelay;
+                int i0 = (int)readPos;
+                float frac = readPos - i0;
+                float back = _pipe[i0] * (1 - frac) + _pipe[(i0 + 1) % MaxDelay] * frac;
+                _loopLp += (back - _loopLp) * 0.45f;
+                float inPipe = pulse - 0.62f * _loopLp;
+                _pipe[_write] = inPipe;
+                _write = (_write + 1) % MaxDelay;
+                // Radiated sound ~ change of pressure at the outlet.
+                float radiated = inPipe - _prevOut;
+                _prevOut = inPipe;
 
-                // Resonances: exhaust pipe follows the revs a little, airbox and body are fixed.
-                float firing = (float)(cycleHz * Cylinders);
-                float fEx = 2f * Mathf.Sin(Mathf.PI * Mathf.Clamp(firing * 1.6f + 180f, 80f, 4000f) * invRate);
-                float fAir = 2f * Mathf.Sin(Mathf.PI * 720f * invRate);
-                float fBody = 2f * Mathf.Sin(Mathf.PI * 1650f * invRate);
-                float ex = _exhaust.Process(excite, fEx, 0.35f);
-                float air = _airbox.Process(excite, fAir, 0.6f) * (0.3f + 0.7f * _thrNow);
-                float body = _body.Process(rasp, fBody, 0.8f) * 0.5f;
+                // Muffler: two one-pole low-passes that open with the throttle.
+                float cutoff = 900f + 3200f * _thrNow + 0.12f * (float)(cycleHz * Cylinders);
+                float k = 1f - Mathf.Exp(-2f * Mathf.PI * cutoff * invRate);
+                _muffler += (radiated * 6f + inPipe * 0.8f - _muffler) * k;
+                _muffler2 += (_muffler - _muffler2) * k;
 
-                // Overrun crackle: a short burst of noise.
+                // Intake roar: band of noise around 1.1 kHz, only with the throttle open.
+                float n = Noise();
+                _intakeLp += (n - _intakeLp) * 0.25f;
+                _intakeBand += ((n - _intakeLp) - _intakeBand) * 0.2f;
+                float intake = _intakeBand * _thrNow * _thrNow * (0.25f + pulse);
+
                 float crackle = 0;
                 if (_pop > 0.01f)
                 {
-                    crackle = Noise() * _pop;
-                    _pop *= 0.992f;
+                    crackle = Noise() * _pop * (Noise() > 0.6f ? 1f : 0.2f);
+                    _pop *= 0.9985f;
                 }
 
-                float s = ex * 1.1f + air * 0.6f + body * 0.35f + excite * 0.15f + crackle * 0.5f;
-                s *= Character;
+                float s = (_muffler2 * 1.3f + intake * 0.35f + crackle * 0.4f) * Character;
                 // Remove DC and saturate gently.
-                _dc += (s - _dc) * 0.001f;
-                s = (float)Math.Tanh((s - _dc) * 1.6f) * _volNow;
-
+                _dc += (s - _dc) * 0.0008f;
+                s = (float)Math.Tanh((s - _dc) * 1.3f) * 0.8f * _volNow;
                 for (int ch = 0; ch < channels; ch++) data[i + ch] = s;
             }
         }
