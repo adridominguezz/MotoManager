@@ -165,15 +165,17 @@ namespace MotoManager.App.UI.Screens
             return sq;
         }
 
-        /// <summary>The slanted race-number block in the team colour.</summary>
+        /// <summary>The small slanted race-number plate in the team colour ("#55"), clearly a dorsal, not a rating.</summary>
         public static Image NumberBadge(Transform parent, float x0, float y0, float x1, float y1, int number)
         {
             var badge = UiFactory.Decor("Number", parent, Theme.Accent);
             UiFactory.Slant(badge, 2.4f);
             UiFactory.Place(badge.rectTransform, x0, y0, x1, y1);
-            var num = Text(badge.transform, number > 0 ? number.ToString() : "-", Theme.FontLarge - 4, TextAnchor.MiddleCenter, Color.white, FontStyle.BoldAndItalic);
+            var num = Text(badge.transform, "#" + (number > 0 ? number.ToString() : "-"), Theme.FontNormal, TextAnchor.MiddleCenter, Color.white, FontStyle.BoldAndItalic);
             UiFactory.DropShadow(num, 0.4f, 1.5f);
             UiFactory.Stretch(num.rectTransform);
+            num.rectTransform.offsetMin = new Vector2(6, 0);
+            num.rectTransform.offsetMax = new Vector2(-6, 0);
             return badge;
         }
 
