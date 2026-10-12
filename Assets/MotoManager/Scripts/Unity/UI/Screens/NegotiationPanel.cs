@@ -73,7 +73,7 @@ namespace MotoManager.App.UI.Screens
             Ui.Expander(leftCol, "neg.clauses", Loc.T("shop.col.terms"), inner =>
             {
                 var clauses = Ui.Card(inner, null);
-                UiFactory.ButtonRow(clauses, 50,
+                UiFactory.ButtonRow(clauses, 56,
                     UiFactory.Act(Loc.T("neg.signing", MathX.FormatMoney(p.SigningBonus)), () => { p.SigningBonus = p.SigningBonus <= 0 ? Math.Round(p.Salary * 0.1 / 1000) * 1000 : p.SigningBonus < p.Salary * 0.15 ? Math.Round(p.Salary * 0.25 / 1000) * 1000 : 0; refresh(); }),
                     UiFactory.Act(Loc.T("neg.bonuses", MathX.FormatMoney(p.WinBonus), MathX.FormatMoney(p.PodiumBonus)), () =>
                     {
@@ -82,15 +82,16 @@ namespace MotoManager.App.UI.Screens
                         p.WinBonus = Math.Round(p.Salary * next / 1000) * 1000;
                         p.PodiumBonus = Math.Round(p.WinBonus * 0.4 / 1000) * 1000;
                         refresh();
-                    }),
+                    }));
+                UiFactory.ButtonRow(clauses, 56,
                     UiFactory.Act(p.ReleaseClause > 0 ? Loc.T("neg.release", MathX.FormatMoney(p.ReleaseClause)) : Loc.T("neg.noRelease"), () =>
                     {
                         double ratio = p.ReleaseClause / Math.Max(1, p.Salary * p.Seasons);
                         p.ReleaseClause = p.ReleaseClause <= 0 ? Math.Round(p.Salary * p.Seasons * 1.5 / 1000) * 1000 : ratio < 2 ? Math.Round(p.Salary * p.Seasons * 4 / 1000) * 1000 : 0;
                         refresh();
-                    }));
-                UiFactory.ButtonRow(clauses, 50,
-                    UiFactory.Option(Loc.T("neg.teamOption"), p.TeamOption, () => { p.TeamOption = !p.TeamOption; refresh(); }),
+                    }),
+                    UiFactory.Option(Loc.T("neg.teamOption"), p.TeamOption, () => { p.TeamOption = !p.TeamOption; refresh(); }));
+                UiFactory.ButtonRow(clauses, 56,
                     UiFactory.Option(Loc.T("neg.perf", p.PerformanceExtensionTopN > 0 ? p.PerformanceExtensionTopN : 5), p.PerformanceExtensionTopN > 0, () => { p.PerformanceExtensionTopN = p.PerformanceExtensionTopN > 0 ? 0 : 5; refresh(); }),
                     UiFactory.Option(Loc.T("neg.exit"), p.ExitForHigherCategory, () => { p.ExitForHigherCategory = !p.ExitForHigherCategory; refresh(); }));
             }, refresh);

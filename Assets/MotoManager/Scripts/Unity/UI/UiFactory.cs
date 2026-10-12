@@ -534,6 +534,12 @@ namespace MotoManager.App.UI
             button.colors = colors;
             var label = Label("Label", img.transform, text, size, TextAnchor.MiddleCenter);
             Stretch(label.rectTransform);
+            label.rectTransform.offsetMin = new Vector2(6, 0);
+            label.rectTransform.offsetMax = new Vector2(-6, 0);
+            // On a narrow phone a long caption shrinks (and may take two lines) instead of being cut.
+            label.resizeTextForBestFit = true;
+            label.resizeTextMinSize = Mathf.Max(10, size - 12);
+            label.resizeTextMaxSize = size;
             DropShadow(label, 0.35f, 1.5f);
             if (onClick != null) button.onClick.AddListener(() =>
             {
