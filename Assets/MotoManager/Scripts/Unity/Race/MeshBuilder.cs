@@ -183,6 +183,218 @@ namespace MotoManager.App.Race
                 }
         }
 
+        public int TriangleCount { get { return _tris.Count / 3; } }
+
+        /// <summary>
+        /// One cross-section of a <see cref="Hull"/>: the right half of a closed outline at Z, listed from the bottom
+        /// centre (x = 0) up to the top centre (x = 0). The left half is mirrored. <see cref="Bands"/>[i] colours the
+        /// strip between Half[i] and Half[i + 1] on both sides, from this ring to the next one.
+        /// </summary>
+        public struct Ring
+        {
+            public float Z;
+            public Vector2[] Half;
+            public Color32[] Bands;
+
+            public Ring(float z, Vector2[] half, Color32[] bands)
+            {
+                Z = z;
+                Half = half;
+                Bands = bands;
+            }
+        }
+
+        /// <summary>
+        /// Symmetric body skinned through shaped cross-sections along +Z (fairings, seat units, screens). Normals are
+        /// smooth, but colour bands keep crisp edges (liveries, number plates) because each band has its own vertices.
+        /// All rings must have the same number of points. The end rings are closed with flat caps (null leaves that end open).
+        /// </summary>
+        public void Hull(IList<Ring> rings, Color32? backCap, Color32? frontCap)
+        {
+            int n = rings[0].Half.Length;
+            int count = rings.Count;
+            // Smooth normals of the right half, from the ring tangent and the tangent along Z.
+            var normals = new Vector3[count, n];
+            for (int s = 0; s < count; s++)
+                for (int i = 0; i < n; i++)
+                {
+                    var prev = rings[s].Half[Mathf.Max(0, i - 1)];
+                    var next = rings[s].Half[Mathf.Min(n - 1, i + 1)];
+                    var tr = new Vector3(next.x - prev.x, next.y - prev.y, 0);
+                    // On the centre line the ring tangent is horizontal (mirror symmetry).
+                    if (i == 0) tr = new Vector3(1, 0, 0) * Mathf.Max(0.0001f, next.x);
+                    if (i == n - 1) tr = new Vector3(-1, 0, 0) * Mathf.Max(0.0001f, prev.x);
+                    int s0 = Mathf.Max(0, s - 1), s1 = Mathf.Min(count - 1, s + 1);
+                    var a = rings[s0].Half[i];
+                    var b = rings[s1].Half[i];
+                    var tz = new Vector3(b.x - a.x, b.y - a.y, rings[s1].Z - rings[s0].Z);
+                    var nn = Vector3.Cross(tr, tz);
+                    normals[s, i] = nn.sqrMagnitude > 1e-12f ? nn.normalized : Vector3.up;
+                }
+            for (int side = -1; side <= 1; side += 2)
+            {
+                for (int s = 0; s + 1 < count; s++)
+                {
+                    var r0 = rings[s];
+                    var r1 = rings[s + 1];
+                    for (int i = 0; i + 1 < n; i++)
+                    {
+                        var col = r0.Bands[Mathf.Min(i, r0.Bands.Length - 1)];
+                        int a = HullVertex(r0, s, i, side, normals, col);
+                        int b = HullVertex(r0, s, i + 1, side, normals, col);
+                        int c = HullVertex(r1, s + 1, i, side, normals, col);
+                        int d = HullVertex(r1, s + 1, i + 1, side, normals, col);
+                        if (side > 0) { _tris.Add(a); _tris.Add(b); _tris.Add(d); _tris.Add(a); _tris.Add(d); _tris.Add(c); }
+                        else { _tris.Add(a); _tris.Add(d); _tris.Add(b); _tris.Add(a); _tris.Add(c); _tris.Add(d); }
+                    }
+                }
+            }
+            if (backCap.HasValue) HullCap(rings[0], false, backCap.Value);
+            if (frontCap.HasValue) HullCap(rings[count - 1], true, frontCap.Value);
+        }
+
+        private int HullVertex(Ring r, int s, int i, int side, Vector3[,] normals, Color32 col)
+        {
+            var p = r.Half[i];
+            var nn = normals[s, i];
+            return Vertex(new Vector3(p.x * side, p.y, r.Z), new Vector3(nn.x * side, nn.y, nn.z), col);
+        }
+
+        private void HullCap(Ring r, bool front, Color32 col)
+        {
+            int n = r.Half.Length;
+            var nn = front ? Vector3.forward : Vector3.back;
+            float cy = 0;
+            for (int i = 0; i < n; i++) cy += r.Half[i].y;
+            int centre = Vertex(new Vector3(0, cy / n, r.Z), nn, col);
+            int start = _verts.Count;
+            // Outline: right half bottom -> top, then the left half top -> bottom (skipping the shared centre points).
+            for (int i = 0; i < n; i++) Vertex(new Vector3(r.Half[i].x, r.Half[i].y, r.Z), nn, col);
+            for (int i = n - 2; i >= 1; i--) Vertex(new Vector3(-r.Half[i].x, r.Half[i].y, r.Z), nn, col);
+            int m = _verts.Count - start;
+            for (int k = 0; k < m; k++)
+            {
+                int a = start + k, b = start + (k + 1) % m;
+                if (front) { _tris.Add(centre); _tris.Add(a); _tris.Add(b); }
+                else { _tris.Add(centre); _tris.Add(b); _tris.Add(a); }
+            }
+        }
+
+        /// <summary>
+        /// Surface of revolution around the local X axis (tyres, rims). <paramref name="profile"/> lists (radius, x)
+        /// points; <paramref name="colors"/>[i] colours the band between profile[i] and profile[i + 1].
+        /// The profile should run from -X to +X along the outside so the faces point outwards.
+        /// </summary>
+        public void Lathe(Vector3 center, IList<Vector2> profile, IList<Color32> colors, int sides = 12)
+        {
+            int n = profile.Count;
+            var pn = new Vector2[n];
+            for (int i = 0; i < n; i++)
+            {
+                var t = profile[Mathf.Min(n - 1, i + 1)] - profile[Mathf.Max(0, i - 1)];
+                // Tangent (dr, dx) -> outward normal (dx, -dr) in (radius, x).
+                pn[i] = new Vector2(t.y, -t.x).normalized;
+            }
+            for (int i = 0; i + 1 < n; i++)
+            {
+                var col = colors[Mathf.Min(i, colors.Count - 1)];
+                int start = _verts.Count;
+                for (int k = 0; k <= sides; k++)
+                {
+                    float a = Mathf.PI * 2 * k / sides;
+                    float sa = Mathf.Sin(a), ca = Mathf.Cos(a);
+                    for (int j = 0; j < 2; j++)
+                    {
+                        var p = profile[i + j];
+                        var nn = pn[i + j];
+                        Vertex(center + new Vector3(p.y, p.x * sa, p.x * ca), new Vector3(nn.y, nn.x * sa, nn.x * ca), col);
+                    }
+                }
+                for (int k = 0; k < sides; k++)
+                {
+                    int a = start + k * 2, b = a + 2;
+                    _tris.Add(a); _tris.Add(a + 1); _tris.Add(b);
+                    _tris.Add(b); _tris.Add(a + 1); _tris.Add(b + 1);
+                }
+            }
+        }
+
+        /// <summary>Flat ring (or disc when <paramref name="inner"/> is 0) in the YZ plane facing +X or -X (wheel faces, brake discs).</summary>
+        public void DiscX(Vector3 center, float inner, float outer, int facing, Color32 color, int sides = 12)
+        {
+            var nn = new Vector3(facing, 0, 0);
+            int start = _verts.Count;
+            for (int k = 0; k < sides; k++)
+            {
+                float a = Mathf.PI * 2 * k / sides;
+                var dir = new Vector3(0, Mathf.Sin(a), Mathf.Cos(a));
+                Vertex(center + dir * outer, nn, color);
+                if (inner > 0) Vertex(center + dir * inner, nn, color);
+            }
+            if (inner > 0)
+            {
+                for (int k = 0; k < sides; k++)
+                {
+                    int o0 = start + k * 2, i0 = o0 + 1, o1 = start + ((k + 1) % sides) * 2, i1 = o1 + 1;
+                    if (facing > 0) { _tris.Add(o0); _tris.Add(i0); _tris.Add(o1); _tris.Add(o1); _tris.Add(i0); _tris.Add(i1); }
+                    else { _tris.Add(o0); _tris.Add(o1); _tris.Add(i0); _tris.Add(o1); _tris.Add(i1); _tris.Add(i0); }
+                }
+            }
+            else
+            {
+                int c = Vertex(center, nn, color);
+                for (int k = 0; k < sides; k++)
+                {
+                    int a = start + k, b = start + (k + 1) % sides;
+                    if (facing > 0) { _tris.Add(c); _tris.Add(b); _tris.Add(a); }
+                    else { _tris.Add(c); _tris.Add(a); _tris.Add(b); }
+                }
+            }
+        }
+
+        /// <summary>Tapered tube between two points (fork legs, limbs, exhausts), smooth sides and flat end caps.</summary>
+        public void Tube(Vector3 from, Vector3 to, float radiusFrom, float radiusTo, Color32 color, int sides = 6, bool caps = true, Color32? endCap = null)
+        {
+            var axis = to - from;
+            var d = axis.normalized;
+            var u = Vector3.Cross(d, Mathf.Abs(d.y) < 0.9f ? Vector3.up : Vector3.right).normalized;
+            var v = Vector3.Cross(u, d);
+            int start = _verts.Count;
+            for (int k = 0; k < sides; k++)
+            {
+                float a = Mathf.PI * 2 * k / sides;
+                var dir = u * Mathf.Cos(a) + v * Mathf.Sin(a);
+                Vertex(from + dir * radiusFrom, dir, color);
+                Vertex(to + dir * radiusTo, dir, color);
+            }
+            for (int k = 0; k < sides; k++)
+            {
+                int a = start + k * 2, b = start + ((k + 1) % sides) * 2;
+                _tris.Add(a); _tris.Add(a + 1); _tris.Add(b);
+                _tris.Add(b); _tris.Add(a + 1); _tris.Add(b + 1);
+            }
+            for (int end = 0; caps && end < 2; end++)
+            {
+                var nn = end == 0 ? -d : d;
+                var c = end == 0 ? from : to;
+                float r = end == 0 ? radiusFrom : radiusTo;
+                var col = end == 1 && endCap.HasValue ? endCap.Value : color;
+                int centre = Vertex(c, nn, col);
+                int ring = _verts.Count;
+                for (int k = 0; k < sides; k++)
+                {
+                    float a = Mathf.PI * 2 * k / sides;
+                    Vertex(c + (u * Mathf.Cos(a) + v * Mathf.Sin(a)) * r, nn, col);
+                }
+                for (int k = 0; k < sides; k++)
+                {
+                    int a = ring + k, b = ring + (k + 1) % sides;
+                    if (end == 0) { _tris.Add(centre); _tris.Add(a); _tris.Add(b); }
+                    else { _tris.Add(centre); _tris.Add(b); _tris.Add(a); }
+                }
+            }
+        }
+
         /// <summary>Flat disc facing up (map markers).</summary>
         public void Disc(Vector3 center, float radius, Color32 color, int sides = 24)
         {

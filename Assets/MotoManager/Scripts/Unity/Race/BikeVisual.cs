@@ -5,9 +5,9 @@ using UnityEngine;
 namespace MotoManager.App.Race
 {
     /// <summary>
-    /// Bike + rider in team colours (rounded low-poly), or a coloured dot when the camera is far away. Purely visual:
-    /// it reads the rider's simulated state and turns it into position on the racing line, heading, lean, pitch and
-    /// crash poses. Riders out of the race slide off and disappear.
+    /// Bike + rider in team colours (low-poly GP bike, see <see cref="BikeModel"/>), or a coloured dot when the camera
+    /// is far away. Purely visual: it reads the rider's simulated state and turns it into position on the racing line,
+    /// heading, lean, pitch, hanging-off and crash poses. Riders out of the race slide off and disappear.
     /// </summary>
     public class BikeVisual : MonoBehaviour
     {
@@ -30,6 +30,9 @@ namespace MotoManager.App.Race
         public const double ClearAfter = 4.0;
 
         private Transform _rider;
+        private Transform _legL;
+        private Transform _legR;
+        private float _poseLean;
         private GameObject _halo;
         private float _lean;
         private float _pitch;
@@ -58,60 +61,25 @@ namespace MotoManager.App.Race
             // Helmet colour is personal (stable per rider).
             float hue = (float)(Core.Common.DeterministicRandom.Hash(State.Entry.Rider.Id) % 360UL) / 360f;
             Color32 helmet = Color.HSVToRGB(hue, 0.55f, 0.95f);
-            var tyre = new Color32(22, 22, 25, 255);
-            var metal = new Color32(120, 124, 132, 255);
-            var visor = new Color32(30, 34, 44, 255);
             Color32 p = primary;
             Color32 s = secondary;
-            Color32 leathers = Color.Lerp(primary, Color.black, 0.4f);
 
-            // Bike: pivot at the contact patch line so leaning rotates around the tyres.
+            // Bike: pivot at the contact patch line so leaning rotates around the tyres (see BikeModel for the shapes).
             Body = new GameObject("Body").transform;
             Body.SetParent(transform, false);
             var bike = new MeshBuilder();
-            bike.Cylinder(new Vector3(0, 0.3f, 0.7f), 0.3f, 0.12f, tyre);
-            bike.Cylinder(new Vector3(0, 0.3f, 0.7f), 0.15f, 0.14f, metal, 10);
-            bike.Cylinder(new Vector3(0, 0.3f, -0.68f), 0.31f, 0.18f, tyre);
-            bike.Cylinder(new Vector3(0, 0.3f, -0.68f), 0.15f, 0.2f, metal, 10);
-            bike.Box(new Vector3(0, 0.58f, 0.62f), new Vector3(0.16f, 0.52f, 0.06f), metal, Quaternion.Euler(-24, 0, 0)); // forks
-            bike.Box(new Vector3(0, 0.38f, -0.38f), new Vector3(0.2f, 0.06f, 0.55f), metal, Quaternion.Euler(-8, 0, 0)); // swingarm
-            bike.Loft(new[]
-            {
-                new MeshBuilder.Section(-0.98f, 0.9f, 0.04f, 0.04f, s),
-                new MeshBuilder.Section(-0.8f, 0.9f, 0.11f, 0.08f, s),
-                new MeshBuilder.Section(-0.5f, 0.86f, 0.15f, 0.11f, s),
-                new MeshBuilder.Section(-0.3f, 0.76f, 0.16f, 0.17f, p),
-                new MeshBuilder.Section(0.05f, 0.7f, 0.21f, 0.27f, p),
-                new MeshBuilder.Section(0.42f, 0.7f, 0.22f, 0.26f, p),
-                new MeshBuilder.Section(0.66f, 0.76f, 0.16f, 0.2f, s),
-                new MeshBuilder.Section(0.84f, 0.8f, 0.05f, 0.08f, s)
-            }, 12);
-            // Screen.
-            bike.Loft(new[]
-            {
-                new MeshBuilder.Section(0.38f, 1.0f, 0.13f, 0.03f, visor),
-                new MeshBuilder.Section(0.62f, 0.93f, 0.1f, 0.025f, visor)
-            }, 8);
+            BikeModel.BuildBike(bike, p, s);
             bike.ToObject("BikeMesh", Body);
 
+            // Rider: body on the seat, legs pivoting at the hips, so cornering poses only move transforms.
             _rider = new GameObject("Rider").transform;
             _rider.SetParent(Body, false);
+            _rider.localPosition = BikeModel.Seat;
             var rider = new MeshBuilder();
-            rider.Loft(new[]
-            {
-                new MeshBuilder.Section(-0.5f, 1.0f, 0.16f, 0.12f, leathers),
-                new MeshBuilder.Section(-0.2f, 1.1f, 0.2f, 0.14f, leathers),
-                new MeshBuilder.Section(0.1f, 1.14f, 0.19f, 0.12f, p),
-                new MeshBuilder.Section(0.28f, 1.12f, 0.13f, 0.09f, leathers)
-            }, 10);
-            rider.Sphere(new Vector3(0, 1.24f, 0.4f), new Vector3(0.15f, 0.14f, 0.17f), helmet, 7, 12, visor);
-            for (int side = -1; side <= 1; side += 2)
-            {
-                rider.Box(new Vector3(side * 0.2f, 1.03f, 0.42f), new Vector3(0.08f, 0.08f, 0.36f), leathers, Quaternion.Euler(30, 0, 0)); // arms
-                rider.Box(new Vector3(side * 0.22f, 0.9f, -0.24f), new Vector3(0.11f, 0.11f, 0.42f), leathers, Quaternion.Euler(22, side * -8, 0)); // thighs
-                rider.Box(new Vector3(side * 0.24f, 0.72f, -0.2f), new Vector3(0.09f, 0.09f, 0.32f), leathers, Quaternion.Euler(-55, 0, 0)); // shins
-            }
+            BikeModel.BuildRiderBody(rider, p, s, helmet);
             rider.ToObject("RiderMesh", _rider);
+            _legL = BuildLeg(-1, p, s);
+            _legR = BuildLeg(1, p, s);
 
             // Far-view marker: a dot in team colour with a dark rim, plus a halo for the player's riders.
             Marker = new GameObject("Marker").transform;
@@ -128,6 +96,17 @@ namespace MotoManager.App.Race
             _halo.SetActive(State.Entry.IsPlayer);
             Marker.gameObject.SetActive(false);
             Visible = true;
+        }
+
+        private Transform BuildLeg(int side, Color32 p, Color32 s)
+        {
+            var leg = new GameObject(side < 0 ? "LegL" : "LegR").transform;
+            leg.SetParent(_rider, false);
+            leg.localPosition = BikeModel.HipLocal(side);
+            var mb = new MeshBuilder();
+            BikeModel.BuildLeg(mb, side, p, s);
+            mb.ToObject("LegMesh", leg);
+            return leg;
         }
 
         private bool IsOut
@@ -232,7 +211,15 @@ namespace MotoManager.App.Race
             _pitch = Mathf.Lerp(_pitch, targetPitch, 1 - Mathf.Exp(-dt * 6));
             // Unity: positive rotation around +Z tilts +Y towards -X, i.e. to the rider's left.
             Body.localRotation = Quaternion.Euler(_pitch, _crashSpin, _lean);
-            _rider.localPosition = _crashOffset;
+            // Hang off the inside of the corner (body shifted in, inner knee out); sit up when crashing.
+            _poseLean = Mathf.Lerp(_poseLean, IsDown ? 0f : _lean, 1 - Mathf.Exp(-dt * 8));
+            Vector3 riderPos;
+            Quaternion riderRot, legL, legR;
+            BikeModel.Pose(_poseLean, out riderPos, out riderRot, out legL, out legR);
+            _rider.localPosition = riderPos + _crashOffset;
+            _rider.localRotation = riderRot;
+            _legL.localRotation = legL;
+            _legR.localRotation = legR;
             // Sink into the gravel while being cleared.
             float sink = _outSince < 0 ? 0 : Mathf.Clamp01((float)((time - _outSince - (ClearAfter - 1.5)) / 1.5));
             Body.localPosition = new Vector3(0, -1.6f * sink, 0);
