@@ -432,6 +432,7 @@ namespace MotoManager.Core.Career
             team.Shop.Fans = MerchService.FansTarget(world, db, team);
             Season.WorldFactory.SetPlayerTeam(world, team.Id);
             TeamAI.SetObjectives(world, db);
+            SponsorMarket.NewTeamOffers(world, db, team, world.Rng.Fork("new-team-sponsors-" + team.Id));
             world.AddNews(Txt.F("news.founds", "{0} founds {1}", m.FullName, team.Name), Txt.F("news.foundsBody", "A new team joins {0} with {1} machinery.", cat.Name, supplier.Name), cat.Id, true);
             return new CareerResult { Ok = true, Team = team, Viability = report, Message = Txt.F("career.r.born", "{0} is born.", team.Name) };
         }

@@ -17,6 +17,8 @@ namespace MotoManager.App.UI.Screens
         public override string Title { get { return Loc.T("nav.market"); } }
         private string _category;
         private const string FreeRiders = "__free";
+        /// <summary>Another screen asked to open the negotiation with this rider (team setup).</summary>
+        public static string PendingRiderId;
         private int _filter;
         private NegotiationState _neg;
         private const int PageSize = 12;
@@ -29,6 +31,11 @@ namespace MotoManager.App.UI.Screens
             var team = world.PlayerTeam;
             if (team == null) return;
             if (_category == null) _category = team.CategoryId;
+            if (PendingRiderId != null)
+            {
+                _neg = new NegotiationState { RiderId = PendingRiderId };
+                PendingRiderId = null;
+            }
             if (_neg != null)
             {
                 NegotiationPanel.Build(list, Game, _neg, Shell.Refresh, () => _neg = null);

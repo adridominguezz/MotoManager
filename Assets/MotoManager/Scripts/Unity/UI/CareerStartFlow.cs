@@ -249,7 +249,11 @@ namespace MotoManager.App.UI
                     {
                         string name = string.IsNullOrEmpty(_teamName.Trim()) ? _manager.LastName + " Racing" : _teamName.Trim();
                         var res = CareerService.Found(World, db, _manager, new FoundingPlan { CategoryId = _category, ManufacturerId = _supplier, TeamName = name, Investment = invest, Loan = loan });
-                        if (res.Ok) _session.StartCareer(_game);
+                        if (res.Ok)
+                        {
+                            Screens.TeamSetupPage.OpenOnStart = true;
+                            _session.StartCareer(_game);
+                        }
                         else
                         {
                             _status.text = res.Message;

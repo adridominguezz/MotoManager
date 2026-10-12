@@ -137,6 +137,30 @@ namespace MotoManager.Core.Economy
             }
         }
 
+        /// <summary>
+        /// A team that has just been created gets some first approaches straight away (modest brands too), so its
+        /// owner has deals to choose from before the first race.
+        /// </summary>
+        public static int NewTeamOffers(WorldState world, GameDatabase db, Team team, DeterministicRandom rng, int count = 3)
+        {
+            var cat = db.GetCategory(team.CategoryId);
+            if (cat == null || !cat.Simulated || cat.IsCup) return 0;
+            var engaged = SponsorService.Commitments(world);
+            int made = 0;
+            for (int i = 0; i < count * 3 && made < count; i++)
+            {
+                int pending = 0;
+                foreach (var o in world.SponsorOffers) if (o.TeamId == team.Id) pending++;
+                if (SponsorService.Slots(db, team, world.Season) - SponsorService.DealsIn(team, world.Season) - pending <= 0) break;
+                var offer = Approach(world, db, team, cat, world.Season, engaged, rng, true);
+                if (offer == null) continue;
+                engaged.Add(offer.SponsorId, team.Id);
+                world.SponsorOffers.Add(offer);
+                made++;
+            }
+            return made;
+        }
+
         private static SponsorOffer Approach(WorldState world, GameDatabase db, Team team, ChampionshipCategory cat, int season, SponsorCommitments engaged, DeterministicRandom rng, bool modest = false)
         {
             var candidates = new List<SponsorTemplate>();

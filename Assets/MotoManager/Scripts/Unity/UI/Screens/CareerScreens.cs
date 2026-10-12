@@ -558,7 +558,7 @@ namespace MotoManager.App.UI.Screens
                 {
                     Shell.Toast(Loc.T("mycareer.founded", res.Team.Name));
                     Session.Save();
-                    Shell.Show<HubScreen>();
+                    Shell.Show<TeamSetupPage>();
                 }
                 else Shell.Refresh();
             });

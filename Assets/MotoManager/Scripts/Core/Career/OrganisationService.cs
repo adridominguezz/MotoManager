@@ -177,6 +177,7 @@ namespace MotoManager.Core.Career
             ManagerMarket.FillVacancies(world, db, rng, false);
             StaffService.EnsureStaff(world, db, team, rng, StaffService.SalaryScale(world, db, team));
             TeamAI.SetObjectives(world, db);
+            SponsorMarket.NewTeamOffers(world, db, team, rng.Fork("sponsors"));
             world.AddNews(Txt.F("news.expands", "{0} enters {1}", org.Name, cat.Name), Txt.F("news.expandsBody", "{0} is the organisation's new team.", team.Name), cat.Id, true);
             return new CareerResult { Ok = true, Team = team, Viability = report, Message = Txt.F("org.r.expanded", "{0} is born.", team.Name) };
         }

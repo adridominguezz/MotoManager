@@ -228,7 +228,7 @@ namespace MotoManager.App.UI.Screens
             Add("nav.finance", new FinanceScreen(), new SponsorsPage(), new ShopScreen());
             Add("nav.market", new MarketScreen());
             Add("nav.competition", new StandingsScreen(), new CalendarScreen(), new HistoryScreen());
-            Add("nav.career", new CareerSummaryPage(), new CareerOffersPage(), new CareerOrgPage(), new CareerFoundPage());
+            Add("nav.career", new CareerSummaryPage(), new CareerOffersPage(), new CareerOrgPage(), new TeamSetupPage(), new CareerFoundPage());
 
             foreach (var s in _sections)
             {
@@ -259,6 +259,11 @@ namespace MotoManager.App.UI.Screens
                 _navBars.Add(bar);
             }
             Show(_sections[0]);
+            if (TeamSetupPage.OpenOnStart)
+            {
+                TeamSetupPage.OpenOnStart = false;
+                Show<TeamSetupPage>();
+            }
             Assistant.Show("home", new[] { "tut.home.1", "tut.home.2", "tut.home.3", "tut.home.4", "tut.home.5" });
         }
 
