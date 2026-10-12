@@ -87,7 +87,7 @@ namespace MotoManager.Core.Season
             var e = new RaceEntry
             {
                 Rider = entry.Rider, Team = entry.Team, Bike = entry.Bike, ManufacturerId = entry.ManufacturerId,
-                SetupQuality = entry.SetupQuality, Form = entry.Form, GridPosition = 1
+                SetupQuality = entry.SetupQuality, SetupCeiling = entry.SetupCeiling, TireCare = entry.TireCare, Form = entry.Form, GridPosition = 1
             };
             if (wet)
             {

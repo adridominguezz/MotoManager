@@ -97,6 +97,8 @@ namespace MotoManager.Core.Season
                         AutoManaged = !team.IsPlayer,
                         SetupQuality = InitialSetup(rider, team),
                         ReliabilityBonus = TeamCapabilities.ReliabilityBonus(World, team, rider.Id),
+                        SetupCeiling = TeamCapabilities.SetupCeiling(World, team, rider.Id),
+                        TireCare = TeamCapabilities.TireCare(World, team),
                         Form = WeekendForm(rider)
                     };
                     Entries.Add(entry);
@@ -179,8 +181,9 @@ namespace MotoManager.Core.Season
             // Practice improves the set-up: better feedback and crew chiefs converge faster.
             foreach (var e in Entries)
             {
+                // ...but only up to what the crew can reach.
                 double gain = 0.12 + e.Rider.Attributes.TechnicalFeedback / 600.0 + e.Rider.Attributes.Adaptability / 1000.0;
-                e.SetupQuality = MathX.Clamp01(e.SetupQuality + gain * (1 - e.SetupQuality));
+                e.SetupQuality = Math.Min(Math.Max(e.SetupQuality, e.SetupCeiling), MathX.Clamp01(e.SetupQuality + gain * (e.SetupCeiling - e.SetupQuality)));
             }
             _practiceOrder = new List<string>();
             foreach (var r in runs) _practiceOrder.Add(r.Entry.Rider.Id);
@@ -189,7 +192,7 @@ namespace MotoManager.Core.Season
 
         private SessionResult RunWarmUp(SessionDefinition s)
         {
-            foreach (var e in Entries) e.SetupQuality = MathX.Clamp01(e.SetupQuality + 0.04 * (1 - e.SetupQuality));
+            foreach (var e in Entries) e.SetupQuality = Math.Min(Math.Max(e.SetupQuality, e.SetupCeiling), MathX.Clamp01(e.SetupQuality + 0.04 * (e.SetupCeiling - e.SetupQuality)));
             return new SessionResult { SessionId = s.Id, SessionName = s.Name, Type = s.Type, WeatherSummary = "-" };
         }
 

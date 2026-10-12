@@ -47,6 +47,10 @@ namespace MotoManager.Core.Race
         public int GridPenaltyPlaces;
         /// <summary>Extra reliability points from the team's mechanics and factory.</summary>
         public double ReliabilityBonus;
+        /// <summary>Best set-up the crew can reach over a weekend (crew chief, data, electronics, simulator).</summary>
+        public double SetupCeiling = 1.0;
+        /// <summary>Tyre wear multiplier from the tyre engineer (below 1 = the tyres last longer).</summary>
+        public double TireCare = 1.0;
     }
 
     public class WeatherSetup

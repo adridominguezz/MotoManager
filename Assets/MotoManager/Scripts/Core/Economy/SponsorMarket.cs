@@ -126,8 +126,10 @@ namespace MotoManager.Core.Economy
                 int pending = 0;
                 foreach (var o in world.SponsorOffers) if (o.TeamId == team.Id) pending++;
                 int free = SponsorService.Slots(db, team, season) - SponsorService.DealsIn(team, season) - pending;
-                if (free <= 0 || !rng.Chance(winter ? 0.9 : ApproachChance)) continue;
-                var offer = Approach(world, db, team, cat, season, engaged, rng);
+                // A team with few backers is approached more often, also by modest brands.
+                bool fewBackers = SponsorService.DealsIn(team, season) + pending < 2;
+                if (free <= 0 || !rng.Chance(winter ? 0.9 : fewBackers ? Math.Max(ApproachChance, 0.6) : ApproachChance)) continue;
+                var offer = Approach(world, db, team, cat, season, engaged, rng, fewBackers);
                 if (offer == null) continue;
                 engaged.Add(offer.SponsorId, team.Id);
                 world.SponsorOffers.Add(offer);
@@ -135,7 +137,7 @@ namespace MotoManager.Core.Economy
             }
         }
 
-        private static SponsorOffer Approach(WorldState world, GameDatabase db, Team team, ChampionshipCategory cat, int season, SponsorCommitments engaged, DeterministicRandom rng)
+        private static SponsorOffer Approach(WorldState world, GameDatabase db, Team team, ChampionshipCategory cat, int season, SponsorCommitments engaged, DeterministicRandom rng, bool modest = false)
         {
             var candidates = new List<SponsorTemplate>();
             var weights = new Dictionary<string, double>();
@@ -144,7 +146,7 @@ namespace MotoManager.Core.Economy
                 if (!engaged.CanApproach(s, team.Id)) continue;
                 if (SponsorService.IndustryConflict(team, s.Industry, s.IndustryExclusive, season, season + s.ContractSeasons - 1)) continue;
                 double interest = SponsorService.Interest(world, db, s, team, cat);
-                if (interest <= 0.05) continue;
+                if (interest <= (modest ? 0.015 : 0.05)) continue;
                 candidates.Add(s);
                 weights[s.Id] = interest;
             }

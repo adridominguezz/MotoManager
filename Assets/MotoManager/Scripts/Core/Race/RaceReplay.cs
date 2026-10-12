@@ -47,7 +47,7 @@ namespace MotoManager.Core.Race
                 {
                     Rider = e.Rider, Team = e.Team, Bike = e.Bike, ManufacturerId = e.ManufacturerId, GridPosition = e.GridPosition,
                     FrontCompound = e.FrontCompound, RearCompound = e.RearCompound, SpareCompound = e.SpareCompound,
-                    SetupQuality = e.SetupQuality, Form = e.Form, IsPlayer = e.IsPlayer, AutoManaged = e.AutoManaged,
+                    SetupQuality = e.SetupQuality, SetupCeiling = e.SetupCeiling, TireCare = e.TireCare, Form = e.Form, IsPlayer = e.IsPlayer, AutoManaged = e.AutoManaged,
                     PendingLongLaps = e.PendingLongLaps, GridPenaltyPlaces = e.GridPenaltyPlaces, ReliabilityBonus = e.ReliabilityBonus
                 });
                 auto[i] = e.AutoManaged;

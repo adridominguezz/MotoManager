@@ -146,7 +146,7 @@ namespace MotoManager.Core.Race
             cfg.Entries.Add(new RaceEntry
             {
                 Rider = entry.Rider, Team = entry.Team, Bike = entry.Bike, ManufacturerId = entry.ManufacturerId,
-                FrontCompound = entry.FrontCompound, RearCompound = entry.RearCompound, SetupQuality = entry.SetupQuality, Form = entry.Form, GridPosition = 1
+                FrontCompound = entry.FrontCompound, RearCompound = entry.RearCompound, SetupQuality = entry.SetupQuality, SetupCeiling = entry.SetupCeiling, TireCare = entry.TireCare, Form = entry.Form, GridPosition = 1
             });
             var sim = new RaceSimulation(cfg);
             var st = sim.Riders[0];
@@ -518,7 +518,8 @@ namespace MotoManager.Core.Race
             else if (r.Pace == PaceMode.Conserve) u *= Tuning.ConserveUsage;
             // Attacking: later braking and harder exits (a little faster, harder on the tyres).
             if (r.Mode == RiderMode.Attack) u *= 1.004;
-            u *= 0.994 + 0.006 * MathX.Clamp01(r.Entry.SetupQuality);
+            // Set-up: a well-sorted bike is worth about a second a lap over a badly set-up one.
+            u *= 0.988 + 0.012 * MathX.Clamp01(r.Entry.SetupQuality);
             u *= r.Entry.Form;
             if (Config.SessionType == SessionType.Qualifying)
                 u *= 1 + 0.004 * MathX.Centered(r.Entry.Rider.Attributes.QualifyingSkill) + (r.Entry.Rider.HasStyle(RidingStyle.QualifyingSpecialist) ? 0.002 : 0);
@@ -1182,6 +1183,7 @@ namespace MotoManager.Core.Race
             if (r.Entry.Rider.HasStyle(RidingStyle.SmoothRider)) riderWear -= 0.04;
             if (r.Mode == RiderMode.Attack) riderWear *= 1.12;
             else if (r.Mode == RiderMode.Defend) riderWear *= 1.05;
+            riderWear *= r.Entry.TireCare;
             if (r.Pace == PaceMode.Push) riderWear *= Tuning.PushWear;
             else if (r.Pace == PaceMode.Conserve) riderWear *= Tuning.ConserveWear;
             double bikeWear = 1 + (50 - bike[PerfAttr.TireWear]) / 200.0;

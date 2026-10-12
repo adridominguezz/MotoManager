@@ -116,6 +116,26 @@ namespace MotoManager.Core.Economy
             return crew / 500.0 + team.Facility(FacilityType.Simulator) * 0.025 + team.Facility(FacilityType.ElectronicsLab) * 0.008 + team.Facility(FacilityType.DataCenter) * 0.007;
         }
 
+        /// <summary>
+        /// The best set-up the crew can reach in a weekend: a strong crew chief and data analyst find the last
+        /// tenths, a weak crew stays short of them (0.72 - 1.0).
+        /// </summary>
+        public static double SetupCeiling(WorldState world, Team team, string riderId)
+        {
+            double re = RaceEngineerSkill(world, team, riderId);
+            double da = Skill(world, team, StaffRole.DataAnalyst, 35);
+            double ee = Skill(world, team, StaffRole.ElectronicsEngineer, 35);
+            double crew = re * 0.6 + da * 0.25 + ee * 0.15;
+            return MathX.Clamp(0.55 + crew / 250.0 + team.Facility(FacilityType.Simulator) * 0.015, 0.72, 1.0);
+        }
+
+        /// <summary>Tyre wear multiplier from the tyre engineer (0.88 with a top one, 1.08 without).</summary>
+        public static double TireCare(WorldState world, Team team)
+        {
+            double te = Skill(world, team, StaffRole.TireEngineer, 30);
+            return MathX.Clamp(1.14 - te / 400.0, 0.88, 1.08);
+        }
+
         /// <summary>Extra reliability points of the bikes from the mechanics and the factory.</summary>
         public static double ReliabilityBonus(WorldState world, Team team, string riderId)
         {

@@ -435,7 +435,9 @@ namespace MotoManager.Core.Career
         /// </summary>
         public static double SeatUtility(WorldState world, ChampionshipCategory cat, Team team, Rider r)
         {
-            double u = cat.Prestige + team.Reputation * 0.3 + (team.Status == TeamStatus.Factory ? 6 : 0);
+            // A works seat (latest spec, the manufacturer's direct support) is what riders aim for: a satellite
+            // seat on the same bike is the step before it, never the goal.
+            double u = cat.Prestige + team.Reputation * 0.3 + (team.Status == TeamStatus.Factory ? 15 : 0);
             double pref = (r.Personality.GrandPrixPreference - 50) * 0.3;
             u += cat.Pyramid == Pyramid.GrandPrix ? pref : -pref;
             u += (BikeAppeal(world, cat.Id, team) - 0.5) * 16;

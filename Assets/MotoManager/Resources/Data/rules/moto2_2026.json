@@ -226,8 +226,8 @@
     "testRidersAllowed": true
   },
   "economy": {
-    "participationIncomePerSeason": 1200000,
-    "travelCostPerRound": 80000,
+    "participationIncomePerSeason": 1400000,
+    "travelCostPerRound": 65000,
     "crashRepairCost": 25000,
     "engineCost": 0,
     "bikeLeasePerSeason": 450000,
