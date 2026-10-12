@@ -177,7 +177,7 @@ namespace MotoManager.App
         /// Each frame of a race: the followed bike's speed (m/s, its top speed in the category for the gear steps),
         /// how close the camera is (0 far, 1 close) and how many bikes are running.
         /// </summary>
-        public static void RaceUpdate(double speed, double topSpeed, float closeness, int running, bool paused)
+        public static void RaceUpdate(double speed, double topSpeed, float closeness, int running, bool paused, float playback = 1f)
         {
             if (_instance == null || !_instance._racing || !SfxOn) return;
             var a = _instance;
@@ -188,7 +188,7 @@ namespace MotoManager.App
                 return;
             }
             // Revs and throttle of the followed bike from its speed (six gears).
-            a._gearbox.Update(speed, topSpeed, Time.deltaTime);
+            a._gearbox.Update(speed, topSpeed, Time.unscaledDeltaTime, playback);
             a._engine.Rpm = a._gearbox.Rpm;
             a._engine.Throttle = a._gearbox.Throttle;
             a._targetEngine = Mathf.Lerp(0.12f, 0.7f, closeness);

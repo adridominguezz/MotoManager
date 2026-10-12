@@ -146,7 +146,10 @@ namespace MotoManager.App
 
     /// <summary>
     /// Turns a bike's speed into revs and gear (six gears, up-shift near the limiter, down-shift when braking) and
-    /// a throttle position from its acceleration.
+    /// a throttle position from its acceleration. Races are usually watched at 4x or 8x: the bike's speed then
+    /// changes several times faster than in reality, so the revs follow it at the rate a real engine could (rise
+    /// and fall limited per real second), shifts are spaced out in real time and acceleration is measured in race
+    /// time. The result sounds like a bike lapping, not a recording played fast.
     /// </summary>
     public class Gearbox
     {
@@ -157,37 +160,51 @@ namespace MotoManager.App
         public float Throttle;
         private readonly float[] _top = { 0.30f, 0.44f, 0.58f, 0.72f, 0.86f, 1.0f };
         private double _lastSpeed, _accel;
-        private float _since;
-        private float _shiftDip;
+        private float _since, _shiftCooldown, _shiftDip;
+        private const float RiseRate = 9000f, FallRate = 14000f, ShiftGap = 0.35f;
 
-        public void Update(double speed, double topSpeed, float dt)
+        public void Update(double speed, double topSpeed, float dt, float playback = 1f)
         {
-            // The simulation moves in steps: measure the acceleration between real changes of speed.
+            playback = Mathf.Max(1f, playback);
+            // The simulation moves in steps: measure the acceleration between real changes of speed, in race time.
             _since += dt;
             if (Math.Abs(speed - _lastSpeed) > 1e-6 || _since > 0.5f)
             {
-                _accel = _since > 0 ? (speed - _lastSpeed) / _since : 0;
+                _accel = _since > 0 ? (speed - _lastSpeed) / (_since * playback) : 0;
                 _lastSpeed = speed;
                 _since = 0;
             }
             double accel = _accel;
-            Throttle = Mathf.Lerp(Throttle, accel > 0.3 ? 1f : accel < -1.5 ? 0f : 0.45f, Mathf.Clamp01(dt * 6));
+            float wanted = accel > 0.3 ? 1f : accel < -1.5 ? 0f : 0.45f;
+            // Throttle moves at human speed whatever the playback.
+            Throttle = Mathf.Lerp(Throttle, wanted, Mathf.Clamp01(dt * 4f));
             double top = Math.Max(40, topSpeed);
             float rpmFor(int g) => (float)(MaxRpm * Math.Min(1.05, speed / (top * _top[g - 1])));
+            _shiftCooldown = Mathf.Max(0, _shiftCooldown - dt);
             float r = rpmFor(Gear);
-            if (r > MaxRpm * 0.97f && Gear < 6)
+            if (_shiftCooldown <= 0)
             {
-                Gear++;
-                _shiftDip = 0.08f;
+                if (r > MaxRpm * 0.97f && Gear < 6 && Rpm > MaxRpm * 0.9f)
+                {
+                    Gear++;
+                    _shiftDip = 0.08f;
+                    _shiftCooldown = ShiftGap;
+                }
+                else if (Gear > 1 && rpmFor(Gear - 1) < MaxRpm * 0.85f && (r < MaxRpm * 0.62f || accel < -4))
+                {
+                    Gear--;
+                    _shiftCooldown = ShiftGap * 0.6f;
+                }
             }
-            else if (Gear > 1 && rpmFor(Gear - 1) < MaxRpm * 0.85f && (r < MaxRpm * 0.62f || accel < -4))
+            float target = Mathf.Max(IdleRpm, rpmFor(Gear));
+            if (_shiftDip > 0)
             {
-                Gear--;
+                _shiftDip = Mathf.Max(0, _shiftDip - dt);
+                target *= 0.88f;
             }
-            r = rpmFor(Gear);
-            // A brief dip at each up-shift, the clutch-less blip.
-            if (_shiftDip > 0) _shiftDip = Math.Max(0, _shiftDip - dt);
-            Rpm = Mathf.Max(IdleRpm, r * (1f - (_shiftDip > 0 ? 0.12f : 0f)));
+            // Revs can only rise and fall so fast in real time.
+            float step = (target > Rpm ? RiseRate : FallRate) * dt;
+            Rpm = Mathf.Clamp(Mathf.MoveTowards(Rpm, target, step), IdleRpm, MaxRpm * 1.02f);
         }
     }
 }

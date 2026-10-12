@@ -203,7 +203,7 @@ namespace MotoManager.App.Race
                 if (rr.Speed > _topSpeedSeen) _topSpeedSeen = rr.Speed;
             }
             var followed = Sim.Riders[SelectedRider];
-            GameAudio.RaceUpdate(followed.Speed, _topSpeedSeen, Mathf.Clamp01(1f - Cam.Distance / 450f), running, Speed <= 0 || Sim.IsFinished);
+            GameAudio.RaceUpdate(followed.Speed, _topSpeedSeen, Mathf.Clamp01(1f - Cam.Distance / 450f), running, Speed <= 0 || Sim.IsFinished, Speed);
 
             // The followed rider is out of the race: follow the next of the player's riders, or the leader.
             if (Cam.Mode == CameraMode.Follow && !Bikes[SelectedRider].Visible)
