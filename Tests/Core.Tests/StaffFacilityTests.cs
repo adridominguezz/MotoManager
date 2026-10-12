@@ -30,6 +30,10 @@ namespace MotoManager.Tests
                 Assert.All(StaffMarket.Candidates(world, db, small, role), c => Assert.True(c.Skill <= 64, c.Skill.ToString()));
                 Assert.Contains(StaffMarket.Candidates(world, db, top, role), c => c.Skill >= 80);
             }
+            // Someone hired from the list does not appear in it again.
+            var first = StaffMarket.Candidates(world, db, top, StaffRole.DataAnalyst)[0];
+            StaffMarket.Hire(world, top, first, db);
+            Assert.DoesNotContain(StaffMarket.Candidates(world, db, top, StaffRole.DataAnalyst), c => c.FullName == first.FullName);
             // A reputation gain opens better staff.
             Assert.True(StaffMarket.SkillCeiling(world, db, small) < StaffMarket.SkillCeiling(world, db, top));
         }

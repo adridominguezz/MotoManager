@@ -117,7 +117,7 @@ namespace MotoManager.App.UI.Screens
             {
                 case "nav.home": return UiIcons.Home;
                 case "nav.team": return UiIcons.Team;
-                case "nav.bike": return UiIcons.Bike;
+                case "nav.bike": return UiIcons.Development;
                 case "nav.finance": return UiIcons.Finance;
                 case "nav.market": return UiIcons.Market;
                 case "nav.competition": return UiIcons.Trophy;

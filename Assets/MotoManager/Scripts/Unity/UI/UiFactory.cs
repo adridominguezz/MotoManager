@@ -860,7 +860,7 @@ namespace MotoManager.App.UI
     {
         public const string Home = "home", Team = "team", Person = "person", Bike = "bike", Finance = "finance",
             Market = "market", Trophy = "trophy", Career = "career", Menu = "menu", Back = "back", Star = "star",
-            Sponsor = "sponsor", Flag = "flag";
+            Sponsor = "sponsor", Flag = "flag", Development = "development";
 
         private const int Size = 96, Samples = 3;
         private static readonly Dictionary<string, Sprite> Cache = new Dictionary<string, Sprite>();
@@ -870,6 +870,15 @@ namespace MotoManager.App.UI
         {
             Sprite s;
             if (Cache.TryGetValue(name, out s) && s != null) return s;
+            // Designed icons (white on transparent, Resources/Icons/<name>.png) win over the drawn fallbacks.
+            var art = Resources.Load<Texture2D>("Icons/" + name);
+            if (art != null)
+            {
+                s = Sprite.Create(art, new UnityEngine.Rect(0, 0, art.width, art.height), new Vector2(0.5f, 0.5f), 100);
+                Cache[name] = s;
+                return s;
+            }
+            if (name == Development) name = Bike;
             var tex = new Texture2D(Size, Size, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
             var px = new Color32[Size * Size];
             for (int y = 0; y < Size; y++)

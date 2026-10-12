@@ -289,7 +289,14 @@ namespace MotoManager.Core.Economy
             var list = new List<StaffMember>();
             double ceiling = SkillCeiling(world, db, team);
             double step = (ceiling - 8 - 35) / Math.Max(1, count - 1);
-            for (int i = 0; i < count; i++)
+            // People already in the team (hired from this list) do not show up again.
+            var taken = new HashSet<string>();
+            foreach (var id in team.StaffIds)
+            {
+                StaffMember m;
+                if (world.Staff.TryGetValue(id, out m)) taken.Add(m.FullName);
+            }
+            for (int i = 0; i < count + taken.Count && list.Count < count; i++)
             {
                 double level = 35 + i * step + rng.Range(-4, 4);
                 var s = StaffService.Generate(world, db, rng, role, null, level, StaffService.SalaryScale(world, db, team));
@@ -300,6 +307,7 @@ namespace MotoManager.Core.Economy
                     s.Salary = Math.Round(StaffService.SalaryFor(role, s.Skill, s.Experience) * StaffService.SalaryScale(world, db, team) / 1000) * 1000;
                 }
                 s.Id = "cand_" + team.Id + "_" + role + "_" + i;
+                if (taken.Contains(s.FullName)) continue;
                 s.ContractEndSeason = world.Season + 1;
                 list.Add(s);
             }
