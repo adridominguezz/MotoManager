@@ -30,7 +30,10 @@ namespace MotoManager.App.UI
             UiFactory.Stretch(bg.rectTransform);
             var title = UiFactory.Label("Title", root, "<b>" + Loc.T("quali.title") + "</b>  " + Theme.Dim(eventName), Theme.FontLarge - 4, TextAnchor.MiddleLeft);
             UiFactory.RaceTitle(title);
-            UiFactory.Place(title.rectTransform, 0.03f, 0.89f, 0.97f, 0.98f);
+            title.resizeTextForBestFit = true;
+            title.resizeTextMinSize = Theme.FontSmall;
+            title.resizeTextMaxSize = Theme.FontLarge - 4;
+            UiFactory.Place(title.rectTransform, 0.03f, 0.88f, 0.62f, 0.99f);
 
             // Best qualifying lap of every rider (all qualifying sessions: Q1/Q2, Superpole...).
             var best = new Dictionary<string, double>();
@@ -51,7 +54,7 @@ namespace MotoManager.App.UI
 
             // Left: the player's riders.
             var left = UiFactory.Rect("Mine", root);
-            UiFactory.Place(left, 0.03f, 0.12f, 0.36f, 0.87f);
+            UiFactory.Place(left, 0.02f, 0.02f, 0.36f, 0.86f);
             var layout = left.gameObject.AddComponent<UnityEngine.UI.VerticalLayoutGroup>();
             layout.spacing = 14;
             layout.childControlHeight = true;
@@ -61,19 +64,15 @@ namespace MotoManager.App.UI
             {
                 RaceEntry e;
                 if (!entries.TryGetValue(order[i], out e) || !e.IsPlayer) continue;
-                var card = Ui.Card(left, e.Rider.FullName, e.Team != null ? e.Team.Name : null);
                 double t;
                 best.TryGetValue(e.Rider.Id, out t);
-                Ui.Kpis(card,
-                    Ui.Kpi("<b>P" + (i + 1) + "</b>", Loc.T("quali.grid")),
-                    Ui.Kpi(t > 0 ? MathX.FormatLapTime(t) : "-", Loc.T("quali.best")),
-                    Ui.Kpi(i == 0 ? Theme.GoodText(Loc.T("quali.pole")) : t > 0 && pole > 0 ? "+" + (t - pole).ToString("0.000", Loc.Culture) : "-", Loc.T("quali.gap")));
-                Ui.Note(card, Loc.T("quali.row", (i / 3) + 1));
+                BigCard(left, e, i + 1, t > 0 ? MathX.FormatLapTime(t) : "-",
+                    i == 0 ? Theme.GoodText(Loc.T("quali.pole")) : t > 0 && pole > 0 ? "+" + (t - pole).ToString("0.000", Loc.Culture) : "-");
             }
 
             // Right: the grid.
             var list = UiFactory.ScrollList("Grid", root, 2);
-            UiFactory.Place((RectTransform)list.parent.parent, 0.38f, 0.12f, 0.97f, 0.87f);
+            UiFactory.Place((RectTransform)list.parent.parent, 0.38f, 0.02f, 0.99f, 0.86f);
             var w = new[] { 0.8f, 4f, 3f, 2f, 1.6f };
             UiFactory.TableRow(list, 34, w, new[] { Loc.T("post.col.pos"), Loc.T("col.rider"), Loc.T("col.team"), Loc.T("quali.best"), Loc.T("quali.gap") }, true);
             for (int i = 0; i < order.Count; i++)
@@ -83,15 +82,51 @@ namespace MotoManager.App.UI
                 double t;
                 best.TryGetValue(e.Rider.Id, out t);
                 string gap = i == 0 ? "" : t > 0 && pole > 0 ? "+" + (t - pole).ToString("0.000", Loc.Culture) : "";
-                UiFactory.TableRow(list, 36, w, new[]
+                UiFactory.TableRow(list, 46, w, new[]
                 {
                     (i + 1).ToString(), (e.IsPlayer ? "<b>" : "") + e.Rider.FullName + (e.IsPlayer ? "</b>" : ""),
                     e.Team != null ? e.Team.ShortName ?? e.Team.Name : "", t > 0 ? MathX.FormatLapTime(t) : "-", gap
                 }, false, e.IsPlayer ? new Color(0.94f, 0.7f, 0.16f, 0.16f) : (i % 3 == 0 ? new Color(1, 1, 1, 0.03f) : (Color?)null));
             }
 
-            var go = UiFactory.Button("Continue", root, Loc.T("quali.continue"), Continue, Theme.Accent, Theme.FontNormal);
-            UiFactory.Place((RectTransform)go.transform, 0.7f, 0.02f, 0.97f, 0.1f, 4);
+            var go = UiFactory.Button("Continue", root, Theme.Caps(Loc.T("quali.continue")) + "  ›", Continue, Theme.Accent, Theme.FontLarge - 4);
+            UiFactory.Slant(go.image, 2.4f);
+            go.GetComponentInChildren<UnityEngine.UI.Text>().fontStyle = FontStyle.BoldAndItalic;
+            UiFactory.Place((RectTransform)go.transform, 0.64f, 0.885f, 0.99f, 0.99f, 2);
+        }
+
+        /// <summary>A rider's qualifying in one big card: grid slot in a timing-yellow block, name, best lap and gap.</summary>
+        private static void BigCard(RectTransform parent, RaceEntry e, int grid, string time, string gap)
+        {
+            var card = UiFactory.Panel("Rider", parent, Theme.Panel);
+            UiFactory.Chamfer(card, 1.4f);
+            card.gameObject.AddComponent<UnityEngine.UI.LayoutElement>().preferredHeight = 190;
+            var teamColor = UiFactory.ParseColor(e.Team != null ? e.Team.Colors.Primary : null, Theme.Accent);
+            var stripe = UiFactory.Panel("Team", card.transform, teamColor);
+            UiFactory.Place(stripe.rectTransform, 0, 0, 0.02f, 1);
+            var pos = UiFactory.Panel("Grid", card.transform, Theme.Timing);
+            UiFactory.Slant(pos, 2.4f);
+            UiFactory.Place(pos.rectTransform, 0.05f, 0.3f, 0.36f, 0.9f);
+            var posText = UiFactory.Label("P", pos.transform, grid + "º", Theme.FontTitle, TextAnchor.MiddleCenter, new Color32(12, 13, 16, 255));
+            posText.fontStyle = FontStyle.BoldAndItalic;
+            posText.resizeTextForBestFit = true;
+            posText.resizeTextMinSize = Theme.FontNormal;
+            posText.resizeTextMaxSize = Theme.FontTitle;
+            UiFactory.Stretch(posText.rectTransform);
+            var first = UiFactory.Label("First", card.transform, e.Rider.FirstName, Theme.FontSmall - 4, TextAnchor.LowerLeft, Theme.TextDim);
+            UiFactory.Place(first.rectTransform, 0.4f, 0.62f, 0.98f, 0.92f);
+            var last = UiFactory.Label("Last", card.transform, Theme.Caps(e.Rider.LastName), Theme.FontLarge, TextAnchor.UpperLeft);
+            last.fontStyle = FontStyle.BoldAndItalic;
+            last.resizeTextForBestFit = true;
+            last.resizeTextMinSize = Theme.FontSmall;
+            last.resizeTextMaxSize = Theme.FontLarge;
+            UiFactory.Place(last.rectTransform, 0.4f, 0.3f, 0.98f, 0.62f);
+            var line = UiFactory.Label("Time", card.transform, "<b>" + time + "</b>   " + gap, Theme.FontSmall, TextAnchor.MiddleLeft);
+            line.supportRichText = true;
+            line.resizeTextForBestFit = true;
+            line.resizeTextMinSize = Theme.FontSmall - 8;
+            line.resizeTextMaxSize = Theme.FontSmall;
+            UiFactory.Place(line.rectTransform, 0.05f, 0.04f, 0.98f, 0.28f);
         }
 
         private void Continue()
