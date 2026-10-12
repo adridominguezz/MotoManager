@@ -42,9 +42,10 @@ namespace MotoManager.App.UI.Screens
     }
 
     /// <summary>
-    /// The career interface: a navigation rail with six sections, a header with the team, money, date and the
-    /// main action ("Continue"), tabs for the pages of a section, and the active page. Long simulations run on the
-    /// session's worker thread while a progress label is shown.
+    /// The career interface, laid out like a mobile motorsport manager: a slim icon rail on the left (the ☰ menu on
+    /// top, then one big pictogram per section), a slim top bar (back, team, resource pills and the main action),
+    /// tabs for the pages of a section, and the active page. Long simulations run on the session's worker thread
+    /// while a progress label is shown.
     /// </summary>
     public class ManagementShell : MonoBehaviour
     {
@@ -53,6 +54,9 @@ namespace MotoManager.App.UI.Screens
         private readonly List<Image> _navButtons = new List<Image>();
         private RectTransform _content;
         private RectTransform _tabs;
+        private RectTransform _pills;
+        private RectTransform _info;
+        private Button _back;
         private Text _header;
         private Text _subHeader;
         private Text _busy;
@@ -66,10 +70,18 @@ namespace MotoManager.App.UI.Screens
         // Purely visual parts recoloured when the section changes.
         private readonly List<Text> _navLabels = new List<Text>();
         private readonly List<Image> _navBars = new List<Image>();
-        private readonly List<Image> _navDots = new List<Image>();
-        private Text _logo;
+        private readonly List<Image> _navIcons = new List<Image>();
         private readonly List<Image> _livery = new List<Image>();
         private Image _headerLine;
+        /// <summary>Where the back button returns to: pages opened from another page (hub tiles, shortcuts).</summary>
+        private readonly List<KeyValuePair<Section, int>> _history = new List<KeyValuePair<Section, int>>();
+
+        /// <summary>Height of the top bar and of the tab strip, in canvas units (touch-sized on a phone).</summary>
+        public const float TopBarHeight = 84;
+        private const float TabHeight = 62;
+        /// <summary>Width of the main action button in the top bar.</summary>
+        private const float GoWidth = 250;
+        private const float PillsWidth = 470;
 
         /// <summary>Result of the last simulated or played event, shown on the home page.</summary>
         public string LastResult = "";
@@ -98,6 +110,22 @@ namespace MotoManager.App.UI.Screens
             return s;
         }
 
+        /// <summary>The pictogram of each rail section.</summary>
+        private static string IconOf(string key)
+        {
+            switch (key)
+            {
+                case "nav.home": return UiIcons.Home;
+                case "nav.team": return UiIcons.Team;
+                case "nav.bike": return UiIcons.Bike;
+                case "nav.finance": return UiIcons.Finance;
+                case "nav.market": return UiIcons.Market;
+                case "nav.competition": return UiIcons.Trophy;
+                case "nav.career": return UiIcons.Career;
+            }
+            return UiIcons.Flag;
+        }
+
         private void Build(RectTransform root)
         {
             var bg = UiFactory.Panel("Background", root, Theme.Background);
@@ -118,96 +146,128 @@ namespace MotoManager.App.UI.Screens
                 _livery.Add(band);
             }
 
-            // Header: who and where we are, money, and the main action.
-            var header = UiFactory.Panel("Header", root, Color.Lerp(Theme.Background, Theme.Panel, 0.5f));
-            UiFactory.Place(header.rectTransform, 0, 0.9f, 1, 1);
+            // ---- Top bar: back, the team, resource pills and the main action.
+            var header = UiFactory.Panel("TopBar", root, Color.Lerp(Theme.Background, Theme.Panel, 0.55f));
+            var hrt = header.rectTransform;
+            hrt.anchorMin = new Vector2(RailWidth, 1);
+            hrt.anchorMax = new Vector2(1, 1);
+            hrt.pivot = new Vector2(0.5f, 1);
+            hrt.offsetMin = new Vector2(0, -TopBarHeight);
+            hrt.offsetMax = Vector2.zero;
             UiFactory.Gradient(header, 1.15f, 0.95f);
             UiFactory.DropShadow(header, 0.45f, 3);
-            // Logo: a black plate with an italic wordmark and a chequered-flag edge.
-            var plate = UiFactory.Panel("LogoPlate", header.transform, new Color(0.02f, 0.02f, 0.025f, 1));
-            UiFactory.Place(plate.rectTransform, 0, 0, 0.14f, 1);
-            plate.raycastTarget = false;
-            plate.gameObject.AddComponent<RectMask2D>();
-            var flag = UiFactory.Chequered(plate.transform, 0.84f, 0, 1, 1, 9, 0.9f);
-            UiFactory.Gradient(flag, new Color(1, 1, 1, 0.15f), Color.white, true);
-            var logo = _logo = UiFactory.Label("Logo", plate.transform, LogoText(), Theme.FontSmall + 2, TextAnchor.MiddleLeft, Theme.Text);
-            logo.supportRichText = true;
-            logo.fontStyle = FontStyle.Italic;
-            logo.lineSpacing = 0.85f;
-            logo.resizeTextForBestFit = true;
-            logo.resizeTextMinSize = Theme.FontSmall - 8;
-            logo.resizeTextMaxSize = Theme.FontSmall + 2;
-            UiFactory.DropShadow(logo, 0.6f, 2);
-            UiFactory.Place(logo.rectTransform, 0.1f, 0.08f, 0.8f, 0.92f);
-            // Faint hatching in the free middle of the header, behind the date line.
-            var hatch = UiFactory.Pattern("Hatch", header.transform, UiFactory.StripesSprite, new Color(1, 1, 1, 0.03f), 20);
-            UiFactory.Place(hatch.rectTransform, 0.42f, 0, 0.565f, 1);
-            UiFactory.Gradient(hatch, new Color(1, 1, 1, 0), Color.white, true);
-            // Team-coloured line along the bottom of the header, fading to the right.
             _headerLine = UiFactory.Decor("AccentLine", header.transform, Theme.Accent);
             _headerLine.rectTransform.anchorMin = new Vector2(0, 0);
             _headerLine.rectTransform.anchorMax = new Vector2(1, 0);
             _headerLine.rectTransform.offsetMin = new Vector2(0, 0);
             _headerLine.rectTransform.offsetMax = new Vector2(0, 3);
             UiFactory.Gradient(_headerLine, Color.white, new Color(1, 1, 1, 0.05f), true);
-            _header = UiFactory.Label("Team", header.transform, "", Theme.FontNormal + 2, TextAnchor.LowerLeft);
+
+            // Back: a red slanted block with a chevron, only inside a sub-page.
+            _back = UiFactory.Button("Back", header.transform, "", Back, Theme.Brand, Theme.FontNormal);
+            UiFactory.Slant(_back.image, 2.4f);
+            var brt = (RectTransform)_back.transform;
+            brt.anchorMin = new Vector2(0, 0);
+            brt.anchorMax = new Vector2(0, 1);
+            brt.pivot = new Vector2(0, 0.5f);
+            brt.offsetMin = new Vector2(6, 10);
+            brt.offsetMax = new Vector2(92, -10);
+            var chevron = UiIcons.Icon(_back.transform, UiIcons.Back, Color.white);
+            UiFactory.Place(chevron.rectTransform, 0.2f, 0.18f, 0.8f, 0.82f);
+
+            // Team name (bold italic caps) and one small info line under it.
+            _info = UiFactory.Rect("Info", header.transform);
+            _header = UiFactory.Label("Team", _info, "", Theme.FontNormal + 2, TextAnchor.LowerLeft);
             _header.supportRichText = true;
-            _header.fontStyle = FontStyle.Italic;
+            _header.fontStyle = FontStyle.BoldAndItalic;
+            _header.resizeTextForBestFit = true;
+            _header.resizeTextMinSize = Theme.FontSmall - 4;
+            _header.resizeTextMaxSize = Theme.FontNormal + 2;
             UiFactory.DropShadow(_header, 0.45f, 2);
-            UiFactory.Place(_header.rectTransform, 0.155f, 0.48f, 0.56f, 0.96f);
-            _subHeader = UiFactory.Label("Date", header.transform, "", Theme.FontSmall - 2, TextAnchor.UpperLeft, Theme.TextDim);
+            UiFactory.Place(_header.rectTransform, 0, 0.46f, 1, 0.96f);
+            _subHeader = UiFactory.Label("Date", _info, "", Theme.FontSmall - 4, TextAnchor.UpperLeft, Theme.TextDim);
             _subHeader.supportRichText = true;
-            UiFactory.Place(_subHeader.rectTransform, 0.155f, 0.04f, 0.56f, 0.48f);
-            _busy = UiFactory.Label("Busy", header.transform, "", Theme.FontSmall, TextAnchor.MiddleRight, Theme.Warning);
-            UiFactory.Place(_busy.rectTransform, 0.3f, 0, 0.56f, 1);
-            bool compact = UiScale.Compact;
-            if (compact)
-            {
-                // Small screens: no logo plate, the team line starts at the edge, and Save / Menu / text size live
-                // in one menu button.
-                plate.gameObject.SetActive(false);
-                hatch.gameObject.SetActive(false);
-                UiFactory.Place(_header.rectTransform, 0.1f, 0.48f, 0.66f, 0.96f);
-                UiFactory.Place(_subHeader.rectTransform, 0.1f, 0.04f, 0.66f, 0.48f);
-                UiFactory.Place(_busy.rectTransform, 0.3f, 0, 0.66f, 1);
-                var more = UiFactory.Button("MenuButton", header.transform, "☰", ToggleMenu, Theme.PanelLight, Theme.FontLarge);
-                UiFactory.Place((RectTransform)more.transform, 0.005f, 0.1f, 0.09f, 0.9f, 4);
-            }
-            else
-            {
-                var menu = UiFactory.Button("Menu", header.transform, Loc.T("shell.menu"), ExitToMenu, Theme.PanelLight, Theme.FontSmall);
-                UiFactory.Place((RectTransform)menu.transform, 0.57f, 0.16f, 0.665f, 0.84f, 4);
-                var save = UiFactory.Button("Save", header.transform, Loc.T("shell.save"), () => { Session.Save(); Toast(Loc.T("shell.saved")); }, Theme.PanelLight, Theme.FontSmall);
-                UiFactory.Place((RectTransform)save.transform, 0.67f, 0.16f, 0.77f, 0.84f, 4);
-            }
-            var go = UiFactory.Button("Continue", header.transform, "", Continue, Theme.Accent, Theme.FontNormal);
-            UiFactory.Place((RectTransform)go.transform, compact ? 0.68f : 0.78f, 0.12f, 0.99f, 0.88f, 4);
+            _subHeader.resizeTextForBestFit = true;
+            _subHeader.resizeTextMinSize = Theme.FontSmall - 10;
+            _subHeader.resizeTextMaxSize = Theme.FontSmall - 4;
+            UiFactory.Place(_subHeader.rectTransform, 0, 0.06f, 1, 0.46f);
+            _busy = UiFactory.Label("Busy", _info, "", Theme.FontSmall - 4, TextAnchor.UpperRight, Theme.Warning);
+            _busy.alignment = TextAnchor.UpperLeft;
+            UiFactory.Place(_busy.rectTransform, 0, 0.06f, 1, 0.46f);
+
+            // Resource pills (cash, reputation, championship), right-aligned before the main action.
+            _pills = UiFactory.Rect("Pills", header.transform);
+            _pills.anchorMin = new Vector2(1, 0);
+            _pills.anchorMax = new Vector2(1, 1);
+            _pills.pivot = new Vector2(1, 0.5f);
+            _pills.offsetMin = new Vector2(-GoWidth - 16 - PillsWidth, 12);
+            _pills.offsetMax = new Vector2(-GoWidth - 16, -12);
+            var ph = _pills.gameObject.AddComponent<HorizontalLayoutGroup>();
+            ph.spacing = 8;
+            ph.childAlignment = TextAnchor.MiddleRight;
+            ph.childControlWidth = true;
+            ph.childControlHeight = true;
+            ph.childForceExpandWidth = false;
+            ph.childForceExpandHeight = true;
+
+            // The main action: a big slanted accent block ("CARRERA ›").
+            var go = UiFactory.Button("Continue", header.transform, "", Continue, Theme.Accent, Theme.FontNormal + 2);
+            var grt = (RectTransform)go.transform;
+            grt.anchorMin = new Vector2(1, 0);
+            grt.anchorMax = new Vector2(1, 1);
+            grt.pivot = new Vector2(1, 0.5f);
+            grt.offsetMin = new Vector2(-GoWidth - 6, 8);
+            grt.offsetMax = new Vector2(-6, -8);
             _continueLabel = go.GetComponentInChildren<Text>();
             _continueLabel.supportRichText = true;
-            _continueLabel.fontStyle = FontStyle.Italic;
-            // The main action is a slanted accent block (like a "GO" board), with a thin light rim.
+            _continueLabel.fontStyle = FontStyle.BoldAndItalic;
+            _continueLabel.resizeTextForBestFit = true;
+            _continueLabel.resizeTextMinSize = Theme.FontSmall - 4;
+            _continueLabel.resizeTextMaxSize = Theme.FontNormal + 2;
+            _continueLabel.rectTransform.offsetMin = new Vector2(18, 0);
+            _continueLabel.rectTransform.offsetMax = new Vector2(-18, 0);
             UiFactory.Slant(go.image, 2f);
-            go.gameObject.AddComponent<Outline>().effectColor = new Color(1, 1, 1, 0.12f);
-            UiFactory.Gradient(go.image, 1.12f, 0.88f);
+            go.gameObject.AddComponent<Outline>().effectColor = new Color(1, 1, 1, 0.14f);
+            UiFactory.Gradient(go.image, 1.15f, 0.85f);
 
-            var rail = UiFactory.Panel("Rail", root, Color.Lerp(Theme.Background, Theme.Panel, 0.75f));
-            UiFactory.Place(rail.rectTransform, 0, 0, RailWidth, 0.9f);
+            // ---- Icon rail: the ☰ menu in the top cell, then one big pictogram per section with a tiny caption.
+            var rail = UiFactory.Panel("Rail", root, Color.Lerp(Theme.Background, Theme.Panel, 0.7f));
+            UiFactory.Place(rail.rectTransform, 0, 0, RailWidth, 1);
             UiFactory.Gradient(rail, 1.08f, 0.9f);
+            UiFactory.DropShadow(rail, 0.4f, 2);
             var edge = UiFactory.Decor("Edge", rail.transform, new Color(1, 1, 1, 0.06f));
             edge.rectTransform.anchorMin = new Vector2(1, 0);
             edge.rectTransform.anchorMax = new Vector2(1, 1);
             edge.rectTransform.offsetMin = new Vector2(-2, 0);
             edge.rectTransform.offsetMax = Vector2.zero;
-            var layout = rail.gameObject.AddComponent<VerticalLayoutGroup>();
-            layout.padding = compact ? new RectOffset(6, 6, 8, 8) : new RectOffset(12, 12, 16, 16);
-            layout.spacing = compact ? 5 : 10;
+            var more = UiFactory.Button("MenuButton", rail.transform, "", ToggleMenu, new Color(0, 0, 0, 0.35f), Theme.FontLarge);
+            more.image.sprite = null;
+            var mrt = (RectTransform)more.transform;
+            mrt.anchorMin = new Vector2(0, 1);
+            mrt.anchorMax = new Vector2(1, 1);
+            mrt.pivot = new Vector2(0.5f, 1);
+            mrt.offsetMin = new Vector2(0, -TopBarHeight);
+            mrt.offsetMax = Vector2.zero;
+            var menuIcon = UiIcons.Icon(more.transform, UiIcons.Menu, Theme.Text);
+            UiFactory.Place(menuIcon.rectTransform, 0.25f, 0.22f, 0.75f, 0.78f);
+            var nav = UiFactory.Rect("Nav", rail.transform);
+            UiFactory.Stretch(nav);
+            nav.offsetMax = new Vector2(0, -TopBarHeight - 4);
+            nav.offsetMin = new Vector2(0, 4);
+            var layout = nav.gameObject.AddComponent<VerticalLayoutGroup>();
+            layout.padding = new RectOffset(0, 2, 0, 0);
+            layout.spacing = 2;
             layout.childControlHeight = true;
             layout.childControlWidth = true;
-            // Compact: the sections share the rail's height instead of overflowing it.
-            layout.childForceExpandHeight = compact;
+            layout.childForceExpandHeight = true;
+            layout.childForceExpandWidth = true;
 
             _tabs = UiFactory.Rect("Tabs", root);
-            UiFactory.Place(_tabs, RailWidth + 0.01f, 0.82f, 0.99f, 0.885f);
+            _tabs.anchorMin = new Vector2(RailWidth, 1);
+            _tabs.anchorMax = new Vector2(1, 1);
+            _tabs.pivot = new Vector2(0.5f, 1);
+            _tabs.offsetMin = new Vector2(12, -TopBarHeight - 6 - TabHeight);
+            _tabs.offsetMax = new Vector2(-12, -TopBarHeight - 6);
             _content = UiFactory.Rect("Content", root);
 
             _toastBg = UiFactory.Panel("Toast", root, Theme.Alpha(Theme.Panel, 0.98f));
@@ -234,29 +294,30 @@ namespace MotoManager.App.UI.Screens
             foreach (var s in _sections)
             {
                 var section = s;
-                var b = UiFactory.Button("Nav", rail.transform, Loc.T(s.TitleKey), () => Show(section), Theme.PanelLight, Theme.FontSmall + 2);
-                var navLe = b.gameObject.AddComponent<LayoutElement>();
-                navLe.preferredHeight = compact ? 50 : 86;
-                if (compact) navLe.flexibleHeight = 1;
-                _navButtons.Add(b.GetComponent<Image>());
-                // Pit-board style entries: upper-case labels, a small slanted marker (accent when open, steel
-                // otherwise) and an accent bar on the left edge of the open section.
+                // A rail entry: the open section is a lighter full-height block with an accent edge bar, a white
+                // pictogram and caption; the others are flat with grey ones.
+                var b = UiFactory.Button("Nav", nav, "", () =>
+                {
+                    _history.Clear();
+                    Show(section);
+                }, Color.clear, Theme.FontSmall);
+                b.image.sprite = null;
+                b.gameObject.AddComponent<LayoutElement>().flexibleHeight = 1;
+                _navButtons.Add(b.image);
+                var icon = UiIcons.Icon(b.transform, IconOf(s.TitleKey), Theme.TextDim);
+                UiFactory.Place(icon.rectTransform, 0.18f, 0.36f, 0.82f, 0.9f);
+                _navIcons.Add(icon);
                 var label = b.GetComponentInChildren<Text>();
-                label.text = Theme.Caps(label.text);
-                label.alignment = TextAnchor.MiddleLeft;
-                label.rectTransform.offsetMin = new Vector2(compact ? 34 : 46, 0);
-                label.rectTransform.offsetMax = new Vector2(-6, 0);
+                label.text = Theme.Caps(Loc.T(s.TitleKey));
+                label.alignment = TextAnchor.MiddleCenter;
+                UiFactory.Place(label.rectTransform, 0, 0.04f, 1, 0.36f);
+                label.rectTransform.offsetMin = new Vector2(4, 0);
+                label.rectTransform.offsetMax = new Vector2(-4, 0);
                 label.resizeTextForBestFit = true;
-                label.resizeTextMinSize = Theme.FontSmall - 6;
-                label.resizeTextMaxSize = Theme.FontSmall + 2;
+                label.resizeTextMinSize = 10;
+                label.resizeTextMaxSize = Theme.FontSmall - 6;
                 _navLabels.Add(label);
-                var dot = UiFactory.Decor("Dot", b.transform, Theme.Steel);
-                UiFactory.Slant(dot, 5f);
-                dot.rectTransform.anchorMin = dot.rectTransform.anchorMax = new Vector2(0, 0.5f);
-                dot.rectTransform.anchoredPosition = new Vector2(compact ? 18 : 26, 0);
-                dot.rectTransform.sizeDelta = new Vector2(14, 20);
-                _navDots.Add(dot);
-                var bar = UiFactory.SideStripe(b.transform, Theme.Accent, 5, 9);
+                var bar = UiFactory.SideStripe(b.transform, Theme.Accent, 6, 0);
                 _navBars.Add(bar);
             }
             Show(_sections[0]);
@@ -276,25 +337,37 @@ namespace MotoManager.App.UI.Screens
             for (int i = 0; i < _sections.Count; i++)
             {
                 bool on = _sections[i] == section;
-                // Open section: a lighter graphite plate, white bold italic label, accent marker and edge bar.
-                _navButtons[i].color = on ? Theme.PanelLight : Color.Lerp(Theme.Background, Theme.Panel, 0.9f);
-                _navLabels[i].color = on ? Color.white : Color.Lerp(Theme.TextDim, Color.white, 0.2f);
-                _navLabels[i].fontStyle = on ? FontStyle.BoldAndItalic : FontStyle.Normal;
-                _navDots[i].color = on ? accent : Theme.Alpha(Theme.Steel, 0.6f);
+                _navButtons[i].color = on ? Theme.PanelLight : Color.clear;
+                _navLabels[i].color = on ? Color.white : Color.Lerp(Theme.TextDim, Color.white, 0.1f);
+                _navLabels[i].fontStyle = on ? FontStyle.BoldAndItalic : FontStyle.Bold;
+                _navIcons[i].color = on ? Color.white : Theme.Alpha(Theme.TextDim, 0.85f);
                 _navBars[i].color = accent;
                 _navBars[i].gameObject.SetActive(on);
             }
             _headerLine.color = accent;
-            if (_logo != null) _logo.text = LogoText();
             for (int i = 0; i < _livery.Count; i++) _livery[i].color = Theme.Alpha(accent, i == 0 ? 0.05f : 0.08f);
             Refresh();
         }
 
-        private RectTransform _menuPanel;
-        /// <summary>Width of the navigation rail (narrower on the phone layout: more room for content).</summary>
-        private static float RailWidth { get { return UiScale.Compact ? 0.115f : 0.14f; } }
+        /// <summary>Back to the page this one was opened from, or to the hub.</summary>
+        public void Back()
+        {
+            if (_history.Count > 0)
+            {
+                var last = _history[_history.Count - 1];
+                _history.RemoveAt(_history.Count - 1);
+                last.Key.Current = last.Value;
+                Show(last.Key);
+                return;
+            }
+            Show(_sections[0]);
+        }
 
-        /// <summary>Compact header menu: save, back to the start screen, text size.</summary>
+        private RectTransform _menuPanel;
+        /// <summary>Width of the icon rail (a slim strip: the room goes to the content).</summary>
+        public static float RailWidth { get { return 0.095f; } }
+
+        /// <summary>Menu (☰ at the top of the rail): save, save slots, back to the start screen, sound, text size.</summary>
         private void ToggleMenu()
         {
             if (_menuPanel != null)
@@ -310,12 +383,13 @@ namespace MotoManager.App.UI.Screens
             _menuPanel = shade.rectTransform;
             var panel = UiFactory.Panel("Menu", shade.transform, Theme.Panel);
             UiFactory.Chamfer(panel, 1.6f);
-            // Just under the header, from the left edge: four rows that always fit a phone screen.
+            // Beside the ☰ button, at the top of the screen: rows that always fit a phone screen.
             var prt = panel.rectTransform;
-            prt.anchorMin = new Vector2(0.01f, 0.895f);
-            prt.anchorMax = new Vector2(0.42f, 0.895f);
+            prt.anchorMin = new Vector2(RailWidth, 1);
+            prt.anchorMax = new Vector2(Mathf.Min(0.99f, RailWidth + 0.42f), 1);
             prt.pivot = new Vector2(0, 1);
-            prt.offsetMin = prt.offsetMax = Vector2.zero;
+            prt.offsetMin = new Vector2(6, -8);
+            prt.offsetMax = new Vector2(0, -8);
             panel.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
             var v = panel.gameObject.AddComponent<VerticalLayoutGroup>();
             v.padding = new RectOffset(12, 12, 12, 12);
@@ -359,19 +433,21 @@ namespace MotoManager.App.UI.Screens
             Refresh();
         }
 
-        /// <summary>The wordmark: "MOTO" in white, "MANAGER" in the team colour.</summary>
-        private static string LogoText()
-        {
-            return "<b>MOTO</b>\n<color=#" + ColorUtility.ToHtmlStringRGB(Color.Lerp(Theme.Accent, Color.white, 0.1f)) + "><b>MANAGER</b></color>";
-        }
-
-        /// <summary>Opens the section and tab holding a page of this type.</summary>
+        /// <summary>
+        /// Opens the section and tab holding a page of this type. The page it was opened from is remembered, so the
+        /// back button returns there.
+        /// </summary>
         public void Show<T>() where T : ScreenBase
         {
             foreach (var s in _sections)
                 for (int i = 0; i < s.Pages.Count; i++)
                     if (s.Pages[i] is T)
                     {
+                        if (_section != null && !(_section == s && _section.Current == i))
+                        {
+                            _history.Add(new KeyValuePair<Section, int>(_section, _section.Current));
+                            if (_history.Count > 20) _history.RemoveAt(0);
+                        }
                         s.Current = i;
                         Show(s);
                         return;
@@ -389,7 +465,7 @@ namespace MotoManager.App.UI.Screens
             _toastUntil = Time.unscaledTime + 4f;
         }
 
-        /// <summary>Rebuilds the header and the current page (call after anything changes the world).</summary>
+        /// <summary>Rebuilds the top bar and the current page (call after anything changes the world).</summary>
         public void Refresh()
         {
             var game = Session.Game;
@@ -400,22 +476,33 @@ namespace MotoManager.App.UI.Screens
             Theme.SetTeamColors(team != null ? team.Colors.Primary : null, team != null ? team.Colors.Secondary : null);
             if (_section != null) Theme.SetAccent(Theme.SectionAccent(_section.TitleKey));
             _headerLine.color = Theme.Accent;
-            _logo.text = LogoText();
+
+            // Top bar: back (inside a sub-page), the team and one info line, the pills and the main action.
+            bool sub = _section != _sections[0];
+            _back.gameObject.SetActive(sub);
+            _info.anchorMin = new Vector2(0, 0);
+            _info.anchorMax = new Vector2(1, 1);
+            _info.offsetMin = new Vector2(sub ? 106 : 18, 0);
+            _info.offsetMax = new Vector2(-GoWidth - 24 - (team != null ? PillsWidth : 0), 0);
             var next = NextOwnEvent();
-            _header.text = "<b>" + (team != null ? team.Name : Loc.T("shell.noTeam")) + "</b>" +
-                           (team != null ? "    " + Theme.Money(Accounts.Cash(world, team)) : "");
-            _subHeader.text = world.CurrentDate.ToString("d MMM yyyy", Loc.Culture) + "  ·  " + Loc.T("shell.season", world.Season) +
-                              (next != null ? "  ·  " + Loc.T("shell.next", Loc.Round(next.Round.Name)) : "");
-            _continueLabel.text = "<b>" + ContinueLabel() + "</b>   ►";
+            _header.text = Theme.Caps(team != null ? team.Name : Loc.T("shell.noTeam"));
+            string page = sub ? Theme.Caps(_section.Pages[Mathf.Clamp(_section.Current, 0, _section.Pages.Count - 1)].Title) + "  ·  " : "";
+            _subHeader.text = page + world.CurrentDate.ToString("d MMM yyyy", Loc.Culture) +
+                              (next != null ? "  ·  " + Loc.Round(next.Round.Name) : "  ·  " + Loc.T("shell.season", world.Season));
+            _continueLabel.text = Theme.Caps(ContinueShort()) + "  ›";
+            BuildPills(world, team);
 
             UiFactory.Clear(_tabs);
             bool tabs = _section.Pages.Count > 1;
             _tabs.gameObject.SetActive(tabs);
-            UiFactory.Place(_content, RailWidth + 0.01f, 0.01f, 0.995f, tabs ? 0.815f : 0.89f);
+            _content.anchorMin = new Vector2(RailWidth, 0);
+            _content.anchorMax = new Vector2(1, 1);
+            _content.offsetMin = new Vector2(8, 6);
+            _content.offsetMax = new Vector2(-8, -TopBarHeight - (tabs ? TabHeight + 10 : 6));
             if (tabs)
             {
-                // Timing-screen tabs: slanted graphite segments with upper-case labels; the open tab is lighter,
-                // bold italic, with an accent bar along its base. A thin rule runs under the whole strip.
+                // Tabs: slanted graphite segments with upper-case labels; the open tab is lighter, bold italic,
+                // with an accent bar along its base. A thin rule runs under the whole strip.
                 var rule = UiFactory.Decor("TabRule", _tabs, new Color(1, 1, 1, 0.08f));
                 rule.rectTransform.anchorMin = new Vector2(0, 0);
                 rule.rectTransform.anchorMax = new Vector2(1, 0);
@@ -433,12 +520,12 @@ namespace MotoManager.App.UI.Screens
                         Refresh();
                     }, on ? Theme.PanelLight : Color.Lerp(Theme.Background, Theme.Panel, 0.85f), Theme.FontSmall);
                     UiFactory.Slant(b.image, 2.4f);
-                    UiFactory.Place((RectTransform)b.transform, i * 0.2f, 0, i * 0.2f + 0.195f, 1, 3);
+                    UiFactory.Place((RectTransform)b.transform, i * 0.2f, 0, i * 0.2f + 0.195f, 1, 2);
                     var label = b.GetComponentInChildren<Text>();
                     label.color = on ? Color.white : Color.Lerp(Theme.TextDim, Color.white, 0.2f);
-                    label.fontStyle = on ? FontStyle.BoldAndItalic : FontStyle.Normal;
-                    label.rectTransform.offsetMin = new Vector2(10, 0);
-                    label.rectTransform.offsetMax = new Vector2(-10, 0);
+                    label.fontStyle = on ? FontStyle.BoldAndItalic : FontStyle.Bold;
+                    label.rectTransform.offsetMin = new Vector2(12, 0);
+                    label.rectTransform.offsetMax = new Vector2(-12, 0);
                     label.resizeTextForBestFit = true;
                     label.resizeTextMinSize = Theme.FontSmall - 6;
                     label.resizeTextMaxSize = Theme.FontSmall;
@@ -453,6 +540,58 @@ namespace MotoManager.App.UI.Screens
             }
             UiFactory.Clear(_content);
             _section.Pages[Mathf.Clamp(_section.Current, 0, _section.Pages.Count - 1)].Build(_content);
+        }
+
+        /// <summary>Compact resource pills: cash, reputation and the team's championship position.</summary>
+        private void BuildPills(Core.World.WorldState world, Core.World.Team team)
+        {
+            UiFactory.Clear(_pills);
+            if (team == null) return;
+            Core.World.ChampionshipState champ;
+            int pos = 0;
+            double pts = 0;
+            if (world.Championships.TryGetValue(team.CategoryId, out champ))
+            {
+                var table = champ.SortedTeams();
+                for (int i = 0; i < table.Count; i++)
+                    if (table[i].Id == team.Id) { pos = i + 1; pts = table[i].Points; }
+            }
+            Pill(Loc.T("home.tile.cash"), Theme.Money(Accounts.Cash(world, team)), null, 170, () => Show<FinanceScreen>());
+            Pill(Loc.T("shell.rep"), team.Reputation.ToString("0"), UiIcons.Star, 130, null);
+            Pill(Loc.T("home.tile.championship"), (pos > 0 ? "P" + pos : "-") + "  " + Theme.Dim(Loc.T("home.tile.points", pts.ToString("0"))), null, 160, () => Show<StandingsScreen>());
+        }
+
+        private void Pill(string caption, string value, string icon, float width, System.Action onTap)
+        {
+            var b = UiFactory.Button("Pill", _pills, "", onTap, new Color(0, 0, 0, 0.4f), Theme.FontSmall);
+            UiFactory.Slant(b.image, 3f);
+            b.interactable = onTap != null;
+            var colors = b.colors;
+            colors.disabledColor = Color.white;
+            b.colors = colors;
+            b.gameObject.AddComponent<Outline>().effectColor = new Color(1, 1, 1, 0.07f);
+            var le = b.gameObject.AddComponent<LayoutElement>();
+            le.preferredWidth = width;
+            le.minWidth = width * 0.7f;
+            var label = b.GetComponentInChildren<Text>();
+            label.supportRichText = true;
+            label.alignment = TextAnchor.MiddleCenter;
+            label.text = "<size=" + (Theme.FontSmall - 8) + ">" + Theme.Dim(Theme.Caps(caption)) + "</size>\n<b>" + value + "</b>";
+            label.lineSpacing = 0.9f;
+            label.resizeTextForBestFit = true;
+            label.resizeTextMinSize = Theme.FontSmall - 8;
+            label.resizeTextMaxSize = Theme.FontSmall + 2;
+            label.rectTransform.offsetMin = new Vector2(icon != null ? 40 : 12, 0);
+            label.rectTransform.offsetMax = new Vector2(-12, 0);
+            if (icon != null)
+            {
+                var img = UiIcons.Icon(b.transform, icon, Theme.Timing);
+                img.rectTransform.anchorMin = new Vector2(0, 0.5f);
+                img.rectTransform.anchorMax = new Vector2(0, 0.5f);
+                img.rectTransform.pivot = new Vector2(0, 0.5f);
+                img.rectTransform.anchoredPosition = new Vector2(14, 0);
+                img.rectTransform.sizeDelta = new Vector2(28, 28);
+            }
         }
 
         /// <summary>Saves and goes back to the start screen (continue, new career, language).</summary>
@@ -473,11 +612,12 @@ namespace MotoManager.App.UI.Screens
             return team != null ? game.PeekNextEventFor(team.CategoryId) : game.PeekNextEvent();
         }
 
-        private string ContinueLabel()
+        /// <summary>One or two words for the main action ("Carrera", "Simular", "Cerrar temp.").</summary>
+        public string ContinueShort()
         {
-            if (Session.Game.World.PlayerTeam == null) return Session.Game.IsSeasonOver ? Loc.T("shell.closeSeason") : Loc.T("shell.simulate");
-            if (NextOwnEvent() != null) return Loc.T("shell.goRace");
-            return Session.Game.IsSeasonOver ? Loc.T("shell.closeSeason") : Loc.T("shell.finishSeason");
+            if (Session.Game.World.PlayerTeam == null) return Session.Game.IsSeasonOver ? Loc.T("shell.short.close") : Loc.T("shell.short.simulate");
+            if (NextOwnEvent() != null) return Loc.T("shell.short.race");
+            return Session.Game.IsSeasonOver ? Loc.T("shell.short.close") : Loc.T("shell.short.finish");
         }
 
         /// <summary>
@@ -604,6 +744,8 @@ namespace MotoManager.App.UI.Screens
                 foreach (var b in GetComponentsInChildren<Button>()) b.interactable = busy == null;
             }
             _busy.text = busy != null ? busy + new string('.', 1 + (int)(Time.unscaledTime * 2) % 3) : "";
+            // The progress label takes the info line's place while it runs.
+            _subHeader.enabled = busy == null;
             if (_toastBg.gameObject.activeSelf && Time.unscaledTime > _toastUntil) _toastBg.gameObject.SetActive(false);
         }
     }

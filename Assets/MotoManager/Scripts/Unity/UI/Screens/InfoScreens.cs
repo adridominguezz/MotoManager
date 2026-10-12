@@ -13,7 +13,9 @@ namespace MotoManager.App.UI.Screens
         private string _category;
         private int _table;
 
-        private static readonly Color Mine = new Color(0.94f, 0.7f, 0.16f, 0.16f);
+        private const float RowHeight = 60;
+        /// <summary>Table index from which the player's row is also pinned under the list (not on the first screen).</summary>
+        private const int PinFrom = 7;
 
         public override void Build(RectTransform content)
         {
@@ -41,38 +43,69 @@ namespace MotoManager.App.UI.Screens
                 Evolution(list, world, champ);
                 return;
             }
-            var card = Ui.Card(list, null);
+            // Timing-tower list: a coloured category band, column captions and tall bold rows; the player's row is
+            // lit in the accent and, when it is far down the table, pinned under the list as well.
             var playerTeam = world.PlayerTeamId;
+            var category = Game.Db.GetCategory(_category);
+            string catName = category != null ? category.ShortName : _category;
+            string tableName = _table == 0 ? Loc.T("standings.riders") : _table == 1 ? Loc.T("standings.teams") : Loc.T("standings.makers");
+            var page = list;
+            list = Ui.Stack(page);
+            Ui.Band(list, catName + "  ·  " + tableName, Loc.T("home.round", champ.Rounds.Count, Game.RoundsInSeason(_category)));
+            float[] widths;
+            string[] pinned = null;
+            int firstMine = -1;
             if (_table == 0)
             {
-                var widths = new[] { 0.8f, 5f, 3.6f, 1.6f, 1.2f, 1.2f, 1.2f };
-                UiFactory.TableRow(card, 40, widths, new[] { "#", Loc.T("col.rider"), Loc.T("col.team"), Loc.T("col.points"), Loc.T("col.wins"), Loc.T("col.podiums"), Loc.T("col.poles") }, true);
+                widths = new[] { 1f, 5f, 3.4f, 1.6f, 1.1f, 1.1f, 1.1f };
+                Ui.ListCaptions(list, widths, new[] { "#", Loc.T("col.rider"), Loc.T("col.team"), Loc.T("col.points"), Loc.T("col.wins"), Loc.T("col.podiums"), Loc.T("col.poles") });
                 var rows = champ.SortedRiders();
                 for (int i = 0; i < rows.Count; i++)
                 {
                     var r = world.GetRider(rows[i].Id);
                     var team = r != null ? world.GetTeam(r.TeamId) : null;
                     bool mine = team != null && team.Id == playerTeam;
-                    UiFactory.TableRow(card, 36, widths, new[]
+                    var cells = new[]
                     {
-                        (i + 1).ToString(), r != null ? "<b>" + r.FullName + "</b> " + Theme.Dim(r.Nationality) : rows[i].Id,
-                        team != null ? team.ShortName ?? team.Name : "-", "<b>" + rows[i].Points.ToString("0") + "</b>", rows[i].Wins.ToString(), rows[i].Podiums.ToString(), rows[i].Poles.ToString()
-                    }, false, mine ? Mine : (Color?)null);
+                        (i + 1).ToString(), r != null ? r.FullName : rows[i].Id,
+                        team != null ? Theme.Dim(team.ShortName ?? team.Name) : "-", "<b>" + rows[i].Points.ToString("0") + "</b>",
+                        rows[i].Wins.ToString(), rows[i].Podiums.ToString(), rows[i].Poles.ToString()
+                    };
+                    Ui.ListRow(list, widths, cells, i, mine, RowHeight);
+                    if (mine && firstMine < 0) { firstMine = i; pinned = cells; }
                 }
             }
             else
             {
                 var rows = _table == 1 ? champ.SortedTeams() : champ.SortedManufacturers();
-                var widths = new[] { 0.8f, 7f, 2f, 2f };
-                UiFactory.TableRow(card, 40, widths, new[] { "#", _table == 1 ? Loc.T("col.team") : Loc.T("col.maker"), Loc.T("col.points"), Loc.T("col.wins") }, true);
+                widths = new[] { 1f, 7f, 2f, 2f };
+                Ui.ListCaptions(list, widths, new[] { "#", _table == 1 ? Loc.T("col.team") : Loc.T("col.maker"), Loc.T("col.points"), Loc.T("col.wins") });
                 for (int i = 0; i < rows.Count; i++)
                 {
                     string name = rows[i].Id;
                     if (_table == 1) { var t = world.GetTeam(name); if (t != null) name = t.Name; }
                     else { var m = world.GetManufacturer(name); if (m != null) name = m.Name; }
                     bool mine = _table == 1 && rows[i].Id == playerTeam;
-                    UiFactory.TableRow(card, 36, widths, new[] { (i + 1).ToString(), name, "<b>" + rows[i].Points.ToString("0") + "</b>", rows[i].Wins.ToString() }, false, mine ? Mine : (Color?)null);
+                    var cells = new[] { (i + 1).ToString(), name, "<b>" + rows[i].Points.ToString("0") + "</b>", rows[i].Wins.ToString() };
+                    Ui.ListRow(list, widths, cells, i, mine, RowHeight);
+                    if (mine && firstMine < 0) { firstMine = i; pinned = cells; }
                 }
+            }
+            // Far down the table (below what one screen shows): a copy of the player's row stays under the list.
+            if (pinned != null && firstMine >= PinFrom)
+            {
+                var scroll = (RectTransform)page.parent.parent;
+                scroll.offsetMin = new Vector2(scroll.offsetMin.x, RowHeight + 8);
+                var pin = UiFactory.Rect("Pinned", content);
+                pin.anchorMin = new Vector2(0, 0);
+                pin.anchorMax = new Vector2(1, 0);
+                pin.pivot = new Vector2(0.5f, 0);
+                pin.offsetMin = new Vector2(12, 4);
+                pin.offsetMax = new Vector2(-12, 4 + RowHeight);
+                var shade = pin.gameObject.AddComponent<UnityEngine.UI.Image>();
+                shade.color = Theme.Background;
+                shade.raycastTarget = false;
+                UiFactory.Stretch(Ui.ListRow(pin, widths, pinned, firstMine, true, RowHeight));
             }
         }
 
