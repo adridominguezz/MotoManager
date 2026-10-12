@@ -220,10 +220,13 @@ namespace MotoManager.Core.Race
             switch (c.Type)
             {
                 case RaceCommandType.SetPace:
+                    // A manual order holds until the player changes it (the engineer only manages riders on auto).
                     r.Pace = c.Pace;
+                    r.Entry.AutoManaged = false;
                     break;
                 case RaceCommandType.SetRiderMode:
                     r.Mode = c.Mode;
+                    r.Entry.AutoManaged = false;
                     break;
                 case RaceCommandType.RequestPit:
                     if (c.Pit == PitRequestType.BikeSwap && !Rules.PitLane.AllowsBikeSwap) return;
@@ -513,6 +516,8 @@ namespace MotoManager.Core.Race
             double u = r.LapNoise;
             if (r.Pace == PaceMode.Push) u *= Tuning.PushUsage;
             else if (r.Pace == PaceMode.Conserve) u *= Tuning.ConserveUsage;
+            // Attacking: later braking and harder exits (a little faster, harder on the tyres).
+            if (r.Mode == RiderMode.Attack) u *= 1.004;
             u *= 0.994 + 0.006 * MathX.Clamp01(r.Entry.SetupQuality);
             u *= r.Entry.Form;
             if (Config.SessionType == SessionType.Qualifying)
@@ -1175,6 +1180,8 @@ namespace MotoManager.Core.Race
             if (r.Entry.Rider.HasStyle(RidingStyle.TireSaver)) riderWear -= 0.08;
             if (r.Entry.Rider.HasStyle(RidingStyle.AggressiveRider)) riderWear += 0.06;
             if (r.Entry.Rider.HasStyle(RidingStyle.SmoothRider)) riderWear -= 0.04;
+            if (r.Mode == RiderMode.Attack) riderWear *= 1.12;
+            else if (r.Mode == RiderMode.Defend) riderWear *= 1.05;
             if (r.Pace == PaceMode.Push) riderWear *= Tuning.PushWear;
             else if (r.Pace == PaceMode.Conserve) riderWear *= Tuning.ConserveWear;
             double bikeWear = 1 + (50 - bike[PerfAttr.TireWear]) / 200.0;
@@ -1232,13 +1239,27 @@ namespace MotoManager.Core.Race
 
         // ------------------------------------------------------------------ timing
 
+        /// <summary>
+        /// When, inside the last step, the rider was <paramref name="overshoot"/> metres behind where he is now
+        /// (linear within the step): timing to the thousandth instead of to the simulation step.
+        /// </summary>
+        private double CrossTime(RiderRaceState r, double overshoot)
+        {
+            double moved = r.Distance - r.PrevDistance;
+            if (moved < 0) moved += Track.Length;
+            if (moved <= 1e-6 || overshoot <= 0) return Time;
+            return Time - Config.TimeStep * Math.Min(1, overshoot / moved);
+        }
+
         private void OnCrossLine(RiderRaceState r)
         {
+            // The line was crossed r.Distance metres ago (the distance is already measured from the line).
+            double now = CrossTime(r, r.Distance);
             if (r.Lap == -1 && !Config.TimeTrial)
             {
                 // Crossing the line for the first time after the start (grid is behind the line).
                 r.Lap = 0;
-                r.SectorStartTime = Time;
+                r.SectorStartTime = now;
                 r.CurrentSector = 0;
                 return;
             }
@@ -1247,15 +1268,15 @@ namespace MotoManager.Core.Race
             if (Config.TimeTrial && r.Lap == 0)
             {
                 // End of the out lap.
-                r.LapStartTime = Time;
-                r.SectorStartTime = Time;
+                r.LapStartTime = now;
+                r.SectorStartTime = now;
                 r.CurrentSector = 0;
                 NewLapNoise(r);
                 return;
             }
             if (valid)
             {
-                double lapTime = Time - r.LapStartTime;
+                double lapTime = now - r.LapStartTime;
                 r.LastLapTime = lapTime;
                 r.Stats.LapTimes.Add(lapTime);
                 r.Stats.LapPositions.Add(r.Position);
@@ -1271,11 +1292,11 @@ namespace MotoManager.Core.Race
             }
             if (r.CurrentSector == Track.SectorCount - 1 && valid)
             {
-                r.SectorTimes[r.CurrentSector] = Time - r.SectorStartTime;
+                r.SectorTimes[r.CurrentSector] = now - r.SectorStartTime;
                 RecordSector(r, r.CurrentSector);
             }
-            r.LapStartTime = Time;
-            r.SectorStartTime = Time;
+            r.LapStartTime = now;
+            r.SectorStartTime = now;
             r.CurrentSector = 0;
             NewLapNoise(r);
 
@@ -1284,7 +1305,7 @@ namespace MotoManager.Core.Race
                 if (r.Lap >= Config.Laps)
                 {
                     r.Status = RaceStatus.Finished;
-                    r.FinishTime = Time;
+                    r.FinishTime = now;
                 }
                 return;
             }
@@ -1298,7 +1319,7 @@ namespace MotoManager.Core.Race
                     AddEvent(RaceEventType.Finish, r.Index, -1, Txt.F("ev.win", "Chequered flag! {0} wins", r.Entry.Rider.ShortName), true);
                 }
                 r.Status = RaceStatus.Finished;
-                r.FinishTime = Time;
+                r.FinishTime = now;
                 r.TargetLateral = 0;
                 return;
             }
@@ -1339,9 +1360,11 @@ namespace MotoManager.Core.Race
             while (r.CheckpointIndex < g)
             {
                 r.CheckpointIndex++;
-                r.CheckpointTime = Time;
-                _passage[r.Index][r.CheckpointIndex] = Time;
-                if (double.IsNaN(_firstPassage[r.CheckpointIndex])) _firstPassage[r.CheckpointIndex] = Time;
+                // The exact moment the checkpoint was passed inside this step (gaps to the thousandth, not to the step).
+                double t = CrossTime(r, progress - r.CheckpointIndex * _cpSpacing);
+                r.CheckpointTime = t;
+                _passage[r.Index][r.CheckpointIndex] = t;
+                if (double.IsNaN(_firstPassage[r.CheckpointIndex])) _firstPassage[r.CheckpointIndex] = t;
             }
             int sector = Track.SectorAt(r.Distance);
             if (sector != r.CurrentSector && sector == r.CurrentSector + 1)

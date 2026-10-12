@@ -48,7 +48,7 @@
     "compounds": [
       {
         "compound": "Soft",
-        "grip": 1.035,
+        "grip": 1.025,
         "wearRate": 1.7249999999999999,
         "optimalTempMin": 78,
         "optimalTempMax": 106,
@@ -72,7 +72,7 @@
       },
       {
         "compound": "Hard",
-        "grip": 0.975,
+        "grip": 0.988,
         "wearRate": 0.828,
         "optimalTempMin": 90,
         "optimalTempMax": 122,

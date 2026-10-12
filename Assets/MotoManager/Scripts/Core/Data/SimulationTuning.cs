@@ -24,10 +24,10 @@ namespace MotoManager.Core.Data
         public double ConsistencyNoise = 0.004;
 
         // --- Pace / mode effects on limit usage
-        public double PushUsage = 1.006;
-        public double ConserveUsage = 0.985;
-        public double PushWear = 1.30;
-        public double ConserveWear = 0.78;
+        public double PushUsage = 1.02;
+        public double ConserveUsage = 0.978;
+        public double PushWear = 1.45;
+        public double ConserveWear = 0.68;
         public double PushRisk = 1.8;
         public double ConserveRisk = 0.55;
         public double AttackRisk = 1.35;

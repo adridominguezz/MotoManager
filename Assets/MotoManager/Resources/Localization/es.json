@@ -1402,5 +1402,7 @@
   "roleinfo.Marketing": "Gestiona la tienda oficial por ti (productos, precios y stock) y hace que se venda algo más.",
   "roleimpact.Marketing": "la tienda se gestiona sola y vende más.",
   "shop.marketingRuns": "Tu responsable de marketing gestiona la tienda: productos, precios y pedidos. Ventas +{0}%.",
-  "shop.marketingHint": "Si contratas a un responsable de marketing (Equipo › Personal), se encargará de la tienda por ti."
+  "shop.marketingHint": "Si contratas a un responsable de marketing (Equipo › Personal), se encargará de la tienda por ti.",
+  "card.lastLap": "Últ.",
+  "card.bestLap": "Mejor"
 }

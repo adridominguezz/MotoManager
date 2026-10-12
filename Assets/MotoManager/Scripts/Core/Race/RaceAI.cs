@@ -21,6 +21,8 @@ namespace MotoManager.Core.Race
         public void OnLap(RiderRaceState r)
         {
             if (r.Status != RaceStatus.Racing) return;
+            // The player's riders keep the orders they were given unless left to the engineer (auto).
+            if (!r.Entry.AutoManaged) return;
             int lapsLeft = _sim.TotalLaps - r.Lap;
             var a = r.Entry.Rider.Attributes;
 

@@ -207,6 +207,26 @@ namespace MotoManager.Core.Data
         /// <summary>Grip multiplier on a fully dry track (rain tires lose grip and destroy themselves in the dry).</summary>
         public double DryGrip = 1.0;
         public double DryWearMultiplier = 1.0;
+        /// <summary>
+        /// How much grip the compound loses as it wears (0 = by compound: a soft falls away, a hard barely fades).
+        /// </summary>
+        public double WearGripFactor;
+
+        /// <summary>The wear sensitivity in use (data value, or the default of the compound).</summary>
+        public double WearSensitivity
+        {
+            get
+            {
+                if (WearGripFactor > 0) return WearGripFactor;
+                switch (Compound)
+                {
+                    case TireCompound.Soft: return 1.8;
+                    case TireCompound.Medium: return 1.65;
+                    case TireCompound.Hard: return 0.5;
+                    default: return 1.0;
+                }
+            }
+        }
 
         public static TireCompoundSpec DefaultMedium()
         {

@@ -30,7 +30,9 @@ namespace MotoManager.Core.Race
                 g *= 1 - tuning.OverheatGripLoss * MathX.Clamp01((t - spec.OptimalTempMax) / 30.0);
 
             double w = tire.Wear;
-            g *= 1 - tuning.WearGripLoss * Math.Pow(w, 1.5);
+            // Softer rubber gives more grip when new and falls away as it wears; a hard compound starts slower but
+            // keeps its grip, so it can be pushed at the end of the race.
+            g *= 1 - tuning.WearGripLoss * spec.WearSensitivity * Math.Pow(w, 1.5);
             if (w > 0.9) g *= 1 - (w - 0.9) * 1.2;
 
             double wet = Math.Pow(MathX.Clamp01(wetness), 0.8);

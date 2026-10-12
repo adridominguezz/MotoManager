@@ -83,17 +83,25 @@ namespace MotoManager.App.UI
             // Front tyre, rear tyre (compound and how much is left) and, where there is a tank limit, fuel.
             _front = UiFactory.Label("Front", root, "", Theme.FontSmall, TextAnchor.MiddleLeft);
             _front.supportRichText = true;
-            UiFactory.Place(_front.rectTransform, 0.31f, 0.545f, 0.97f, 0.63f);
-            _frontBar = Bar(root, 0.31f, 0.525f);
+            UiFactory.Place(_front.rectTransform, 0.31f, 0.58f, 0.97f, 0.655f);
+            _frontBar = Bar(root, 0.31f, 0.562f);
             _rear = UiFactory.Label("Rear", root, "", Theme.FontSmall, TextAnchor.MiddleLeft);
             _rear.supportRichText = true;
-            UiFactory.Place(_rear.rectTransform, 0.31f, 0.43f, 0.97f, 0.515f);
-            _rearBar = Bar(root, 0.31f, 0.41f);
+            UiFactory.Place(_rear.rectTransform, 0.31f, 0.48f, 0.97f, 0.555f);
+            _rearBar = Bar(root, 0.31f, 0.462f);
             _fuel = UiFactory.Label("Fuel", root, "", Theme.FontSmall - 2, TextAnchor.MiddleLeft);
             _fuel.supportRichText = true;
-            UiFactory.Place(_fuel.rectTransform, 0.31f, 0.315f, 0.97f, 0.4f);
-            _fuelBar = Bar(root, 0.31f, 0.295f);
+            UiFactory.Place(_fuel.rectTransform, 0.31f, 0.38f, 0.97f, 0.455f);
+            _fuelBar = Bar(root, 0.31f, 0.362f);
             _fuel.gameObject.SetActive(fuel);
+            // Last lap and best lap (the best in purple when it is the fastest of the race).
+            _laps = UiFactory.Label("Laps", root, "", Theme.FontSmall - 2, TextAnchor.MiddleLeft);
+            _laps.supportRichText = true;
+            _laps.resizeTextForBestFit = true;
+            _laps.resizeTextMinSize = Theme.FontSmall - 8;
+            _laps.resizeTextMaxSize = Theme.FontSmall - 2;
+            if (fuel) UiFactory.Place(_laps.rectTransform, 0.31f, 0.28f, 0.97f, 0.35f);
+            else UiFactory.Place(_laps.rectTransform, 0.31f, 0.33f, 0.97f, 0.43f);
             _fuelBar.transform.parent.gameObject.SetActive(fuel);
 
             _pace = UiFactory.Button("Pace", root, "", CyclePace, Theme.PanelLight, Theme.FontSmall - 4);
@@ -160,9 +168,11 @@ namespace MotoManager.App.UI
             {
                 // Gap relative to this rider: negative = ahead.
                 double gap = i == 0 ? -self.GapToAhead : r.GapToAhead;
-                _rowGap[i].text = r.Status == RaceStatus.Racing && self.Status == RaceStatus.Racing ? gap.ToString("+0.0;-0.0", Loc.Culture) : "";
+                _rowGap[i].text = r.Status == RaceStatus.Racing && self.Status == RaceStatus.Racing ? gap.ToString("+0.000;-0.000", Loc.Culture) : "";
             }
         }
+
+        private Text _laps;
 
         public void Refresh()
         {
@@ -200,6 +210,12 @@ namespace MotoManager.App.UI
                 _fuelBar.rectTransform.anchorMax = new Vector2(limit > 0 ? 1 : 0, 1);
             }
 
+
+            string last = r.LastLapTime > 0 ? MathX.FormatLapTime(r.LastLapTime) : "-";
+            string best = r.BestLapTime < double.MaxValue ? MathX.FormatLapTime(r.BestLapTime) : "-";
+            bool fastest = r.BestLapTime < double.MaxValue && Math.Abs(r.BestLapTime - sim.FastestLap) < 0.0005;
+            _laps.text = Theme.Dim(Loc.T("card.lastLap")) + " <b>" + last + "</b>   " + Theme.Dim(Loc.T("card.bestLap")) + " <b>" +
+                         (fastest ? "<color=#B266FF>" + best + "</color>" : best) + "</b>";
 
             string status = r.HasIssue ? Loc.T("cmd.issue") : r.PendingLongLaps > 0 ? Loc.T("cmd.longLap", r.PendingLongLaps) :
                 r.Status != RaceStatus.Racing ? Loc.T("race.status." + r.Status) : "";

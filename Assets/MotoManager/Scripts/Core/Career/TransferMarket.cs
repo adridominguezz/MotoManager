@@ -91,7 +91,10 @@ namespace MotoManager.Core.Career
                     Release(world, r, report);
                     continue;
                 }
-                if (TeamWantsRenewal(world, db, team, cat, r, rng) && RiderWantsRenewal(world, db, cat, r, rng))
+                // The player's team only keeps the riders the player renewed himself; no team renews into a full grid
+                // of riders already signed for next season.
+                bool seat = CommittedCount(world, team, season) < Capacity(cat, db.GetRules(cat.Id, season), team);
+                if (!team.IsPlayer && seat && TeamWantsRenewal(world, db, team, cat, r, rng) && RiderWantsRenewal(world, db, cat, r, rng))
                 {
                     var rules = db.GetRules(cat.Id, season);
                     // A rider who has become good enough for the seat no longer pays for it.

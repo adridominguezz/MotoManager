@@ -1402,5 +1402,7 @@
   "roleinfo.Marketing": "Runs the official shop for you (range, prices, stock) and makes it sell a little more.",
   "roleimpact.Marketing": "the shop runs itself and sells more.",
   "shop.marketingRuns": "Your marketing manager runs the shop: products, prices and orders. Sales +{0}%.",
-  "shop.marketingHint": "Hire a marketing manager (Team › Staff) and they will run the shop for you."
+  "shop.marketingHint": "Hire a marketing manager (Team › Staff) and they will run the shop for you.",
+  "card.lastLap": "Last",
+  "card.bestLap": "Best"
 }
