@@ -22,6 +22,7 @@ namespace MotoManager.App.UI
             var screen = canvas.gameObject.AddComponent<BootScreen>();
             screen._session = session;
             screen.Build(UiFactory.SafeRoot(canvas, Theme.Background));
+            GameAudio.Menu();
             return screen;
         }
 
@@ -157,6 +158,15 @@ namespace MotoManager.App.UI
                     UiScale.UserLevel == level ? Theme.Accent : Theme.PanelLight, Theme.FontSmall);
                 UiFactory.Place((RectTransform)b.transform, i / 3f, 0, (i + 1) / 3f, 1, 4);
             }
+
+            // Music and sound.
+            var audio = UiFactory.Row(_buttons, UiScale.Touch(64));
+            var mus = UiFactory.Button("Music", audio, Loc.T("audio.music") + (GameAudio.MusicOn ? "  ✓" : ""), () => { GameAudio.MusicOn = !GameAudio.MusicOn; ShowMainMenu(); },
+                GameAudio.MusicOn ? Theme.Accent : Theme.PanelLight, Theme.FontSmall);
+            UiFactory.Place((RectTransform)mus.transform, 0, 0, 0.5f, 1, 4);
+            var sfx = UiFactory.Button("Sound", audio, Loc.T("audio.sound") + (GameAudio.SfxOn ? "  ✓" : ""), () => { GameAudio.SfxOn = !GameAudio.SfxOn; ShowMainMenu(); },
+                GameAudio.SfxOn ? Theme.Accent : Theme.PanelLight, Theme.FontSmall);
+            UiFactory.Place((RectTransform)sfx.transform, 0.5f, 0, 1, 1, 4);
 
             var intro = Ui.Card(_list, Loc.T("boot.welcome"), Loc.T("boot.welcomeSub"));
             UiFactory.Paragraph(intro, Loc.T("boot.intro"), Theme.FontSmall + 2);

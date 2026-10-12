@@ -535,7 +535,11 @@ namespace MotoManager.App.UI
             var label = Label("Label", img.transform, text, size, TextAnchor.MiddleCenter);
             Stretch(label.rectTransform);
             DropShadow(label, 0.35f, 1.5f);
-            if (onClick != null) button.onClick.AddListener(() => onClick());
+            if (onClick != null) button.onClick.AddListener(() =>
+            {
+                GameAudio.ClickSound();
+                onClick();
+            });
             return button;
         }
 

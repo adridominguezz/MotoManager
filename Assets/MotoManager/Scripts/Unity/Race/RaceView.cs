@@ -22,6 +22,7 @@ namespace MotoManager.App.Race
         public readonly List<BikeVisual> Bikes = new List<BikeVisual>();
         public float Speed { get; private set; }
         public int SelectedRider { get; private set; }
+        private double _topSpeedSeen = 60;
 
         private double _accumulator;
         private Action<RaceSimulation> _onClosed;
@@ -58,6 +59,7 @@ namespace MotoManager.App.Race
                     break;
                 }
             view.Hud = RaceHud.Create(view, title);
+            GameAudio.RaceStart();
             if (sim.Tick == 0) view.StartIntro();
             else
             {
@@ -180,6 +182,17 @@ namespace MotoManager.App.Race
                 Bikes[i].UpdateVisual(Track, d, dt, scale, markers, Sim.Time, i == SelectedRider);
             }
 
+            // Sound: the followed bike's engine (its revs), the field and the crowd.
+            int running = 0;
+            for (int i = 0; i < Sim.Riders.Count; i++)
+            {
+                var rr = Sim.Riders[i];
+                if (rr.Status == RaceStatus.Racing) running++;
+                if (rr.Speed > _topSpeedSeen) _topSpeedSeen = rr.Speed;
+            }
+            var followed = Sim.Riders[SelectedRider];
+            GameAudio.RaceUpdate(followed.Speed, _topSpeedSeen, Mathf.Clamp01(1f - Cam.Distance / 450f), running, Speed <= 0 || Sim.IsFinished);
+
             // The followed rider is out of the race: follow the next of the player's riders, or the leader.
             if (Cam.Mode == CameraMode.Follow && !Bikes[SelectedRider].Visible)
             {
@@ -240,6 +253,7 @@ namespace MotoManager.App.Race
             if (IsReplay) UseSimulation(_liveSim);
             Sim = _liveSim;
             Destroy(Hud.gameObject);
+            GameAudio.RaceEnd();
             if (Cam != null) Destroy(Cam);
             Destroy(gameObject);
             if (_onClosed != null) _onClosed(Sim);

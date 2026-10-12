@@ -82,6 +82,7 @@ namespace MotoManager.App.UI.Screens
             var shell = canvas.gameObject.AddComponent<ManagementShell>();
             shell.Session = session;
             shell.Build(UiFactory.SafeRoot(canvas, Theme.Background));
+            GameAudio.Menu();
             return shell;
         }
 
@@ -316,6 +317,9 @@ namespace MotoManager.App.UI.Screens
             v.childForceExpandHeight = true;
             UiFactory.ButtonRow(panel.transform, 60, UiFactory.Act(Loc.T("shell.save"), () => { Session.Save(); Toast(Loc.T("shell.saved")); ToggleMenu(); }));
             UiFactory.ButtonRow(panel.transform, 60, UiFactory.Act(Loc.T("shell.menu"), () => { ToggleMenu(); ExitToMenu(); }));
+            UiFactory.ButtonRow(panel.transform, 60,
+                UiFactory.Option(Loc.T("audio.music"), GameAudio.MusicOn, () => { GameAudio.MusicOn = !GameAudio.MusicOn; ToggleMenu(); ToggleMenu(); }),
+                UiFactory.Option(Loc.T("audio.sound"), GameAudio.SfxOn, () => { GameAudio.SfxOn = !GameAudio.SfxOn; ToggleMenu(); ToggleMenu(); }));
             UiFactory.ButtonRow(panel.transform, 60,
                 UiFactory.Option("A-", UiScale.UserLevel == 0, () => SetTextSize(0)),
                 UiFactory.Option("A", UiScale.UserLevel == 1, () => SetTextSize(1)),

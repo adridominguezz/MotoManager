@@ -1442,5 +1442,7 @@
   "setup.sponsorOffers": "Offers",
   "setup.sponsorTerms": "{0} season(s)",
   "setup.noOffers": "No offers right now; more arrive after each race.",
-  "setup.toSponsors": "Sponsorship"
+  "setup.toSponsors": "Sponsorship",
+  "audio.music": "Music",
+  "audio.sound": "Sound"
 }
