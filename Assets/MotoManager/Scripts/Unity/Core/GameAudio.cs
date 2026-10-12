@@ -15,10 +15,13 @@ namespace MotoManager.App
         private const string SfxPref = "MotoManager.Sfx";
 
         private static GameAudio _instance;
-        private AudioSource _music, _engine, _field, _crowd, _ui;
+        private AudioSource _music, _crowd, _ui;
+        private EngineSynth _engine;
+        private EngineSynth[] _field;
+        private readonly Gearbox _gearbox = new Gearbox();
         private AudioClip _click;
         private bool _racing;
-        private float _targetPitch = 1, _targetEngine, _targetField;
+        private float _targetEngine, _targetField;
 
         public static GameAudio Instance
         {
@@ -76,15 +79,34 @@ namespace MotoManager.App
         {
             _music = Source(true, 0.35f);
             _music.clip = MenuTheme();
-            _engine = Source(true, 0);
-            _engine.clip = EngineLoop(140, 0.9f);
-            _field = Source(true, 0);
-            _field.clip = EngineLoop(97, 0.5f);
+            // The followed bike: uneven "big bang" firing (two pairs of close firings) for the growl.
+            _engine = Synth("Engine", 1, new[] { 0f, 0.09f, 0.5f, 0.59f }, 1f);
+            // The rest of the field: a few engines further away, each at its own revs.
+            _field = new[]
+            {
+                Synth("Field1", 2, new[] { 0f, 0.25f, 0.5f, 0.75f }, 0.8f),
+                Synth("Field2", 3, new[] { 0f, 0.12f, 0.5f, 0.62f }, 0.8f),
+                Synth("Field3", 4, new[] { 0f, 0.25f, 0.5f, 0.75f }, 0.7f)
+            };
             _crowd = Source(true, 0);
             _crowd.clip = CrowdLoop();
             _ui = Source(false, 0.5f);
             _click = Click();
             ApplyMusic();
+        }
+
+        private EngineSynth Synth(string name, int seed, float[] firing, float character)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(transform, false);
+            var src = go.AddComponent<AudioSource>();
+            src.playOnAwake = false;
+            var e = go.AddComponent<EngineSynth>();
+            e.Seed = seed;
+            e.FiringOrder = firing;
+            e.Character = character;
+            e.Volume = 0;
+            return e;
         }
 
         private void ApplyMusic()
@@ -119,11 +141,21 @@ namespace MotoManager.App
             a._racing = true;
             a._music.Stop();
             if (!SfxOn) return;
-            foreach (var s in new[] { a._engine, a._field, a._crowd })
+            a._crowd.volume = 0;
+            if (!a._crowd.isPlaying) a._crowd.Play();
+            a._engine.Volume = 0;
+            a.PlayEngine(a._engine);
+            foreach (var f in a._field)
             {
-                s.volume = 0;
-                if (!s.isPlaying) s.Play();
+                f.Volume = 0;
+                a.PlayEngine(f);
             }
+        }
+
+        private void PlayEngine(EngineSynth e)
+        {
+            var src = e.GetComponent<AudioSource>();
+            if (!src.isPlaying) src.Play();
         }
 
         public static void RaceEnd()
@@ -147,23 +179,25 @@ namespace MotoManager.App
                 a._targetField = 0;
                 return;
             }
-            // Six gears: within each the revs climb, then drop at the shift.
-            double v = Math.Max(0, Math.Min(1, speed / Math.Max(30, topSpeed)));
-            double gears = 6;
-            double inGear = (v * gears) % 1.0;
-            int gear = (int)Math.Min(gears - 1, v * gears);
-            double revs = 0.55 + 0.45 * inGear + gear * 0.04;
-            a._targetPitch = (float)(0.6 + revs * 1.1);
-            a._targetEngine = Mathf.Lerp(0.08f, 0.55f, closeness);
-            a._targetField = Mathf.Clamp01(0.12f + running * 0.012f) * Mathf.Lerp(1f, 0.6f, closeness);
+            // Revs and throttle of the followed bike from its speed (six gears).
+            a._gearbox.Update(speed, topSpeed, Time.deltaTime);
+            a._engine.Rpm = a._gearbox.Rpm;
+            a._engine.Throttle = a._gearbox.Throttle;
+            a._targetEngine = Mathf.Lerp(0.12f, 0.7f, closeness);
+            a._targetField = Mathf.Clamp01(0.1f + running * 0.01f) * Mathf.Lerp(1f, 0.55f, closeness);
         }
 
         private void StopRace()
         {
             _racing = false;
             if (_engine == null) return;
-            _engine.Stop();
-            _field.Stop();
+            _engine.Volume = 0;
+            _engine.GetComponent<AudioSource>().Stop();
+            foreach (var f in _field)
+            {
+                f.Volume = 0;
+                f.GetComponent<AudioSource>().Stop();
+            }
             _crowd.Stop();
         }
 
@@ -171,43 +205,22 @@ namespace MotoManager.App
         {
             if (!_racing || _engine == null) return;
             float k = Mathf.Clamp01(Time.unscaledDeltaTime * 6);
-            _engine.pitch = Mathf.Lerp(_engine.pitch, _targetPitch, k);
-            _engine.volume = Mathf.Lerp(_engine.volume, _targetEngine, k);
-            _field.volume = Mathf.Lerp(_field.volume, _targetField, k);
-            _field.pitch = 0.95f + 0.1f * Mathf.PerlinNoise(Time.unscaledTime * 0.3f, 0);
-            _crowd.volume = Mathf.Lerp(_crowd.volume, _targetField * 0.5f, k * 0.5f);
+            _engine.Volume = Mathf.Lerp(_engine.Volume, _targetEngine, k);
+            // The field: bikes at their own revs, coming and going (slow wandering of revs and level).
+            float t = Time.unscaledTime;
+            for (int i = 0; i < _field.Length; i++)
+            {
+                var f = _field[i];
+                float wander = Mathf.PerlinNoise(t * (0.35f + i * 0.13f), i * 3.7f);
+                f.Rpm = Mathf.Lerp(9000f, 16500f, wander);
+                f.Throttle = Mathf.PerlinNoise(t * 0.9f + i, 1.3f) > 0.4f ? 1f : 0.1f;
+                float target = _targetField * (0.25f + 0.75f * Mathf.PerlinNoise(t * 0.25f + i * 5f, 7.1f)) / _field.Length * 1.6f;
+                f.Volume = Mathf.Lerp(f.Volume, target, k);
+            }
+            _crowd.volume = Mathf.Lerp(_crowd.volume, _targetField * 0.4f, k * 0.5f);
         }
 
         // ------------------------------------------------------------------ synthesis
-
-        /// <summary>
-        /// An engine at idle frequency <paramref name="baseHz"/>: firing pulses rich in harmonics with a little
-        /// roughness; playback pitch makes the revs.
-        /// </summary>
-        private static AudioClip EngineLoop(float baseHz, float roughness)
-        {
-            // Whole number of cycles so the loop is seamless.
-            int cycles = (int)(baseHz * 1.0f);
-            int n = (int)Math.Round(Rate * cycles / baseHz);
-            var data = new float[n];
-            var rng = new System.Random(7);
-            double lp = 0;
-            for (int i = 0; i < n; i++)
-            {
-                double t = (double)i / Rate;
-                double ph = (t * baseHz) % 1.0;
-                // Firing pulse train + odd harmonics + a sub-harmonic rumble (twin / four-cylinder character).
-                double pulse = Math.Exp(-ph * 9) * 2 - 0.25;
-                double harm = 0.5 * Math.Sin(2 * Math.PI * baseHz * t) + 0.25 * Math.Sin(2 * Math.PI * baseHz * 2 * t) +
-                              0.18 * Math.Sin(2 * Math.PI * baseHz * 3 * t + 0.6) + 0.22 * Math.Sin(Math.PI * baseHz * t);
-                double noise = (rng.NextDouble() * 2 - 1) * roughness;
-                lp += (noise - lp) * 0.08;
-                data[i] = (float)Math.Max(-1, Math.Min(1, (pulse * 0.35 + harm * 0.5 + lp * 0.5) * 0.6));
-            }
-            var clip = AudioClip.Create("Engine" + baseHz, n, 1, Rate, false);
-            clip.SetData(data, 0);
-            return clip;
-        }
 
         /// <summary>Distant crowd: filtered noise with slow swells.</summary>
         private static AudioClip CrowdLoop()
