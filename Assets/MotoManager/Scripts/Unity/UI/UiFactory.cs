@@ -851,4 +851,170 @@ namespace MotoManager.App.UI
             return !string.IsNullOrEmpty(hex) && ColorUtility.TryParseHtmlString(hex, out c) ? c : fallback;
         }
     }
+    /// <summary>
+    /// Single-colour pictograms drawn from code (home, riders, bike, money, transfers, trophy, career...), so the
+    /// navigation and the hub do not depend on symbol glyphs the device font may lack. Each is a white, softly
+    /// anti-aliased sprite tinted by its Image.
+    /// </summary>
+    public static class UiIcons
+    {
+        public const string Home = "home", Team = "team", Person = "person", Bike = "bike", Finance = "finance",
+            Market = "market", Trophy = "trophy", Career = "career", Menu = "menu", Back = "back", Star = "star",
+            Sponsor = "sponsor", Flag = "flag";
+
+        private const int Size = 96, Samples = 3;
+        private static readonly Dictionary<string, Sprite> Cache = new Dictionary<string, Sprite>();
+
+        /// <summary>The sprite of a named pictogram (an empty square for an unknown name).</summary>
+        public static Sprite Get(string name)
+        {
+            Sprite s;
+            if (Cache.TryGetValue(name, out s) && s != null) return s;
+            var tex = new Texture2D(Size, Size, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
+            var px = new Color32[Size * Size];
+            for (int y = 0; y < Size; y++)
+                for (int x = 0; x < Size; x++)
+                {
+                    int hits = 0;
+                    for (int sy = 0; sy < Samples; sy++)
+                        for (int sx = 0; sx < Samples; sx++)
+                        {
+                            float u = (x + (sx + 0.5f) / Samples) / Size, v = (y + (sy + 0.5f) / Samples) / Size;
+                            if (Inside(name, u, v)) hits++;
+                        }
+                    px[y * Size + x] = new Color32(255, 255, 255, (byte)(255 * hits / (Samples * Samples)));
+                }
+            tex.SetPixels32(px);
+            tex.Apply();
+            s = Sprite.Create(tex, new UnityEngine.Rect(0, 0, Size, Size), new Vector2(0.5f, 0.5f), 100);
+            Cache[name] = s;
+            return s;
+        }
+
+        /// <summary>A decorative pictogram image (keeps its square shape inside any rect).</summary>
+        public static Image Icon(Transform parent, string name, Color color)
+        {
+            var img = UiFactory.Decor("Icon", parent, color);
+            img.sprite = Get(name);
+            img.type = Image.Type.Simple;
+            img.preserveAspect = true;
+            return img;
+        }
+
+        private static bool Inside(string name, float u, float v)
+        {
+            switch (name)
+            {
+                case Home:
+                    return (Tri(u, v, 0.08f, 0.5f, 0.5f, 0.9f, 0.92f, 0.5f) || Box(u, v, 0.2f, 0.1f, 0.8f, 0.52f)) && !Box(u, v, 0.42f, 0.1f, 0.58f, 0.34f);
+                case Team:
+                    return Circle(u, v, 0.33f, 0.66f, 0.14f) || Circle(u, v, 0.7f, 0.68f, 0.11f) ||
+                           (Ellipse(u, v, 0.33f, 0.12f, 0.25f, 0.34f) && v >= 0.12f) ||
+                           (Ellipse(u, v, 0.72f, 0.16f, 0.2f, 0.3f) && v >= 0.16f && !Ellipse(u, v, 0.33f, 0.12f, 0.31f, 0.4f));
+                case Person:
+                    return Circle(u, v, 0.5f, 0.68f, 0.17f) || (Ellipse(u, v, 0.5f, 0.1f, 0.32f, 0.38f) && v >= 0.1f);
+                case Bike:
+                    return Ring(u, v, 0.2f, 0.28f, 0.14f, 0.07f) || Ring(u, v, 0.8f, 0.28f, 0.14f, 0.07f) ||
+                           Seg(u, v, 0.2f, 0.28f, 0.42f, 0.46f, 0.07f) || Box(u, v, 0.4f, 0.24f, 0.6f, 0.44f) ||
+                           Seg(u, v, 0.3f, 0.54f, 0.64f, 0.54f, 0.12f) || Seg(u, v, 0.8f, 0.28f, 0.66f, 0.64f, 0.07f) ||
+                           Seg(u, v, 0.6f, 0.68f, 0.76f, 0.72f, 0.07f);
+                case Finance:
+                    return Box(u, v, 0.12f, 0.14f, 0.3f, 0.46f) || Box(u, v, 0.41f, 0.14f, 0.59f, 0.66f) ||
+                           Box(u, v, 0.7f, 0.14f, 0.88f, 0.86f) || Box(u, v, 0.06f, 0.06f, 0.94f, 0.1f);
+                case Market:
+                    return Seg(u, v, 0.12f, 0.66f, 0.7f, 0.66f, 0.09f) || Tri(u, v, 0.66f, 0.82f, 0.92f, 0.66f, 0.66f, 0.5f) ||
+                           Seg(u, v, 0.88f, 0.34f, 0.3f, 0.34f, 0.09f) || Tri(u, v, 0.34f, 0.5f, 0.08f, 0.34f, 0.34f, 0.18f);
+                case Trophy:
+                    return Box(u, v, 0.28f, 0.62f, 0.72f, 0.9f) || (Circle(u, v, 0.5f, 0.62f, 0.22f) && v < 0.62f) ||
+                           (Ring(u, v, 0.27f, 0.7f, 0.11f, 0.06f) && u < 0.3f) || (Ring(u, v, 0.73f, 0.7f, 0.11f, 0.06f) && u > 0.7f) ||
+                           Box(u, v, 0.45f, 0.2f, 0.55f, 0.42f) || Box(u, v, 0.28f, 0.08f, 0.72f, 0.2f);
+                case Career:
+                    return (Box(u, v, 0.08f, 0.14f, 0.92f, 0.68f) && !Box(u, v, 0.08f, 0.42f, 0.92f, 0.46f)) ||
+                           (Box(u, v, 0.34f, 0.68f, 0.66f, 0.84f) && !Box(u, v, 0.43f, 0.68f, 0.57f, 0.77f));
+                case Menu:
+                    return Seg(u, v, 0.18f, 0.25f, 0.82f, 0.25f, 0.1f) || Seg(u, v, 0.18f, 0.5f, 0.82f, 0.5f, 0.1f) || Seg(u, v, 0.18f, 0.75f, 0.82f, 0.75f, 0.1f);
+                case Back:
+                    return Seg(u, v, 0.64f, 0.86f, 0.3f, 0.5f, 0.15f) || Seg(u, v, 0.3f, 0.5f, 0.64f, 0.14f, 0.15f);
+                case Star:
+                    return StarShape(u, v);
+                case Sponsor:
+                    return Poly(u, v, new[] { 0.06f, 0.5f, 0.34f, 0.84f, 0.94f, 0.84f, 0.94f, 0.16f, 0.34f, 0.16f }) && !Circle(u, v, 0.32f, 0.5f, 0.08f);
+                case Flag:
+                    if (Seg(u, v, 0.14f, 0.06f, 0.14f, 0.94f, 0.07f)) return true;
+                    if (!Box(u, v, 0.2f, 0.42f, 0.92f, 0.92f)) return false;
+                    return ((int)((u - 0.2f) / 0.12f) + (int)((v - 0.42f) / 0.125f)) % 2 == 0;
+            }
+            return false;
+        }
+
+        private static bool Box(float u, float v, float x0, float y0, float x1, float y1)
+        {
+            return u >= x0 && u <= x1 && v >= y0 && v <= y1;
+        }
+
+        private static bool Circle(float u, float v, float cx, float cy, float r)
+        {
+            return (u - cx) * (u - cx) + (v - cy) * (v - cy) <= r * r;
+        }
+
+        private static bool Ellipse(float u, float v, float cx, float cy, float rx, float ry)
+        {
+            float a = (u - cx) / rx, b = (v - cy) / ry;
+            return a * a + b * b <= 1;
+        }
+
+        private static bool Ring(float u, float v, float cx, float cy, float r, float w)
+        {
+            float d = Mathf.Sqrt((u - cx) * (u - cx) + (v - cy) * (v - cy));
+            return Mathf.Abs(d - r) <= w * 0.5f;
+        }
+
+        private static bool Seg(float u, float v, float ax, float ay, float bx, float by, float w)
+        {
+            float dx = bx - ax, dy = by - ay;
+            float t = Mathf.Clamp01(((u - ax) * dx + (v - ay) * dy) / Mathf.Max(1e-6f, dx * dx + dy * dy));
+            float px = ax + t * dx - u, py = ay + t * dy - v;
+            return px * px + py * py <= w * w * 0.25f;
+        }
+
+        private static bool Tri(float u, float v, float ax, float ay, float bx, float by, float cx, float cy)
+        {
+            float d1 = (u - bx) * (ay - by) - (ax - bx) * (v - by);
+            float d2 = (u - cx) * (by - cy) - (bx - cx) * (v - cy);
+            float d3 = (u - ax) * (cy - ay) - (cx - ax) * (v - ay);
+            bool neg = d1 < 0 || d2 < 0 || d3 < 0, pos = d1 > 0 || d2 > 0 || d3 > 0;
+            return !(neg && pos);
+        }
+
+        /// <summary>Even-odd point in polygon; <paramref name="xy"/> holds x0, y0, x1, y1...</summary>
+        private static bool Poly(float u, float v, float[] xy)
+        {
+            bool inside = false;
+            int n = xy.Length / 2;
+            for (int i = 0, j = n - 1; i < n; j = i++)
+            {
+                float xi = xy[i * 2], yi = xy[i * 2 + 1], xj = xy[j * 2], yj = xy[j * 2 + 1];
+                if ((yi > v) != (yj > v) && u < (xj - xi) * (v - yi) / (yj - yi) + xi) inside = !inside;
+            }
+            return inside;
+        }
+
+        private static float[] _star;
+
+        private static bool StarShape(float u, float v)
+        {
+            if (_star == null)
+            {
+                _star = new float[20];
+                for (int i = 0; i < 10; i++)
+                {
+                    float r = i % 2 == 0 ? 0.46f : 0.19f;
+                    float a = Mathf.PI / 2 + i * Mathf.PI / 5;
+                    _star[i * 2] = 0.5f + r * Mathf.Cos(a);
+                    _star[i * 2 + 1] = 0.47f + r * Mathf.Sin(a);
+                }
+            }
+            return Poly(u, v, _star);
+        }
+    }
 }

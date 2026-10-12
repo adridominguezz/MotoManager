@@ -347,6 +347,128 @@ namespace MotoManager.App.UI
             v.rectTransform.offsetMax = new Vector2(-6, 0);
         }
 
+        /// <summary>A vertical stack with no gaps (a table's band, captions and rows read as one block).</summary>
+        public static RectTransform Stack(Transform list, float spacing = 0)
+        {
+            var rt = UiFactory.Rect("Stack", list);
+            var v = rt.gameObject.AddComponent<VerticalLayoutGroup>();
+            v.spacing = spacing;
+            v.childControlHeight = true;
+            v.childControlWidth = true;
+            v.childForceExpandHeight = false;
+            v.childForceExpandWidth = true;
+            return rt;
+        }
+
+        /// <summary>
+        /// Coloured category band on top of a big list (standings, rankings): the accent fill, an upper-case bold
+        /// italic title and an optional figure on the right.
+        /// </summary>
+        public static RectTransform Band(Transform list, string title, string right = null, float height = 56)
+        {
+            var row = UiFactory.Row(list, height);
+            var bg = row.gameObject.AddComponent<Image>();
+            bg.color = Theme.CurrentAccent;
+            bg.raycastTarget = false;
+            UiFactory.Gradient(bg, 1.12f, 0.86f);
+            var hatch = UiFactory.Pattern("Hatch", row, UiFactory.StripesSprite, new Color(1, 1, 1, 0.08f), 18);
+            UiFactory.Place(hatch.rectTransform, 0.7f, 0, 1, 1);
+            UiFactory.Gradient(hatch, new Color(1, 1, 1, 0), Color.white, true);
+            var t = UiFactory.Label("Title", row, "<b>" + Theme.Caps(title) + "</b>", Theme.FontNormal, TextAnchor.MiddleLeft, Color.white);
+            t.supportRichText = true;
+            t.fontStyle = FontStyle.Italic;
+            t.resizeTextForBestFit = true;
+            t.resizeTextMinSize = Theme.FontSmall - 4;
+            t.resizeTextMaxSize = Theme.FontNormal;
+            UiFactory.DropShadow(t, 0.4f, 1.5f);
+            UiFactory.Place(t.rectTransform, 0, 0, right != null ? 0.65f : 1, 1);
+            t.rectTransform.offsetMin = new Vector2(18, 0);
+            if (right != null)
+            {
+                var r = UiFactory.Label("Right", row, "<b>" + right + "</b>", Theme.FontSmall, TextAnchor.MiddleRight, Color.white);
+                r.supportRichText = true;
+                UiFactory.Place(r.rectTransform, 0.65f, 0, 1, 1);
+                r.rectTransform.offsetMax = new Vector2(-16, 0);
+            }
+            return row;
+        }
+
+        /// <summary>Column captions under a <see cref="Band"/>: small dimmed upper-case labels on a dark strip.</summary>
+        public static RectTransform ListCaptions(Transform list, float[] widths, string[] captions, float height = 36)
+        {
+            var row = UiFactory.Row(list, height);
+            var bg = row.gameObject.AddComponent<Image>();
+            bg.color = new Color(0, 0, 0, 0.5f);
+            bg.raycastTarget = false;
+            float total = 0, x = 0;
+            foreach (var w in widths) total += w;
+            for (int i = 0; i < captions.Length && i < widths.Length; i++)
+            {
+                var c = UiFactory.Label("Caption" + i, row, Theme.Caps(captions[i] ?? ""), Theme.FontSmall - 4,
+                    i <= 1 ? TextAnchor.MiddleLeft : TextAnchor.MiddleCenter, Color.Lerp(Theme.TextDim, Color.white, 0.15f));
+                c.fontStyle = FontStyle.Bold;
+                c.resizeTextForBestFit = true;
+                c.resizeTextMinSize = Theme.FontSmall - 10;
+                c.resizeTextMaxSize = Theme.FontSmall - 4;
+                UiFactory.Place(c.rectTransform, x / total, 0, (x + widths[i]) / total, 1);
+                c.rectTransform.offsetMin = new Vector2(i == 0 ? 14 : 8, 0);
+                x += widths[i];
+            }
+            return row;
+        }
+
+        /// <summary>
+        /// A tall, bold list row (standings, rankings): alternate shading by <paramref name="index"/>, the first
+        /// column as a slanted position block, the player's row lit in the accent with an edge bar. Cells take rich
+        /// text; the second column is left-aligned, the others centred.
+        /// </summary>
+        public static RectTransform ListRow(Transform list, float[] widths, string[] cells, int index, bool mine, float height = 60)
+        {
+            var row = UiFactory.Row(list, height);
+            var bg = row.gameObject.AddComponent<Image>();
+            bg.raycastTarget = false;
+            bg.color = mine ? Theme.Alpha(Theme.CurrentAccent, 0.32f) : index % 2 == 0 ? new Color(1, 1, 1, 0.055f) : new Color(1, 1, 1, 0.02f);
+            if (mine)
+            {
+                UiFactory.Gradient(bg, Color.white, new Color(1, 1, 1, 0.45f), true);
+                UiFactory.SideStripe(row, Theme.CurrentAccent, 6, 0);
+            }
+            float total = 0, x = 0;
+            foreach (var w in widths) total += w;
+            for (int i = 0; i < cells.Length && i < widths.Length; i++)
+            {
+                float x0 = x / total, x1 = (x + widths[i]) / total;
+                x += widths[i];
+                if (i == 0)
+                {
+                    var block = UiFactory.Decor("Pos", row, mine ? Color.white : index < 3 ? new Color(0.9f, 0.91f, 0.93f, 1f) : Theme.PanelLight);
+                    UiFactory.Slant(block, 3.2f);
+                    UiFactory.Place(block.rectTransform, x0, 0, x1, 1);
+                    block.rectTransform.offsetMin = new Vector2(10, 8);
+                    block.rectTransform.offsetMax = new Vector2(-2, -8);
+                    var n = UiFactory.Label("Cell0", block.transform, cells[0] ?? "", Theme.FontNormal - 2, TextAnchor.MiddleCenter,
+                        mine || index < 3 ? (Color)new Color32(12, 13, 16, 255) : Theme.Text);
+                    n.fontStyle = FontStyle.BoldAndItalic;
+                    n.resizeTextForBestFit = true;
+                    n.resizeTextMinSize = Theme.FontSmall - 6;
+                    n.resizeTextMaxSize = Theme.FontNormal - 2;
+                    UiFactory.Stretch(n.rectTransform);
+                    continue;
+                }
+                var t = UiFactory.Label("Cell" + i, row, cells[i] ?? "", i == 1 ? Theme.FontNormal : Theme.FontNormal - 2,
+                    i == 1 ? TextAnchor.MiddleLeft : TextAnchor.MiddleCenter, Theme.Text);
+                t.supportRichText = true;
+                if (i == 1) t.fontStyle = FontStyle.Bold;
+                t.resizeTextForBestFit = true;
+                t.resizeTextMinSize = Theme.FontSmall - 6;
+                t.resizeTextMaxSize = i == 1 ? Theme.FontNormal : Theme.FontNormal - 2;
+                UiFactory.Place(t.rectTransform, x0, 0, x1, 1);
+                t.rectTransform.offsetMin = new Vector2(i == 1 ? 14 : 4, 0);
+                t.rectTransform.offsetMax = new Vector2(-4, 0);
+            }
+            return row;
+        }
+
         /// <summary>Two cards side by side (wide screens); returns both containers.</summary>
         public static void Columns(Transform list, out RectTransform left, out RectTransform right)
         {
