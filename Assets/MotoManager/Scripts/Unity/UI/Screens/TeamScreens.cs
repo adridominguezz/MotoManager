@@ -625,9 +625,10 @@ namespace MotoManager.App.UI.Screens
     }
 
     /// <summary>
-    /// Staff: one tile per role filling the screen (the person in charge, the level in big timing-yellow type and how
-    /// the role is covered). A tap opens the role: the current holders with their actions (other rider, renew,
-    /// release) and the candidates as big rows with one hire button each, under the skill ceiling.
+    /// Staff: one tile per role filling the screen (the role, the holder's surname and the level in big timing-yellow
+    /// type; how well the role is covered is only the colour of the left edge). A tap opens the role: the holders as
+    /// compact rows whose actions (other rider, renew, release) fold behind one "Options" button, and the candidates
+    /// as rows with the level, salary, the gain over the current holder and one hire button each.
     /// </summary>
     public class StaffPage : ScreenBase
     {
@@ -635,8 +636,9 @@ namespace MotoManager.App.UI.Screens
         private StaffRole? _role;
         private string _confirmFire;
         private string _confirmHire;
+        private string _options;
 
-        private const float StripHeight = 56;
+        private const float StripHeight = 64;
 
         public override void Build(RectTransform content)
         {
@@ -666,22 +668,31 @@ namespace MotoManager.App.UI.Screens
             return roles;
         }
 
-        private static string Badge(RoleCoverage c)
+        private static Color CoverageColor(RoleCoverage c)
         {
             switch (c)
             {
-                case RoleCoverage.Missing: return Theme.BadText(Loc.T("staff.cov.Missing"));
-                case RoleCoverage.Weak: return Theme.WarnText(Loc.T("staff.cov.Weak"));
-                case RoleCoverage.Covered: return Theme.GoodText(Loc.T("staff.cov.Covered"));
-                default: return Theme.Dim(Loc.T("staff.cov.Optional"));
+                case RoleCoverage.Missing: return Theme.Bad;
+                case RoleCoverage.Weak: return Theme.Warning;
+                case RoleCoverage.Covered: return Theme.Good;
+                default: return Theme.Steel;
             }
+        }
+
+        private void Close()
+        {
+            _role = null;
+            _confirmFire = null;
+            _confirmHire = null;
+            _options = null;
+            Shell.Refresh();
         }
 
         // ------------------------------------------------------------------ overview
 
         private void Overview(RectTransform content, WorldState world, Team team, List<StaffMember> staff)
         {
-            // Top strip: the payroll on the left, the skill ceiling on the right (a tap explains it).
+            // Top strip, one line: headcount and payroll on the left, the skill ceiling on the right (a tap explains it).
             double payroll = 0;
             foreach (var s in staff) payroll += s.Salary;
             var strip = UiFactory.Rect("Strip", content);
@@ -691,27 +702,27 @@ namespace MotoManager.App.UI.Screens
             strip.offsetMin = new Vector2(0, -StripHeight);
             strip.offsetMax = Vector2.zero;
             var sum = UiFactory.Decor("Summary", strip, new Color(1, 1, 1, 0.05f));
-            UiFactory.Place(sum.rectTransform, 0, 0, 0.55f, 1, 3);
-            TeamCards.Edge(sum.transform, Theme.Accent, true, 8);
-            var st = TeamCards.Text(sum.transform, "Text", Theme.Caps(Loc.T("staff.title")) + "   " + Theme.Dim(Loc.T("staff.summary", staff.Count, MathX.FormatMoney(payroll))),
-                Theme.FontSmall + 2, 11, TextAnchor.MiddleLeft);
+            UiFactory.Place(sum.rectTransform, 0, 0, 0.6f, 1, 5);
+            TeamCards.Edge(sum.transform, Theme.Accent, true, 6);
+            var st = TeamCards.Text(sum.transform, "Text", Loc.T("staff.summaryShort", staff.Count, MathX.FormatMoney(payroll)),
+                Theme.FontNormal, 14, TextAnchor.MiddleLeft);
             TeamCards.Place(st.rectTransform, 0, 0, 1, 1, 22, 10);
             double ceiling = StaffMarket.SkillCeiling(world, Game.Db, team);
-            var ceil = UiFactory.Button("Ceiling", strip, "", () => Shell.Toast(Loc.T("staff.ceiling", ceiling.ToString("0"))), new Color(1, 1, 1, 0.05f), Theme.FontSmall);
+            var ceil = UiFactory.Button("Ceiling", strip, "", () => Shell.Toast(Loc.T("staff.ceiling", ceiling.ToString("0"))), new Color(1, 1, 1, 0.05f), Theme.FontNormal);
             ceil.image.sprite = null;
-            UiFactory.Place((RectTransform)ceil.transform, 0.55f, 0, 1, 1, 3);
+            UiFactory.Place((RectTransform)ceil.transform, 0.6f, 0, 1, 1, 5);
             var cl = ceil.GetComponentInChildren<Text>();
             cl.supportRichText = true;
-            cl.fontStyle = FontStyle.Bold;
+            cl.fontStyle = FontStyle.BoldAndItalic;
             cl.alignment = TextAnchor.MiddleRight;
-            cl.resizeTextMinSize = 11;
-            cl.resizeTextMaxSize = Theme.FontSmall + 2;
-            cl.text = Theme.TimingText(Theme.Caps(Loc.T("staff.ceilingShort", ceiling.ToString("0")))) + "   " + Theme.Dim("ⓘ");
+            cl.resizeTextMinSize = 14;
+            cl.resizeTextMaxSize = Theme.FontNormal;
+            cl.text = Theme.TimingText(Theme.Caps(Loc.T("staff.ceilingTag", ceiling.ToString("0")))) + "  " + Theme.Dim("ⓘ");
             cl.rectTransform.offsetMax = new Vector2(-14, 0);
 
             var grid = UiFactory.Rect("Grid", content);
             UiFactory.Stretch(grid);
-            grid.offsetMax = new Vector2(0, -StripHeight - 4);
+            grid.offsetMax = new Vector2(0, -StripHeight);
             var roles = Roles();
             int cols = 4, rows = (roles.Count + cols - 1) / cols;
             for (int i = 0; i < roles.Count; i++)
@@ -721,6 +732,10 @@ namespace MotoManager.App.UI.Screens
             }
         }
 
+        /// <summary>
+        /// One role: the header, the holder's surname and the level in big type; the left edge says how it is covered.
+        /// An empty role shows only the way to hire (dimmed when the role is optional).
+        /// </summary>
         private void RoleTile(RectTransform grid, WorldState world, Team team, List<StaffMember> staff, StaffRole role, float x0, float y0, float x1, float y1)
         {
             double best;
@@ -734,79 +749,81 @@ namespace MotoManager.App.UI.Screens
                 _role = r;
                 _confirmFire = null;
                 _confirmHire = null;
+                _options = null;
                 Shell.Refresh();
             }, null, ending, Theme.Warning, 4);
+            var tile = body.parent;
+            var edge = TeamCards.Edge(tile, CoverageColor(cov), true, 7);
+            edge.transform.SetAsLastSibling();
 
-            string who;
-            if (holders.Count == 0) who = Theme.Dim(Loc.T("staff.nobody"));
-            else if (holders.Count == 1) who = holders[0].FullName;
-            else
+            if (holders.Count == 0)
             {
-                var names = new List<string>();
-                foreach (var h in holders) names.Add(h.LastName);
-                who = string.Join(" / ", names.ToArray());
+                bool optional = cov == RoleCoverage.Optional;
+                if (optional) tile.gameObject.AddComponent<CanvasGroup>().alpha = 0.5f;
+                var hint = TeamCards.Text(body, "Hire", Theme.Caps(Loc.T("staff.hireHint")), Theme.FontNormal, 14, TextAnchor.MiddleCenter,
+                    optional ? Theme.TextDim : Theme.Bad, FontStyle.BoldAndItalic);
+                TeamCards.Place(hint.rectTransform, 0, 0.1f, 1, 0.9f, 16, 12);
+                return;
             }
-            var name = TeamCards.Text(body, "Who", who, Theme.FontSmall + 2, 11, TextAnchor.MiddleLeft, Theme.Text, FontStyle.Normal);
-            TeamCards.Place(name.rectTransform, 0, 0.68f, 1, 0.98f, 16, 12);
-            string level = Theme.Dim("<size=" + (Theme.FontSmall - 2) + ">" + Theme.Caps(Loc.T("staff.skill")) + "  </size>") +
-                           (best >= 0 ? Theme.TimingText(best.ToString("0")) : Theme.Dim("-"));
-            var lv = TeamCards.Text(body, "Level", level, Theme.FontLarge + 4, 14, TextAnchor.MiddleLeft, Color.white, FontStyle.BoldAndItalic);
+
+            var names = new List<string>();
+            foreach (var h in holders) names.Add(h.LastName);
+            var name = TeamCards.Text(body, "Who", Theme.Caps(string.Join(" / ", names.ToArray())), Theme.FontNormal, 14, TextAnchor.MiddleLeft, Theme.Text,
+                FontStyle.BoldAndItalic);
+            TeamCards.Place(name.rectTransform, 0, 0.08f, 0.62f, 0.92f, 18, 4);
+            var lv = TeamCards.Text(body, "Level", best.ToString("0"), Theme.FontTitle, 24, TextAnchor.MiddleRight, Theme.Timing, FontStyle.BoldAndItalic);
             UiFactory.DropShadow(lv, 0.4f, 2);
-            TeamCards.Place(lv.rectTransform, 0, 0.3f, 1, 0.7f, 16, 12);
-            var status = TeamCards.Text(body, "Status", Theme.Caps(Badge(cov)), Theme.FontSmall, 11, TextAnchor.MiddleLeft);
-            TeamCards.Place(status.rectTransform, 0, 0.04f, 1, 0.32f, 16, 12);
-            Color edge = cov == RoleCoverage.Missing ? Theme.Bad : cov == RoleCoverage.Weak ? Theme.Warning : cov == RoleCoverage.Covered ? Theme.Good : Theme.Steel;
-            var bar = TeamCards.Edge(body, edge, true, 6);
-            bar.rectTransform.offsetMin = new Vector2(0, 8);
-            bar.rectTransform.offsetMax = new Vector2(6, -8);
+            TeamCards.Place(lv.rectTransform, 0.62f, 0.04f, 1, 0.96f, 0, 14);
         }
 
         // ------------------------------------------------------------------ role detail
 
         private void RoleDetail(RectTransform list, WorldState world, Team team, List<StaffMember> staff, StaffRole role)
         {
-            MobileParts.BackRow(list, Loc.T("career.back"), () => { _role = null; _confirmFire = null; _confirmHire = null; Shell.Refresh(); });
             double current;
             int count;
             var cov = StaffService.Coverage(world, Game.Db, team, role, out current, out count);
             RectTransform leftCol, rightCol;
             Ui.Columns(list, out leftCol, out rightCol);
 
-            // Left: who holds the role now, each with the actions; what the role does folded under them.
-            var card = TeamCards.Card(leftCol, Loc.T("role." + role), Theme.Caps(Badge(cov)));
+            // Left: the role (with the way back in its header) and who holds it now; what the role does folded.
+            var card = TeamCards.Card(leftCol, Loc.T("role." + role), TeamCards.Colored(Theme.Caps(Loc.T("staff.cov." + cov)), CoverageColor(cov)), null, Close);
             var holders = staff.FindAll(s => s.Role == role);
             if (holders.Count == 0)
             {
-                var none = TeamCards.Text(UiFactory.Row(card, 64), "None", Theme.Caps(Loc.T("staff.nobody")), Theme.FontNormal, 12, TextAnchor.MiddleLeft,
-                    Theme.Bad, FontStyle.BoldAndItalic);
+                var none = TeamCards.Text(UiFactory.Row(card, 64), "None", Theme.Caps(Loc.T("staff.nobody")), Theme.FontNormal, 14, TextAnchor.MiddleLeft,
+                    cov == RoleCoverage.Missing ? Theme.Bad : Theme.TextDim, FontStyle.BoldAndItalic);
                 TeamCards.Place(none.rectTransform, 0, 0, 1, 1, 8, 8);
-                Ui.Line(card, Loc.T("staff.currentLevel"), Theme.GoodText(Loc.T("staff.newRole")));
             }
             foreach (var s in holders) Holder(card, world, team, s);
-            Ui.Note(card, "<b>" + Loc.T("staff.whatFor") + "</b>  " + Loc.T("roleinfo." + role));
-            Ui.Note(card, "<b>" + Loc.T("staff.impact") + "</b>  " + Loc.T("roleimpact." + role));
-            Ui.Note(card, Loc.T("staff.advice." + cov));
-            Ui.Note(card, Loc.T("staff.note"));
+            Ui.Note(card, "<b>" + Loc.T("staff.whatFor") + "</b>  " + Loc.T("roleinfo." + role) + "\n<b>" + Loc.T("staff.impact") + "</b>  " +
+                          Loc.T("roleimpact." + role) + "\n" + Loc.T("staff.advice." + cov));
 
             // Right: the candidates, under the skill ceiling.
             double ceiling = StaffMarket.SkillCeiling(world, Game.Db, team);
-            var cands = TeamCards.Card(rightCol, Loc.T("staff.candidates"), Theme.TimingText(Theme.Caps(Loc.T("staff.ceilingShort", ceiling.ToString("0")))));
+            var cands = TeamCards.Card(rightCol, Loc.T("staff.candidates"), Theme.TimingText(Theme.Caps(Loc.T("staff.ceilingTag", ceiling.ToString("0")))));
             var replaces = StaffMarket.WouldReplace(world, team, role);
-            if (replaces != null) Ui.Note(cands, Theme.WarnText(Loc.T("staff.replaceNote", replaces.FullName, MathX.FormatMoney(StaffMarket.SeveranceCost(world, replaces)))));
+            if (replaces != null)
+            {
+                var warn = TeamCards.Text(UiFactory.Row(cands, 44), "Replaces",
+                    Loc.T("staff.replaceShort", replaces.FullName, MathX.FormatMoney(StaffMarket.SeveranceCost(world, replaces))), Theme.FontSmall, 12,
+                    TextAnchor.MiddleLeft, Theme.Warning, FontStyle.Normal);
+                TeamCards.Place(warn.rectTransform, 0, 0, 1, 1, 4, 4);
+            }
             int shown = 0;
             foreach (var c in StaffMarket.Candidates(world, Game.Db, team, role))
             {
                 if (shown++ >= 4) break;
                 var cand = c;
-                string delta = current < 0 ? Theme.GoodText(Loc.T("staff.newRole")) : c.Skill > current ? Theme.GoodText("+" + (c.Skill - current).ToString("0") + " " + Loc.T("staff.vsCurrent")) : Theme.Dim(Loc.T("staff.noBetter"));
-                var row = TeamCards.PersonRow(cands, c.Skill, Loc.T("staff.skill"), c.FullName,
-                    c.Nationality + " · " + Loc.T("staff.exp") + " " + c.Experience + "\n" + delta, MathX.FormatMoney(c.Salary), 0.3f);
+                string gain = current >= 0 && c.Skill >= current + 0.5 ? TeamCards.Colored("<b>+" + (c.Skill - current).ToString("0") + "</b>", Theme.Good) : null;
+                var row = TeamCards.PersonRow(cands, c.Skill, Loc.T("staff.skill"), c.FullName, MathX.FormatMoney(c.Salary) + " / " + Loc.T("staff.season"),
+                    gain, 0.3f);
                 bool confirming = _confirmHire == cand.Id && replaces != null;
                 var b = TeamCards.BigButton(row, confirming
                     ? Loc.T("staff.fireConfirm", MathX.FormatMoney(StaffMarket.SeveranceCost(world, replaces)))
                     : Loc.T("staff.hireButton"), () =>
                 {
-                    // Replacing someone needs a second tap that shows who goes and the severance.
+                    // Replacing someone needs a second tap that shows the severance on the button.
                     var who = StaffMarket.WouldReplace(world, team, cand.Role);
                     if (who != null && _confirmHire != cand.Id)
                     {
@@ -822,22 +839,29 @@ namespace MotoManager.App.UI.Screens
                 ((RectTransform)b.transform).offsetMax = new Vector2(-8, -4);
             }
             if (shown == 0) Ui.Note(cands, Loc.T("staff.noCandidates"));
-            if (replaces != null && _confirmHire != null)
-                Ui.Note(cands, Theme.WarnText(Loc.T("staff.hireReplaceConfirm", replaces.LastName, MathX.FormatMoney(StaffMarket.SeveranceCost(world, replaces)))));
-            Ui.Line(cands, Loc.T("staff.currentLevel"), current >= 0 ? Fmt.Rating(current) : Theme.GoodText(Loc.T("staff.newRole")));
-            Ui.Note(cands, Loc.T("staff.ceiling", ceiling.ToString("0")));
         }
 
-        /// <summary>One holder: level square, name, rider and contract, then the actions as big buttons.</summary>
+        /// <summary>
+        /// One holder: level square, name and one small line (rider, contract end), with a single "Options" button
+        /// that unfolds the actions (other rider, renew, release with confirmation) in a row under it.
+        /// </summary>
         private void Holder(Transform card, WorldState world, Team team, StaffMember s)
         {
             var member = s;
             var rider = s.AssignedRiderId != null ? world.GetRider(s.AssignedRiderId) : null;
             bool expiring = s.ContractEndSeason <= world.Season;
             string until = Loc.T("staff.until", s.ContractEndSeason);
-            string detail = (rider != null ? Loc.T("staff.with", rider.FullName) + " · " : "") + (expiring ? Theme.WarnText(until) : until) + "\n" +
-                            MathX.FormatMoney(s.Salary) + " / " + Loc.T("staff.season");
-            TeamCards.PersonRow(card, s.Skill, Loc.T("staff.skill"), s.FullName, detail, null, 0);
+            string detail = (rider != null ? Loc.T("staff.with", rider.LastName) + " · " : "") + (expiring ? Theme.WarnText(until) : until);
+            bool open = _options == s.Id;
+            var head = TeamCards.PersonRow(card, s.Skill, Loc.T("staff.skill"), s.FullName, detail, null, 0.3f);
+            TeamCards.BigButton(head, open ? Loc.T("staff.closeOptions") : "···  " + Loc.T("staff.options"), () =>
+            {
+                _options = _options == member.Id ? null : member.Id;
+                _confirmFire = null;
+                Shell.Refresh();
+            }, open ? Theme.PanelLight : Color.Lerp(Theme.PanelLight, Theme.Card, 0.4f), 0.7f, 0.08f, 1, 0.92f, Theme.FontSmall + 2);
+            if (!open) return;
+
             var acts = new List<UiAct>();
             if (StaffService.PerRider(s.Role) && team.RiderIds.Count > 1)
                 acts.Add(UiFactory.Act(Loc.T("staff.otherRider"), () =>
@@ -865,6 +889,7 @@ namespace MotoManager.App.UI.Screens
                 {
                     StaffMarket.Fire(world, team, member.Id);
                     _confirmFire = null;
+                    _options = null;
                     Shell.Toast(Loc.T("staff.released", member.FullName, MathX.FormatMoney(severance)));
                 }
                 else _confirmFire = member.Id;
@@ -876,7 +901,7 @@ namespace MotoManager.App.UI.Screens
                 var act = acts[i];
                 bool fire = i == acts.Count - 1;
                 Color color = act.Primary ? Theme.Accent : fire ? (confirm ? Theme.Bad : Color.Lerp(Theme.Bad, Theme.PanelLight, 0.55f)) : Theme.PanelLight;
-                TeamCards.BigButton(row, act.Key, act.Value, color, (float)i / acts.Count, 0, (float)(i + 1) / acts.Count, 1, Theme.FontSmall + 2);
+                TeamCards.BigButton(row, act.Key, act.Value, color, (float)i / acts.Count, 0, (float)(i + 1) / acts.Count, 1, Theme.FontSmall);
             }
         }
     }
