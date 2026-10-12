@@ -1522,5 +1522,6 @@
   "finance.board.Refused": "The board refuses to raise the budget",
   "finance.board.AlreadyAsked": "You already asked for more budget this season",
   "finance.board.None": "Not available",
-  "staff.ceiling": "With your category and reputation, the staff willing to join reach level {0} at most. Reputation and a higher category open the door to the best."
+  "staff.ceiling": "With your category and reputation, the staff willing to join reach level {0} at most. Reputation and a higher category open the door to the best.",
+  "pre.rainShort": "chance of rain"
 }
