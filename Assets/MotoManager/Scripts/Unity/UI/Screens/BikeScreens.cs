@@ -11,9 +11,9 @@ namespace MotoManager.App.UI.Screens
 {
     /// <summary>
     /// "Bike development" overview, laid out like the development hub of a mobile motorsport manager: a wide card
-    /// with both riders' bikes (number, rating, surname, performance in green and reliability in purple) around a
-    /// big bike pictogram, the R&amp;D and facilities tiles on the right, and one tile per bike component (its
-    /// level big in timing yellow) that opens its development. The full on-track values stay one tap away.
+    /// with both riders' bikes (surname, labelled rating, race-number plate, performance in green and reliability
+    /// in purple) around a big bike pictogram, the R&amp;D and facilities tiles on the right, and one tile per bike
+    /// component (its level big in timing yellow) that opens its development.
     /// </summary>
     public class BikeScreen : ScreenBase
     {
@@ -37,7 +37,7 @@ namespace MotoManager.App.UI.Screens
 
             // ---- top: the bikes of both riders, R&D and facilities
             var top = UiFactory.Row(list, TopHeight);
-            string right = (maker != null ? maker.Name + " · " : "") + (bikeClass != null ? bikeClass.Name : "");
+            string right = maker != null ? maker.Name : null;
             var body = BikeCards.Tile(top, 0, 0, 0.75f, 1, Loc.T("bike.devTitle"), null, null, null, right, true);
             double perfScore = PerformanceScore(perf);
             for (int i = 0; i < 2; i++)
@@ -49,7 +49,7 @@ namespace MotoManager.App.UI.Screens
             RndTile(top, team, running);
             FacilitiesTile(top, team);
 
-            // ---- components: one tile each, tap to develop
+            // ---- components: one tile each (name and level), tap to develop
             var comps = Components(bike, bikeClass);
             int perRow = comps.Count <= 4 ? Math.Max(1, comps.Count) : (comps.Count + 1) / 2;
             RectTransform row = null;
@@ -59,22 +59,6 @@ namespace MotoManager.App.UI.Screens
                 int col = i % perRow;
                 ComponentTile(row, (float)col / perRow, (float)(col + 1) / perRow, world, team, bike, comps[i], running);
             }
-
-            // ---- every on-track value, on demand
-            var attrs = (PerfAttr[])Enum.GetValues(typeof(PerfAttr));
-            Ui.Expander(list, "bike.perf", Loc.T("bike.performance"), inner =>
-            {
-                RectTransform l, rr;
-                Ui.Columns(inner, out l, out rr);
-                var lc = Ui.Card(l, null);
-                var rc = Ui.Card(rr, null);
-                int half = (attrs.Length + 1) / 2;
-                for (int i = 0; i < attrs.Length; i++)
-                    Ui.Bar(i < half ? lc : rc, Loc.T("perf." + attrs[i]), perf[attrs[i]] / 100.0, perf[attrs[i]].ToString("0"), Ui.RatingColor(perf[attrs[i]]), 34);
-                Ui.Note(lc, Loc.T("bike.performanceInfo"));
-                Ui.Note(rc, Loc.T("bike.componentsNote"));
-                Ui.Note(rc, Loc.T("bike.statsNote"));
-            }, Shell.Refresh);
         }
 
         /// <summary>The components of the bike in the order of its class (unknown ones last).</summary>
@@ -122,45 +106,36 @@ namespace MotoManager.App.UI.Screens
                 UiFactory.Stretch((RectTransform)go.transform);
                 return;
             }
-            // Identity: number badge, rating square, surname and the bike number.
-            var badge = BikeCards.NumberBadge(half, 0, 0.6f, 0, 0.94f, r.Number).rectTransform;
-            badge.offsetMin = new Vector2(14, 0);
-            badge.offsetMax = new Vector2(88, 0);
+            // Identity: the rider's rating (labelled) on the left, surname and "MOTO 01" next to it, and the race
+            // number apart on the right as a small team-colour plate ("#55").
             double overall = r.Attributes.Overall;
-            BikeCards.Square(half, new Vector2(0, 0.77f), new Vector2(0, 0.5f), new Vector2(96, 0), 62, overall.ToString("0"), Ui.RatingColor(overall));
-            var name = BikeCards.At(half, 0, 0.77f, 1, 0.98f, "<b>" + Theme.Caps(r.LastName ?? r.FullName) + "</b>", Theme.FontNormal + 2,
+            BikeCards.Square(half, new Vector2(0, 0.8f), new Vector2(0, 0.5f), new Vector2(14, 0), 74, overall.ToString("0"),
+                Ui.RatingColor(overall), Loc.T("bike.riderRating"));
+            var name = BikeCards.At(half, 0, 0.8f, 1, 0.99f, "<b>" + Theme.Caps(r.LastName ?? r.FullName) + "</b>", Theme.FontNormal + 2,
                 TextAnchor.MiddleLeft, Theme.Text, FontStyle.Italic, 0);
-            name.rectTransform.offsetMin = new Vector2(170, 0);
-            name.rectTransform.offsetMax = new Vector2(-10, 0);
-            var moto = BikeCards.At(half, 0, 0.56f, 1, 0.78f, Theme.Caps(Loc.T("bike.machine", (index + 1).ToString("00"))), Theme.FontLarge - 2,
+            name.rectTransform.offsetMin = new Vector2(102, 0);
+            name.rectTransform.offsetMax = new Vector2(-12, 0);
+            var moto = BikeCards.At(half, 0, 0.61f, 1, 0.8f, Theme.Caps(Loc.T("bike.machine", (index + 1).ToString("00"))), Theme.FontSmall,
                 TextAnchor.MiddleLeft, Color.Lerp(Theme.TextDim, Color.white, 0.35f), FontStyle.BoldAndItalic, 0);
-            moto.rectTransform.offsetMin = new Vector2(170, 0);
-            moto.rectTransform.offsetMax = new Vector2(-10, 0);
+            moto.rectTransform.offsetMin = new Vector2(102, 0);
+            moto.rectTransform.offsetMax = new Vector2(-104, 0);
+            var plate = BikeCards.NumberBadge(half, 1, 0.62f, 1, 0.8f, r.Number).rectTransform;
+            plate.offsetMin = new Vector2(-94, 0);
+            plate.offsetMax = new Vector2(-14, 0);
 
             // The two key figures, big, with a thick bar each.
-            BikeCards.StatRow(half, 0.29f, 0.54f, Loc.T("bike.perfShort"), perfScore.ToString("0"), perfScore / 100.0, BikeCards.PerfColor);
+            BikeCards.StatRow(half, 0.31f, 0.57f, Loc.T("bike.perfShort"), perfScore.ToString("0"), perfScore / 100.0, BikeCards.PerfColor);
             double rel = Reliability(world, team, perf, r);
-            BikeCards.StatRow(half, 0.03f, 0.28f, Loc.T("bike.relShort"), rel.ToString("0") + "%", rel / 100.0, BikeCards.RelColor);
+            BikeCards.StatRow(half, 0.03f, 0.29f, Loc.T("bike.relShort"), rel.ToString("0") + "%", rel / 100.0, BikeCards.RelColor);
         }
 
         private static void BikeCentre(RectTransform body, Motorcycle bike)
         {
             var mid = UiFactory.Rect("Bike", body);
             UiFactory.Place(mid, 0.4f, 0, 0.6f, 1);
-            var glow = UiFactory.Decor("Glow", mid, Theme.Alpha(Theme.Accent, 0.16f));
-            UiFactory.Round(glow, 6f);
-            UiFactory.Place(glow.rectTransform, 0.04f, 0.3f, 0.96f, 0.94f);
             var icon = UiIcons.Icon(mid, UiIcons.Bike, Color.Lerp(Theme.Accent, Color.white, 0.35f));
-            UiFactory.Place(icon.rectTransform, 0.02f, 0.32f, 0.98f, 0.94f);
-            var sep = UiFactory.Decor("Sep", mid, new Color(1, 1, 1, 0.07f));
-            sep.rectTransform.anchorMin = new Vector2(0, 0.06f);
-            sep.rectTransform.anchorMax = new Vector2(0, 0.94f);
-            sep.rectTransform.offsetMax = new Vector2(1, 0);
-            var sep2 = UiFactory.Decor("Sep", mid, new Color(1, 1, 1, 0.07f));
-            sep2.rectTransform.anchorMin = new Vector2(1, 0.06f);
-            sep2.rectTransform.anchorMax = new Vector2(1, 0.94f);
-            sep2.rectTransform.offsetMin = new Vector2(-1, 0);
-            BikeCards.At(mid, 0, 0.04f, 1, 0.3f, "<b>" + Theme.Caps(bike.Model ?? "") + "</b>\n" + Theme.Dim(bike.Year.ToString()), Theme.FontSmall,
+            UiFactory.Place(icon.rectTransform, 0.04f, 0.3f, 0.96f, 0.94f);
+            BikeCards.At(mid, 0, 0.04f, 1, 0.28f, "<b>" + Theme.Caps(bike.Model ?? "") + "</b>", Theme.FontSmall,
                 TextAnchor.MiddleCenter, Theme.Text, FontStyle.Italic, 6);
         }
 
@@ -193,34 +168,29 @@ namespace MotoManager.App.UI.Screens
         {
             bool allowed = DevelopmentService.ComponentAllowed(world, Game.Db, team, comp);
             double level = bike.Component(comp);
-            double gained;
-            bike.SeasonGains.TryGetValue(comp, out gained);
             DevelopmentProject project = null;
             foreach (var p in running) if (p.Component == comp) { project = p; break; }
             string target = comp;
-            // The status sits in the body (a header badge would squeeze the name on a narrow tile).
+            // Name in the header, the level big, and at most one status word under it.
             var body = BikeCards.Tile(row, x0, 0, x1, 1, Fmt.Component(comp), () =>
             {
                 ProjectsPage.Focus = target;
                 Shell.Show<ProjectsPage>();
             }, null, null, null, false, !allowed);
-            string caption = "<size=" + (Theme.FontSmall - 2) + ">" + Theme.Caps(Loc.T("bike.level")) + "  </size>";
-            BikeCards.At(body, 0, 0.36f, 1, 1, caption + level.ToString("0"), Theme.FontTitle - 6, TextAnchor.MiddleCenter,
-                allowed ? Theme.Timing : Theme.TextDim, FontStyle.BoldAndItalic);
-            string status;
+            string status = null;
             if (!allowed) status = Theme.Dim(Theme.Caps(Loc.T("bike.frozen")));
             else if (project != null) status = Theme.GoodText(Theme.Caps(Loc.T("bike.inDev", (project.DaysWorked / Math.Max(1, project.DurationDays) * 100).ToString("0"))));
-            else if (gained > 0) status = Theme.GoodText(Loc.T("bike.seasonGain", Fmt.Signed(gained)));
-            else status = Theme.Dim(Theme.Caps(Loc.T("bike.tapToDevelop")));
-            BikeCards.At(body, 0, 0.08f, 1, 0.38f, status, Theme.FontSmall - 2, TextAnchor.MiddleCenter, Theme.Text, FontStyle.Bold, 8);
-            BikeCards.Gauge(body, 0, 0, 1, 0.045f, level / 100.0, allowed ? Ui.RatingColor(level) : (Color)Theme.Steel);
+            BikeCards.At(body, 0, status != null ? 0.34f : 0.04f, 1, 0.98f, level.ToString("0"), Theme.FontTitle - 8, TextAnchor.MiddleCenter,
+                allowed ? Theme.Timing : Theme.TextDim, FontStyle.BoldAndItalic);
+            if (status != null)
+                BikeCards.At(body, 0, 0.04f, 1, 0.36f, status, Theme.FontSmall - 2, TextAnchor.MiddleCenter, Theme.Text, FontStyle.Bold, 8);
         }
     }
 
     /// <summary>
     /// R&amp;D, one component at a time: big tabs across the top; for the chosen component its level, one line on
-    /// what it does and the quick "upgrade part" button; the chosen project (gain, chance of success, cost,
-    /// engineering, time) with the big start button; on the right the projects running (progress, cancel) and the
+    /// what it does; the ambition tabs with the chosen project (new level, gain, chance of success) and ONE start
+    /// button carrying that project's gain, cost and time; on the right the projects running (progress, cancel) and the
     /// history.
     /// </summary>
     public class ProjectsPage : ScreenBase
@@ -348,23 +318,14 @@ namespace MotoManager.App.UI.Screens
             double level = bike.Component(comp);
             var templates = Templates(bike, comp);
 
-            // Level badge, one sentence, and the quick upgrade (the safe, cheapest project).
+            // Level badge and one sentence on what the component does.
             var head = UiFactory.Row(col, 100);
             BikeCards.Square(head, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(6, 0), 92, level.ToString("0"),
                 allowed ? Theme.Timing : Theme.Steel, Loc.T("bike.levelShort"));
-            var info = BikeCards.At(head, 0, 0, 0.6f, 1, "<b>" + Theme.Caps(Fmt.Component(comp)) + "</b>\n" + Theme.Dim(Loc.T("compinfo." + comp)),
+            var info = BikeCards.At(head, 0, 0, 1, 1, "<b>" + Theme.Caps(Fmt.Component(comp)) + "</b>\n" + Theme.Dim(Loc.T("compinfo." + comp)),
                 Theme.FontSmall, TextAnchor.MiddleLeft, Theme.Text, FontStyle.Normal, 0);
             info.rectTransform.offsetMin = new Vector2(112, 0);
             info.rectTransform.offsetMax = new Vector2(-8, 0);
-            if (templates.Count > 0)
-            {
-                var quick = templates[0];
-                string why = Blocker(world, team, quick, running, capacity, allowed);
-                double cost = DevelopmentService.ProjectCost(world, Game.Db, team, quick);
-                BikeCards.BigButton(head, 0.6f, 0.06f, 1, 0.94f, Loc.T("rnd.upgrade", Fmt.Signed(Gain(quick, comp))),
-                    why ?? MathX.FormatMoney(cost) + " · " + Loc.T("rnd.days", RealDays(world, team, comp, quick.DurationDays)),
-                    BikeCards.UpgradeColor, () => StartProject(world, team, quick), why == null);
-            }
 
             if (!allowed)
             {
@@ -423,14 +384,14 @@ namespace MotoManager.App.UI.Screens
             }
             BikeCards.At(card.transform, 0.32f, 0.02f, 1, 0.22f, string.Join("   ", notes.ToArray()), Theme.FontSmall - 4, TextAnchor.MiddleCenter, Theme.Text, FontStyle.Normal, 8);
 
-            // Cost, engineering and time, and the big start button.
-            var bar = UiFactory.Row(col, 80);
-            BikeCards.Plate(bar, 0, 0, 0.64f, 1, 0.45f, 2);
-            Cell(bar, 0, 0.2f, Loc.T("rnd.cost"), Theme.Money(projectCost));
-            Cell(bar, 0.2f, 0.42f, Loc.T("rnd.engineering"), Fmt.Rating(quality));
-            Cell(bar, 0.42f, 0.64f, Loc.T("rnd.time"), Loc.T("rnd.days", RealDays(world, team, comp, t.DurationDays)));
+            // The one start button, carrying the selected ambition's gain, cost and time (engineering beside it).
+            var bar = UiFactory.Row(col, 84);
+            BikeCards.Plate(bar, 0, 0, 0.26f, 1, 0.45f, 2);
+            Cell(bar, 0, 0.26f, Loc.T("rnd.engineering"), Fmt.Rating(quality));
             var template = t;
-            BikeCards.BigButton(bar, 0.64f, 0, 1, 1, Loc.T("rnd.start"), blocker, BikeCards.StartColor, () => StartProject(world, team, template), blocker == null);
+            int days = RealDays(world, team, comp, t.DurationDays);
+            BikeCards.BigButton(bar, 0.26f, 0, 1, 1, Loc.T("rnd.startWith", Fmt.Signed(gain), MathX.FormatMoney(projectCost), days), blocker,
+                BikeCards.StartColor, () => StartProject(world, team, template), blocker == null);
         }
 
         private static void Cell(RectTransform bar, float x0, float x1, string caption, string value)
@@ -511,8 +472,8 @@ namespace MotoManager.App.UI.Screens
 
     /// <summary>
     /// Facilities as a grid of tiles (five per row, one screen): the caps name, the level big in timing yellow
-    /// with pips, one line on what it does and a big "upgrade" button with the price (greyed with the reason when
-    /// the cash is short). The longer explanations stay folded behind ⓘ.
+    /// with pips, one short sentence on what it does and what each level adds, and a big "upgrade" button with the
+    /// price (greyed with the reason when the cash is short).
     /// </summary>
     public class FacilitiesPage : ScreenBase
     {
@@ -536,37 +497,27 @@ namespace MotoManager.App.UI.Screens
                 int col = idx % PerRow;
                 FacilityTile(row, (float)col / PerRow, (float)(col + 1) / PerRow, world, team, types[idx], cash);
             }
-
-            Ui.Expander(list, "facility.info", "ⓘ  " + Loc.T("facility.effect"), inner =>
-            {
-                RectTransform l, r;
-                Ui.Columns(inner, out l, out r);
-                var lc = Ui.Card(l, null);
-                var rc = Ui.Card(r, null);
-                int half = (types.Length + 1) / 2;
-                for (int idx = 0; idx < types.Length; idx++)
-                    UiFactory.Paragraph(idx < half ? lc : rc, "<b>" + Loc.T("facility." + types[idx]) + "</b>  " + Theme.Dim(Loc.T("facilitylong." + types[idx])), Theme.FontSmall - 2);
-                UiFactory.Paragraph(rc, Theme.Dim(Loc.T("facility.note")), Theme.FontSmall - 4);
-            }, Shell.Refresh);
         }
 
         private void FacilityTile(RectTransform row, float x0, float x1, WorldState world, Team team, FacilityType type, double cash)
         {
             int lvl = team.Facility(type);
             var body = BikeCards.Tile(row, x0, 0, x1, 1, Loc.T("facility." + type));
-            BikeCards.At(body, 0, 0.68f, 1, 1, Theme.TimingText("<size=" + Theme.FontSmall + ">" + Theme.Caps(Loc.T("bike.level")) + " </size>" + lvl),
-                Theme.FontLarge + 4, TextAnchor.MiddleCenter, Theme.Text, FontStyle.BoldAndItalic);
-            BikeCards.Pips(body, 0.12f, 0.585f, 0.88f, 0.665f, lvl, MaxLevel);
-            BikeCards.At(body, 0, 0.38f, 1, 0.57f, Theme.Dim(Loc.T("facilityinfo." + type)), Theme.FontSmall - 4, TextAnchor.MiddleCenter, Theme.Text, FontStyle.Normal, 8);
+            BikeCards.At(body, 0, 0.74f, 1, 1, Theme.TimingText("<size=" + Theme.FontSmall + ">" + Theme.Caps(Loc.T("bike.level")) + " </size>" + lvl),
+                Theme.FontLarge, TextAnchor.MiddleCenter, Theme.Text, FontStyle.BoldAndItalic);
+            BikeCards.Pips(body, 0.12f, 0.655f, 0.88f, 0.72f, lvl, MaxLevel);
+            // One sentence: what it does and what each level adds.
+            BikeCards.At(body, 0, 0.36f, 1, 0.64f, Loc.T("facilitytip." + type), Theme.FontSmall - 4, TextAnchor.MiddleCenter,
+                Color.Lerp(Theme.TextDim, Color.white, 0.3f), FontStyle.Normal, 8);
             if (lvl >= MaxLevel)
             {
-                BikeCards.At(body, 0, 0.02f, 1, 0.37f, Theme.TimingText("<b>" + Theme.Caps(Loc.T("facility.max")) + "</b>"), Theme.FontSmall, TextAnchor.MiddleCenter, Theme.Text, FontStyle.Italic);
+                BikeCards.At(body, 0, 0.02f, 1, 0.34f, Theme.TimingText("<b>" + Theme.Caps(Loc.T("facility.max")) + "</b>"), Theme.FontSmall, TextAnchor.MiddleCenter, Theme.Text, FontStyle.Italic);
                 return;
             }
             double cost = FinanceService.FacilityUpgradeCost(world, Game.Db, team, type);
             bool affordable = cash >= cost;
             var target = type;
-            BikeCards.BigButton(body, 0, 0, 1, 0.38f, Loc.T("facility.upgradeCost", MathX.FormatMoney(cost)), affordable ? null : Loc.T("rnd.noCash"),
+            BikeCards.BigButton(body, 0, 0, 1, 0.35f, Loc.T("facility.upgradeCost", MathX.FormatMoney(cost)), affordable ? null : Loc.T("rnd.noCash"),
                 BikeCards.UpgradeColor, () =>
                 {
                     bool ok = FinanceService.UpgradeFacility(world, Game.Db, team, target);
