@@ -318,7 +318,8 @@ namespace MotoManager.Core.Season
     /// <summary>JSON save games with a format version.</summary>
     public static class SaveSystem
     {
-        public const int CurrentVersion = 1;
+        /// <summary>v2: world history, records, grid targets (see SaveMigrations).</summary>
+        public const int CurrentVersion = 2;
 
         public static string Serialize(WorldState world)
         {
@@ -328,9 +329,14 @@ namespace MotoManager.Core.Season
 
         public static WorldState Deserialize(string json)
         {
-            var world = JsonSettings.Deserialize<WorldState>(json);
+            if (string.IsNullOrWhiteSpace(json)) throw new FormatException("Empty save");
+            var obj = Newtonsoft.Json.Linq.JObject.Parse(json);
+            int version = obj["Version"] != null ? (int)obj["Version"] : 1;
+            if (version > CurrentVersion) throw new FormatException("Save from a newer version (" + version + ")");
+            if (version < CurrentVersion) obj = SaveMigrations.Migrate(obj, CurrentVersion);
+            var world = obj.ToObject<WorldState>(JsonSettings.CreateSerializer());
             if (world == null) throw new FormatException("Empty save");
-            if (world.Version > CurrentVersion) throw new FormatException("Save from a newer version (" + world.Version + ")");
+            SaveMigrations.Repair(world);
             return world;
         }
     }

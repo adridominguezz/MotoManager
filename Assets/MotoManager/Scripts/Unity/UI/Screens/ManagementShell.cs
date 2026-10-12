@@ -332,6 +332,9 @@ namespace MotoManager.App.UI.Screens
                 }));
             }
             UiFactory.ButtonRow(panel.transform, 60, slots.ToArray());
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            UiFactory.ButtonRow(panel.transform, 60, DebugManagement.Actions(Session, () => { ToggleMenu(); Refresh(); }));
+#endif
             UiFactory.ButtonRow(panel.transform, 60,
                 UiFactory.Option(Loc.T("audio.music"), GameAudio.MusicOn, () => { GameAudio.MusicOn = !GameAudio.MusicOn; ToggleMenu(); ToggleMenu(); }),
                 UiFactory.Option(Loc.T("audio.sound"), GameAudio.SfxOn, () => { GameAudio.SfxOn = !GameAudio.SfxOn; ToggleMenu(); ToggleMenu(); }));

@@ -626,7 +626,10 @@ que se quedan en pista, modelos toscos y opción de entrar a boxes (en motos no 
 - Tres ranuras de guardado manual además del autoguardado, con resumen (mánager, equipo, temporada, fecha); cargar
   desde la pantalla inicial y guardar desde el menú ☰.
 - Ajustes recordados: idioma, tamaño de texto, música, sonido y velocidad de carrera.
-- Pendiente: panel de depuración solo en builds de desarrollo y migraciones encadenadas de guardado.
+- Migraciones encadenadas de guardado (versión 2): cada paso N→N+1 trabaja sobre el JSON antes de cargar y una
+  reparación final completa lo que falte; las partidas de una versión más nueva se rechazan. Test de migración v1→v2.
+- Panel de depuración solo en el editor y en builds de desarrollo (compilación condicional): en carrera, lluvia /
+  seco / natural, caída, avería, neumáticos al 90 % y velocidad; en gestión, +5 M y terminar el desarrollo.
 
 ### Sesión 8.8 — Repaso final de interfaz ✅
 - Componente de gráficos (`Charts.LineChart`): varias series, líneas guía, escala, leyenda; el jugador resaltado.

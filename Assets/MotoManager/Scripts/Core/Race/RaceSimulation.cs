@@ -1210,6 +1210,27 @@ namespace MotoManager.Core.Race
             }
         }
 
+        // ------------------------------------------------------------------ development builds only
+
+        public void DebugCrash(int riderIndex)
+        {
+            if (riderIndex < 0 || riderIndex >= Riders.Count || Riders[riderIndex].Status != RaceStatus.Racing) return;
+            Crash(Riders[riderIndex], CrashType.LowSide, "debug");
+        }
+
+        public void DebugFailure(int riderIndex)
+        {
+            if (riderIndex < 0 || riderIndex >= Riders.Count || Riders[riderIndex].Status != RaceStatus.Racing) return;
+            MechanicalProblem(Riders[riderIndex]);
+        }
+
+        public void DebugTireWear(int riderIndex, double wear)
+        {
+            if (riderIndex < 0 || riderIndex >= Riders.Count) return;
+            Riders[riderIndex].Front.Wear = wear;
+            Riders[riderIndex].Rear.Wear = wear;
+        }
+
         private void MechanicalProblem(RiderRaceState r)
         {
             var types = new[] { FailureType.Engine, FailureType.Electronics, FailureType.Brakes, FailureType.Transmission, FailureType.Cooling, FailureType.Suspension };

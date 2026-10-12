@@ -87,10 +87,19 @@ namespace MotoManager.Core.Race
             return r;
         }
 
+        private double _forcedRain = -1;
+
+        /// <summary>Development builds only: forces the rain (0 = dry from now on, also dries the track; -1 = natural).</summary>
+        public void DebugForceRain(double intensity)
+        {
+            _forcedRain = intensity;
+            if (intensity == 0) TrackWetness = 0;
+        }
+
         public void Update(double dt, double traffic = 0)
         {
             Time += dt;
-            RainIntensity = RainAt(Time);
+            RainIntensity = _forcedRain >= 0 ? _forcedRain : RainAt(Time);
             double sun = (1 - _setup.CloudCover) * (1 - Math.Min(1, RainIntensity * 3));
             AirTemp = _setup.AirTemp - RainIntensity * 3;
             double targetTrack = AirTemp + 4 + 14 * sun - 6 * TrackWetness;

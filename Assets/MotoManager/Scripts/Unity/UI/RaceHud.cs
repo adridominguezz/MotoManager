@@ -72,6 +72,9 @@ namespace MotoManager.App.UI
             hud._view = view;
             hud._root = UiFactory.SafeRoot(canvas);
             hud.Build(title);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            DebugRace.Attach(hud._root, view);
+#endif
             return hud;
         }
 
