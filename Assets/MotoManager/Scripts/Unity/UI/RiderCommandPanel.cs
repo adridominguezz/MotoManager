@@ -65,6 +65,7 @@ namespace MotoManager.App.UI
                 UiFactory.Place(_rowTyre[i].rectTransform, 0.62f, 0, 0.74f, 1);
                 _rowGap[i] = UiFactory.Label("Gap", _rowBg[i].transform, "", Theme.FontSmall - 2, TextAnchor.MiddleRight, text);
                 UiFactory.Place(_rowGap[i].rectTransform, 0.74f, 0, 0.97f, 1);
+                Fit(_rowPos[i]); Fit(_rowName[i]); Fit(_rowTyre[i]); Fit(_rowGap[i]);
             }
 
             // Number badge in team colour (left); front and rear tyre and fuel (right); orders below.
@@ -103,6 +104,7 @@ namespace MotoManager.App.UI
             if (fuel) UiFactory.Place(_laps.rectTransform, 0.31f, 0.28f, 0.97f, 0.35f);
             else UiFactory.Place(_laps.rectTransform, 0.31f, 0.33f, 0.97f, 0.43f);
             _fuelBar.transform.parent.gameObject.SetActive(fuel);
+            Fit(_front); Fit(_rear); Fit(_fuel); Fit(_status);
 
             _pace = UiFactory.Button("Pace", root, "", CyclePace, Theme.PanelLight, Theme.FontSmall - 4);
             UiFactory.Place((RectTransform)_pace.transform, 0.02f, 0.135f, 0.5f, 0.27f, 3);
@@ -110,6 +112,14 @@ namespace MotoManager.App.UI
             UiFactory.Place((RectTransform)_mode.transform, 0.5f, 0.135f, 0.98f, 0.27f, 3);
             _auto = UiFactory.Button("Auto", root, Loc.T("cmd.auto"), () => Send(new RaceCommand { Type = RaceCommandType.SetAutoManaged, Flag = !_rider.Entry.AutoManaged }), Theme.PanelLight, Theme.FontSmall - 4);
             UiFactory.Place((RectTransform)_auto.transform, 0.02f, 0.005f, 0.98f, 0.135f, 3);
+        }
+
+        /// <summary>Shrinks a label to its box on small screens instead of letting Unity drop the line.</summary>
+        private static void Fit(Text t)
+        {
+            t.resizeTextForBestFit = true;
+            t.resizeTextMinSize = 10;
+            t.resizeTextMaxSize = t.fontSize;
         }
 
         private static Image Bar(RectTransform root, float xMin, float y)

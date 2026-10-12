@@ -29,11 +29,13 @@ namespace MotoManager.App.UI
         private readonly List<Image> _plates = new List<Image>();
         private readonly List<Text> _dotNumbers = new List<Text>();
         private RectTransform _tower;
-        private Button _towerButton;
-        private RectTransform _leftCard;
+        private RectTransform _towerTitle;
         private Text _banner;
         private Image _bannerBg;
-        private const string TowerPref = "MotoManager.RaceTower";
+        // Phone layout: standings on the left, the player's riders on the right, the track in between.
+        private const float TowerRight = 0.245f;
+        private const float CardLeft = 0.755f;
+        private const float TowerRowH = 34f;
         private const string GapPref = "MotoManager.RaceGapMode";
         private Button _gapButton;
         /// <summary>Gaps to the rider ahead (interval) instead of to the leader.</summary>
@@ -85,6 +87,18 @@ namespace MotoManager.App.UI
             var hits = new List<RaycastResult>();
             EventSystem.current.RaycastAll(data, hits);
             return hits.Count > 0;
+        }
+
+        /// <summary>A tower label: shrinks to fit and never vanishes when the row is shorter than the font.</summary>
+        private static Text TowerLabel(string name, Transform parent, int size, TextAnchor align, Color color)
+        {
+            var t = UiFactory.Label(name, parent, "", size, align, color);
+            t.supportRichText = true;
+            // Best fit (wrap + truncate) shrinks the text to the row instead of dropping it.
+            t.resizeTextForBestFit = true;
+            t.resizeTextMinSize = 10;
+            t.resizeTextMaxSize = size;
+            return t;
         }
 
         private void Build(string title)
@@ -160,50 +174,76 @@ namespace MotoManager.App.UI
             var skip = UiFactory.Button("Skip", top.transform, ">>|", () => _view.FinishInstantly(), Theme.PanelLight, Theme.FontSmall);
             UiFactory.Place((RectTransform)skip.transform, 0.957f, 0.1f, 0.995f, 0.9f);
 
-            // Timing tower
+            // Timing tower, always on the left: fixed-height rows (a finger can tap them, the text always fits) that
+            // scroll when the field is longer than the screen.
             var tower = UiFactory.Panel("Tower", _root, new Color(0.035f, 0.038f, 0.047f, 0.9f), true);
-            UiFactory.Place(tower.rectTransform, 0.005f, 0.005f, 0.22f, 0.855f);
+            UiFactory.Place(tower.rectTransform, 0.005f, 0.005f, TowerRight, 0.855f);
             _tower = tower.rectTransform;
-            float rowH = 1f / Mathf.Max(sim.Riders.Count, 18);
+            var viewport = UiFactory.Panel("Viewport", _tower, new Color(0, 0, 0, 0));
+            UiFactory.Stretch(viewport.rectTransform);
+            viewport.gameObject.AddComponent<RectMask2D>();
+            var content = UiFactory.Rect("Content", viewport.transform);
+            content.anchorMin = new Vector2(0, 1);
+            content.anchorMax = new Vector2(1, 1);
+            content.pivot = new Vector2(0.5f, 1);
+            content.offsetMin = new Vector2(0, -TowerRowH * sim.Riders.Count);
+            content.offsetMax = Vector2.zero;
+            var scroll = viewport.gameObject.AddComponent<ScrollRect>();
+            scroll.horizontal = false;
+            scroll.movementType = ScrollRect.MovementType.Clamped;
+            scroll.scrollSensitivity = 30;
+            scroll.viewport = viewport.rectTransform;
+            scroll.content = content;
             for (int i = 0; i < sim.Riders.Count; i++)
             {
                 var row = new TowerRow();
-                var bg = UiFactory.Panel("Row", tower.transform, new Color(1, 1, 1, 0.0f));
+                var bg = UiFactory.Panel("Row", content, new Color(1, 1, 1, 0.0f));
                 row.Background = bg;
                 row.Rect = bg.rectTransform;
-                UiFactory.Place(row.Rect, 0, 1 - rowH * (i + 1), 1, 1 - rowH * i);
+                row.Rect.anchorMin = new Vector2(0, 1);
+                row.Rect.anchorMax = new Vector2(1, 1);
+                row.Rect.offsetMin = new Vector2(0, -TowerRowH * (i + 1));
+                row.Rect.offsetMax = new Vector2(0, -TowerRowH * i);
                 var button = bg.gameObject.AddComponent<Button>();
+                button.transition = Selectable.Transition.None;
                 int index = i;
                 button.onClick.AddListener(() => OnRowClicked(index));
                 // Position number in a light block with dark type (TV timing tower).
                 var posBlock = UiFactory.Panel("PosBlock", row.Rect, new Color(0.9f, 0.91f, 0.93f, 1f));
                 posBlock.raycastTarget = false;
                 UiFactory.Slant(posBlock, 4f);
-                UiFactory.Place(posBlock.rectTransform, 0.01f, 0.1f, 0.125f, 0.9f);
-                row.Position = UiFactory.Label("Pos", posBlock.transform, "", Theme.FontSmall, TextAnchor.MiddleCenter, new Color32(12, 13, 16, 255));
+                UiFactory.Place(posBlock.rectTransform, 0.01f, 0.1f, 0.13f, 0.9f);
+                row.Position = TowerLabel("Pos", posBlock.transform, Theme.FontSmall - 2, TextAnchor.MiddleCenter, new Color32(12, 13, 16, 255));
                 row.Position.fontStyle = FontStyle.BoldAndItalic;
                 UiFactory.Stretch(row.Position.rectTransform);
                 row.PosBlock = posBlock;
                 row.TeamBar = UiFactory.Panel("Team", row.Rect, Color.white);
-                UiFactory.Place(row.TeamBar.rectTransform, 0.14f, 0.15f, 0.16f, 0.85f);
-                row.Name = UiFactory.Label("Name", row.Rect, "", Theme.FontSmall, TextAnchor.MiddleLeft);
-                UiFactory.Place(row.Name.rectTransform, 0.18f, 0, 0.55f, 1);
-                row.Gap = UiFactory.Label("Gap", row.Rect, "", Theme.FontSmall - 2, TextAnchor.MiddleRight, Theme.TextDim);
-                UiFactory.Place(row.Gap.rectTransform, 0.5f, 0, 0.84f, 1);
-                row.Tires = UiFactory.Label("Tires", row.Rect, "", Theme.FontSmall - 4, TextAnchor.MiddleCenter, Theme.TextDim);
-                UiFactory.Place(row.Tires.rectTransform, 0.85f, 0, 1, 1);
+                row.TeamBar.raycastTarget = false;
+                UiFactory.Place(row.TeamBar.rectTransform, 0.145f, 0.15f, 0.16f, 0.85f);
+                row.Name = TowerLabel("Name", row.Rect, Theme.FontSmall - 2, TextAnchor.MiddleLeft, Theme.Text);
+                row.Name.fontStyle = FontStyle.Bold;
+                UiFactory.Place(row.Name.rectTransform, 0.18f, 0, 0.6f, 1);
+                row.Gap = TowerLabel("Gap", row.Rect, Theme.FontSmall - 4, TextAnchor.MiddleRight, Theme.TextDim);
+                UiFactory.Place(row.Gap.rectTransform, 0.6f, 0, 0.87f, 1);
+                row.Tires = TowerLabel("Tires", row.Rect, Theme.FontSmall - 6, TextAnchor.MiddleCenter, Theme.TextDim);
+                UiFactory.Place(row.Tires.rectTransform, 0.87f, 0, 1, 1);
                 _rows.Add(row);
             }
 
-            // Camera buttons
+            // Camera buttons (top right) and the gap mode (above the tower).
             var overview = _camCircuit = UiFactory.Button("Overview", _root, Loc.T("race.cam.circuit"), () => _view.Cam.SetMode(CameraMode.Overview), Theme.PanelLight, Theme.FontSmall);
             UiFactory.Place((RectTransform)overview.transform, 0.775f, 0.865f, 0.85f, 0.925f, 3);
             var follow = _camFollow = UiFactory.Button("Follow", _root, Loc.T("race.cam.follow"), () => _view.Select(_view.SelectedRider), Theme.PanelLight, Theme.FontSmall);
             UiFactory.Place((RectTransform)follow.transform, 0.85f, 0.865f, 0.925f, 0.925f, 3);
             var sector = _camSector = UiFactory.Button("Sector", _root, Loc.T("race.tower.sector"), () => _view.NextSectorView(), Theme.PanelLight, Theme.FontSmall);
             UiFactory.Place((RectTransform)sector.transform, 0.925f, 0.865f, 0.995f, 0.925f, 3);
-            _towerButton = UiFactory.Button("TowerToggle", _root, Loc.T("race.standings"), () => SetTower(!_tower.gameObject.activeSelf), Theme.PanelLight, Theme.FontSmall);
-            UiFactory.Place((RectTransform)_towerButton.transform, 0.005f, 0.865f, 0.11f, 0.925f, 3);
+            var towerTitle = UiFactory.Label("TowerTitle", _root, Theme.Caps(Loc.T("race.standings")), Theme.FontSmall - 4, TextAnchor.MiddleLeft, Theme.TextDim);
+            towerTitle.fontStyle = FontStyle.BoldAndItalic;
+            towerTitle.resizeTextForBestFit = true;
+            towerTitle.resizeTextMinSize = Theme.FontSmall - 12;
+            towerTitle.resizeTextMaxSize = Theme.FontSmall - 4;
+            UiFactory.Place(towerTitle.rectTransform, 0.01f, 0.865f, 0.12f, 0.925f);
+            _towerTitle = towerTitle.rectTransform;
             try { _gapToAhead = PlayerPrefs.GetInt(GapPref, 0) == 1; } catch (System.Exception) { }
             _gapButton = UiFactory.Button("GapMode", _root, "", () =>
             {
@@ -211,12 +251,18 @@ namespace MotoManager.App.UI
                 try { PlayerPrefs.SetInt(GapPref, _gapToAhead ? 1 : 0); } catch (System.Exception) { }
                 RefreshTower();
             }, Theme.PanelLight, Theme.FontSmall - 2);
-            UiFactory.Place((RectTransform)_gapButton.transform, 0.11f, 0.865f, 0.22f, 0.925f, 3);
+            UiFactory.Place((RectTransform)_gapButton.transform, 0.12f, 0.865f, TowerRight, 0.925f, 3);
+            var gapLabel = _gapButton.GetComponentInChildren<Text>();
+            gapLabel.resizeTextForBestFit = true;
+            gapLabel.resizeTextMinSize = Theme.FontSmall - 10;
+            gapLabel.resizeTextMaxSize = Theme.FontSmall - 2;
 
             // Event feed
             var feedBg = UiFactory.Panel("Feed", _root, new Color(0.035f, 0.038f, 0.047f, 0.7f));
-            UiFactory.Place(feedBg.rectTransform, 0.26f, 0.005f, 0.74f, 0.11f);
-            _feed = UiFactory.Label("FeedText", feedBg.transform, "", Theme.FontSmall - 2, TextAnchor.LowerCenter);
+            UiFactory.Place(feedBg.rectTransform, TowerRight + 0.01f, 0.005f, CardLeft - 0.01f, 0.13f);
+            _feed = UiFactory.Label("FeedText", feedBg.transform, "", Theme.FontSmall - 4, TextAnchor.LowerLeft);
+            _feed.verticalOverflow = VerticalWrapMode.Overflow;
+            feedBg.gameObject.AddComponent<RectMask2D>();
             UiFactory.Place(_feed.rectTransform, 0.01f, 0.02f, 0.99f, 0.98f);
             _feed.supportRichText = true;
 
@@ -227,12 +273,13 @@ namespace MotoManager.App.UI
             UiFactory.Stretch(_commandArea);
             if (players.Count > 0)
             {
-                // First rider bottom left, the others bottom right.
+                // The player's riders stacked on the right, the first one on top; the standings keep the left.
+                float cardH = Mathf.Min(0.42f, 0.845f / players.Count);
                 for (int i = 0; i < players.Count; i++)
                 {
                     var area = UiFactory.Rect("Command" + i, _commandArea);
-                    if (i == 0) _leftCard = area;
-                    else UiFactory.Place(area, 0.755f, 0.005f + 0.37f * (i - 1), 0.995f, 0.37f * i);
+                    float cardTop = 0.85f - cardH * i;
+                    UiFactory.Place(area, CardLeft, cardTop - cardH + 0.005f, 0.995f, cardTop);
                     _panels.Add(new RiderCommandPanel(_view, players[i], area));
                 }
                 var session = GameSession.Instance;
@@ -243,7 +290,7 @@ namespace MotoManager.App.UI
             // Race-day banner shown while the camera presents the circuit.
             _bannerBg = UiFactory.Panel("Banner", _root, new Color(0, 0, 0, 0));
             _bannerBg.raycastTarget = false;
-            UiFactory.Place(_bannerBg.rectTransform, 0.02f, 0.1f, 0.6f, 0.3f);
+            UiFactory.Place(_bannerBg.rectTransform, 0.03f, 0.16f, 0.7f, 0.36f);
             var tag = UiFactory.Panel("RaceDay", _bannerBg.transform, Theme.Accent);
             UiFactory.Slant(tag, 1.6f);
             UiFactory.Place(tag.rectTransform, 0, 0.55f, 0.36f, 0.95f);
@@ -252,29 +299,14 @@ namespace MotoManager.App.UI
             UiFactory.Stretch(tagText.rectTransform);
             _banner = UiFactory.Label("Circuit", _bannerBg.transform, "", Theme.FontTitle - 6, TextAnchor.MiddleLeft);
             _banner.fontStyle = FontStyle.Bold;
+            _banner.resizeTextForBestFit = true;
+            _banner.resizeTextMinSize = Theme.FontNormal;
+            _banner.resizeTextMaxSize = Theme.FontTitle - 6;
             _banner.gameObject.AddComponent<Outline>().effectColor = new Color(0, 0, 0, 0.8f);
             UiFactory.Place(_banner.rectTransform, 0, 0, 1, 0.55f);
             _bannerBg.gameObject.SetActive(false);
 
-            bool towerOn = false;
-            try { towerOn = PlayerPrefs.GetInt(TowerPref, 0) == 1; } catch (System.Exception) { }
-            SetTower(towerOn);
             RefreshTower();
-        }
-
-        /// <summary>Shows or hides the full classification (remembered); the left rider card makes room for it.</summary>
-        public void SetTower(bool on)
-        {
-            _tower.gameObject.SetActive(on);
-            // With the standings open, the first rider's card moves to the right, above the second one.
-            if (_leftCard != null)
-            {
-                if (on) UiFactory.Place(_leftCard, 0.755f, 0.005f + 0.37f * (_panels.Count - 1), 0.995f, 0.37f * _panels.Count);
-                else UiFactory.Place(_leftCard, 0.005f, 0.005f, 0.245f, 0.37f);
-            }
-            _gapButton.gameObject.SetActive(on);
-            _towerButton.image.color = on ? Theme.Accent : Theme.PanelLight;
-            try { PlayerPrefs.SetInt(TowerPref, on ? 1 : 0); } catch (System.Exception) { }
         }
 
         /// <summary>Banner and HUD state while the camera presents the circuit before the start.</summary>
@@ -284,6 +316,10 @@ namespace MotoManager.App.UI
             _banner.text = (string.IsNullOrEmpty(country) ? "" : country.ToUpperInvariant() + " · ") + circuit.ToUpperInvariant();
             _commandArea.gameObject.SetActive(!on);
             _tagLayer.gameObject.SetActive(!on);
+            // The standings appear with the grid, not over the circuit presentation.
+            _tower.gameObject.SetActive(!on);
+            _towerTitle.gameObject.SetActive(!on);
+            _gapButton.gameObject.SetActive(!on);
         }
 
         private void UpdateAdvice()
@@ -378,10 +414,7 @@ namespace MotoManager.App.UI
                 var team = r.Entry.Team;
                 row.Position.text = (p + 1).ToString();
                 row.TeamBar.color = UiFactory.ParseColor(team != null ? team.Colors.Primary : null, Color.gray);
-                string teamName = team != null ? (team.ShortName ?? team.Name) : "";
-                if (teamName.Length > 10) teamName = teamName.Substring(0, 10);
-                row.Name.text = r.Entry.Rider.Code + " <size=" + (Theme.FontSmall - 6) + "><color=#9AA4B2>" + teamName + "</color></size>" + (r.PendingLongLaps > 0 ? " <color=#F0B428>LL</color>" : "");
-                row.Name.supportRichText = true;
+                row.Name.text = r.Entry.Rider.ShortName.ToUpperInvariant() + (r.PendingLongLaps > 0 ? " <color=#F0B428>LL</color>" : "");
                 row.Name.color = r.Entry.IsPlayer ? Theme.Warning : Theme.Text;
                 row.Gap.text = GapText(sim, r, p);
                 row.Tires.text = CompoundLetter(r.Front.Compound) + "/" + CompoundLetter(r.Rear.Compound);
@@ -516,7 +549,6 @@ namespace MotoManager.App.UI
         {
             if (_replayBar != null) _replayBar.gameObject.SetActive(false);
             _commandArea.gameObject.SetActive(true);
-            SetTower(_tower.gameObject.activeSelf);
             if (_results != null) _results.gameObject.SetActive(true);
             _feedCount = -1;
         }
