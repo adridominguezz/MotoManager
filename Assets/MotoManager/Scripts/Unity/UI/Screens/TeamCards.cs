@@ -317,7 +317,7 @@ namespace MotoManager.App.UI.Screens
         /// A card for scroll lists: a header strip (caps title, optional right text) over a padded body. Returns the
         /// body; add rows (Ui.Line, rows, buttons) to it.
         /// </summary>
-        public static RectTransform Card(Transform list, string title, string right = null, Color? strip = null)
+        public static RectTransform Card(Transform list, string title, string right = null, Color? strip = null, Action back = null)
         {
             var stack = Ui.Stack(list);
             var bg = stack.gameObject.AddComponent<Image>();
@@ -327,8 +327,10 @@ namespace MotoManager.App.UI.Screens
             stack.gameObject.AddComponent<Outline>().effectColor = new Color(1, 1, 1, 0.05f);
             if (title != null)
             {
-                var row = UiFactory.Row(stack, Head);
-                var head = Strip(row, title, strip, false, 0, null, Head);
+                float h = back != null ? BackSide : Head;
+                var row = UiFactory.Row(stack, h);
+                var head = Strip(row, title, strip, false, 0, null, h);
+                if (back != null) BackChevron(row, head, back);
                 if (right != null)
                 {
                     var r = Text(row, "Right", right, Theme.FontSmall, 11, TextAnchor.MiddleRight);
@@ -346,6 +348,32 @@ namespace MotoManager.App.UI.Screens
             v.childForceExpandHeight = false;
             v.childForceExpandWidth = true;
             return body;
+        }
+
+        /// <summary>Side of the compact back button that a card header can carry (a full touch target).</summary>
+        public const float BackSide = 64;
+
+        /// <summary>A square "‹" button at the left end of a header strip; the strip's tag and title move right of it.</summary>
+        private static void BackChevron(RectTransform row, Image head, Action back)
+        {
+            var b = UiFactory.Button("Back", row, "‹", back, Color.Lerp(Theme.PanelLight, Color.white, 0.08f), Theme.FontLarge);
+            var rt = (RectTransform)b.transform;
+            rt.anchorMin = new Vector2(0, 0);
+            rt.anchorMax = new Vector2(0, 1);
+            rt.pivot = new Vector2(0, 0.5f);
+            rt.offsetMin = new Vector2(0, 0);
+            rt.offsetMax = new Vector2(BackSide, 0);
+            var t = b.GetComponentInChildren<Text>();
+            t.fontStyle = FontStyle.Bold;
+            t.resizeTextMinSize = Theme.FontNormal;
+            var tag = head.transform.Find("Tag") as RectTransform;
+            if (tag != null)
+            {
+                tag.offsetMin += new Vector2(BackSide, 0);
+                tag.offsetMax += new Vector2(BackSide, 0);
+            }
+            var title = head.transform.Find("Title") as RectTransform;
+            if (title != null) title.offsetMin += new Vector2(BackSide, 0);
         }
 
         /// <summary>A section header for scroll lists (a strip on its own, no card under it).</summary>
