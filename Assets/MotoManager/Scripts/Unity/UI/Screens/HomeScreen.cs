@@ -359,7 +359,7 @@ namespace MotoManager.App.UI.Screens
         {
             var body = Tile(grid, 0.5f, 0.44f, 0.75f, 1, Loc.T("hub.staff"), badge, () => Shell.Show<StaffPage>());
             int missing = MissingStaff(world, team);
-            Figure(body, UiIcons.Person, team.StaffIds.Count.ToString(),
+            Figure(body, UiIcons.Team, team.StaffIds.Count.ToString(),
                 missing > 0 ? Theme.WarnText(Theme.Caps(Loc.T("hub.staffMissing", missing))) : Theme.Caps(Loc.T("hub.staffFull")));
         }
 
