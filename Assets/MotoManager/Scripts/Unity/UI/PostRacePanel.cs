@@ -38,7 +38,7 @@ namespace MotoManager.App.UI
 
             var players = new List<RiderRaceState>();
             foreach (var r in sim.Riders) if (r.Entry.IsPlayer) players.Add(r);
-            var labels = new List<string> { Loc.T("post.tab.classification") };
+            var labels = new List<string> { Loc.T("post.tab.classification"), Loc.T("post.tab.gaps") };
             foreach (var r in players) labels.Add(r.Entry.Rider.ShortName);
             float tw = Math.Min(0.16f, 0.52f / labels.Count);
             for (int i = 0; i < labels.Count; i++)
@@ -52,13 +52,78 @@ namespace MotoManager.App.UI
             var area = UiFactory.Rect("Area", rt);
             UiFactory.Place(area, 0.01f, 0.1f, 0.99f, 0.895f);
             var points = PointsTable(sim);
-            if (_tab == 0 || _tab > players.Count) BuildClassification(sim, area, points);
-            else RiderPage(sim, area, players[_tab - 1], points);
+            if (_tab == 1) GapChart(sim, area);
+            else if (_tab == 0 || _tab - 1 > players.Count) BuildClassification(sim, area, points);
+            else RiderPage(sim, area, players[_tab - 2], points);
 
             var replay = UiFactory.Button("Replay", rt, Loc.T("post.replay"), () => onReplay(), Theme.PanelLight);
             UiFactory.Place((RectTransform)replay.transform, 0.52f, 0.015f, 0.74f, 0.085f, 3);
             var cont = UiFactory.Button("Continue", rt, Loc.T("post.continue"), () => onContinue(), Theme.Accent);
             UiFactory.Place((RectTransform)cont.transform, 0.76f, 0.015f, 0.98f, 0.085f, 3);
+        }
+
+        /// <summary>Series of the gap to the leader lap by lap (podium and the player's riders); null with too few laps.</summary>
+        public static List<ChartSeries> GapSeries(RaceSimulation sim, out int laps)
+        {
+            laps = 0;
+            foreach (var r in sim.Riders) laps = Math.Max(laps, r.Stats.LapTimes.Count);
+            if (laps < 2) return null;
+            // Elapsed race time of each rider at the end of each lap, and the leader's.
+            var elapsed = new Dictionary<int, List<double>>();
+            var leader = new double[laps];
+            for (int l = 0; l < laps; l++) leader[l] = double.MaxValue;
+            foreach (var r in sim.Riders)
+            {
+                var t = new List<double>();
+                double sum = 0;
+                foreach (var lap in r.Stats.LapTimes)
+                {
+                    sum += lap;
+                    t.Add(sum);
+                }
+                elapsed[r.Index] = t;
+                for (int l = 0; l < t.Count; l++) if (t[l] < leader[l]) leader[l] = t[l];
+            }
+            var chosen = new List<RiderRaceState>();
+            for (int p = 1; p <= 3; p++)
+            {
+                var r = sim.RiderAtPosition(p);
+                if (r != null) chosen.Add(r);
+            }
+            foreach (var r in sim.Riders) if (r.Entry.IsPlayer && !chosen.Contains(r)) chosen.Add(r);
+            var series = new List<ChartSeries>();
+            foreach (var r in chosen)
+            {
+                var team = r.Entry.Team;
+                var s = new ChartSeries
+                {
+                    Name = "P" + r.Position + " " + r.Entry.Rider.ShortName,
+                    Color = r.Entry.IsPlayer ? Theme.Timing : Charts.Readable(team != null ? team.Colors.Primary : null, Color.gray),
+                    Highlight = r.Entry.IsPlayer
+                };
+                s.Values.Add(0);
+                var t = elapsed[r.Index];
+                for (int l = 0; l < laps; l++) s.Values.Add(l < t.Count ? Math.Min(30, t[l] - leader[l]) : double.NaN);
+                series.Add(s);
+            }
+            return series;
+        }
+
+        /// <summary>Gap to the leader lap by lap: the podium and the player's riders.</summary>
+        private static void GapChart(RaceSimulation sim, RectTransform area)
+        {
+            var list = UiFactory.ScrollList("Gaps", area);
+            UiFactory.Stretch((RectTransform)list.parent.parent);
+            var card = Ui.Card(list, Loc.T("post.gaps"), Loc.T("post.gapsSub"));
+            int laps;
+            var series = GapSeries(sim, out laps);
+            if (series == null)
+            {
+                UiFactory.Paragraph(card, Theme.Dim(Loc.T("post.gapsNone")), Theme.FontSmall - 2);
+                return;
+            }
+            Charts.LineChart(card, 360, series, true, v => "+" + v.ToString("0.0", Loc.Culture), Loc.T("post.gapStart"), Loc.T("post.gapLap", laps));
+            Ui.Note(card, Loc.T("post.gapsNote"));
         }
 
         private static string Txt(string session)

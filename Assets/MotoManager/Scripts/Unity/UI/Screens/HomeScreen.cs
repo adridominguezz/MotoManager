@@ -171,6 +171,15 @@ namespace MotoManager.App.UI.Screens
             big.resizeTextMaxSize = Theme.FontLarge;
             UiFactory.Stretch(big.rectTransform);
             Ui.Line(card, Loc.T("home.circuit"), circuit.Name);
+            // The two rounds after it (the season at a glance; the full calendar is in Competition).
+            CalendarDefinition cal;
+            if (team != null && world.Calendars.TryGetValue(next.Group, out cal))
+            {
+                var after = new List<string>();
+                for (int i = next.RoundIndex + 1; i < cal.Rounds.Count && after.Count < 2; i++)
+                    if (cal.Rounds[i].Categories.Contains(team.CategoryId)) after.Add(Loc.Round(cal.Rounds[i].Name) + " " + Theme.Dim(cal.Rounds[i].Date.ToString("d MMM", Loc.Culture)));
+                if (after.Count > 0) Ui.Line(card, Loc.T("home.then"), string.Join("  ·  ", after.ToArray()));
+            }
             if (racing)
             {
                 UiFactory.ButtonRow(card, 76, UiFactory.Primary(Loc.T("shell.goRace"), Shell.Continue));

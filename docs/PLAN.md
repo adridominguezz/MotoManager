@@ -628,6 +628,15 @@ que se quedan en pista, modelos toscos y opción de entrar a boxes (en motos no 
 - Ajustes recordados: idioma, tamaño de texto, música, sonido y velocidad de carrera.
 - Pendiente: panel de depuración solo en builds de desarrollo y migraciones encadenadas de guardado.
 
+### Sesión 8.8 — Repaso final de interfaz ✅
+- Componente de gráficos (`Charts.LineChart`): varias series, líneas guía, escala, leyenda; el jugador resaltado.
+- Clasificación › Evolución: puntos acumulados ronda a ronda de los cinco primeros y tus pilotos.
+- Tras la carrera › Diferencias: distancia al líder vuelta a vuelta del podio y tus pilotos (también en el resumen de
+  la simulación rápida).
+- Inicio: las dos rondas siguientes bajo la próxima carrera.
+- No hecho: la capa de comandos de aplicación entre interfaz y dominio (§76); la interfaz sigue llamando a los
+  servicios del núcleo directamente.
+
 ## Pendiente de especificación
 
 Recibidas las secciones 49–105; ver la Fase 8.

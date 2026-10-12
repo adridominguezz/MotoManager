@@ -32,10 +32,15 @@ namespace MotoManager.App.UI.Screens
                 if (cats[i].Id == _category) sel = i;
             }
             Ui.Chips(head, labels, sel, i => { _category = cats[i].Id; Shell.Refresh(); });
-            Ui.Chips(head, new[] { Loc.T("standings.riders"), Loc.T("standings.teams"), Loc.T("standings.makers") }, _table, i => { _table = i; Shell.Refresh(); }, 50);
+            Ui.Chips(head, new[] { Loc.T("standings.riders"), Loc.T("standings.teams"), Loc.T("standings.makers"), Loc.T("standings.evolution") }, _table, i => { _table = i; Shell.Refresh(); }, 50);
 
             ChampionshipState champ;
             if (!world.Championships.TryGetValue(_category, out champ)) return;
+            if (_table == 3)
+            {
+                Evolution(list, world, champ);
+                return;
+            }
             var card = Ui.Card(list, null);
             var playerTeam = world.PlayerTeamId;
             if (_table == 0)
@@ -69,6 +74,48 @@ namespace MotoManager.App.UI.Screens
                     UiFactory.TableRow(card, 36, widths, new[] { (i + 1).ToString(), name, "<b>" + rows[i].Points.ToString("0") + "</b>", rows[i].Wins.ToString() }, false, mine ? Mine : (Color?)null);
                 }
             }
+        }
+
+        /// <summary>Points round by round: the top five and the player's riders.</summary>
+        private void Evolution(RectTransform list, WorldState world, ChampionshipState champ)
+        {
+            var card = Ui.Card(list, Loc.T("standings.evolution"), Loc.T("standings.evolutionSub"));
+            if (champ.Rounds.Count == 0)
+            {
+                UiFactory.Paragraph(card, Theme.Dim(Loc.T("standings.noRounds")), Theme.FontSmall - 2);
+                return;
+            }
+            var table = champ.SortedRiders();
+            var ids = new List<string>();
+            for (int i = 0; i < table.Count && i < 5; i++) ids.Add(table[i].Id);
+            var playerTeam = world.PlayerTeam;
+            if (playerTeam != null)
+                foreach (var id in playerTeam.RiderIds)
+                    if (!ids.Contains(id) && champ.Riders.ContainsKey(id)) ids.Add(id);
+            var series = new List<ChartSeries>();
+            foreach (var id in ids)
+            {
+                var r = world.GetRider(id);
+                var team = r != null ? world.GetTeam(r.TeamId) : null;
+                bool mine = playerTeam != null && team == playerTeam;
+                var s = new ChartSeries
+                {
+                    Name = (r != null ? r.ShortName : id) + " " + Theme.Dim(champ.RiderPosition(id) > 0 ? "P" + champ.RiderPosition(id) : ""),
+                    Color = mine ? Theme.Timing : Charts.Readable(team != null ? team.Colors.Primary : null, Color.gray),
+                    Highlight = mine
+                };
+                double total = 0;
+                s.Values.Add(0);
+                foreach (var round in champ.Rounds)
+                {
+                    foreach (var session in round.Sessions)
+                        foreach (var e in session.Classification)
+                            if (e.RiderId == id) total += e.Points;
+                    s.Values.Add(total);
+                }
+                series.Add(s);
+            }
+            Charts.LineChart(card, 330, series, false, v => v.ToString("0"), Loc.T("standings.start"), Loc.T("standings.roundN", champ.Rounds.Count));
         }
     }
 

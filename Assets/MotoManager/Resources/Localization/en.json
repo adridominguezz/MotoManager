@@ -1496,5 +1496,18 @@
   "save.meta": "{0} · season {1} · saved {2}",
   "save.loadButton": "Load",
   "save.saveTo": "Save {0}",
-  "save.saved": "Game saved in slot {0}"
+  "save.saved": "Game saved in slot {0}",
+  "post.tab.gaps": "Gaps",
+  "post.gaps": "Gap to the leader",
+  "post.gapsSub": "Lap by lap",
+  "post.gapsNone": "Not enough laps for the chart.",
+  "post.gapStart": "Start",
+  "post.gapLap": "Lap {0}",
+  "post.gapsNote": "At the top, the leader of each lap. A falling line loses time; a rising one gains. Gaps over 30 s are capped.",
+  "standings.evolution": "Evolution",
+  "standings.evolutionSub": "Points round by round",
+  "standings.noRounds": "No round has been raced yet.",
+  "standings.start": "Start",
+  "standings.roundN": "Round {0}",
+  "home.then": "Then"
 }

@@ -1496,5 +1496,18 @@
   "save.meta": "{0} · temporada {1} · guardada {2}",
   "save.loadButton": "Cargar",
   "save.saveTo": "Guardar {0}",
-  "save.saved": "Partida guardada en la ranura {0}"
+  "save.saved": "Partida guardada en la ranura {0}",
+  "post.tab.gaps": "Diferencias",
+  "post.gaps": "Diferencia con el líder",
+  "post.gapsSub": "Vuelta a vuelta",
+  "post.gapsNone": "No hay vueltas suficientes para el gráfico.",
+  "post.gapStart": "Salida",
+  "post.gapLap": "Vuelta {0}",
+  "post.gapsNote": "Arriba, el líder de cada vuelta. Una línea que baja pierde tiempo; una que sube, recupera. Las diferencias de más de 30 s se cortan.",
+  "standings.evolution": "Evolución",
+  "standings.evolutionSub": "Puntos acumulados ronda a ronda",
+  "standings.noRounds": "Todavía no se ha corrido ninguna ronda.",
+  "standings.start": "Inicio",
+  "standings.roundN": "Ronda {0}",
+  "home.then": "Después"
 }

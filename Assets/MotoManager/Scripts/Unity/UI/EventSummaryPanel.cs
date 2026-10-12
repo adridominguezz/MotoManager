@@ -35,6 +35,9 @@ namespace MotoManager.App.UI
         public readonly List<SessionResult> Sessions = new List<SessionResult>();
         public readonly List<RiderDigest> Riders = new List<RiderDigest>();
         public int TeamBefore, TeamAfter;
+        /// <summary>Gap to the leader lap by lap in the main race (null if none).</summary>
+        public List<ChartSeries> Gaps;
+        public int GapLaps;
         public double CashBefore, CashAfter;
 
         /// <summary>
@@ -71,6 +74,7 @@ namespace MotoManager.App.UI
                     var sim = w.CreateRaceSimulation(game.Db.Tuning.BackgroundTimeStep);
                     sim.RunToEnd();
                     res = w.CompleteRace(sim);
+                    if (s.Type == SessionType.Race) d.Gaps = PostRacePanel.GapSeries(sim, out d.GapLaps);
                     if (s.Type == SessionType.Race)
                         foreach (var rs in sim.Riders)
                         {
@@ -185,11 +189,19 @@ namespace MotoManager.App.UI
             var names = new List<string> { Loc.T("summary.tab.team") };
             foreach (var ss in _d.Sessions)
                 if (ss.Type != SessionType.Practice && ss.Type != SessionType.WarmUp) names.Add(Loc.Or("session." + ss.SessionName, ss.SessionName));
+            if (_d.Gaps != null) names.Add(Loc.T("post.tab.gaps"));
             Ui.Chips(_tabList, names, _tab, i => { _tab = i; Render(); }, 56);
             UiFactory.Clear(_area);
             var list = UiFactory.ScrollList("Summary", _area);
             UiFactory.Stretch((RectTransform)list.parent.parent);
+            int sessionTabs = 0;
+            foreach (var ss in _d.Sessions) if (ss.Type != SessionType.Practice && ss.Type != SessionType.WarmUp) sessionTabs++;
             if (_tab == 0) TeamPage(list);
+            else if (_d.Gaps != null && _tab == sessionTabs + 1)
+            {
+                var card = Ui.Card(list, Loc.T("post.gaps"), Loc.T("post.gapsSub"));
+                Charts.LineChart(card, 330, _d.Gaps, true, v => "+" + v.ToString("0.0", Loc.Culture), Loc.T("post.gapStart"), Loc.T("post.gapLap", _d.GapLaps));
+            }
             else
             {
                 int k = 0;
