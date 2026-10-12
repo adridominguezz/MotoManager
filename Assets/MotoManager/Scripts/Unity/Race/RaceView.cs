@@ -59,7 +59,10 @@ namespace MotoManager.App.Race
                     break;
                 }
             view.Hud = RaceHud.Create(view, title);
-            GameAudio.RaceStart();
+            string categoryId = null;
+            foreach (var r in sim.Riders)
+                if (r.Entry.Team != null) { categoryId = r.Entry.Team.CategoryId; break; }
+            GameAudio.RaceStart(categoryId);
             if (sim.Tick == 0) view.StartIntro();
             else
             {

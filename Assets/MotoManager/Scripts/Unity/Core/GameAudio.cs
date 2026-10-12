@@ -22,6 +22,7 @@ namespace MotoManager.App
         private AudioClip _click;
         private bool _racing;
         private float _targetEngine, _targetField, _fieldDensity;
+        private float _fieldMin = 13500f, _fieldMax = 16800f;
 
         /// <summary>One bike going past the listener: position in the pass (-1 to 1), duration, revs and level.</summary>
         private class Pass
@@ -143,9 +144,17 @@ namespace MotoManager.App
         }
 
         /// <summary>The race soundscape starts (menu music fades out).</summary>
-        public static void RaceStart()
+        public static void RaceStart(string categoryId = null)
         {
             var a = Instance;
+            // Every bike on track gets the engine of the championship.
+            var profile = EngineProfile.For(categoryId);
+            a._engine.Apply(profile);
+            foreach (var f in a._field) f.Apply(profile);
+            a._gearbox.IdleRpm = profile.IdleRpm;
+            a._gearbox.MaxRpm = profile.MaxRpm;
+            a._fieldMin = profile.MaxRpm * 0.78f;
+            a._fieldMax = profile.MaxRpm * 0.96f;
             a._racing = true;
             a._music.Stop();
             if (!SfxOn) return;
@@ -230,7 +239,7 @@ namespace MotoManager.App
                     {
                         p.T = -1f;
                         p.Duration = UnityEngine.Random.Range(1.6f, 3.2f);
-                        p.Rpm = UnityEngine.Random.Range(13500f, 16800f);
+                        p.Rpm = UnityEngine.Random.Range(_fieldMin, _fieldMax);
                         p.Level = UnityEngine.Random.Range(0.5f, 1f);
                     }
                     continue;

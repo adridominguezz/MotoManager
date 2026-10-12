@@ -24,6 +24,17 @@ namespace MotoManager.App
         public float[] FiringOrder = { 0f, 0.25f, 0.5f, 0.75f };
         /// <summary>Exhaust length in metres (longer = deeper).</summary>
         public float PipeLength = 0.85f;
+        /// <summary>Length of a combustion pulse as a fraction of the gap between firings (short = sharper, raspier).</summary>
+        public float PulseFraction = 0.38f;
+        /// <summary>Reflection at the open end of the pipe and damping inside it.</summary>
+        public float Reflection = 0.62f, LoopDamping = 0.45f;
+        /// <summary>Muffler low-pass: base cut-off and how much it opens with the throttle (Hz).</summary>
+        public float MufflerBase = 900f, MufflerThrottle = 3200f;
+        /// <summary>Mix of the outlet's pressure change (bright) and pressure (body).</summary>
+        public float Radiation = 6f, Direct = 0.8f;
+        public float IntakeLevel = 0.35f, Roughness = 0.25f;
+        /// <summary>Final low-pass (Hz): the distance and the fairing take the fizz off.</summary>
+        public float FinalCutoff = 20000f;
         public float Character = 1f;
         public int Seed = 1;
 
@@ -34,10 +45,33 @@ namespace MotoManager.App
         private uint _noise = 22222;
         private readonly float[] _pipe = new float[MaxDelay];
         private int _write;
+        private float _final1, _final2;
         private float _loopLp, _muffler, _muffler2, _intakeLp, _intakeBand, _dc, _prevOut, _pop;
         // Pulse state: samples left and length of the current pressure pulse.
         private float _pulsePos = -1, _pulseLen = 1, _pulseAmp;
         private float _strengthJitter = 1;
+
+        /// <summary>
+        /// The engine of a championship: a Moto3 single (one firing every two turns, sharp pulses, open short pipe:
+        /// tuned against a recording of a Honda Moto3), the Moto2 Triumph triple, a big-bang MotoGP four and the
+        /// superbike / supersport fours.
+        /// </summary>
+        public void Apply(EngineProfile p)
+        {
+            Cylinders = p.Firing.Length;
+            FiringOrder = p.Firing;
+            PulseFraction = p.PulseFraction;
+            PipeLength = p.PipeLength;
+            Reflection = p.Reflection;
+            LoopDamping = p.LoopDamping;
+            MufflerBase = p.MufflerBase;
+            MufflerThrottle = p.MufflerThrottle;
+            Radiation = p.Radiation;
+            Direct = p.Direct;
+            IntakeLevel = p.IntakeLevel;
+            Roughness = p.Roughness;
+            FinalCutoff = p.FinalCutoff;
+        }
 
         private void Awake()
         {
@@ -65,6 +99,7 @@ namespace MotoManager.App
             float invRate = 1f / _rate;
             // Pipe round trip: twice the length at the speed of sound in hot exhaust gas (~520 m/s).
             float delay = Mathf.Clamp(2f * PipeLength / 520f * _rate, 8f, MaxDelay - 2);
+            float kFinal = 1f - Mathf.Exp(-2f * Mathf.PI * Mathf.Min(FinalCutoff, _rate * 0.45f) * invRate);
             for (int i = 0; i < data.Length; i += channels)
             {
                 // Smooth parameter changes (revs move fast, but never step).
@@ -85,7 +120,7 @@ namespace MotoManager.App
                     if (!crossed) continue;
                     // A new pressure pulse: about a third of the gap between firings, louder under load.
                     float gap = (float)(_rate / (cycleHz * Cylinders));
-                    _pulseLen = Mathf.Clamp(gap * 0.38f, 6f, 600f);
+                    _pulseLen = Mathf.Clamp(gap * PulseFraction, 3f, 900f);
                     _pulsePos = 0;
                     _strengthJitter = 0.94f + 0.12f * (Noise() * 0.5f + 0.5f);
                     _pulseAmp = (0.35f + 0.65f * _thrNow) * _strengthJitter * (c % 2 == 0 ? 1f : 0.93f);
@@ -97,7 +132,7 @@ namespace MotoManager.App
                 {
                     // Raised-cosine pressure pulse with a little combustion roughness.
                     float x = _pulsePos / _pulseLen;
-                    pulse = _pulseAmp * 0.5f * (1f - Mathf.Cos(2f * Mathf.PI * x)) * (1f + 0.25f * Noise() * _thrNow);
+                    pulse = _pulseAmp * 0.5f * (1f - Mathf.Cos(2f * Mathf.PI * x)) * (1f + Roughness * Noise() * _thrNow);
                     _pulsePos += 1;
                     if (_pulsePos >= _pulseLen) _pulsePos = -1;
                 }
@@ -108,8 +143,8 @@ namespace MotoManager.App
                 int i0 = (int)readPos;
                 float frac = readPos - i0;
                 float back = _pipe[i0] * (1 - frac) + _pipe[(i0 + 1) % MaxDelay] * frac;
-                _loopLp += (back - _loopLp) * 0.45f;
-                float inPipe = pulse - 0.62f * _loopLp;
+                _loopLp += (back - _loopLp) * LoopDamping;
+                float inPipe = pulse - Reflection * _loopLp;
                 _pipe[_write] = inPipe;
                 _write = (_write + 1) % MaxDelay;
                 // Radiated sound ~ change of pressure at the outlet.
@@ -117,9 +152,9 @@ namespace MotoManager.App
                 _prevOut = inPipe;
 
                 // Muffler: two one-pole low-passes that open with the throttle.
-                float cutoff = 900f + 3200f * _thrNow + 0.12f * (float)(cycleHz * Cylinders);
+                float cutoff = MufflerBase + MufflerThrottle * _thrNow + 0.12f * (float)(cycleHz * Cylinders);
                 float k = 1f - Mathf.Exp(-2f * Mathf.PI * cutoff * invRate);
-                _muffler += (radiated * 6f + inPipe * 0.8f - _muffler) * k;
+                _muffler += (radiated * Radiation + inPipe * Direct - _muffler) * k;
                 _muffler2 += (_muffler - _muffler2) * k;
 
                 // Intake roar: band of noise around 1.1 kHz, only with the throttle open.
@@ -135,11 +170,65 @@ namespace MotoManager.App
                     _pop *= 0.9985f;
                 }
 
-                float s = (_muffler2 * 1.3f + intake * 0.35f + crackle * 0.4f) * Character;
+                float s = (_muffler2 * 1.3f + intake * IntakeLevel + crackle * 0.4f) * Character;
+                _final1 += (s - _final1) * kFinal;
+                _final2 += (_final1 - _final2) * kFinal;
+                s = _final2;
                 // Remove DC and saturate gently.
                 _dc += (s - _dc) * 0.0008f;
                 s = (float)Math.Tanh((s - _dc) * 1.3f) * 0.8f * _volNow;
                 for (int ch = 0; ch < channels; ch++) data[i + ch] = s;
+            }
+        }
+    }
+
+    /// <summary>Sound character and rev range of a championship's engines.</summary>
+    public class EngineProfile
+    {
+        public float[] Firing = { 0f, 0.09f, 0.5f, 0.59f };
+        public float PulseFraction = 0.38f, PipeLength = 0.85f, Reflection = 0.62f, LoopDamping = 0.45f;
+        public float MufflerBase = 900f, MufflerThrottle = 3200f, Radiation = 6f, Direct = 0.8f;
+        public float IntakeLevel = 0.35f, Roughness = 0.25f, FinalCutoff = 20000f;
+        public float IdleRpm = 4500f, MaxRpm = 17500f;
+
+        public static EngineProfile For(string categoryId)
+        {
+            switch (categoryId)
+            {
+                case "moto3":
+                case "rookies":
+                case "junior_gp":
+                    // Fitted to the harmonic envelope and band energy of a Honda NSF250RW recording.
+                    return new EngineProfile
+                    {
+                        Firing = new[] { 0f }, PulseFraction = 0.155f, PipeLength = 0.51f, Reflection = 0.21f, LoopDamping = 0.69f,
+                        MufflerBase = 800f, MufflerThrottle = 3470f, Radiation = 7f, Direct = 0.52f, IntakeLevel = 1.5f,
+                        Roughness = 0.64f, FinalCutoff = 3100f, IdleRpm = 7000f, MaxRpm = 13500f
+                    };
+                case "moto2":
+                case "junior_sbk":
+                    // Triumph 765 triple, even 240° firing.
+                    return new EngineProfile
+                    {
+                        Firing = new[] { 0f, 1f / 3f, 2f / 3f }, PulseFraction = 0.24f, PipeLength = 0.65f, Reflection = 0.4f, LoopDamping = 0.55f,
+                        MufflerBase = 850f, MufflerThrottle = 3400f, Radiation = 6.5f, Direct = 0.6f, IntakeLevel = 0.9f,
+                        Roughness = 0.45f, FinalCutoff = 4500f, IdleRpm = 5000f, MaxRpm = 14000f
+                    };
+                case "worldssp":
+                    return new EngineProfile
+                    {
+                        Firing = new[] { 0f, 0.25f, 0.5f, 0.75f }, PulseFraction = 0.3f, PipeLength = 0.75f, IntakeLevel = 0.7f,
+                        Roughness = 0.35f, FinalCutoff = 5500f, IdleRpm = 5000f, MaxRpm = 16000f
+                    };
+                case "worldsbk":
+                    return new EngineProfile
+                    {
+                        Firing = new[] { 0f, 0.25f, 0.5f, 0.75f }, PulseFraction = 0.32f, PipeLength = 0.8f, IntakeLevel = 0.6f,
+                        Roughness = 0.35f, FinalCutoff = 6000f, IdleRpm = 4500f, MaxRpm = 15500f
+                    };
+                default:
+                    // MotoGP: big-bang four (two pairs of close firings), the deepest and loudest.
+                    return new EngineProfile { IntakeLevel = 0.6f, Roughness = 0.35f, FinalCutoff = 6500f, IdleRpm = 5000f, MaxRpm = 18000f };
             }
         }
     }
