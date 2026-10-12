@@ -27,7 +27,7 @@ namespace MotoManager.App.UI
 
         private string _first = "Alex", _last = "Rider", _nation = "ES", _background = "team_staff";
         private ManagerProfile _manager;
-        private double _investShare = 1, _loanShare = 0;
+        private double _investShare = 0.5, _loanShare = 0;
         private string _category, _supplier, _teamName = "";
 
         public CareerStartFlow(GameSession session, GameController game, RectTransform list, Text status)
@@ -173,6 +173,7 @@ namespace MotoManager.App.UI
                 UiFactory.Option(Loc.T("career.loanMax"), _loanShare == 1, () => { _loanShare = 1; Render(); }));
             var w2 = new[] { 5f, 3f };
             UiFactory.TableRow(_list, 40, w2, new[] { Loc.T("career.ownMoney"), MathX.FormatMoney(invest) + " / " + MathX.FormatMoney(wealth) });
+            UiFactory.TableRow(_list, 40, w2, new[] { Loc.T("career.wealthLeft"), MathX.FormatMoney(wealth - invest) });
             UiFactory.TableRow(_list, 40, w2, new[] { Loc.T("career.loan"), MathX.FormatMoney(loan) + "  <color=#9AA4B2>" + Loc.T("career.loanTerms", MathX.FormatMoney(terms.MaxAmount), (terms.Rate * 100).ToString("0.0"), terms.Seasons) + "</color>" });
 
             // Founding sponsors: tied to a category, they only pay if the team is founded there.

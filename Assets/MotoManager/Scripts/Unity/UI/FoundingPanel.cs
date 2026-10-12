@@ -12,7 +12,7 @@ namespace MotoManager.App.UI
     /// <summary>Choices of a team being founded (kept while the screen is rebuilt).</summary>
     public class FoundingState
     {
-        public double InvestShare = 1, LoanShare;
+        public double InvestShare = 0.5, LoanShare;
         public string Category, Supplier, TeamName = "";
         public string Primary = "#E10600", Secondary = "#FFFFFF";
         public string Message;
@@ -60,6 +60,7 @@ namespace MotoManager.App.UI
                 UiFactory.Option(Loc.T("career.loanHalf"), st.LoanShare == 0.5, () => { st.LoanShare = 0.5; refresh(); }),
                 UiFactory.Option(Loc.T("career.loanMax"), st.LoanShare == 1, () => { st.LoanShare = 1; refresh(); }));
             Ui.Line(money, Loc.T("career.ownMoney"), MathX.FormatMoney(invest) + " / " + MathX.FormatMoney(wealth));
+            Ui.Line(money, Loc.T("career.wealthLeft"), MathX.FormatMoney(wealth - invest));
             Ui.Line(money, Loc.T("career.loan"), MathX.FormatMoney(loan));
             Ui.Note(money, Loc.T("career.loanTerms", MathX.FormatMoney(terms.MaxAmount), (terms.Rate * 100).ToString("0.0"), terms.Seasons));
 

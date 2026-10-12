@@ -60,6 +60,7 @@ namespace MotoManager.Core.Economy
                 case StaffRole.Scout: baseSalary = 90000; break;
                 case StaffRole.Mechanic: baseSalary = 90000; break;
                 case StaffRole.Physio: baseSalary = 80000; break;
+                case StaffRole.Marketing: baseSalary = 120000; break;
                 default: baseSalary = 100000; break;
             }
             double exp = MathX.Clamp(0.8 + experience / 50.0, 0.8, 1.3);

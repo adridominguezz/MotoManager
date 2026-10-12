@@ -16,6 +16,7 @@ namespace MotoManager.App.UI.Screens
     {
         public override string Title { get { return Loc.T("nav.market"); } }
         private string _category;
+        private const string FreeRiders = "__free";
         private int _filter;
         private NegotiationState _neg;
         private const int PageSize = 12;
@@ -43,14 +44,18 @@ namespace MotoManager.App.UI.Screens
                 labels.Add(cats[i].ShortName);
                 if (cats[i].Id == _category) selected = i;
             }
-            Ui.Chips(head, labels, selected, i => { _category = cats[i].Id; _page = 0; Shell.Refresh(); }, 50);
+            // Last chip: riders without a team in any category.
+            labels.Add(Loc.T("market.free"));
+            if (_category == FreeRiders) selected = labels.Count - 1;
+            Ui.Chips(head, labels, selected, i => { _category = i < cats.Count ? cats[i].Id : FreeRiders; _page = 0; Shell.Refresh(); }, 50);
             Ui.Chips(head, new[] { Loc.T("market.filter.ending"), Loc.T("market.filter.all"), Loc.T("market.filter.scouted") }, _filter, i => { _filter = i; _page = 0; Shell.Refresh(); }, 46);
 
             var date = world.CurrentDate;
             var riders = new List<Rider>();
             foreach (var r in world.Riders.Values)
             {
-                if (r.IsRetired || r.CategoryId != _category || r.TeamId == team.Id) continue;
+                if (r.IsRetired || r.TeamId == team.Id) continue;
+                if (_category == FreeRiders ? r.TeamId != null || r.Contract != null : r.CategoryId != _category) continue;
                 bool scouted = world.Scouting.Exists(s => s.TeamId == team.Id && s.RiderId == r.Id);
                 if (_filter == 0 && r.Contract != null && r.Contract.EndSeason > world.Season) continue;
                 if (_filter == 2 && !scouted) continue;

@@ -65,7 +65,15 @@ namespace MotoManager.App.UI.Screens
             var cats = new List<string>();
             foreach (var c in next.Categories) cats.Add(Game.Db.GetCategory(c).ShortName);
             bool racing = team != null && next.Categories.Contains(team.CategoryId);
-            var card = Ui.Card(parent, Loc.Round(next.Round.Name),
+            // Which round of the season this is for the team's championship ("Ronda 3/22").
+            string roundTag = "";
+            if (team != null && racing)
+            {
+                ChampionshipState champ;
+                int done = world.Championships.TryGetValue(team.CategoryId, out champ) ? champ.Rounds.Count : 0;
+                roundTag = Loc.T("home.round", done + 1, Game.RoundsInSeason(team.CategoryId)) + " · ";
+            }
+            var card = Ui.Card(parent, roundTag + Loc.Round(next.Round.Name),
                 circuit.Name + " · " + next.Round.Date.ToString("d MMMM", Loc.Culture) + " · " + string.Join(", ", cats.ToArray()));
             if (racing)
                 UiFactory.ButtonRow(card, 72,

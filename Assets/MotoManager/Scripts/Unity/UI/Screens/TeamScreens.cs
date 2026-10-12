@@ -519,7 +519,7 @@ namespace MotoManager.App.UI.Screens
                 Ui.Kpis(card,
                     Ui.Kpi(Fmt.Rating(me.Reputation), Loc.T("manager.reputation")),
                     Ui.Kpi(MathX.FormatMoney(me.PersonalWealth), Loc.T("manager.wealthShort")),
-                    Ui.Kpi(me.Job != null ? me.Job.EndSeason.ToString() : "-", Loc.T("manager.until")));
+                    me.Job != null && me.Job.Role == ManagerRole.OwnerManager ? Ui.Kpi(Loc.T("manager.ownerKpi"), Loc.T("manager.status")) : Ui.Kpi(me.Job != null ? me.Job.EndSeason.ToString() : "-", Loc.T("manager.until")));
                 if (me.Job != null)
                 {
                     var org = world.GetOrganisation(me.Job.OrganisationId);

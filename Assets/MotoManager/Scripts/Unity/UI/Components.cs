@@ -358,6 +358,7 @@ namespace MotoManager.App.UI
             h.childForceExpandHeight = false;
             h.childForceExpandWidth = true;
             h.childAlignment = TextAnchor.UpperLeft;
+            row.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1;
             left = Column(row);
             right = Column(row);
         }
@@ -371,7 +372,12 @@ namespace MotoManager.App.UI
             v.childControlWidth = true;
             v.childForceExpandHeight = false;
             v.childForceExpandWidth = true;
-            c.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1;
+            // Equal halves whatever the content: without a fixed preferred width, a column holding a long line of
+            // text would claim almost all the width and squeeze the other one into a sliver.
+            var le = c.gameObject.AddComponent<LayoutElement>();
+            le.flexibleWidth = 1;
+            le.preferredWidth = 0;
+            le.minWidth = 0;
             return c;
         }
     }

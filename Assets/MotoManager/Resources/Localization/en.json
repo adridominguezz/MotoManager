@@ -579,7 +579,7 @@
   "market.filter.scouted": "Scouted",
   "market.riders": "{0} riders",
   "market.ridersInfo": "Sorted by estimated level. Scout a rider to learn their real level.",
-  "market.free": "free agent",
+  "market.free": "Free",
   "market.known": "known {0}%",
   "market.bringsMoney": "brings {0}",
   "market.signed": "already signed for next year",
@@ -1393,5 +1393,14 @@
   "summary.col.pts": "Pts",
   "summary.col.grid": "Grid",
   "summary.col.gap": "Gap",
-  "ui.moreInfo": "More information"
+  "ui.moreInfo": "More information",
+  "manager.ownerKpi": "Owner",
+  "manager.status": "Status",
+  "career.wealthLeft": "You keep",
+  "home.round": "Round {0}/{1}",
+  "role.Marketing": "Marketing",
+  "roleinfo.Marketing": "Runs the official shop for you (range, prices, stock) and makes it sell a little more.",
+  "roleimpact.Marketing": "the shop runs itself and sells more.",
+  "shop.marketingRuns": "Your marketing manager runs the shop: products, prices and orders. Sales +{0}%.",
+  "shop.marketingHint": "Hire a marketing manager (Team › Staff) and they will run the shop for you."
 }

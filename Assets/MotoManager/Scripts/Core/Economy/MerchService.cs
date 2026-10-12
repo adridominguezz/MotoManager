@@ -227,6 +227,29 @@ namespace MotoManager.Core.Economy
             return r != null && r.Contract != null ? r.Contract.ImageRightsShare : 0;
         }
 
+        /// <summary>The team has a marketing manager, who runs the shop for the owner.</summary>
+        public static bool HasMarketing(WorldState world, Team team)
+        {
+            foreach (var id in team.StaffIds)
+            {
+                StaffMember s;
+                if (world.Staff.TryGetValue(id, out s) && s.Role == StaffRole.Marketing) return true;
+            }
+            return false;
+        }
+
+        /// <summary>A good marketing manager sells more of everything (up to +15%).</summary>
+        public static double MarketingBoost(WorldState world, Team team)
+        {
+            double best = 0;
+            foreach (var id in team.StaffIds)
+            {
+                StaffMember s;
+                if (world.Staff.TryGetValue(id, out s) && s.Role == StaffRole.Marketing && s.Skill > best) best = s.Skill;
+            }
+            return best <= 0 ? 0 : 0.03 + best / 100.0 * 0.12;
+        }
+
         /// <summary>Extra demand from the campaigns running now.</summary>
         public static double CampaignBoost(Team team)
         {
@@ -269,7 +292,7 @@ namespace MotoManager.Core.Economy
         {
             var rules = db.GetRules(team.CategoryId, world.Season);
             double units = rules.Economy.MerchAudience * FanFactor(team.Shop.Fans, rules.Economy.FansReference) * t.Appeal *
-                           (1 + team.Shop.Hype) * (1 + CampaignBoost(team)) * PriceFactor(t.Segment, price, t.ReferencePrice);
+                           (1 + team.Shop.Hype) * (1 + CampaignBoost(team) + MarketingBoost(world, team)) * PriceFactor(t.Segment, price, t.ReferencePrice);
             if (t.Identity == ProductIdentity.Rider) units *= riderId != null ? RiderAppeal(world.GetRider(riderId)) : 1;
             if (t.Identity == ProductIdentity.Manufacturer)
             {
@@ -495,7 +518,8 @@ namespace MotoManager.Core.Economy
             double target = FansTarget(world, db, team);
             shop.Fans = Math.Round(shop.Fans + (target - shop.Fans) * 0.03 + shop.Fans * 0.004 * shop.Hype);
 
-            if (!team.IsPlayer) AiManage(world, db, team);
+            // AI teams run their shop; a player team does too when it has hired a marketing manager.
+            if (!team.IsPlayer || HasMarketing(world, team)) AiManage(world, db, team);
 
             bool open = false;
             foreach (var item in shop.Items)

@@ -91,6 +91,8 @@ namespace MotoManager.App.UI.Screens
                 Ui.Kpi(Money(s.Revenue), Loc.T("shop.revenue")),
                 Ui.Kpi(Money(s.Net), Loc.T("shop.net")));
             if (shop.Hype > 0.05) Ui.Note(summary, Theme.WarnText(Loc.T("shop.hype", (shop.Hype * 100).ToString("0"))));
+            if (MerchService.HasMarketing(world, team)) Ui.Note(summary, Theme.GoodText(Loc.T("shop.marketingRuns", (MerchService.MarketingBoost(world, team) * 100).ToString("0"))));
+            else Ui.Note(summary, Loc.T("shop.marketingHint"));
             var c = Ui.Card(rightCol, Loc.T("shop.account"));
             {
                 Ui.Line(c, Loc.T("shop.revenue"), Money(s.Revenue));

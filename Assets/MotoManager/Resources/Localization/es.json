@@ -579,7 +579,7 @@
   "market.filter.scouted": "Ojeados",
   "market.riders": "{0} pilotos",
   "market.ridersInfo": "Ordenados por nivel estimado. Ojea a un piloto para conocer su nivel real.",
-  "market.free": "libre",
+  "market.free": "Libres",
   "market.known": "conocido {0}%",
   "market.bringsMoney": "aporta {0}",
   "market.signed": "ya firmado para el año próximo",
@@ -1393,5 +1393,14 @@
   "summary.col.pts": "Pts",
   "summary.col.grid": "Salida",
   "summary.col.gap": "Diferencia",
-  "ui.moreInfo": "Más información"
+  "ui.moreInfo": "Más información",
+  "manager.ownerKpi": "Propietario",
+  "manager.status": "Situación",
+  "career.wealthLeft": "Te queda",
+  "home.round": "Ronda {0}/{1}",
+  "role.Marketing": "Marketing",
+  "roleinfo.Marketing": "Gestiona la tienda oficial por ti (productos, precios y stock) y hace que se venda algo más.",
+  "roleimpact.Marketing": "la tienda se gestiona sola y vende más.",
+  "shop.marketingRuns": "Tu responsable de marketing gestiona la tienda: productos, precios y pedidos. Ventas +{0}%.",
+  "shop.marketingHint": "Si contratas a un responsable de marketing (Equipo › Personal), se encargará de la tienda por ti."
 }

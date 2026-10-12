@@ -193,7 +193,9 @@ namespace MotoManager.Core.Data
         /// <summary>Medical care: recovery from injuries.</summary>
         Physio,
         /// <summary>Rider coaching: development of the team's riders.</summary>
-        RiderCoach
+        RiderCoach,
+        /// <summary>Runs the official shop (range, prices, stock) and makes it sell a little more.</summary>
+        Marketing
     }
 
     public enum FacilityType
