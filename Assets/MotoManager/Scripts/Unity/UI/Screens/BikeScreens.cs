@@ -9,10 +9,16 @@ using UnityEngine;
 
 namespace MotoManager.App.UI.Screens
 {
-    /// <summary>The bike: component levels and what they add up to on track.</summary>
+    /// <summary>
+    /// The bike: component levels on the left (one compact bar each), what they add up to on track on the right
+    /// (the main values first, the rest on demand).
+    /// </summary>
     public class BikeScreen : ScreenBase
     {
         public override string Title { get { return Loc.T("tab.bike"); } }
+
+        /// <summary>Performance values shown without opening anything; the others are one tap away.</summary>
+        private const int MainPerf = 7;
 
         public override void Build(RectTransform content)
         {
@@ -25,24 +31,34 @@ namespace MotoManager.App.UI.Screens
             var bikeClass = Game.Db.GetBikeClass(bike.BikeClassId);
             var maker = world.GetManufacturer(bike.ManufacturerId);
 
-            RectTransform rightCol;
-            var page = list;
-            Ui.Columns(page, out list, out rightCol);
-            var card = Ui.Card(list, bike.Model, (maker != null ? maker.Name + " · " : "") + (bikeClass != null ? bikeClass.Name : ""));
+            RectTransform leftCol, rightCol;
+            Ui.Columns(list, out leftCol, out rightCol);
+            var card = Ui.Card(leftCol, bike.Model, (maker != null ? maker.Name + " · " : "") + (bikeClass != null ? bikeClass.Name : ""));
             foreach (var kv in bike.Components)
             {
                 double gained;
                 bike.SeasonGains.TryGetValue(kv.Key, out gained);
                 bool allowed = DevelopmentService.ComponentAllowed(world, Game.Db, team, kv.Key);
                 string value = kv.Value.ToString("0") + (gained > 0 ? " " + Theme.GoodText(Fmt.Signed(gained)) : "");
-                Ui.Bar(card, Fmt.Component(kv.Key) + (allowed ? "" : "  " + Theme.Dim(Loc.T("bike.frozen"))), kv.Value / 100.0, value, Ui.RatingColor(kv.Value), 38);
+                // A frozen component is greyed and marked in a few dim letters, not explained on every line.
+                string label = allowed ? Fmt.Component(kv.Key) : Theme.Dim(Fmt.Component(kv.Key) + " · " + Loc.T("bike.frozen"));
+                Ui.Bar(card, label, kv.Value / 100.0, value, allowed ? Ui.RatingColor(kv.Value) : (Color)Theme.Steel, 34);
             }
             Ui.Note(card, Loc.T("bike.componentsNote"));
 
             var perf = BikePerformance.Compute(bike, bikeClass);
-            var pc = Ui.Card(rightCol, Loc.T("bike.performance"), Loc.T("bike.performanceInfo"));
-            foreach (PerfAttr a in Enum.GetValues(typeof(PerfAttr)))
-                Ui.Bar(pc, Loc.T("perf." + a), perf[a] / 100.0, perf[a].ToString("0"), Ui.RatingColor(perf[a]), 34);
+            var attrs = (PerfAttr[])Enum.GetValues(typeof(PerfAttr));
+            var pc = Ui.Card(rightCol, Loc.T("bike.performance"));
+            for (int i = 0; i < attrs.Length && i < MainPerf; i++)
+                Ui.Bar(pc, Loc.T("perf." + attrs[i]), perf[attrs[i]] / 100.0, perf[attrs[i]].ToString("0"), Ui.RatingColor(perf[attrs[i]]), 34);
+            Ui.Note(pc, Loc.T("bike.performanceInfo"));
+            if (attrs.Length > MainPerf)
+                Ui.Expander(rightCol, "bike.perf", Loc.T("bike.allPerformance"), inner =>
+                {
+                    var more = Ui.Card(inner, null);
+                    for (int i = MainPerf; i < attrs.Length; i++)
+                        Ui.Bar(more, Loc.T("perf." + attrs[i]), perf[attrs[i]] / 100.0, perf[attrs[i]].ToString("0"), Ui.RatingColor(perf[attrs[i]]), 34);
+                }, Shell.Refresh);
         }
     }
 
@@ -80,12 +96,13 @@ namespace MotoManager.App.UI.Screens
 
             if (_view == 1)
             {
+                // One progress bar per project with its expected effect right under it (data, not an explanation).
                 var now = Ui.Card(list, null);
                 foreach (var p in running)
                 {
                     double f = p.DaysWorked / Math.Max(1, p.DurationDays);
-                    Ui.Bar(now, ProjectName(p), f, (f * 100).ToString("0") + "%", Theme.Good, 38);
-                    Ui.Note(now, Loc.T("rnd.expected", Fmt.Effects(p.ExpectedEffects)));
+                    Ui.Bar(now, "<b>" + ProjectName(p) + "</b>", f, (f * 100).ToString("0") + "%", Theme.Good, 38);
+                    UiFactory.Paragraph(now, Theme.Dim(Loc.T("rnd.expected", Fmt.Effects(p.ExpectedEffects))), Theme.FontSmall - 4);
                 }
                 if (running.Count == 0) Ui.Note(now, Loc.T("rnd.none"));
                 return;
@@ -101,7 +118,7 @@ namespace MotoManager.App.UI.Screens
                     string status = p.Status == ProjectStatus.Completed ? Theme.GoodText(Loc.T("rnd.status.Completed")) : Theme.BadText(Loc.T("rnd.status." + p.Status));
                     UiFactory.TableRow(hist, 40, w, new[] { ProjectName(p), Fmt.Effects(p.ActualEffects), status });
                 }
-                if (done.Count == 0) Ui.Note(hist, Loc.T("rnd.noHistory"));
+                if (done.Count == 0) UiFactory.Paragraph(hist, Theme.Dim(Loc.T("rnd.noHistory")), Theme.FontSmall - 2);
                 return;
             }
 
@@ -141,7 +158,10 @@ namespace MotoManager.App.UI.Screens
         }
     }
 
-    /// <summary>Facilities: level, what each one does and the cost of the next level.</summary>
+    /// <summary>
+    /// Facilities: two columns of compact rows (name, level dots, cost of the next level and one button); what
+    /// each facility does opens on demand below.
+    /// </summary>
     public class FacilitiesPage : ScreenBase
     {
         public override string Title { get { return Loc.T("tab.facilities"); } }
@@ -159,23 +179,35 @@ namespace MotoManager.App.UI.Screens
             for (int idx = 0; idx < types.Length; idx++)
             {
                 var f = types[idx];
-                var card = idx < half ? leftCol : rightCol;
+                var col = idx < half ? leftCol : rightCol;
                 var type = f;
                 int lvl = team.Facility(f);
-                string title = Loc.T("facility." + f) + "   " + Stars(lvl);
                 if (lvl >= 5)
                 {
-                    Ui.Item(card, title, Loc.T("facilityinfo." + f), Theme.Dim(Loc.T("facility.max")));
+                    Ui.Item(col, Loc.T("facility." + f), Stars(lvl), Theme.Dim(Loc.T("facility.max")));
                     continue;
                 }
                 double cost = FinanceService.FacilityUpgradeCost(world, Game.Db, team, f);
-                Ui.Item(card, title, Loc.T("facilityinfo." + f), MathX.FormatMoney(cost), UiFactory.Primary(Loc.T("facility.upgradeButton"), () =>
+                // The price sits on the button (as in mobile management games), leaving the width to the name.
+                Ui.Item(col, Loc.T("facility." + f), Stars(lvl), null, UiFactory.Primary(Loc.T("facility.upgradeButton") + "\n" + MathX.FormatMoney(cost), () =>
                 {
                     bool ok = FinanceService.UpgradeFacility(world, Game.Db, team, type);
                     Shell.Toast(ok ? Loc.T("facility.upgraded", Loc.T("facility." + type)) : Loc.T("facility.noBudget"), ok);
                     Shell.Refresh();
                 }));
             }
+
+            // What each one is for, on demand, in two columns like the rows above.
+            Ui.Expander(list, "facility.info", Loc.T("facility.effect"), inner =>
+            {
+                RectTransform l, r;
+                Ui.Columns(inner, out l, out r);
+                var lc = Ui.Card(l, null);
+                var rc = Ui.Card(r, null);
+                for (int idx = 0; idx < types.Length; idx++)
+                    UiFactory.Paragraph(idx < half ? lc : rc, "<b>" + Loc.T("facility." + types[idx]) + "</b>  " + Theme.Dim(Loc.T("facilityinfo." + types[idx])), Theme.FontSmall - 2);
+                UiFactory.Paragraph(rc, Theme.Dim(Loc.T("facility.note")), Theme.FontSmall - 4);
+            }, Shell.Refresh);
         }
 
         private static string Stars(int level)

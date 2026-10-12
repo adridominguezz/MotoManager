@@ -28,10 +28,11 @@ namespace MotoManager.App.UI.Screens
             RectTransform leftCol, rightCol;
             Ui.Columns(list, out leftCol, out rightCol);
             var top = Ui.Card(leftCol, org != null ? org.Name : team.Name, org != null ? Loc.T("owner." + org.Owner) : null);
+            // Three big numbers in one row: now, what is left of the budget, where the season ends.
             Ui.Kpis(top,
                 Ui.Kpi(Theme.Money(org != null ? org.Cash : Accounts.Cash(world, team)), Loc.T("finance.cash")),
-                Ui.Kpi(Theme.Money(left), Loc.T("finance.remaining")));
-            Ui.Kpis(top, Ui.Kpi(fc != null ? Theme.Money(fc.EndProbable) : "-", Loc.T("finance.endOfSeason")));
+                Ui.Kpi(Theme.Money(left), Loc.T("finance.remaining")),
+                Ui.Kpi(fc != null ? Theme.Money(fc.EndProbable) : "-", Loc.T("finance.endOfSeason")));
             double used = team.SeasonBudget > 0 ? spent / team.SeasonBudget : 0;
             Ui.Bar(top, Loc.T("finance.budgetUsed"), used, MathX.FormatMoney(spent) + Theme.Dim(" / " + MathX.FormatMoney(team.SeasonBudget)),
                 used > 1 ? Theme.Bad : used > 0.85 ? Theme.Warning : Theme.Good, 40);
@@ -75,7 +76,7 @@ namespace MotoManager.App.UI.Screens
                     }
                     UiFactory.TableRow(detail, 34, w, cells);
                 }
-                if (kinds.Count == 0) Ui.Note(detail, Loc.T("finance.noMovements"));
+                if (kinds.Count == 0) UiFactory.Paragraph(detail, Theme.Dim(Loc.T("finance.noMovements")), Theme.FontSmall - 2);
                 else Ui.Line(detail, Loc.T("finance.net"), Theme.Money(sum), true);
             }
             else
@@ -95,11 +96,15 @@ namespace MotoManager.App.UI.Screens
         }
     }
 
-    /// <summary>Sponsors: current deals and the offers on the table.</summary>
+    /// <summary>
+    /// Sponsors: current deals and the offers on the table. Each offer is one short row (name, sector, money and
+    /// one button); its conditions and the accept / counter / reject actions are on its own page.
+    /// </summary>
     public class SponsorsPage : ScreenBase
     {
         public override string Title { get { return Loc.T("tab.sponsors"); } }
         private int _view = -1;
+        private string _offer;
 
         public override void Build(RectTransform content)
         {
@@ -109,6 +114,14 @@ namespace MotoManager.App.UI.Screens
             if (team == null) return;
 
             var offers = SponsorMarket.OffersFor(world, team);
+            var open = offers.Find(o => o.Id == _offer);
+            if (open != null)
+            {
+                MobileParts.BackRow(list, Loc.T("career.back"), () => { _offer = null; Shell.Refresh(); });
+                Offer(list, world, open);
+                return;
+            }
+            _offer = null;
             if (_view < 0) _view = offers.Count > 0 ? 1 : 0;
             Ui.Chips(list, new[] { Loc.T("sponsor.deals", SponsorService.DealsIn(team, world.Season), SponsorService.Slots(Game.Db, team, world.Season)), Loc.T("sponsor.offersTitle", offers.Count) }, _view, i => { _view = i; Shell.Refresh(); });
             if (_view == 0)
@@ -117,26 +130,42 @@ namespace MotoManager.App.UI.Screens
                 return;
             }
             var oc = Ui.Card(list, null, null);
-            Ui.Note(oc, Loc.T("sponsor.offersInfo"));
             if (offers.Count == 0) Ui.Note(oc, Loc.T("sponsor.noOffers"));
             foreach (var o in offers)
             {
                 var offer = o;
-                string terms = Objectives(o.Objectives);
-                var extra = new List<string>();
-                extra.Add(Loc.T("sponsor.period", o.StartSeason + (o.Seasons > 1 ? "–" + (o.StartSeason + o.Seasons - 1) : "")));
-                if (o.SigningBonus > 0) extra.Add(Loc.T("sponsor.signingBonus", MathX.FormatMoney(o.SigningBonus)));
-                extra.Add(Loc.T("sponsor.expiresIn", Math.Max(0, o.ExpiresAfterEvent - world.EventsCompleted + 1)));
-                if (o.PenaltyOnMiss > 0) extra.Add(Loc.T("sponsor.penalty", (o.PenaltyOnMiss * 100).ToString("0")));
-                if (o.IndustryExclusive) extra.Add(Loc.T("sponsor.exclusive"));
-                string detail = Industry(o.Industry) + (o.Renewal ? " · " + Loc.T("sponsor.renewal") : "") + "\n" + string.Join(" · ", extra.ToArray()) +
-                                (terms.Length > 0 ? "\n" + terms : "");
+                string detail = Industry(o.Industry) + (o.Renewal ? " · " + Loc.T("sponsor.renewal") : "") + " · " +
+                                Loc.T("sponsor.period", o.StartSeason + (o.Seasons > 1 ? "–" + (o.StartSeason + o.Seasons - 1) : "")) + " · " +
+                                Loc.T("sponsor.expiresIn", Math.Max(0, o.ExpiresAfterEvent - world.EventsCompleted + 1));
                 Ui.Item(oc, o.Name, detail, MathX.FormatMoney(o.PaymentPerSeason) + Theme.Dim("/" + Loc.T("unit.season")),
-                    UiFactory.Primary(Loc.T("sponsor.accept"), () => { Shell.Toast(SponsorMarket.Accept(world, Game.Db, offer.Id).Message); Shell.Refresh(); }),
-                    UiFactory.Act(Loc.T("sponsor.counter"), () => { Shell.Toast(SponsorMarket.Counter(world, Game.Db, offer.Id, 0.1).Message); Shell.Refresh(); }),
-                    UiFactory.Act(Loc.T("sponsor.reject"), () => { Shell.Toast(SponsorMarket.Reject(world, offer.Id).Message); Shell.Refresh(); }));
+                    UiFactory.Primary(Loc.T("home.open"), () => { _offer = offer.Id; Shell.Refresh(); }));
             }
+            Ui.Note(oc, Loc.T("sponsor.offersInfo"));
+        }
 
+        /// <summary>One offer: the money in big type, every condition as a line, the three answers at the bottom.</summary>
+        private void Offer(RectTransform list, WorldState world, SponsorOffer o)
+        {
+            var offer = o;
+            RectTransform leftCol, rightCol;
+            Ui.Columns(list, out leftCol, out rightCol);
+            var card = Ui.Card(leftCol, o.Name, Industry(o.Industry) + (o.Renewal ? " · " + Loc.T("sponsor.renewal") : ""));
+            Ui.Kpis(card,
+                Ui.Kpi(MathX.FormatMoney(o.PaymentPerSeason), Loc.T("sponsor.col.perSeason")),
+                Ui.Kpi(o.Seasons.ToString(), Loc.T("sponsor.col.seasons")),
+                Ui.Kpi(o.SigningBonus > 0 ? MathX.FormatMoney(o.SigningBonus) : "-", Loc.T("sponsor.col.signing")));
+            UiFactory.ButtonRow(card, 56,
+                UiFactory.Primary(Loc.T("sponsor.accept"), () => { Shell.Toast(SponsorMarket.Accept(world, Game.Db, offer.Id).Message); _offer = null; Shell.Refresh(); }),
+                UiFactory.Act(Loc.T("sponsor.counter"), () => { Shell.Toast(SponsorMarket.Counter(world, Game.Db, offer.Id, 0.1).Message); Shell.Refresh(); }),
+                UiFactory.Act(Loc.T("sponsor.reject"), () => { Shell.Toast(SponsorMarket.Reject(world, offer.Id).Message); _offer = null; Shell.Refresh(); }));
+            Ui.Note(card, Loc.T("sponsor.offersInfo"));
+
+            var terms = Ui.Card(rightCol, Loc.T("sponsor.col.objectives"));
+            Ui.Line(terms, Loc.T("sponsor.col.seasons"), o.StartSeason + (o.Seasons > 1 ? "–" + (o.StartSeason + o.Seasons - 1) : ""));
+            Ui.Line(terms, Loc.T("sponsor.col.expires"), Loc.T("sponsor.events", Math.Max(0, o.ExpiresAfterEvent - world.EventsCompleted + 1)));
+            foreach (var line in ObjectiveList(o.Objectives)) Ui.Line(terms, Theme.Dim("•") + " " + line, "");
+            if (o.PenaltyOnMiss > 0) Ui.Note(terms, Theme.WarnText(Loc.T("sponsor.penalty", (o.PenaltyOnMiss * 100).ToString("0"))));
+            if (o.IndustryExclusive) Ui.Note(terms, Theme.WarnText(Loc.T("sponsor.exclusive")));
         }
 
         private void Deals(RectTransform list, WorldState world, Team team)
@@ -162,6 +191,11 @@ namespace MotoManager.App.UI.Screens
 
         public static string Objectives(List<SponsorObjective> objectives)
         {
+            return string.Join(" · ", ObjectiveList(objectives).ToArray());
+        }
+
+        private static List<string> ObjectiveList(List<SponsorObjective> objectives)
+        {
             var parts = new List<string>();
             foreach (var o in objectives)
             {
@@ -175,7 +209,7 @@ namespace MotoManager.App.UI.Screens
                     default: parts.Add(Loc.Or("sobj." + o.Type, o.Type.ToString())); break;
                 }
             }
-            return string.Join(" · ", parts.ToArray());
+            return parts;
         }
     }
 }
