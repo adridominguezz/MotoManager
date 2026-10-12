@@ -1455,5 +1455,9 @@
   "home.tile.riders": "Pilotos",
   "home.tile.ridersSub": "Posición en el campeonato ›",
   "home.tile.todoSub": "Toca para resolver ›",
-  "mycareer.skills": "Habilidades"
+  "mycareer.skills": "Habilidades",
+  "staff.currentLevel": "Nivel actual",
+  "shop.leftoverShort": "{0} sin vender",
+  "neg.askingShort": "Pide",
+  "bids.note": "Si aceptas, el piloto se marcha al final de la temporada."
 }

@@ -595,6 +595,18 @@ que se quedan en pista, modelos toscos y opción de entrar a boxes (en motos no 
   contenido respeta la zona segura (notch, cámara, esquinas redondeadas, con margen mínimo) mientras los fondos llenan
   la pantalla; umbral de arrastre de la cámara según la densidad.
 
+### Cuarta prueba en Unity — carrera, equilibrio, puesta en marcha, sonido y móvil ✅
+- Carrera: órdenes que se mantienen (el ingeniero solo gestiona en automático) y con efecto claro; neumáticos con
+  curva real (blando rápido al principio y se cae, duro lento al principio y mejor al final); tiempos y diferencias
+  al milésimo; última y mejor vuelta en la tarjeta del piloto.
+- Equilibrio: los mejores pilotos van a los equipos de fábrica; economía revisada (más patrocinio para equipos
+  pequeños, más ayudas del organizador, viajes más baratos); el personal decide el techo de reglaje y el desgaste.
+- Gestión: ronda X/Y en Inicio, pestaña de pilotos libres, puesto de marketing que lleva la tienda, «Propietario» en
+  lugar de fecha de contrato, «Puesta en marcha» tras fundar (identidad, pilotos, personal, patrocinio).
+- Sonido sintetizado: música de menú, motor en tiempo real según vueltas, marcha y gas, resto de motos y público.
+- Móvil: diseño compacto por defecto, Inicio como panel de mando, pantallas de Equipo, Moto, Finanzas, Tienda,
+  Mercado y Negociación rediseñadas para pantalla pequeña.
+
 ## Pendiente de especificación
 
 Recibidas las secciones 49–105; ver la Fase 8.

@@ -1455,5 +1455,9 @@
   "home.tile.riders": "Riders",
   "home.tile.ridersSub": "Championship position ›",
   "home.tile.todoSub": "Tap to sort out ›",
-  "mycareer.skills": "Skills"
+  "mycareer.skills": "Skills",
+  "staff.currentLevel": "Current level",
+  "shop.leftoverShort": "{0} unsold",
+  "neg.askingShort": "Asks",
+  "bids.note": "If you accept, the rider leaves at the end of the season."
 }
