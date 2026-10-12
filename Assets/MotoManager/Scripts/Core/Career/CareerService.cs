@@ -443,12 +443,17 @@ namespace MotoManager.Core.Career
         /// starts without riders or staff. Null if no place can be bought.
         /// </summary>
         public static Team EnterTeam(WorldState world, GameDatabase db, Organisation org, ChampionshipCategory cat, Manufacturer supplier, string name, string shortName,
-            string primary, string secondary, double reputation, double operatingCost, string country = null)
+            string primary, string secondary, double reputation, double operatingCost, string country = null, bool vacantPlace = false)
         {
             var rules = db.GetRules(cat.Id, world.Season);
             string baseBikeId = supplier.Programs[cat.Id];
             // A place on the grid.
-            if (rules.Economy.EntryModel == EntryModel.SlotPurchase)
+            if (rules.Economy.EntryModel == EntryModel.SlotPurchase && vacantPlace)
+            {
+                // A place left free by a team that withdrew: bought from the championship.
+                Accounts.Post(world, org, null, LedgerKind.SlotPurchase, -rules.Economy.SlotPrice, cat.Name, true, false);
+            }
+            else if (rules.Economy.EntryModel == EntryModel.SlotPurchase)
             {
                 var seller = Seller(world, db, cat.Id);
                 if (seller == null) return null;
@@ -476,7 +481,7 @@ namespace MotoManager.Core.Career
                 Reputation = reputation,
                 SeasonBudget = Math.Round(operatingCost / 1000) * 1000,
                 OrganisationId = org.Id,
-                DataConfidence = "player"
+                DataConfidence = vacantPlace ? "generated (new entrant)" : "player"
             };
             team.Colors.Primary = primary;
             team.Colors.Secondary = string.IsNullOrEmpty(secondary) ? "#FFFFFF" : secondary;

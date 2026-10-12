@@ -214,6 +214,12 @@ namespace MotoManager.Core.World
         public Dictionary<string, Dictionary<string, double>> ScoutingKnowledge = new Dictionary<string, Dictionary<string, double>>();
         public List<string> FreeAgentPool = new List<string>();
         public Dictionary<string, Organisation> Organisations = new Dictionary<string, Organisation>();
+        /// <summary>Number of teams each championship keeps on its grid (new entrants fill the places teams leave).</summary>
+        public Dictionary<string, int> GridTargets = new Dictionary<string, int>();
+        /// <summary>Each championship's seasons as history remembers them.</summary>
+        public List<SeasonHistory> History = new List<SeasonHistory>();
+        /// <summary>Records and rivalries per championship.</summary>
+        public Dictionary<string, CategoryRecords> Records = new Dictionary<string, CategoryRecords>();
         public FinanceState Finance = new FinanceState();
         /// <summary>Every manager in the world (the player's and the AI's).</summary>
         public Dictionary<string, ManagerProfile> Managers = new Dictionary<string, ManagerProfile>();

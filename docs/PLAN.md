@@ -607,6 +607,27 @@ que se quedan en pista, modelos toscos y opción de entrar a boxes (en motos no 
 - Móvil: diseño compacto por defecto, Inicio como panel de mando, pantallas de Equipo, Moto, Finanzas, Tienda,
   Mercado y Negociación rediseñadas para pantalla pequeña.
 
+### Sesión E7 — IA y universo ✅
+- Los dueños privados de la IA tienen paciencia limitada (según su respaldo): tras varias temporadas cubriendo más de
+  un 25 % del presupuesto, venden el equipo a nuevos propietarios (si tiene nombre) o lo retiran.
+- Cada campeonato mantiene su parrilla: las plazas libres las ocupan equipos nuevos (nombre y colores generados,
+  fabricante con menos clientes, personal básico, manager del mercado; los pilotos llegan por el mercado).
+- 20 temporadas simuladas: parrillas completas, ninguna organización en negativo, patrocinio y salarios estables
+  (sin inflación), alguna venta de equipo. Prueba larga incluida (desactivada por duración).
+
+### Sesión 8.6 — Historia del mundo y Salón de la Fama ✅
+- Por temporada y campeonato: podio con puntos, campeón de equipos y de fabricantes, más victorias, mejor debutante y
+  ganadores retirados. Récords por campeonato: ganador más joven y más veterano, racha de victorias; rivalidades
+  (veces 1º-2º). Almacenamiento compacto.
+- Salón de la Fama: dos títulos de la categoría reina, 20 victorias en ella o tres títulos.
+- Competición › Historia: Campeones, Temporadas, Récords (con líderes y rivalidades) y Salón de la Fama.
+
+### Sesión 8.7 (parte) — Guardado y ajustes ✅
+- Tres ranuras de guardado manual además del autoguardado, con resumen (mánager, equipo, temporada, fecha); cargar
+  desde la pantalla inicial y guardar desde el menú ☰.
+- Ajustes recordados: idioma, tamaño de texto, música, sonido y velocidad de carrera.
+- Pendiente: panel de depuración solo en builds de desarrollo y migraciones encadenadas de guardado.
+
 ## Pendiente de especificación
 
 Recibidas las secciones 49–105; ver la Fase 8.

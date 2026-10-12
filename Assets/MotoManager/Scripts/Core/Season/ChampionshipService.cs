@@ -23,6 +23,7 @@ namespace MotoManager.Core.Season
         {
             var champ = Get(world, categoryId);
             bool mainRace = result.Type == SessionType.Race;
+            HistoryService.OnRace(world, categoryId, result, null);
             var bestByManufacturer = new Dictionary<string, ResultEntry>();
 
             foreach (var r in result.Classification)

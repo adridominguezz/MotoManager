@@ -130,6 +130,9 @@ namespace MotoManager.App.UI
             _status.text = Loc.T("boot.loaded", db.Riders.Count, db.Teams.Count, db.Circuits.Count) +
                            (_session.DataErrors.Count > 0 ? "\n" + Loc.T("boot.warnings", _session.DataErrors.Count) : "");
             if (SaveManager.Exists(SaveManager.AutoSlot)) AddButton(Loc.T("boot.continue"), () => _session.Continue(), Theme.Accent);
+            bool anySlot = false;
+            foreach (var s in SaveManager.Slots) if (SaveManager.Exists(s)) anySlot = true;
+            if (anySlot) AddButton(Loc.T("boot.load"), ShowSlots, Theme.PanelLight, 80);
             AddButton(Loc.T("career.new"), () => _session.PrepareCareer((ulong)System.DateTime.Now.Ticks, game =>
             {
                 _menuShown = false;
@@ -170,6 +173,26 @@ namespace MotoManager.App.UI
 
             var intro = Ui.Card(_list, Loc.T("boot.welcome"), Loc.T("boot.welcomeSub"));
             UiFactory.Paragraph(intro, Loc.T("boot.intro"), Theme.FontSmall + 2);
+        }
+
+        /// <summary>The manual save slots, each with what it holds, to load one.</summary>
+        private void ShowSlots()
+        {
+            UiFactory.Clear(_list);
+            var card = Ui.Card(_list, Loc.T("boot.load"));
+            foreach (var slot in SaveManager.Slots)
+            {
+                var meta = SaveManager.ReadMeta(slot);
+                string name = Loc.T("save.slot", slot.Substring(slot.Length - 1));
+                if (meta == null)
+                {
+                    Ui.Item(card, name, Theme.Dim(Loc.T("save.empty")));
+                    continue;
+                }
+                var sl = slot;
+                Ui.Item(card, name + "  " + Theme.Dim(meta.Team), Loc.T("save.meta", meta.Manager, meta.Season, meta.SavedAt), null,
+                    UiFactory.Primary(Loc.T("save.loadButton"), () => _session.Load(sl)));
+            }
         }
 
         private void ShowCareer()

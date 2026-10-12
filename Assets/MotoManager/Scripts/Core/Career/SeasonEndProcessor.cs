@@ -43,6 +43,8 @@ namespace MotoManager.Core.Career
             ManagerMarket.SeasonEnd(world, db, rng.Fork("managers"));
             Contracts.PaySeasonBonuses(world, db);
             SponsorsAndReputation(world, db, rng);
+            // Owners who have run out of patience sell or withdraw; new entrants take the free places.
+            UniverseService.SeasonEnd(world, db, rng.Fork("universe"));
             TeamAI.OffseasonInvestment(world, db);
 
             foreach (var r in SortedRiders(world)) RiderDevelopment.EndOfSeason(world, db, r, rng);
@@ -96,6 +98,7 @@ namespace MotoManager.Core.Career
             }
 
             summary.YouthIntake = YouthIntake(world, db, rng);
+            Season.HistoryService.SeasonEnd(world, db, summary.Retired);
             Accounts.CloseSeason(world);
             MerchService.SeasonEnd(world, db);
             RollOver(world, db);
@@ -210,8 +213,17 @@ namespace MotoManager.Core.Career
                     if (cat == null || !cat.Simulated) continue;
                     floor += TeamAI.OperatingFloor(db.GetRules(cat.Id, world.Season));
                 }
-                if (org.Cash < floor && Accounts.TryBegin(world, "owner-funding|" + org.Id))
-                    Accounts.Post(world, org, null, LedgerKind.OwnerFunding, floor - org.Cash, "Owners cover the shortfall");
+                double budgets = 0;
+                foreach (var id in org.TeamIds)
+                {
+                    var t = world.GetTeam(id);
+                    if (t != null) budgets += t.SeasonBudget;
+                }
+                double need = floor - org.Cash;
+                if (need > 0 && Accounts.TryBegin(world, "owner-funding|" + org.Id))
+                    Accounts.Post(world, org, null, LedgerKind.OwnerFunding, need, "Owners cover the shortfall");
+                // Private owners notice when they keep having to pay a large share of the budget.
+                if (org.Owner == OwnerKind.Private) org.OwnerFundedSeasons = need > budgets * 0.25 ? org.OwnerFundedSeasons + 1 : 0;
             }
         }
 

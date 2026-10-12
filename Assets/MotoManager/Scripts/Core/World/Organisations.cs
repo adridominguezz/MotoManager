@@ -78,6 +78,8 @@ namespace MotoManager.Core.World
         /// <summary>Keeps every ledger line (organisations the player works for or owns); others keep totals only.</summary>
         public bool DetailedLedger;
         public List<Loan> Loans = new List<Loan>();
+        /// <summary>Seasons in a row the owners had to put in substantial money (AI organisations): their patience runs out.</summary>
+        public int OwnerFundedSeasons;
         /// <summary>Events in a row the organisation has ended with negative cash (player organisations).</summary>
         public int InsolventEvents;
         /// <summary>Units of each product ordered this season by all the organisation's teams (shared production: volume discounts).</summary>

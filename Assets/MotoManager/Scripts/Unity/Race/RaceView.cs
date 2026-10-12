@@ -64,7 +64,7 @@ namespace MotoManager.App.Race
             else
             {
                 view.Cam.SetMode(CameraMode.Follow, view.Bikes[view.SelectedRider].transform);
-                view.Speed = 1;
+                view.Speed = PreferredSpeed;
             }
             return view;
         }
@@ -73,6 +73,18 @@ namespace MotoManager.App.Race
         {
             if (InIntro) EndIntro();
             Speed = speed;
+            // The last speed chosen is where the next race starts.
+            if (speed > 0)
+                try { PlayerPrefs.SetFloat("MotoManager.RaceSpeed", speed); } catch (Exception) { }
+        }
+
+        /// <summary>The race speed the player used last (1x the first time).</summary>
+        public static float PreferredSpeed
+        {
+            get
+            {
+                try { return Mathf.Clamp(PlayerPrefs.GetFloat("MotoManager.RaceSpeed", 1f), 0.5f, 16f); } catch (Exception) { return 1f; }
+            }
         }
 
         // ------------------------------------------------------------------ race-day presentation
@@ -97,11 +109,11 @@ namespace MotoManager.App.Race
             _introTime = -1;
             Hud.ShowIntro("", "", false);
             Cam.SetMode(CameraMode.Follow, Bikes[SelectedRider].transform);
-            Speed = 1;
+            Speed = PreferredSpeed;
             if (!Assistant.Seen("race"))
             {
                 Speed = 0;
-                Assistant.Show("race", new[] { "tut.race.1", "tut.race.2", "tut.race.3", "tut.race.4" }, () => Speed = 1);
+                Assistant.Show("race", new[] { "tut.race.1", "tut.race.2", "tut.race.3", "tut.race.4" }, () => Speed = PreferredSpeed);
             }
         }
 

@@ -94,6 +94,7 @@ namespace MotoManager.Core.Season
             SponsorMarket.InitialDeals(world, db, rng);
             MerchService.InitialShops(world, db);
             CareerService.EnsureAiManagers(world, db, rng);
+            UniverseService.RecordGrids(world, db);
             if (options.PlayerTeamId != null)
             {
                 // Quick start (tools, tests): an employed manager with a standard profile.

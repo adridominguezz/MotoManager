@@ -319,6 +319,19 @@ namespace MotoManager.App.UI.Screens
             v.childForceExpandHeight = true;
             UiFactory.ButtonRow(panel.transform, 60, UiFactory.Act(Loc.T("shell.save"), () => { Session.Save(); Toast(Loc.T("shell.saved")); ToggleMenu(); }));
             UiFactory.ButtonRow(panel.transform, 60, UiFactory.Act(Loc.T("shell.menu"), () => { ToggleMenu(); ExitToMenu(); }));
+            // Manual save slots (the autosave runs after every event).
+            var slots = new List<UiAct>();
+            foreach (var slot in SaveManager.Slots)
+            {
+                var sl = slot;
+                var meta = SaveManager.ReadMeta(slot);
+                slots.Add(UiFactory.Act(Loc.T("save.saveTo", slot.Substring(slot.Length - 1)) + (meta != null ? " ●" : ""), () =>
+                {
+                    ToggleMenu();
+                    Session.Save(sl, () => Toast(Loc.T("save.saved", sl.Substring(sl.Length - 1))));
+                }));
+            }
+            UiFactory.ButtonRow(panel.transform, 60, slots.ToArray());
             UiFactory.ButtonRow(panel.transform, 60,
                 UiFactory.Option(Loc.T("audio.music"), GameAudio.MusicOn, () => { GameAudio.MusicOn = !GameAudio.MusicOn; ToggleMenu(); ToggleMenu(); }),
                 UiFactory.Option(Loc.T("audio.sound"), GameAudio.SfxOn, () => { GameAudio.SfxOn = !GameAudio.SfxOn; ToggleMenu(); ToggleMenu(); }));

@@ -101,19 +101,35 @@ namespace MotoManager.App
 
         public void Continue()
         {
+            Load(SaveManager.AutoSlot);
+        }
+
+        public void Load(string slot)
+        {
             GameController game = null;
             Run(UI.Loc.T("busy.loadingSave"), () =>
             {
-                var world = SaveManager.Load(SaveManager.AutoSlot);
+                var world = SaveManager.Load(slot);
                 if (world != null) game = new GameController(Db, world);
             }, () => SetGame(game), e => SetGame(null));
         }
 
         public void Save()
         {
+            Save(SaveManager.AutoSlot, null);
+        }
+
+        /// <summary>Saves to a slot (with a short description of the game for the load screen).</summary>
+        public void Save(string slot, Action onDone)
+        {
             if (Game == null) return;
             var world = Game.World;
-            Run(UI.Loc.T("busy.saving"), () => SaveManager.Write(SaveManager.AutoSlot, SaveManager.Serialize(world)), null);
+            var meta = SaveManager.MetaFor(world);
+            Run(UI.Loc.T("busy.saving"), () =>
+            {
+                SaveManager.Write(slot, SaveManager.Serialize(world));
+                SaveManager.WriteMeta(slot, meta);
+            }, onDone);
         }
 
         /// <summary>Runs work that touches the world on the background thread; callbacks come back on the main thread.</summary>

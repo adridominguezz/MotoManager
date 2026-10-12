@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using MotoManager.Core.Data;
+using MotoManager.Core.Season;
 using MotoManager.Core.World;
 using UnityEngine;
 
@@ -139,45 +140,144 @@ namespace MotoManager.App.UI.Screens
     }
 
     /// <summary>Roll of honour since 2026, plus all-time leaders.</summary>
+    /// <summary>
+    /// The history of the world: champions by championship, each season (podium, rookie of the year, retirements),
+    /// records and rivalries, and the Hall of Fame.
+    /// </summary>
     public class HistoryScreen : ScreenBase
     {
         public override string Title { get { return Loc.T("tab.history"); } }
+        private int _view;
+        private string _category;
 
         public override void Build(RectTransform content)
         {
             var list = Page(content);
             var world = Game.World;
-            if (world.Champions.Count == 0)
-            {
-                var empty = Ui.Card(list, Loc.T("history.title"));
-                Ui.Note(empty, Loc.T("history.empty"));
-            }
-            foreach (var cat in Game.Db.CategoriesOrdered())
-            {
-                if (!cat.Simulated) continue;
-                var champs = world.Champions.FindAll(c => c.CategoryId == cat.Id);
-                if (champs.Count == 0) continue;
-                var card = Ui.Card(list, cat.Name);
-                var widths = new[] { 1.2f, 5f, 5f, 2f };
-                UiFactory.TableRow(card, 40, widths, new[] { Loc.T("col.season"), Loc.T("col.champion"), Loc.T("col.team"), Loc.T("col.points") }, true);
-                for (int i = champs.Count - 1; i >= 0; i--)
-                {
-                    var c = champs[i];
-                    UiFactory.TableRow(card, 36, widths, new[] { c.Season.ToString(), "<b>" + c.RiderName + "</b>", c.TeamName ?? "", c.Points.ToString("0") });
-                }
-            }
+            var db = Game.Db;
+            var cats = new List<ChampionshipCategory>();
+            foreach (var c in db.CategoriesOrdered()) if (c.Simulated) cats.Add(c);
+            if (_category == null) _category = world.PlayerTeam != null ? world.PlayerTeam.CategoryId : cats[0].Id;
 
-            var all = new List<Rider>(world.Riders.Values);
-            all.Sort((a, b) => b.TotalWins().CompareTo(a.TotalWins()));
-            if (all.Count == 0 || all[0].TotalWins() == 0) return;
-            var top = Ui.Card(list, Loc.T("history.mostWins"));
-            var w2 = new[] { 5f, 2f, 2f, 2f };
-            UiFactory.TableRow(top, 40, w2, new[] { Loc.T("col.rider"), Loc.T("col.wins"), Loc.T("col.podiums"), Loc.T("col.titles") }, true);
-            for (int i = 0; i < all.Count && i < 15; i++)
+            var head = Ui.Card(list, null);
+            Ui.Chips(head, new[] { Loc.T("history.view.champions"), Loc.T("history.view.seasons"), Loc.T("history.view.records"), Loc.T("history.view.hall") }, _view,
+                i => { _view = i; Shell.Refresh(); }, 50);
+            if (_view != 3)
             {
-                var r = all[i];
-                if (r.TotalWins() == 0) break;
-                UiFactory.TableRow(top, 42, w2, new[] { r.FullName + (r.IsRetired ? " " + Theme.Dim(Loc.T("history.retired")) : ""), r.TotalWins().ToString(), r.TotalPodiums().ToString(), r.Titles.Count.ToString() });
+                var names = new List<string>();
+                int sel = 0;
+                for (int i = 0; i < cats.Count; i++)
+                {
+                    names.Add(cats[i].ShortName);
+                    if (cats[i].Id == _category) sel = i;
+                }
+                Ui.Chips(head, names, sel, i => { _category = cats[i].Id; Shell.Refresh(); }, 46);
+            }
+            var cat = db.GetCategory(_category);
+            switch (_view)
+            {
+                case 1: Seasons(list, world, cat); break;
+                case 2: Records(list, world, cat); break;
+                case 3: Hall(list, world, db); break;
+                default: Champions(list, world, cat); break;
+            }
+        }
+
+        private void Champions(RectTransform list, WorldState world, ChampionshipCategory cat)
+        {
+            var card = Ui.Card(list, cat.Name);
+            var champs = world.Champions.FindAll(c => c.CategoryId == cat.Id);
+            if (champs.Count == 0)
+            {
+                UiFactory.Paragraph(card, Theme.Dim(Loc.T("history.empty")), Theme.FontSmall - 2);
+                return;
+            }
+            var widths = new[] { 1.2f, 4f, 4f, 1.6f };
+            UiFactory.TableRow(card, 40, widths, new[] { Loc.T("col.season"), Loc.T("col.champion"), Loc.T("col.team"), Loc.T("col.points") }, true);
+            for (int i = champs.Count - 1; i >= 0; i--)
+            {
+                var c = champs[i];
+                UiFactory.TableRow(card, 36, widths, new[] { c.Season.ToString(), "<b>" + c.RiderName + "</b>", c.TeamName ?? "", c.Points.ToString("0") });
+            }
+        }
+
+        private void Seasons(RectTransform list, WorldState world, ChampionshipCategory cat)
+        {
+            var seasons = world.History.FindAll(h => h.CategoryId == cat.Id);
+            if (seasons.Count == 0)
+            {
+                UiFactory.Paragraph(Ui.Card(list, cat.Name), Theme.Dim(Loc.T("history.empty")), Theme.FontSmall - 2);
+                return;
+            }
+            RectTransform left, right;
+            Ui.Columns(list, out left, out right);
+            for (int i = seasons.Count - 1, k = 0; i >= 0 && k < 8; i--, k++)
+            {
+                var h = seasons[i];
+                var maker = world.GetManufacturer(h.MakerChampionId);
+                var card = Ui.Card(k % 2 == 0 ? left : right, h.Season + " · " + cat.ShortName, Loc.T("history.races", h.Races));
+                Ui.Line(card, "1º", "<b>" + h.Champion + "</b>  " + Theme.Dim(h.ChampionPoints.ToString("0") + " pts"));
+                if (h.Second != null) Ui.Line(card, "2º", h.Second + "  " + Theme.Dim("-" + (h.ChampionPoints - h.SecondPoints).ToString("0")));
+                if (h.Third != null) Ui.Line(card, "3º", h.Third);
+                if (h.TeamChampion != null) Ui.Line(card, Loc.T("history.teamTitle"), h.TeamChampion);
+                if (maker != null) Ui.Line(card, Loc.T("history.makerTitle"), maker.Name);
+                if (h.MostWins != null) Ui.Line(card, Loc.T("history.mostWinsSeason"), h.MostWins + "  " + Theme.Dim(h.MostWinsCount.ToString()));
+                if (h.Rookie != null) Ui.Line(card, Loc.T("history.rookie"), h.Rookie + "  " + Theme.Dim("P" + h.RookiePosition));
+                if (h.Retired.Count > 0) Ui.Note(card, Loc.T("history.retiredList", string.Join(", ", h.Retired.ToArray())));
+            }
+        }
+
+        private void Records(RectTransform list, WorldState world, ChampionshipCategory cat)
+        {
+            RectTransform left, right;
+            Ui.Columns(list, out left, out right);
+            var rc = Ui.Card(left, Loc.T("history.records"), cat.Name);
+            CategoryRecords rec;
+            world.Records.TryGetValue(cat.Id, out rec);
+            if (rec == null || rec.YoungestWinner == null) UiFactory.Paragraph(rc, Theme.Dim(Loc.T("history.noRecords")), Theme.FontSmall - 2);
+            else
+            {
+                Ui.Line(rc, Loc.T("history.youngest"), "<b>" + rec.YoungestWinner.Name + "</b>  " + Theme.Dim(Loc.T("history.age", rec.YoungestWinner.Value.ToString("0.0", Loc.Culture), rec.YoungestWinner.Season)));
+                Ui.Line(rc, Loc.T("history.oldest"), "<b>" + rec.OldestWinner.Name + "</b>  " + Theme.Dim(Loc.T("history.age", rec.OldestWinner.Value.ToString("0.0", Loc.Culture), rec.OldestWinner.Season)));
+                if (rec.LongestStreak != null)
+                    Ui.Line(rc, Loc.T("history.streak"), "<b>" + rec.LongestStreak.Name + "</b>  " + Theme.Dim(Loc.T("history.streakValue", rec.LongestStreak.Value.ToString("0"), rec.LongestStreak.Season)));
+            }
+            // Career leaders in this championship.
+            var leaders = new List<KeyValuePair<Rider, int>>();
+            foreach (var r in world.Riders.Values)
+            {
+                int wins = 0;
+                foreach (var h in r.CareerHistory) if (h.CategoryId == cat.Id) wins += h.Wins;
+                if (wins > 0) leaders.Add(new KeyValuePair<Rider, int>(r, wins));
+            }
+            leaders.Sort((a, b) => b.Value.CompareTo(a.Value));
+            var lc = Ui.Card(left, Loc.T("history.mostWins"));
+            for (int i = 0; i < leaders.Count && i < 6; i++)
+                Ui.Line(lc, leaders[i].Key.FullName + (leaders[i].Key.IsRetired ? " " + Theme.Dim(Loc.T("history.retired")) : ""), "<b>" + leaders[i].Value + "</b>");
+            if (leaders.Count == 0) UiFactory.Paragraph(lc, Theme.Dim(Loc.T("history.noRecords")), Theme.FontSmall - 2);
+
+            var rivals = Ui.Card(right, Loc.T("history.rivalries"), Loc.T("history.rivalriesSub"));
+            var pairs = HistoryService.Rivalries(world, cat.Id);
+            foreach (var p in pairs) Ui.Line(rivals, p.A + "  " + Theme.Dim("vs") + "  " + p.B, "<b>" + p.Duels + "</b>");
+            if (pairs.Count == 0) UiFactory.Paragraph(rivals, Theme.Dim(Loc.T("history.noRecords")), Theme.FontSmall - 2);
+        }
+
+        private void Hall(RectTransform list, WorldState world, Core.Data.GameDatabase db)
+        {
+            var hall = HistoryService.HallOfFame(world, db);
+            var card = Ui.Card(list, Loc.T("history.hall"), Loc.T("history.hallSub"));
+            if (hall.Count == 0)
+            {
+                UiFactory.Paragraph(card, Theme.Dim(Loc.T("history.hallEmpty")), Theme.FontSmall - 2);
+                return;
+            }
+            var w = new[] { 0.7f, 4f, 1.6f, 1.6f, 1.6f, 1.6f };
+            UiFactory.TableRow(card, 38, w, new[] { "#", Loc.T("col.rider"), Loc.T("history.col.topTitles"), Loc.T("col.titles"), Loc.T("history.col.topWins"), Loc.T("col.wins") }, true);
+            for (int i = 0; i < hall.Count; i++)
+            {
+                var e = hall[i];
+                UiFactory.TableRow(card, 40, w, new[] { (i + 1).ToString(), "<b>" + e.Rider.FullName + "</b>" + (e.Rider.IsRetired ? "" : " " + Theme.Dim(Loc.T("history.active"))),
+                    e.TopTitles.ToString(), e.Titles.ToString(), e.TopWins.ToString(), e.Wins.ToString() });
             }
         }
     }
