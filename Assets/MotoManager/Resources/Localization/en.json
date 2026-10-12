@@ -1509,5 +1509,18 @@
   "standings.noRounds": "No round has been raced yet.",
   "standings.start": "Start",
   "standings.roundN": "Round {0}",
-  "home.then": "Then"
+  "home.then": "Then",
+  "finance.setBudget": "Season budget",
+  "finance.coverBudget": "Cover spending",
+  "finance.budgetSet": "Budget set to {0}",
+  "finance.askBoard": "Ask for more budget",
+  "finance.askedBoard": "Already asked this season",
+  "finance.cutCosts": "Cut costs",
+  "finance.overBudgetHint": "You have spent more than allocated. Ask the board for more (once a season; it costs some confidence) or cut staff and spending. Finishing over budget counts against you in the season review.",
+  "finance.board.Granted": "The board adds {0} to the budget",
+  "finance.board.Partial": "The board only grants {0}",
+  "finance.board.Refused": "The board refuses to raise the budget",
+  "finance.board.AlreadyAsked": "You already asked for more budget this season",
+  "finance.board.None": "Not available",
+  "staff.ceiling": "With your category and reputation, the staff willing to join reach level {0} at most. Reputation and a higher category open the door to the best."
 }

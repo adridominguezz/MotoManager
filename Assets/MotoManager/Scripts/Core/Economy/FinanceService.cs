@@ -64,6 +64,14 @@ namespace MotoManager.Core.Economy
     /// Regular income and costs of teams. Everything is posted through <see cref="Accounts"/>; the same item list
     /// feeds the per-event payments, the season forecast and the cash-flow projection.
     /// </summary>
+    public enum BudgetRequestOutcome { None, Granted, Partial, Refused, AlreadyAsked }
+
+    public class BudgetRequest
+    {
+        public BudgetRequestOutcome Outcome;
+        public double Granted;
+    }
+
     public static class FinanceService
     {
         /// <summary>Upkeep of one facility level step at the MotoGP reference (scaled per category).</summary>
@@ -191,6 +199,50 @@ namespace MotoManager.Core.Economy
             double minimum = rules.Economy.TravelCostPerRound * rounds + rules.Economy.TypicalRiderSalary * Math.Max(1, team.RiderIds.Count);
             double trend = team.Personality == null ? 1.0 : team.Personality.LastObjectiveMet ? 1.03 : 0.96;
             return Math.Round(Math.Max(minimum, team.SeasonBudget * trend) / 1000) * 1000;
+        }
+
+        /// <summary>True when the player decides the team's budget himself (he owns the organisation).</summary>
+        public static bool PlayerSetsBudget(WorldState world, Team team)
+        {
+            var m = world.PlayerManager;
+            return team != null && team.IsPlayer && m != null && m.Job != null && m.Job.Role == ManagerRole.OwnerManager;
+        }
+
+        /// <summary>An owner moves money into (or out of) the team's season allocation. Never below what is already spent.</summary>
+        public static double SetSeasonBudget(WorldState world, Team team, double amount)
+        {
+            if (!PlayerSetsBudget(world, team)) return team.SeasonBudget;
+            double spent = Accounts.SpentThisSeason(world, team);
+            team.SeasonBudget = Math.Round(Math.Max(spent, Math.Max(0, amount)) / 1000) * 1000;
+            var job = world.PlayerManager.Job;
+            job.AssignedBudget = team.SeasonBudget;
+            return team.SeasonBudget;
+        }
+
+        /// <summary>
+        /// A hired manager asks the board for more budget, once per season. The board gives the overspend plus a
+        /// margin when it trusts the manager and the organisation can afford it, half when unsure, nothing when
+        /// confidence is low; asking always costs a little confidence (more when it is granted).
+        /// </summary>
+        public static BudgetRequest RequestBudget(WorldState world, Team team)
+        {
+            var result = new BudgetRequest();
+            var m = world.PlayerManager;
+            var job = m != null ? m.Job : null;
+            if (team == null || job == null || job.Role == ManagerRole.OwnerManager) return result;
+            if (job.BudgetRequestSeason == world.Season) { result.Outcome = BudgetRequestOutcome.AlreadyAsked; return result; }
+            job.BudgetRequestSeason = world.Season;
+            double over = Math.Max(0, -Accounts.BudgetRemaining(world, team));
+            double ask = Math.Round((over + team.SeasonBudget * 0.1) / 1000) * 1000;
+            var org = world.OrganisationOf(team);
+            double cash = org != null ? org.Cash : 0;
+            double share = job.BoardConfidence >= 60 && cash > ask * 2 ? 1 : job.BoardConfidence >= 35 && cash > ask ? 0.5 : 0;
+            result.Granted = Math.Round(ask * share / 1000) * 1000;
+            team.SeasonBudget += result.Granted;
+            job.AssignedBudget = team.SeasonBudget;
+            job.BoardConfidence = MathX.Clamp(job.BoardConfidence - (share >= 1 ? 8 : share > 0 ? 5 : 2), 0, 100);
+            result.Outcome = share >= 1 ? BudgetRequestOutcome.Granted : share > 0 ? BudgetRequestOutcome.Partial : BudgetRequestOutcome.Refused;
+            return result;
         }
 
         /// <summary>Expected season income and costs before race prizes, bonuses and crash damage.</summary>

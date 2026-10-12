@@ -495,6 +495,7 @@ namespace MotoManager.App.UI.Screens
             var detail = Ui.Card(rightCol, Loc.T("role." + sel), Badge(coverage[sel]));
             double current = bestSkill[sel];
             var replaces = StaffMarket.WouldReplace(world, team, sel);
+            Ui.Note(detail, Loc.T("staff.ceiling", StaffMarket.SkillCeiling(world, Game.Db, team).ToString("0")));
             if (replaces != null) Ui.Note(detail, Theme.WarnText(Loc.T("staff.replaceNote", replaces.FullName, MathX.FormatMoney(StaffMarket.SeveranceCost(world, replaces)))));
             var cw = new[] { 3.2f, 1.5f, 1.5f, 1.8f };
             UiFactory.TableRow(detail, 32, cw, new[] { Loc.T("staff.name"), Loc.T("staff.skill"), Loc.T("staff.salary"), "" }, true);

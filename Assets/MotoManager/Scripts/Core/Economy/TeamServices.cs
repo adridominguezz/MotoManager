@@ -287,16 +287,37 @@ namespace MotoManager.Core.Economy
             // New faces every few events, stable in between.
             var rng = new DeterministicRandom(DeterministicRandom.Combine(world.MasterSeed, DeterministicRandom.Hash(world.Season + "|" + team.Id + "|" + role + "|" + played / 4)));
             var list = new List<StaffMember>();
+            double ceiling = SkillCeiling(world, db, team);
+            double step = (ceiling - 8 - 35) / Math.Max(1, count - 1);
             for (int i = 0; i < count; i++)
             {
-                double level = 35 + i * 12 + rng.Range(-5, 5);
+                double level = 35 + i * step + rng.Range(-4, 4);
                 var s = StaffService.Generate(world, db, rng, role, null, level, StaffService.SalaryScale(world, db, team));
+                // Nobody better than the team can attract answers the call.
+                if (s.Skill > ceiling)
+                {
+                    s.Skill = Math.Round(ceiling - rng.Range(0, 3));
+                    s.Salary = Math.Round(StaffService.SalaryFor(role, s.Skill, s.Experience) * StaffService.SalaryScale(world, db, team) / 1000) * 1000;
+                }
                 s.Id = "cand_" + team.Id + "_" + role + "_" + i;
                 s.ContractEndSeason = world.Season + 1;
                 list.Add(s);
             }
             list.Sort((a, b) => b.Skill.CompareTo(a.Skill));
             return list;
+        }
+
+        /// <summary>
+        /// The best staff a team can attract: top engineers go to the top class and to teams with a name. A works
+        /// MotoGP team reaches the mid 90s; a new Moto3 team, the low 60s; reputation raises the ceiling up to the
+        /// category's limit.
+        /// </summary>
+        public static double SkillCeiling(WorldState world, GameDatabase db, Team team)
+        {
+            var cat = team != null ? db.GetCategory(team.CategoryId) : null;
+            double cap = cat == null ? 80 : cat.IsCup ? 70 : cat.Tier <= 1 ? 95 : cat.Tier == 2 ? 86 : 77;
+            double rep = team != null ? team.Reputation : 50;
+            return Math.Round(cap - Math.Max(0, 65 - rep) * 0.35);
         }
 
         /// <summary>Releasing early: the rest of this season's salary and half of the following seasons.</summary>

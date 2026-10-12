@@ -1509,5 +1509,18 @@
   "standings.noRounds": "Todavía no se ha corrido ninguna ronda.",
   "standings.start": "Inicio",
   "standings.roundN": "Ronda {0}",
-  "home.then": "Después"
+  "home.then": "Después",
+  "finance.setBudget": "Presupuesto de la temporada",
+  "finance.coverBudget": "Cubrir gasto",
+  "finance.budgetSet": "Presupuesto fijado en {0}",
+  "finance.askBoard": "Pedir más presupuesto",
+  "finance.askedBoard": "Ya lo pediste esta temporada",
+  "finance.cutCosts": "Recortar gastos",
+  "finance.overBudgetHint": "Has gastado más de lo asignado. Pide más a la dirección (una vez por temporada; cuesta algo de confianza) o recorta personal y gastos. Terminar por encima del presupuesto pesa en la valoración de fin de temporada.",
+  "finance.board.Granted": "La dirección amplía el presupuesto en {0}",
+  "finance.board.Partial": "La dirección solo concede {0}",
+  "finance.board.Refused": "La dirección rechaza ampliar el presupuesto",
+  "finance.board.AlreadyAsked": "Ya pediste más presupuesto esta temporada",
+  "finance.board.None": "No disponible",
+  "staff.ceiling": "Con vuestra categoría y reputación, el personal que acepta venir llega como mucho a nivel {0}. Ganar reputación y subir de categoría abre la puerta a los mejores."
 }

@@ -37,6 +37,35 @@ namespace MotoManager.App.UI.Screens
             Ui.Bar(top, Loc.T("finance.budgetUsed"), used, MathX.FormatMoney(spent) + Theme.Dim(" / " + MathX.FormatMoney(team.SeasonBudget)),
                 used > 1 ? Theme.Bad : used > 0.85 ? Theme.Warning : Theme.Good, 40);
             if (fc != null && fc.MinConfirmed < 0) Ui.Note(top, Theme.WarnText(Loc.T("finance.cashWarning", MathX.FormatMoney(fc.MinConfirmed))));
+            // What can be done about the budget: an owner moves money into it; a hired manager asks the board or cuts costs.
+            if (FinanceService.PlayerSetsBudget(world, team))
+            {
+                double cover = Math.Max(team.SeasonBudget, spent + (fc != null ? Math.Max(0, fc.Costs) / Math.Max(1, org != null ? org.TeamIds.Count : 1) : 0));
+                MobileParts.Stepper(top, Loc.T("finance.setBudget"), MathX.FormatMoney(team.SeasonBudget),
+                    UiFactory.Act("-10%", () => { FinanceService.SetSeasonBudget(world, team, team.SeasonBudget * 0.9); Shell.Refresh(); }),
+                    UiFactory.Act("+10%", () => { FinanceService.SetSeasonBudget(world, team, team.SeasonBudget * 1.1); Shell.Refresh(); }),
+                    UiFactory.Act(Loc.T("finance.coverBudget"), () =>
+                    {
+                        FinanceService.SetSeasonBudget(world, team, cover);
+                        Shell.Toast(Loc.T("finance.budgetSet", MathX.FormatMoney(team.SeasonBudget)), true);
+                        Shell.Refresh();
+                    }));
+            }
+            else if (left < 0 || used > 0.85)
+            {
+                var job = world.PlayerManager != null ? world.PlayerManager.Job : null;
+                bool asked = job != null && job.BudgetRequestSeason == world.Season;
+                UiFactory.ButtonRow(top, 56,
+                    UiFactory.Act(Loc.T(asked ? "finance.askedBoard" : "finance.askBoard"), () =>
+                    {
+                        var res = FinanceService.RequestBudget(world, team);
+                        bool ok = res.Outcome == BudgetRequestOutcome.Granted || res.Outcome == BudgetRequestOutcome.Partial;
+                        Shell.Toast(Loc.T("finance.board." + res.Outcome, MathX.FormatMoney(res.Granted)), ok);
+                        Shell.Refresh();
+                    }),
+                    UiFactory.Act(Loc.T("finance.cutCosts"), () => Shell.Show<StaffPage>()));
+                if (left < 0) Ui.Note(top, Theme.WarnText(Loc.T("finance.overBudgetHint")));
+            }
             if (org != null && org.TeamIds.Count > 1)
             {
                 var names = new List<string>();

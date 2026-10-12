@@ -17,6 +17,24 @@ namespace MotoManager.Tests
         }
 
         [Fact]
+        public void StaffOnOfferDependsOnCategoryAndReputation()
+        {
+            var db = TestData.Db;
+            var world = WorldFactory.Create(db, new NewGameOptions { Seed = 7 });
+            var small = world.Teams["aspar_moto3"];
+            small.Reputation = 25;
+            var top = world.Teams["ducati_lenovo"];
+            top.Reputation = 90;
+            foreach (var role in new[] { StaffRole.ChiefEngineer, StaffRole.RaceEngineer, StaffRole.DataAnalyst })
+            {
+                Assert.All(StaffMarket.Candidates(world, db, small, role), c => Assert.True(c.Skill <= 64, c.Skill.ToString()));
+                Assert.Contains(StaffMarket.Candidates(world, db, top, role), c => c.Skill >= 80);
+            }
+            // A reputation gain opens better staff.
+            Assert.True(StaffMarket.SkillCeiling(world, db, small) < StaffMarket.SkillCeiling(world, db, top));
+        }
+
+        [Fact]
         public void TeamsHaveTheStructureOfTheirCategoryAndRealManagersRunTheirTeams()
         {
             var db = TestData.Db;

@@ -41,6 +41,8 @@ namespace MotoManager.Core.World
         public double SeveranceSeasons = 0.5;
         /// <summary>Season in which the contract was last renewed (0 = never).</summary>
         public int RenewedSeason;
+        /// <summary>Season in which the manager last asked the board for more budget (0 = never).</summary>
+        public int BudgetRequestSeason;
     }
 
     /// <summary>One period of a manager's career, kept forever.</summary>
