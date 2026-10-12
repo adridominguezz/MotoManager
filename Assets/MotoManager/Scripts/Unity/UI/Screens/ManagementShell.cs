@@ -310,15 +310,22 @@ namespace MotoManager.App.UI.Screens
             _menuPanel = shade.rectTransform;
             var panel = UiFactory.Panel("Menu", shade.transform, Theme.Panel);
             UiFactory.Chamfer(panel, 1.6f);
-            UiFactory.Place(panel.rectTransform, 0.01f, 0.35f, 0.36f, 0.89f);
+            // Just under the header, from the left edge: four rows that always fit a phone screen.
+            var prt = panel.rectTransform;
+            prt.anchorMin = new Vector2(0.01f, 0.895f);
+            prt.anchorMax = new Vector2(0.42f, 0.895f);
+            prt.pivot = new Vector2(0, 1);
+            prt.offsetMin = prt.offsetMax = Vector2.zero;
+            panel.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
             var v = panel.gameObject.AddComponent<VerticalLayoutGroup>();
             v.padding = new RectOffset(12, 12, 12, 12);
             v.spacing = 8;
             v.childControlHeight = true;
             v.childControlWidth = true;
-            v.childForceExpandHeight = true;
-            UiFactory.ButtonRow(panel.transform, 60, UiFactory.Act(Loc.T("shell.save"), () => { Session.Save(); Toast(Loc.T("shell.saved")); ToggleMenu(); }));
-            UiFactory.ButtonRow(panel.transform, 60, UiFactory.Act(Loc.T("shell.menu"), () => { ToggleMenu(); ExitToMenu(); }));
+            v.childForceExpandHeight = false;
+            UiFactory.ButtonRow(panel.transform, 60,
+                UiFactory.Act(Loc.T("shell.save"), () => { Session.Save(); Toast(Loc.T("shell.saved")); ToggleMenu(); }),
+                UiFactory.Act(Loc.T("shell.menu"), () => { ToggleMenu(); ExitToMenu(); }));
             // Manual save slots (the autosave runs after every event).
             var slots = new List<UiAct>();
             foreach (var slot in SaveManager.Slots)
