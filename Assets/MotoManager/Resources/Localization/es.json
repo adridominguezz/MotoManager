@@ -1444,5 +1444,15 @@
   "setup.noOffers": "No hay ofertas ahora; llegarán más después de cada carrera.",
   "setup.toSponsors": "Ver patrocinio",
   "audio.music": "Música",
-  "audio.sound": "Sonido"
+  "audio.sound": "Sonido",
+  "home.next": "Próximo evento",
+  "home.circuit": "Circuito",
+  "home.tile.championship": "Equipos",
+  "home.tile.points": "{0} pts",
+  "home.tile.target": "objetivo P{0}",
+  "home.tile.cash": "Caja",
+  "home.tile.cashSub": "Finanzas ›",
+  "home.tile.riders": "Pilotos",
+  "home.tile.ridersSub": "Posición en el campeonato ›",
+  "home.tile.todoSub": "Toca para resolver ›"
 }

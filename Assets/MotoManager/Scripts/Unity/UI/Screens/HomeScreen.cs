@@ -15,7 +15,7 @@ namespace MotoManager.App.UI.Screens
     public class HubScreen : ScreenBase
     {
         public override string Title { get { return Loc.T("nav.home"); } }
-        private static int MaxTodo { get { return UiScale.Compact ? 3 : 4; } }
+        private static int MaxTodo { get { return UiScale.Compact ? 2 : 4; } }
         private static int MaxNews { get { return UiScale.Compact ? 2 : 4; } }
 
         public override void Build(RectTransform content)
@@ -26,6 +26,7 @@ namespace MotoManager.App.UI.Screens
             RectTransform left, right;
             Ui.Columns(list, out left, out right);
 
+            // Left: what comes next (the main action) and the last result.
             if (team == null)
             {
                 var none = Ui.Card(left, Loc.T("home.noTeam"), Loc.T("home.noTeamInfo"));
@@ -34,15 +35,102 @@ namespace MotoManager.App.UI.Screens
                     UiFactory.Act(Loc.T("mycareer.found"), () => Shell.Show<CareerFoundPage>()));
             }
             NextEventCard(left, world, team);
-            if (team != null) TeamCard(left, world, team);
-
             if (!string.IsNullOrEmpty(Shell.LastResult))
             {
-                var last = Ui.Card(right, Loc.T("home.last"));
-                UiFactory.Paragraph(last, FirstLines(Shell.LastResult, UiScale.Compact ? 2 : 4), Theme.FontSmall);
+                var last = Ui.Card(left, Loc.T("home.last"));
+                UiFactory.Paragraph(last, FirstLines(Shell.LastResult, 2), Theme.FontSmall);
             }
-            if (team != null) TodoCard(right, world, team);
-            NewsCard(right, world);
+            Headline(left, world);
+
+            // Right: the team at a glance (tiles that open their section) and what needs a decision.
+            if (team != null)
+            {
+                Tiles(right, world, team);
+                TodoCard(right, world, team);
+            }
+            else NewsCard(right, world);
+        }
+
+        /// <summary>Four big tiles: team championship, cash, riders and to-dos; each opens its screen.</summary>
+        private void Tiles(Transform parent, WorldState world, Team team)
+        {
+            ChampionshipState champ;
+            world.Championships.TryGetValue(team.CategoryId, out champ);
+            int teamPos = 0;
+            double teamPts = 0;
+            if (champ != null)
+            {
+                var table = champ.SortedTeams();
+                for (int i = 0; i < table.Count; i++)
+                    if (table[i].Id == team.Id) { teamPos = i + 1; teamPts = table[i].Points; }
+            }
+            var positions = new List<string>();
+            foreach (var id in team.RiderIds)
+            {
+                int pos = champ != null ? champ.RiderPosition(id) : 0;
+                var r = world.GetRider(id);
+                positions.Add((pos > 0 ? "P" + pos : "-") + (r != null && r.InjuryRoundsOut > 0 ? "<color=" + Theme.BadHex + ">+</color>" : ""));
+            }
+            var pers = team.Personality;
+            int teams = world.TeamsInCategory(team.CategoryId).Count;
+            string target = pers != null ? Loc.T("home.tile.target", TeamAI.TargetPosition(pers.Objective, teams)) : "";
+            var org = world.OrganisationOf(team);
+            double cash = org != null ? org.Cash : Accounts.Cash(world, team);
+
+            var row1 = UiFactory.Row(parent, 132);
+            Tile(row1, 0, 0.5f, Loc.T("home.tile.championship"), teamPos > 0 ? "P" + teamPos : "-", Loc.T("home.tile.points", teamPts.ToString("0")) + "  " + Theme.Dim(target), () => Shell.Show<StandingsScreen>());
+            Tile(row1, 0.5f, 1, Loc.T("home.tile.cash"), Theme.Money(cash), Loc.T("home.tile.cashSub"), () => Shell.Show<FinanceScreen>());
+            var row2 = UiFactory.Row(parent, 132);
+            Tile(row2, 0, 0.5f, Loc.T("home.tile.riders"), positions.Count > 0 ? string.Join("  ", positions.ToArray()) : "-", Loc.T("home.tile.ridersSub"), () => Shell.Show<RidersPage>());
+            var todo = Todos(world, team);
+            Tile(row2, 0.5f, 1, Loc.T("home.todo"), todo.Count.ToString(), todo.Count > 0 ? Loc.T("home.tile.todoSub") : Loc.T("home.todo.none"), todo.Count > 0 ? todo[0].Value : (Action)(() => Shell.Show<RidersPage>()));
+        }
+
+        private static void Tile(RectTransform row, float x0, float x1, string caption, string value, string sub, Action onTap)
+        {
+            var b = UiFactory.Button("Tile", row, "", onTap, Color.Lerp(Theme.Card, Theme.PanelLight, 0.35f), Theme.FontSmall);
+            UiFactory.Place((RectTransform)b.transform, x0, 0, x1, 1, 5);
+            UiFactory.Chamfer(b.image, 1.6f);
+            var accent = UiFactory.Decor("Accent", b.transform, Theme.Accent);
+            UiFactory.Slant(accent, 4f);
+            accent.rectTransform.anchorMin = new Vector2(0, 1);
+            accent.rectTransform.anchorMax = new Vector2(0.35f, 1);
+            accent.rectTransform.offsetMin = new Vector2(10, -5);
+            accent.rectTransform.offsetMax = new Vector2(0, -1);
+            var cap = UiFactory.Label("Caption", b.transform, Theme.Caps(caption), Theme.FontSmall - 4, TextAnchor.UpperLeft, Theme.TextDim);
+            cap.fontStyle = FontStyle.Bold;
+            UiFactory.Place(cap.rectTransform, 0.06f, 0.66f, 0.96f, 0.92f);
+            var v = UiFactory.Label("Value", b.transform, value, Theme.FontLarge, TextAnchor.MiddleLeft, Theme.Text);
+            v.supportRichText = true;
+            v.fontStyle = FontStyle.BoldAndItalic;
+            v.resizeTextForBestFit = true;
+            v.resizeTextMinSize = Theme.FontSmall;
+            v.resizeTextMaxSize = Theme.FontLarge;
+            UiFactory.Place(v.rectTransform, 0.06f, 0.28f, 0.96f, 0.7f);
+            var s = UiFactory.Label("Sub", b.transform, sub, Theme.FontSmall - 4, TextAnchor.LowerLeft, Theme.TextDim);
+            s.supportRichText = true;
+            s.resizeTextForBestFit = true;
+            s.resizeTextMinSize = Theme.FontSmall - 10;
+            s.resizeTextMaxSize = Theme.FontSmall - 4;
+            UiFactory.Place(s.rectTransform, 0.06f, 0.06f, 0.96f, 0.3f);
+        }
+
+        /// <summary>One line: the latest headline of the team's world (the full list is in Competition › News).</summary>
+        private void Headline(Transform parent, WorldState world)
+        {
+            var team = world.PlayerTeam;
+            var mine = team != null ? Game.Db.GetCategory(team.CategoryId) : null;
+            foreach (var n in world.News)
+            {
+                if (mine != null && n.CategoryId != null)
+                {
+                    var cat = Game.Db.GetCategory(n.CategoryId);
+                    if (cat != null && cat.Pyramid != mine.Pyramid) continue;
+                }
+                var card = Ui.Card(parent, Loc.T("home.news"));
+                UiFactory.Paragraph(card, Theme.Dim(n.Date.ToString("dd MMM", Loc.Culture)) + "   " + "<b>" + n.Headline + "</b>", Theme.FontSmall);
+                return;
+            }
         }
 
         private static string FirstLines(string text, int lines)
@@ -73,13 +161,23 @@ namespace MotoManager.App.UI.Screens
                 int done = world.Championships.TryGetValue(team.CategoryId, out champ) ? champ.Rounds.Count : 0;
                 roundTag = Loc.T("home.round", done + 1, Game.RoundsInSeason(team.CategoryId)) + " · ";
             }
-            var card = Ui.Card(parent, roundTag + Loc.Round(next.Round.Name),
-                circuit.Name + " · " + next.Round.Date.ToString("d MMMM", Loc.Culture) + " · " + string.Join(", ", cats.ToArray()));
+            // Hero card: the round, the event in big type and one obvious action; the shortcuts underneath.
+            var card = Ui.Card(parent, roundTag.TrimEnd(' ', '·').Length > 0 ? roundTag.TrimEnd(' ', '·') : Loc.T("home.next"),
+                next.Round.Date.ToString("d MMMM", Loc.Culture) + " · " + string.Join(", ", cats.ToArray()));
+            var big = UiFactory.Label("Event", UiFactory.Row(card, 64), "<b><i>" + Loc.Round(next.Round.Name).ToUpperInvariant() + "</i></b>", Theme.FontLarge, TextAnchor.MiddleLeft, Theme.Text);
+            big.supportRichText = true;
+            big.resizeTextForBestFit = true;
+            big.resizeTextMinSize = Theme.FontNormal - 4;
+            big.resizeTextMaxSize = Theme.FontLarge;
+            UiFactory.Stretch(big.rectTransform);
+            Ui.Line(card, Loc.T("home.circuit"), circuit.Name);
             if (racing)
-                UiFactory.ButtonRow(card, 72,
-                    UiFactory.Primary(Loc.T("shell.goRace"), Shell.Continue),
+            {
+                UiFactory.ButtonRow(card, 76, UiFactory.Primary(Loc.T("shell.goRace"), Shell.Continue));
+                UiFactory.ButtonRow(card, 54,
                     UiFactory.Act(Loc.T("home.simulateEvent"), Shell.SimulateEvent),
                     UiFactory.Act(Loc.T("home.simulateSeasonShort"), Shell.SimulateSeason));
+            }
             else
             {
                 Ui.Note(card, Loc.T("home.notRacing"));
@@ -89,32 +187,8 @@ namespace MotoManager.App.UI.Screens
             }
         }
 
-        private void TeamCard(Transform parent, WorldState world, Team team)
-        {
-            var card = Ui.Card(parent, Loc.T("home.team"));
-            ChampionshipState champ;
-            world.Championships.TryGetValue(team.CategoryId, out champ);
-            foreach (var id in team.RiderIds)
-            {
-                var r = world.GetRider(id);
-                if (r == null) continue;
-                int pos = champ != null ? champ.RiderPosition(id) : 0;
-                StandingEntry st = null;
-                if (champ != null) champ.Riders.TryGetValue(id, out st);
-                string detail = Loc.T("home.riderLine", st != null ? st.Points.ToString("0") : "0", st != null ? st.Wins : 0, st != null ? st.Podiums : 0);
-                if (r.InjuryRoundsOut > 0) detail += "  ·  " + Theme.BadText(Loc.T("home.injured", r.InjuryRoundsOut));
-                Ui.Item(card, "#" + r.Number + "  " + r.FullName, detail, pos > 0 ? "<size=" + (Theme.FontLarge - 6) + ">P" + pos + "</size>" : "-");
-            }
-            var pers = team.Personality;
-            if (pers != null)
-            {
-                int teams = world.TeamsInCategory(team.CategoryId).Count;
-                Ui.Line(card, Loc.T("objective.title"), Loc.T("objective." + pers.Objective) + " " + Theme.Dim(Loc.T("objective.target", TeamAI.TargetPosition(pers.Objective, teams))));
-            }
-        }
-
         /// <summary>Things that need a decision, most urgent first, each with a shortcut.</summary>
-        private void TodoCard(Transform parent, WorldState world, Team team)
+        private List<KeyValuePair<string, Action>> Todos(WorldState world, Team team)
         {
             var todo = new List<KeyValuePair<string, Action>>();
             int emptyNow = ContractService.SeatsFreeNow(world, Game.Db, team);
@@ -160,7 +234,13 @@ namespace MotoManager.App.UI.Screens
             int running = world.Projects.FindAll(p => p.TeamId == team.Id && p.Status == ProjectStatus.InProgress).Count;
             if (running < TeamCapabilities.ProjectCapacity(team) && DevelopmentService.AvailableProjects(world, Game.Db, team).Count > 0)
                 todo.Add(Pair(Loc.T("home.todo.rnd", TeamCapabilities.ProjectCapacity(team) - running), () => Shell.Show<ProjectsPage>()));
+            return todo;
+        }
 
+        private void TodoCard(Transform parent, WorldState world, Team team)
+        {
+            var todo = Todos(world, team);
+            if (todo.Count == 0) return;
             var card = Ui.Card(parent, Loc.T("home.todo"));
             for (int i = 0; i < todo.Count && i < MaxTodo; i++)
                 Ui.Item(card, todo[i].Key, null, null, UiFactory.Primary(Loc.T("home.open"), todo[i].Value));

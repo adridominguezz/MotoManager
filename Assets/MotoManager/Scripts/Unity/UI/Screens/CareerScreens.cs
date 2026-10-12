@@ -32,11 +32,15 @@ namespace MotoManager.App.UI.Screens
                 Ui.Kpi(MathX.FormatMoney(m.PersonalWealth), Loc.T("mycareer.wealth")),
                 Ui.Kpi(job != null && job.Role == ManagerRole.TeamManager ? MathX.FormatMoney(job.SalaryPerSeason) : "-", Loc.T("mycareer.salary")),
                 Ui.Kpi(Fmt.Rating(m.Reputation), Loc.T("mycareer.fame")));
-            Ui.Bar(me, Loc.T("mycareer.skill.negotiation"), m.Negotiation / 100.0, m.Negotiation.ToString("0"), Ui.RatingColor(m.Negotiation), 32);
-            Ui.Bar(me, Loc.T("mycareer.skill.sporting"), m.SportingManagement / 100.0, m.SportingManagement.ToString("0"), Ui.RatingColor(m.SportingManagement), 32);
-            Ui.Bar(me, Loc.T("mycareer.skill.finance"), m.Finance / 100.0, m.Finance.ToString("0"), Ui.RatingColor(m.Finance), 32);
-            Ui.Bar(me, Loc.T("mycareer.skill.relations"), m.Relations / 100.0, m.Relations.ToString("0"), Ui.RatingColor(m.Relations), 32);
-            Ui.Bar(me, Loc.T("mycareer.skill.commercial"), m.Commercial / 100.0, m.Commercial.ToString("0"), Ui.RatingColor(m.Commercial), 32);
+            // Skills one tap away.
+            Ui.Expander(me, "career.skills", Loc.T("mycareer.skills"), inner =>
+            {
+                Ui.Bar(inner, Loc.T("mycareer.skill.negotiation"), m.Negotiation / 100.0, m.Negotiation.ToString("0"), Ui.RatingColor(m.Negotiation), 32);
+                Ui.Bar(inner, Loc.T("mycareer.skill.sporting"), m.SportingManagement / 100.0, m.SportingManagement.ToString("0"), Ui.RatingColor(m.SportingManagement), 32);
+                Ui.Bar(inner, Loc.T("mycareer.skill.finance"), m.Finance / 100.0, m.Finance.ToString("0"), Ui.RatingColor(m.Finance), 32);
+                Ui.Bar(inner, Loc.T("mycareer.skill.relations"), m.Relations / 100.0, m.Relations.ToString("0"), Ui.RatingColor(m.Relations), 32);
+                Ui.Bar(inner, Loc.T("mycareer.skill.commercial"), m.Commercial / 100.0, m.Commercial.ToString("0"), Ui.RatingColor(m.Commercial), 32);
+            }, Shell.Refresh);
 
             // The job.
             var jobCard = Ui.Card(rightCol, Loc.T("mycareer.job"));
@@ -104,17 +108,19 @@ namespace MotoManager.App.UI.Screens
                 }));
             }
 
-            // Career so far.
-            var hist = Ui.Card(rightCol, Loc.T("mycareer.history"));
-            var w = new[] { 1.6f, 3.6f, 1.4f, 2.4f };
-            UiFactory.TableRow(hist, 32, w, new[] { Loc.T("col.season"), Loc.T("col.team"), Loc.T("manager.category"), Loc.T("mycareer.end") }, true);
-            for (int i = m.History.Count - 1; i >= 0 && i >= m.History.Count - 6; i--)
+            // Career so far, one tap away.
+            Ui.Expander(leftCol, "career.history", Loc.T("mycareer.history"), hist =>
             {
-                var h = m.History[i];
-                var cat = Game.Db.GetCategory(h.CategoryId);
-                string seasons = h.FromSeason == h.ToSeason ? h.FromSeason.ToString() : h.FromSeason + "–" + h.ToSeason;
-                UiFactory.TableRow(hist, 34, w, new[] { seasons, h.TeamName ?? "", cat != null ? cat.ShortName : "", string.IsNullOrEmpty(h.EndReason) ? Theme.GoodText(Loc.T("mycareer.current")) : Loc.Or("mycareer.reason." + h.EndReason, h.EndReason) });
-            }
+                var w = new[] { 1.6f, 3.6f, 1.4f, 2.4f };
+                UiFactory.TableRow(hist, 32, w, new[] { Loc.T("col.season"), Loc.T("col.team"), Loc.T("manager.category"), Loc.T("mycareer.end") }, true);
+                for (int i = m.History.Count - 1; i >= 0 && i >= m.History.Count - 6; i--)
+                {
+                    var h = m.History[i];
+                    var cat = Game.Db.GetCategory(h.CategoryId);
+                    string seasons = h.FromSeason == h.ToSeason ? h.FromSeason.ToString() : h.FromSeason + "–" + h.ToSeason;
+                    UiFactory.TableRow(hist, 34, w, new[] { seasons, h.TeamName ?? "", cat != null ? cat.ShortName : "", string.IsNullOrEmpty(h.EndReason) ? Theme.GoodText(Loc.T("mycareer.current")) : Loc.Or("mycareer.reason." + h.EndReason, h.EndReason) });
+                }
+            }, Shell.Refresh);
         }
     }
 

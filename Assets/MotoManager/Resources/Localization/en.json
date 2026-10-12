@@ -1444,5 +1444,15 @@
   "setup.noOffers": "No offers right now; more arrive after each race.",
   "setup.toSponsors": "Sponsorship",
   "audio.music": "Music",
-  "audio.sound": "Sound"
+  "audio.sound": "Sound",
+  "home.next": "Next event",
+  "home.circuit": "Circuit",
+  "home.tile.championship": "Teams",
+  "home.tile.points": "{0} pts",
+  "home.tile.target": "target P{0}",
+  "home.tile.cash": "Cash",
+  "home.tile.cashSub": "Finances ›",
+  "home.tile.riders": "Riders",
+  "home.tile.ridersSub": "Championship position ›",
+  "home.tile.todoSub": "Tap to sort out ›"
 }

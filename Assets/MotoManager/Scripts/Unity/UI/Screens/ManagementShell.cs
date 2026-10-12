@@ -191,7 +191,7 @@ namespace MotoManager.App.UI.Screens
             UiFactory.Gradient(go.image, 1.12f, 0.88f);
 
             var rail = UiFactory.Panel("Rail", root, Color.Lerp(Theme.Background, Theme.Panel, 0.75f));
-            UiFactory.Place(rail.rectTransform, 0, 0, 0.14f, 0.9f);
+            UiFactory.Place(rail.rectTransform, 0, 0, RailWidth, 0.9f);
             UiFactory.Gradient(rail, 1.08f, 0.9f);
             var edge = UiFactory.Decor("Edge", rail.transform, new Color(1, 1, 1, 0.06f));
             edge.rectTransform.anchorMin = new Vector2(1, 0);
@@ -207,7 +207,7 @@ namespace MotoManager.App.UI.Screens
             layout.childForceExpandHeight = compact;
 
             _tabs = UiFactory.Rect("Tabs", root);
-            UiFactory.Place(_tabs, 0.15f, 0.82f, 0.99f, 0.885f);
+            UiFactory.Place(_tabs, RailWidth + 0.01f, 0.82f, 0.99f, 0.885f);
             _content = UiFactory.Rect("Content", root);
 
             _toastBg = UiFactory.Panel("Toast", root, Theme.Alpha(Theme.Panel, 0.98f));
@@ -291,6 +291,8 @@ namespace MotoManager.App.UI.Screens
         }
 
         private RectTransform _menuPanel;
+        /// <summary>Width of the navigation rail (narrower on the phone layout: more room for content).</summary>
+        private static float RailWidth { get { return UiScale.Compact ? 0.115f : 0.14f; } }
 
         /// <summary>Compact header menu: save, back to the start screen, text size.</summary>
         private void ToggleMenu()
@@ -386,7 +388,7 @@ namespace MotoManager.App.UI.Screens
             UiFactory.Clear(_tabs);
             bool tabs = _section.Pages.Count > 1;
             _tabs.gameObject.SetActive(tabs);
-            UiFactory.Place(_content, 0.15f, 0.01f, 0.995f, tabs ? 0.815f : 0.89f);
+            UiFactory.Place(_content, RailWidth + 0.01f, 0.01f, 0.995f, tabs ? 0.815f : 0.89f);
             if (tabs)
             {
                 // Timing-screen tabs: slanted graphite segments with upper-case labels; the open tab is lighter,
