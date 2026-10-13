@@ -74,18 +74,27 @@ namespace MotoManager.App.UI.Screens
             double conf = hired ? ManagerCareer.CurrentConfidence(world, Game.Db) : 0;
             string advice = hired ? Loc.T(conf >= 55 ? "mycareer.conf.good" : conf >= ManagerCareer.SackBelow + 5 ? "mycareer.conf.mid" : "mycareer.conf.bad") : null;
             var body = Ui.Tile(area, Loc.T("mycareer.job"), null, null, 0, null,
-                Wp4Ui.Info(Loc.T("mycareer.job"), advice, Loc.T("mycareer.role." + job.Role)));
-            Wp4Ui.HeaderMore(body, () => Ui.Sheet(Loc.T("mycareer.job"), list =>
+                Wp4Ui.Info(Loc.T("mycareer.job"), advice, Loc.T("mycareer.role." + job.Role), Loc.T("ux.career.resignInfo")));
+            // Resigning: a small two-tap button in the header's right corner (left of the "i").
+            var head = body.parent.Find("Head") as RectTransform;
+            if (head != null)
             {
-                UiFactory.Paragraph(list, Theme.Dim(Loc.T("ux.career.resignInfo")), Theme.TextBody);
-                Ui.Danger((RectTransform)list, Loc.T("mycareer.resign"), Loc.T("mycareer.resignConfirm"), "career.resign", () =>
+                var title = head.Find("Title") as RectTransform;
+                if (title != null) title.offsetMax -= new Vector2(212, 0);
+                var holder = UiFactory.Rect("Resign", head);
+                holder.anchorMin = holder.anchorMax = new Vector2(1, 0.5f);
+                holder.pivot = new Vector2(1, 0.5f);
+                holder.sizeDelta = new Vector2(200, 40);
+                holder.anchoredPosition = new Vector2(-Ui.Grid.Hit - 8, 0);
+                var b = Ui.Danger(holder, Loc.T("mycareer.resign"), Loc.T("mycareer.resignConfirm"), "career.resign", () =>
                 {
-                    Ui.CloseSheet();
                     ManagerCareer.Resign(world, Game.Db);
                     Shell.Toast(Loc.T("mycareer.resigned"));
                     Shell.Refresh();
                 }, null);
-            }, null, null, 0.46f));
+                var t = b.GetComponentInChildren<UnityEngine.UI.Text>();
+                if (t != null) Ui.Fit(t, Theme.TextCaption);
+            }
             var list2 = Wp4Ui.ListIn(body, 2);
             Ui.Line(list2, Loc.T("manager.team"), team != null ? "<b>" + team.Name + "</b>" : "-");
             Ui.Line(list2, Loc.T("mycareer.role"), Loc.T("mycareer.role." + job.Role));
