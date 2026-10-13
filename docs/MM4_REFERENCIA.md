@@ -180,16 +180,19 @@ pirámide → nivel: MotoGP, Moto2, Moto3, Rookies, WorldSBK, WorldSSP…), las 
 vuelta.
 - **Revisión tras feedback del usuario** ("veo duplicada esta información"): se quitó la tarjeta lateral del
   campeonato (temporada, ronda, líder, tu equipo) y la lista "Todos los campeonatos", que repetían lo que ya dicen la
-  banda de la tabla, las flechas y la fila propia fijada. El navegador vive ahora **dentro de la banda de la tabla**
+  banda de la tabla, las flechas y la fila propia fijada. El navegador pasó primero a la banda de la tabla (luego a una fila propia, ver abajo)
   (`ChampNav.Navigate` sobre la banda de `Wp4Ui.Table`): "‹ MOTOGP · PILOTOS ›" a la izquierda y la ronda ("Ronda 2/22")
   a la derecha; tocar el nombre abre una hoja pequeña con todos los campeonatos para saltar directamente (sustituye a
   la lista). La banda usa el **color propio del campeonato** (`categories.json`: MotoGP rojo, Moto2 azul…) en lugar del
   acento del equipo, con tinta elegida por contraste (`Theme.OnColor`); el subrayado de la pestaña activa usa el mismo
   color (aclarado hasta 3:1 sobre el fondo). La tabla ocupa todo el ancho. No se muestra "No gestionas esta
   categoría" (era duplicación). La fila del jugador sigue resaltada y fijada con el color de su equipo (identidad).
-- **Clasificaciones**: segmentado PILOTOS / EQUIPOS / FABRICANTES / EVOLUCIÓN arriba y la tabla con la banda
-  navegadora. En EVOLUCIÓN (y si la categoría aún no tiene clasificación) se pone una banda navegadora propia encima.
-- **Calendario**: la misma banda con `‹ ›`. Cada entrada es una categoría con calendario: se listan solo las rondas que
+- **Segunda revisión** ("el selector de campeonato debería estar arriba"): la banda navegadora "‹ MOTOGP ›  Ronda
+  2/22" es ahora la **primera fila** de la página, encima de las pestañas; la tabla ya no repite el nombre: su banda de
+  título se reduce a una franja fina del color del campeonato (`ChampNav.Slim`) y empieza por las cabeceras de columna.
+- **Clasificaciones**: banda navegadora, debajo el segmentado PILOTOS / EQUIPOS / FABRICANTES / EVOLUCIÓN y la tabla
+  (o la gráfica de EVOLUCIÓN).
+- **Calendario**: la misma banda con `‹ ›` arriba (lleva la "i" del calendario) y la tabla de rondas debajo. Cada entrada es una categoría con calendario: se listan solo las rondas que
   corre esa categoría y el ganador es el de **su** carrera principal (antes: siempre la categoría reina del
   calendario). Un calendario que no use ninguna categoría simulada se añade al final como entrada propia (banda gris).
   El texto "i" se actualiza (`ux.mm4b.calendarInfo`).
