@@ -236,16 +236,24 @@ namespace MotoManager.App
                         Roughness = 0.45f, FinalCutoff = 3800f, IdleRpm = 5000f, MaxRpm = 14000f
                     };
                 case "worldssp":
+                    // 600 cc inline four, even firing: the Moto3 voicing (soft pipe resonance, open muffler, warm
+                    // saturation, stroke-to-stroke variation) with the four's higher, smoother note.
                     return new EngineProfile
                     {
-                        Firing = new[] { 0f, 0.25f, 0.5f, 0.75f }, PulseFraction = 0.3f, PipeLength = 0.75f, IntakeLevel = 0.7f, Radiation = 5f,
-                        Roughness = 0.35f, FinalCutoff = 4500f, IdleRpm = 5000f, MaxRpm = 16000f
+                        Firing = new[] { 0f, 0.25f, 0.5f, 0.75f }, PulseFraction = 0.24f, PipeLength = 0.62f, Reflection = 0.15f, LoopDamping = 0.65f,
+                        MufflerBase = 850f, MufflerThrottle = 3300f, Radiation = 5.5f, Direct = 0.8f, IntakeLevel = 1.1f,
+                        Roughness = 0.5f, FinalCutoff = 3700f, TimingJitter = 0.02f, StrengthJitter = 0.14f, Body = 0.5f, Warmth = 0.25f,
+                        IdleRpm = 5000f, MaxRpm = 16000f
                     };
                 case "worldsbk":
+                    // 1000 cc four with an uneven (crossplane-style) firing order: the same voicing as Moto3, deeper and
+                    // with more body for the bigger engine.
                     return new EngineProfile
                     {
-                        Firing = new[] { 0f, 0.25f, 0.5f, 0.75f }, PulseFraction = 0.32f, PipeLength = 0.8f, IntakeLevel = 0.6f, Radiation = 5f,
-                        Roughness = 0.35f, FinalCutoff = 4800f, IdleRpm = 4500f, MaxRpm = 15500f
+                        Firing = new[] { 0f, 0.375f, 0.625f, 0.75f }, PulseFraction = 0.22f, PipeLength = 0.72f, Reflection = 0.15f, LoopDamping = 0.65f,
+                        MufflerBase = 800f, MufflerThrottle = 3200f, Radiation = 5.5f, Direct = 0.85f, IntakeLevel = 1.0f,
+                        Roughness = 0.5f, FinalCutoff = 3400f, TimingJitter = 0.02f, StrengthJitter = 0.15f, Body = 0.65f, Warmth = 0.28f,
+                        IdleRpm = 4500f, MaxRpm = 15000f
                     };
                 default:
                     // MotoGP: big-bang four (two pairs of close firings), the deepest and loudest.
