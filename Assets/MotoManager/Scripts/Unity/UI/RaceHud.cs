@@ -18,7 +18,7 @@ namespace MotoManager.App.UI
     {
         private RaceView _view;
         private RectTransform _root;
-        private Text _lapText;
+
         private Text _towerLap;
         private string _sessionTitle = "";
         private Text _conditions;
@@ -276,20 +276,17 @@ namespace MotoManager.App.UI
             topLine.rectTransform.offsetMax = new Vector2(0, 2);
             UiFactory.Gradient(topLine, Color.white, new Color(1, 1, 1, 0.05f), true);
 
-            var titleText = RaceUi.Label(rt, Theme.Caps(title), Theme.TextCaption, TextAnchor.MiddleLeft, Theme.TextDim, FontStyle.Bold);
-            UiFactory.Place(titleText.rectTransform, 0.01f, 0, 0.15f, 1);
-            _lapText = RaceUi.Label(rt, "", Theme.TextTitle, TextAnchor.MiddleCenter, Theme.Text, FontStyle.BoldAndItalic);
-            UiFactory.DropShadow(_lapText, 0.4f, 1.5f);
-            UiFactory.Place(_lapText.rectTransform, 0.15f, 0, 0.285f, 1);
+            // The session and the lap count live in the tower header; the bar keeps the flag, a short conditions
+            // line and the speed controls.
             _flagBg = UiFactory.Decor("Flag", rt, new Color(0, 0, 0, 0));
             UiFactory.Slant(_flagBg, 3f);
-            UiFactory.Place(_flagBg.rectTransform, 0.29f, 0.2f, 0.37f, 0.8f);
+            UiFactory.Place(_flagBg.rectTransform, 0.008f, 0.2f, 0.09f, 0.8f);
             _flag = RaceUi.Label(_flagBg.transform, "", Theme.TextCaption, TextAnchor.MiddleCenter, Theme.Ink, FontStyle.Bold);
             UiFactory.Stretch(_flag.rectTransform);
             _flag.rectTransform.offsetMin = new Vector2(10, 0);
             _flag.rectTransform.offsetMax = new Vector2(-10, 0);
             _conditions = RaceUi.Label(rt, "", Theme.TextCaption, TextAnchor.MiddleLeft, Theme.TextDim, FontStyle.Bold);
-            UiFactory.Place(_conditions.rectTransform, 0.378f, 0, 0.625f, 1);
+            UiFactory.Place(_conditions.rectTransform, 0.1f, 0, 0.62f, 1);
 
             // Speed controls: pause and 1x-8x as a segmented row (the active one lit), then skip to the end.
             var speeds = UiFactory.Rect("Speeds", rt);
@@ -493,11 +490,15 @@ namespace MotoManager.App.UI
         {
             var sim = _view.Sim;
             int lap = Mathf.Clamp(sim.LeaderLap + 1, 1, sim.TotalLaps);
-            _lapText.text = sim.ChequeredFlag ? Loc.T("race.finish") : (sim.Tick == 0 ? Loc.T("race.grid") : Loc.T("race.lap", lap, sim.TotalLaps));
-            if (_towerLap != null) _towerLap.text = Theme.Caps(_lapText.text);
+            string lapText = sim.ChequeredFlag ? Loc.T("race.finish") : (sim.Tick == 0 ? Loc.T("race.grid") : Loc.T("race.lap", lap, sim.TotalLaps));
+            if (_towerLap != null) _towerLap.text = Theme.Caps(lapText);
             var w = sim.Weather;
-            _conditions.text = Theme.Caps(Loc.T("ux.race.cond", Loc.Or("weather." + w.Condition, w.Condition.ToString()), w.TrackTemp.ToString("0"), (w.TrackWetness * 100).ToString("0")) +
-                               (_forecast >= 0 ? "  ·  " + Loc.T("ux.race.condRain", (_forecast * 100).ToString("0")) : ""));
+            // Short conditions: weather · track temperature (wetness only when the track is wet) · rain forecast.
+            string weather = Loc.Or("weather." + w.Condition, w.Condition.ToString());
+            string cond = w.TrackWetness >= 0.01
+                ? Loc.T("ux.race.cond", weather, w.TrackTemp.ToString("0"), (w.TrackWetness * 100).ToString("0"))
+                : weather + " · " + w.TrackTemp.ToString("0") + "°";
+            _conditions.text = Theme.Caps(cond + (_forecast >= 0 ? " · " + Loc.T("ux.race.condRain", (_forecast * 100).ToString("0")) : ""));
             UpdateFlag(sim);
 
             for (int i = 0; i < _speedButtons.Count; i++)

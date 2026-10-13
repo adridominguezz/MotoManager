@@ -9,48 +9,43 @@ using UnityEngine.UI;
 namespace MotoManager.App.UI
 {
     /// <summary>
-    /// Pit-wall card for one of the player's riders (stacked on the right of the race screen): number, name,
-    /// position and status in the header; the riders just ahead and behind with the gaps; front and rear tyre wear;
-    /// last and best lap; fuel in laps against the laps left (only where there is a tank limit); and the two orders
-    /// that matter during a race (pace and attitude) as always-visible segmented rows, plus handing the rider over
-    /// to the engineer. A manual order holds until "leave it to the engineer".
+    /// Pit-wall card for one of the player's riders (stacked on the right of the race screen), kept compact: number,
+    /// name, status and position in the header; one small line with the gaps to the riders ahead and behind (the
+    /// tower shows who they are); front and rear tyre in one row (compound and life, a thin bar beside each); last and
+    /// best lap on one line, with fuel only when a tank limit makes it matter; the two race orders as cycling
+    /// controls ("PACE  NORMAL ›", "ATTITUDE  NORMAL ›"); and handing the rider over to the engineer as a text button.
+    /// A manual order holds until "leave it to the engineer".
     /// There is no pit call: in bike racing riders only come in on their own for a flag-to-flag swap or a penalty.
     /// </summary>
     public class RiderCommandPanel
     {
         private readonly RaceView _view;
         private readonly RiderRaceState _rider;
-        private readonly Text[] _rowPos = new Text[2];
-        private readonly Text[] _rowName = new Text[2];
-        private readonly Text[] _rowTyre = new Text[2];
-        private readonly Text[] _rowGap = new Text[2];
-        private readonly Image[] _rowBar = new Image[2];
-        private readonly RectTransform[] _rowRect = new RectTransform[2];
         private readonly Text _position;
         private readonly Text _name;
+        private readonly Text _gaps;
         private readonly Text _front;
         private readonly Image _frontBar;
         private readonly Text _rear;
         private readonly Image _rearBar;
-        private readonly Text _fuel;
-        private readonly Image _fuelBar;
         private readonly Text _laps;
+        private readonly Text _fuel;
         private readonly Image _statusPill;
         private readonly Text _statusText;
-        private readonly Choice[] _pace = new Choice[3];
-        private readonly Choice[] _mode = new Choice[3];
+        private readonly Cycle _pace;
+        private readonly Cycle _mode;
         private readonly Button _auto;
         private readonly Text _autoText;
 
         private static readonly PaceMode[] Paces = { PaceMode.Conserve, PaceMode.Balanced, PaceMode.Push };
         private static readonly RiderMode[] Modes = { RiderMode.Defend, RiderMode.Balanced, RiderMode.Attack };
 
-        /// <summary>One option of a segmented order row.</summary>
-        private struct Choice
+        /// <summary>A cycling order control: caption, the current value and a chevron; a tap moves to the next value.</summary>
+        private class Cycle
         {
-            public Image Fill;
-            public Image Underline;
-            public Text Label;
+            public Text Value;
+            public Image Mark;
+            public string[] Labels;
         }
 
         public RiderCommandPanel(RaceView view, RiderRaceState rider, RectTransform parent)
@@ -59,28 +54,22 @@ namespace MotoManager.App.UI
             _rider = rider;
             var team = rider.Entry.Team;
             var teamColor = RaceUi.TeamColor(team != null ? team.Colors.Primary : null);
-            bool fuel = view.Sim.Config.FuelLimitLitres > 0;
 
-            var bg = UiFactory.Panel("Rider " + rider.Entry.Rider.Code, parent, Theme.Alpha(Theme.Panel, 0.93f));
-            UiFactory.Chamfer(bg, 3f);
+            var bg = UiFactory.Panel("Rider " + rider.Entry.Rider.Code, parent, Theme.Alpha(Theme.Chrome, 0.88f));
+            UiFactory.Surface(bg);
             UiFactory.Stretch(bg.rectTransform);
-            UiFactory.SideStripe(bg.transform, teamColor, 5, 0);
+            UiFactory.SideStripe(bg.transform, teamColor, 4, 0);
             var root = UiFactory.Rect("Body", bg.transform);
             UiFactory.Stretch(root);
-            root.offsetMin = new Vector2(12, 6);
+            root.offsetMin = new Vector2(14, 6);
             root.offsetMax = new Vector2(-10, -4);
 
             // Vertical bands (fractions of the card) so one or two stacked cards both fit.
-            float headTop = 1, headBottom = 0.85f;
-            float rowsBottom = fuel ? 0.69f : 0.67f;
-            float tyresBottom = fuel ? 0.6f : 0.565f;
-            float lapsBottom = fuel ? 0.52f : 0.475f;
-            float fuelBottom = 0.445f;
-            float ordersTop = fuel ? 0.44f : 0.465f;
+            const float headBottom = 0.8f, gapsBottom = 0.69f, tyresBottom = 0.57f, lapsBottom = 0.46f, ordersBottom = 0.15f;
 
             // Header: number plate, name, status pill, position.
             var head = UiFactory.Rect("Head", root);
-            UiFactory.Place(head, 0, headBottom, 1, headTop);
+            UiFactory.Place(head, 0, headBottom, 1, 1);
             var plateArea = UiFactory.Rect("PlateArea", head);
             plateArea.anchorMin = new Vector2(0, 0.06f);
             plateArea.anchorMax = new Vector2(0, 0.94f);
@@ -102,68 +91,70 @@ namespace MotoManager.App.UI
             UiFactory.Place(_position.rectTransform, 0.76f, 0, 1, 1);
             _position.rectTransform.offsetMax = new Vector2(-4, 0);
 
-            // The riders just ahead and behind, with the gap to this rider (thousandths).
-            for (int i = 0; i < 2; i++)
-            {
-                float h = (headBottom - rowsBottom) / 2;
-                float y1 = headBottom - i * h, y0 = y1 - h;
-                var row = UiFactory.Rect(i == 0 ? "Ahead" : "Behind", root);
-                UiFactory.Place(row, 0, y0, 1, y1);
-                _rowRect[i] = row;
-                var shade = UiFactory.Decor("Shade", row, new Color(1, 1, 1, i == 0 ? 0.05f : 0.025f));
-                UiFactory.Stretch(shade.rectTransform);
-                _rowPos[i] = RaceUi.Label(row, "", Theme.TextCaption, TextAnchor.MiddleCenter, Theme.TextDim, FontStyle.BoldAndItalic);
-                UiFactory.Place(_rowPos[i].rectTransform, 0, 0, 0.14f, 1);
-                _rowBar[i] = UiFactory.Decor("Team", row, Color.white);
-                UiFactory.Place(_rowBar[i].rectTransform, 0.15f, 0.2f, 0.165f, 0.8f);
-                _rowName[i] = RaceUi.Label(row, "", Theme.TextCaption, TextAnchor.MiddleLeft, Theme.Text, FontStyle.Bold);
-                UiFactory.Place(_rowName[i].rectTransform, 0.19f, 0, 0.6f, 1);
-                _rowTyre[i] = RaceUi.Label(row, "", Theme.TextCaption, TextAnchor.MiddleCenter, Theme.TextDim);
-                UiFactory.Place(_rowTyre[i].rectTransform, 0.6f, 0, 0.7f, 1);
-                _rowGap[i] = RaceUi.Label(row, "", Theme.TextCaption, TextAnchor.MiddleRight, Theme.Text, FontStyle.Bold);
-                UiFactory.Place(_rowGap[i].rectTransform, 0.7f, 0, 1, 1);
-                _rowGap[i].rectTransform.offsetMax = new Vector2(-6, 0);
-            }
+            // One small line: the gaps (thousandths) to the riders just ahead and behind.
+            _gaps = Line(root, gapsBottom, headBottom, TextAnchor.MiddleLeft);
 
-            // Front and rear tyre side by side: compound, how much is left, a bar.
+            // Front and rear tyre in one row: "Del. M 82%" with a thin bar beside it (never under the text).
             var tyres = UiFactory.Rect("Tyres", root);
-            UiFactory.Place(tyres, 0, tyresBottom, 1, rowsBottom - 0.01f);
-            _front = Gauge(tyres, 0, 0.49f, out _frontBar);
-            _rear = Gauge(tyres, 0.51f, 1, out _rearBar);
+            UiFactory.Place(tyres, 0, tyresBottom, 1, gapsBottom);
+            _front = TyreGauge(tyres, 0, 0.49f, out _frontBar);
+            _rear = TyreGauge(tyres, 0.51f, 1, out _rearBar);
 
-            // Last and best lap (the best in purple when it is the fastest of the race).
-            _laps = RaceUi.Label(root, "", Theme.TextCaption, TextAnchor.MiddleLeft, Theme.Text);
-            UiFactory.Place(_laps.rectTransform, 0, lapsBottom, 1, tyresBottom);
+            // Last and best lap on the left; fuel on the right, only when it matters.
+            _laps = Line(root, lapsBottom, tyresBottom, TextAnchor.MiddleLeft);
+            _laps.rectTransform.anchorMax = new Vector2(0.64f, tyresBottom);
+            _fuel = Line(root, lapsBottom, tyresBottom, TextAnchor.MiddleRight);
+            _fuel.rectTransform.anchorMin = new Vector2(0.64f, lapsBottom);
 
-            // Fuel in laps against the laps left, only with a tank limit.
-            var fuelRow = UiFactory.Rect("Fuel", root);
-            UiFactory.Place(fuelRow, 0, fuelBottom, 1, lapsBottom);
-            _fuel = Gauge(fuelRow, 0, 1, out _fuelBar);
-            fuelRow.gameObject.SetActive(fuel);
-
-            // Orders: pace and attitude, state always visible; then the engineer.
-            float orderH = (ordersTop - 0.16f) / 2;
-            BuildChoices(root, Loc.T("ux.race.pace"), ordersTop - orderH, ordersTop, _pace,
+            // Orders: two cycling controls, then the engineer as a text button.
+            float orderH = (lapsBottom - ordersBottom) / 2;
+            _pace = BuildCycle(root, Loc.T("ux.race.pace"), lapsBottom - orderH, lapsBottom,
                 new[] { Loc.T("ux.race.pace.save"), Loc.T("ux.race.pace.normal"), Loc.T("ux.race.pace.push") },
-                i => Send(new RaceCommand { Type = RaceCommandType.SetPace, Pace = Paces[i] }));
-            BuildChoices(root, Loc.T("ux.race.mode"), ordersTop - 2 * orderH, ordersTop - orderH, _mode,
+                () => Send(new RaceCommand { Type = RaceCommandType.SetPace, Pace = Paces[(Index(Paces, _rider.Pace) + 1) % Paces.Length] }));
+            _mode = BuildCycle(root, Loc.T("ux.race.mode"), ordersBottom, lapsBottom - orderH,
                 new[] { Loc.T("ux.race.mode.defend"), Loc.T("ux.race.mode.normal"), Loc.T("ux.race.mode.attack") },
-                i => Send(new RaceCommand { Type = RaceCommandType.SetRiderMode, Mode = Modes[i] }));
+                () => Send(new RaceCommand { Type = RaceCommandType.SetRiderMode, Mode = Modes[(Index(Modes, _rider.Mode) + 1) % Modes.Length] }));
             var autoArea = UiFactory.Rect("AutoArea", root);
-            UiFactory.Place(autoArea, 0, 0, 1, 0.15f);
-            autoArea.offsetMin = new Vector2(0, 2);
-            _auto = Ui.Secondary(autoArea, Loc.T("cmd.auto"), () => Send(new RaceCommand { Type = RaceCommandType.SetAutoManaged, Flag = !_rider.Entry.AutoManaged }));
+            UiFactory.Place(autoArea, 0, 0, 1, ordersBottom);
+            _auto = UiFactory.Button("Auto", autoArea, Theme.Caps(Loc.T("cmd.auto")),
+                () => Send(new RaceCommand { Type = RaceCommandType.SetAutoManaged, Flag = !_rider.Entry.AutoManaged }), Color.clear, Theme.TextCaption);
+            UiFactory.Stretch((RectTransform)_auto.transform);
+            Ui.TextTab(_auto, false, Theme.TextCaption);
             _autoText = _auto.GetComponentInChildren<Text>();
+            _autoText.rectTransform.offsetMin = new Vector2(4, 0);
         }
 
-        /// <summary>A label ("DEL. M 82%") over a thin bar in the left/right part of <paramref name="area"/>.</summary>
-        private static Text Gauge(RectTransform area, float x0, float x1, out Image fill)
+        private static int Index<T>(T[] values, T value)
         {
+            int i = Array.IndexOf(values, value);
+            return i < 0 ? 1 : i;
+        }
+
+        /// <summary>A one-line caption-size label filling a horizontal band of the card.</summary>
+        private static Text Line(RectTransform root, float y0, float y1, TextAnchor align)
+        {
+            var t = RaceUi.Label(root, "", Theme.TextCaption, align, Theme.Text);
+            t.horizontalOverflow = HorizontalWrapMode.Overflow;
+            UiFactory.Place(t.rectTransform, 0, y0, 1, y1);
+            t.rectTransform.offsetMax = new Vector2(-4, 0);
+            return t;
+        }
+
+        /// <summary>
+        /// The tyre text on the left of its half and a thin bar (6 units, vertically centred) on the right, with a gap
+        /// between them, so the bar never reads as an underline.
+        /// </summary>
+        private static Text TyreGauge(RectTransform area, float x0, float x1, out Image fill)
+        {
+            float split = x0 + (x1 - x0) * 0.58f;
             var t = RaceUi.Label(area, "", Theme.TextCaption, TextAnchor.MiddleLeft, Theme.Text);
-            UiFactory.Place(t.rectTransform, x0, 0.3f, x1, 1);
-            var back = UiFactory.Decor("BarBack", area, new Color(1, 1, 1, 0.1f));
-            UiFactory.Place(back.rectTransform, x0, 0.04f, x1, 0.24f);
-            back.rectTransform.offsetMax = new Vector2(-4, 0);
+            t.horizontalOverflow = HorizontalWrapMode.Overflow;
+            UiFactory.Place(t.rectTransform, x0, 0, split, 1);
+            var back = UiFactory.Decor("BarBack", area, new Color(1, 1, 1, 0.12f));
+            back.rectTransform.anchorMin = new Vector2(split, 0.5f);
+            back.rectTransform.anchorMax = new Vector2(x1, 0.5f);
+            back.rectTransform.offsetMin = new Vector2(8, -3);
+            back.rectTransform.offsetMax = new Vector2(-8, 3);
             fill = UiFactory.Decor("Fill", back.transform, Theme.Good);
             fill.rectTransform.anchorMin = Vector2.zero;
             fill.rectTransform.anchorMax = new Vector2(1, 1);
@@ -171,47 +162,50 @@ namespace MotoManager.App.UI
             return t;
         }
 
-        /// <summary>Caption on the left, three segments: the active one lit with an accent underline.</summary>
-        private static void BuildChoices(RectTransform root, string caption, float y0, float y1, Choice[] into, string[] labels, Action<int> onPick)
+        /// <summary>
+        /// "CAPTION   VALUE ›" in a band of the card: the whole row is one small-radius dark button; a tap runs
+        /// <paramref name="onTap"/> (the next value). A short underline under the value: accent for the player's order,
+        /// steel while the engineer decides.
+        /// </summary>
+        private static Cycle BuildCycle(RectTransform root, string caption, float y0, float y1, string[] labels, Action onTap)
         {
             var row = UiFactory.Rect("Order", root);
             UiFactory.Place(row, 0, y0, 1, y1);
-            row.offsetMin = new Vector2(0, 2);
-            row.offsetMax = new Vector2(0, -2);
-            var cap = RaceUi.Label(row, Theme.Caps(caption), Theme.TextCaption, TextAnchor.MiddleLeft, Theme.TextDim, FontStyle.Bold);
-            UiFactory.Place(cap.rectTransform, 0, 0, 0.22f, 1);
-            for (int i = 0; i < 3; i++)
-            {
-                int idx = i;
-                float x0 = 0.22f + 0.26f * i, x1 = x0 + 0.26f;
-                var b = UiFactory.Button("Option", row, Theme.Caps(labels[i]), () => onPick(idx), Color.Lerp(Theme.Background, Theme.Panel, 0.85f), Theme.TextCaption);
-                UiFactory.Place((RectTransform)b.transform, x0, 0, x1, 1, 2);
-                var t = b.GetComponentInChildren<Text>();
-                UiFactory.Style(t, FontStyle.Bold);
-                Ui.Fit(t, Theme.TextCaption);
-                t.verticalOverflow = VerticalWrapMode.Overflow;
-                t.rectTransform.offsetMin = new Vector2(10, 0);
-                t.rectTransform.offsetMax = new Vector2(-10, 0);
-                var line = UiFactory.Decor("Underline", b.transform, Theme.Accent);
-                line.rectTransform.anchorMin = new Vector2(0.25f, 0);
-                line.rectTransform.anchorMax = new Vector2(0.75f, 0);
-                line.rectTransform.offsetMin = new Vector2(0, 3);
-                line.rectTransform.offsetMax = new Vector2(0, 7);
-                into[i] = new Choice { Fill = b.image, Underline = line, Label = t };
-            }
+            row.offsetMin = new Vector2(0, 3);
+            row.offsetMax = new Vector2(0, -3);
+            var b = UiFactory.Button("Order", row, "", onTap, Theme.Alpha(Color.white, 0.06f), Theme.TextCaption);
+            UiFactory.Stretch((RectTransform)b.transform);
+            var cap = b.GetComponentInChildren<Text>();
+            cap.text = Theme.Caps(caption);
+            cap.alignment = TextAnchor.MiddleLeft;
+            cap.color = Theme.TextDim;
+            UiFactory.Style(cap, FontStyle.Bold);
+            Ui.Fit(cap, Theme.TextCaption);
+            UiFactory.Place(cap.rectTransform, 0, 0, 0.42f, 1);
+            cap.rectTransform.offsetMin = new Vector2(12, 0);
+            var value = RaceUi.Label(b.transform, "", Theme.TextBody, TextAnchor.MiddleRight, Theme.Text, FontStyle.Bold);
+            // Never wraps: one line, shrinking (not below 18) to fit.
+            value.horizontalOverflow = HorizontalWrapMode.Wrap;
+            UiFactory.Place(value.rectTransform, 0.42f, 0, 1, 1);
+            value.rectTransform.offsetMax = new Vector2(-38, 0);
+            Ui.Fit(value, Theme.TextBody);
+            var chevron = UiIcons.Chevron(b.transform, Theme.TextDim);
+            chevron.rectTransform.anchorMin = chevron.rectTransform.anchorMax = new Vector2(1, 0.5f);
+            chevron.rectTransform.sizeDelta = new Vector2(18, 18);
+            chevron.rectTransform.anchoredPosition = new Vector2(-20, 0);
+            var mark = UiFactory.Decor("Underline", value.transform, Theme.Accent);
+            mark.rectTransform.anchorMin = new Vector2(0.55f, 0);
+            mark.rectTransform.anchorMax = new Vector2(1, 0);
+            mark.rectTransform.offsetMin = new Vector2(0, 2);
+            mark.rectTransform.offsetMax = new Vector2(0, 5);
+            return new Cycle { Value = value, Mark = mark, Labels = labels };
         }
 
-        /// <summary>Lights the active option: accent underline for the player's order, steel when the engineer decides.</summary>
-        private static void SetChoices(Choice[] row, int active, bool auto)
+        private static void SetCycle(Cycle c, int active, bool auto)
         {
-            for (int i = 0; i < row.Length; i++)
-            {
-                bool on = i == active;
-                row[i].Fill.color = Theme.Alpha(Theme.Chrome, on ? 0.92f : 0.75f);
-                row[i].Underline.enabled = on;
-                row[i].Underline.color = auto ? Theme.Steel : Theme.Accent;
-                row[i].Label.color = on ? Theme.Text : Theme.TextDim;
-            }
+            c.Value.text = Theme.Caps(c.Labels[Mathf.Clamp(active, 0, c.Labels.Length - 1)]);
+            c.Value.color = auto ? Theme.TextDim : Theme.Text;
+            c.Mark.color = auto ? Theme.Steel : Theme.Accent;
         }
 
         private void Send(RaceCommand command)
@@ -224,7 +218,7 @@ namespace MotoManager.App.UI
         {
             switch (t.Condition)
             {
-                case TireCondition.Cold: return new Color32(120, 178, 214, 255);
+                case TireCondition.Cold: return new Color32(143, 180, 212, 255);
                 case TireCondition.Hot: return Theme.Warning;
                 case TireCondition.Overheated: return Theme.Bad;
                 case TireCondition.Worn: return new Color32(200, 120, 60, 255);
@@ -232,19 +226,9 @@ namespace MotoManager.App.UI
             }
         }
 
-        private void Row(int i, RiderRaceState r, RiderRaceState self)
+        private static string Gap(double seconds)
         {
-            bool show = r != null;
-            if (_rowRect[i].gameObject.activeSelf != show) _rowRect[i].gameObject.SetActive(show);
-            if (!show) return;
-            var team = r.Entry.Team;
-            _rowPos[i].text = "P" + r.Position;
-            _rowBar[i].color = RaceUi.TeamColor(team != null ? team.Colors.Primary : null);
-            _rowName[i].text = r.Entry.Rider.ShortName.ToUpperInvariant();
-            _rowTyre[i].text = RaceHud.CompoundLetter(r.Rear.Compound);
-            // Gap relative to this rider: negative = ahead.
-            double gap = i == 0 ? -self.GapToAhead : r.GapToAhead;
-            _rowGap[i].text = r.Status == RaceStatus.Racing && self.Status == RaceStatus.Racing ? gap.ToString("+0.000;-0.000", Loc.Culture) : "";
+            return seconds.ToString("+0.000", Loc.Culture);
         }
 
         public void Refresh()
@@ -252,41 +236,48 @@ namespace MotoManager.App.UI
             var r = _rider;
             var sim = _view.Sim;
             _position.text = Theme.Pos(r.Position);
-            Row(0, r.Position > 1 ? sim.RiderAtPosition(r.Position - 1) : null, r);
-            Row(1, sim.RiderAtPosition(r.Position + 1), r);
+
+            // Gaps to the riders just ahead and behind (the tower names them).
+            var ahead = r.Position > 1 ? sim.RiderAtPosition(r.Position - 1) : null;
+            var behind = sim.RiderAtPosition(r.Position + 1);
+            string gaps = "";
+            if (r.Status == RaceStatus.Racing)
+            {
+                if (ahead != null) gaps += Theme.Dim("P" + ahead.Position) + " <b>" + Gap(r.GapToAhead) + "</b>";
+                if (behind != null && behind.Status == RaceStatus.Racing)
+                    gaps += (gaps.Length > 0 ? "     " : "") + Theme.Dim("P" + behind.Position) + " <b>" + Gap(behind.GapToAhead) + "</b>";
+            }
+            _gaps.text = gaps;
 
             double rear = 1 - r.Rear.Wear;
             double front = 1 - r.Front.Wear;
-            _front.text = Theme.Dim(Theme.Caps(Loc.T("card.front"))) + " <b>" + RaceHud.CompoundLetter(r.Front.Compound) + " " + (front * 100).ToString("0") + "%</b>";
+            _front.text = Theme.Dim(Loc.T("card.front")) + " <b>" + RaceHud.CompoundLetter(r.Front.Compound) + " " + (front * 100).ToString("0") + "%</b>";
             _frontBar.rectTransform.anchorMax = new Vector2(Mathf.Clamp01((float)front), 1);
             _frontBar.color = WearColor(r.Front);
-            _rear.text = Theme.Dim(Theme.Caps(Loc.T("card.rear"))) + " <b>" + RaceHud.CompoundLetter(r.Rear.Compound) + " " + (rear * 100).ToString("0") + "%</b>";
+            _rear.text = Theme.Dim(Loc.T("card.rear")) + " <b>" + RaceHud.CompoundLetter(r.Rear.Compound) + " " + (rear * 100).ToString("0") + "%</b>";
             _rearBar.rectTransform.anchorMax = new Vector2(Mathf.Clamp01((float)rear), 1);
             _rearBar.color = WearColor(r.Rear);
 
-            // Fuel in laps against the laps left.
+            // Fuel only with a tank limit, once there is a consumption to judge, and only when it is tight
+            // (less than a lap of margin): then the laps it lasts and the margin, red when it falls short.
             int lapsLeft = Math.Max(0, sim.TotalLaps - Math.Max(0, r.Lap));
             double limit = sim.Config.FuelLimitLitres;
+            string fuel = "";
             if (limit > 0 && r.Lap >= 1)
             {
                 double perLap = (limit - r.Fuel) / Math.Max(0.5, r.Lap);
                 double lapsOfFuel = perLap > 0 ? r.Fuel / perLap : 99;
                 double delta = lapsOfFuel - lapsLeft;
-                _fuel.text = Theme.Dim(Theme.Caps(Loc.T("ux.race.fuel"))) + " <b>" + Loc.T("card.fuelLaps", lapsOfFuel.ToString("0.0", Loc.Culture)) + "</b>  " +
-                             (delta >= 0 ? Theme.GoodText(delta.ToString("+0.0", Loc.Culture)) : Theme.BadText(delta.ToString("0.0", Loc.Culture)));
-                _fuelBar.rectTransform.anchorMax = new Vector2(Mathf.Clamp01((float)(r.Fuel / limit)), 1);
-                _fuelBar.color = delta >= 0 ? Theme.Good : Theme.Bad;
+                if (delta < 1)
+                    fuel = Theme.Dim(Loc.T("ux.race.fuel")) + " <b>" + Loc.T("card.fuelLaps", lapsOfFuel.ToString("0.0", Loc.Culture)) + "</b> " +
+                           (delta >= 0 ? Theme.GoodText(delta.ToString("+0.0", Loc.Culture)) : Theme.BadText(delta.ToString("0.0", Loc.Culture)));
             }
-            else
-            {
-                _fuel.text = limit > 0 ? Theme.Dim(Theme.Caps(Loc.T("ux.race.fuel"))) + " " + Loc.T("card.fuelFull") : "";
-                _fuelBar.rectTransform.anchorMax = new Vector2(limit > 0 ? 1 : 0, 1);
-            }
+            _fuel.text = fuel;
 
             string last = r.LastLapTime > 0 ? MathX.FormatLapTime(r.LastLapTime) : "-";
             string best = r.BestLapTime < double.MaxValue ? MathX.FormatLapTime(r.BestLapTime) : "-";
             bool fastest = r.BestLapTime < double.MaxValue && Math.Abs(r.BestLapTime - sim.FastestLap) < 0.0005;
-            _laps.text = Theme.Dim(Theme.Caps(Loc.T("card.lastLap"))) + " <b>" + last + "</b>   " + Theme.Dim(Theme.Caps(Loc.T("card.bestLap"))) + " <b>" +
+            _laps.text = Theme.Dim(Loc.T("card.lastLap")) + " <b>" + last + "</b>   " + Theme.Dim(Loc.T("card.bestLap")) + " <b>" +
                          (fastest ? "<color=" + Theme.FastestHex + ">" + best + "</color>" : best) + "</b>";
 
             string status = r.HasIssue ? Loc.T("cmd.issue") : r.PendingLongLaps > 0 ? Loc.T("cmd.longLap", r.PendingLongLaps) :
@@ -299,10 +290,10 @@ namespace MotoManager.App.UI
             _statusText.color = Theme.OnColor(_statusPill.color);
 
             bool auto = r.Entry.AutoManaged;
-            SetChoices(_pace, Array.IndexOf(Paces, r.Pace), auto);
-            SetChoices(_mode, Array.IndexOf(Modes, r.Mode), auto);
-            _auto.image.color = auto ? Theme.Alpha(Theme.Good, 0.4f) : Theme.PanelLight;
+            SetCycle(_pace, Index(Paces, r.Pace), auto);
+            SetCycle(_mode, Index(Modes, r.Mode), auto);
             _autoText.text = Theme.Caps(Loc.T(auto ? "ux.race.engineerOn" : "cmd.auto"));
+            _autoText.color = auto ? Theme.Good : Theme.TextDim;
         }
     }
 }
