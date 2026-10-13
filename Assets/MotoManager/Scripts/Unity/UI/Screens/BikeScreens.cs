@@ -233,14 +233,16 @@ namespace MotoManager.App.UI.Screens
     }
 
     /// <summary>
-    /// "Moto" tab of the development section (UX spec §3.10), one screen without scrolling: a wide tile with each
-    /// rider's bike (surname, performance in green, reliability in purple) around the bike pictogram, the R&amp;D and
-    /// facilities tiles on the right, and one tile per component with its level that opens its development.
-    /// Maker, class and the on-track performance values are behind the "i" of the bike tile.
+    /// "Moto" tab of the development section (UX spec §3.10), one screen without scrolling: our bike (its average
+    /// component level big in the rating colour, performance and reliability), how it ranks against every bike of
+    /// the category, the R&amp;D and facilities tiles, and one tile per component with its level that opens its
+    /// development. Maker, class and the on-track values are behind the "i" of our bike's tile.
     /// </summary>
     public class BikeScreen : ScreenBase
     {
         public override string Title { get { return Loc.T("tab.bike"); } }
+
+        private const int GridRows = 5;
 
         public override void Build(RectTransform content)
         {
@@ -256,22 +258,18 @@ namespace MotoManager.App.UI.Screens
             var comps = Components(bike, bikeClass);
             bool twoRows = comps.Count > 6;
 
-            var rows = Ui.Rows(content, twoRows ? 0.45f : 0.52f, twoRows ? 0.55f : 0.48f);
-            var top = Ui.Columns12(rows[0], 9, 3);
+            var rows = Ui.Rows(content, twoRows ? 0.47f : 0.52f, twoRows ? 0.53f : 0.48f);
+            var top = Ui.Columns12(rows[0], 4, 5, 3);
 
-            // ---- the bikes of both riders
+            // ---- our bike and the rest of the grid
+            var grid = GridLevels(world, team);
+            int rank = grid.FindIndex(kv => kv.Key == team) + 1;
             string makerName = maker != null ? maker.Name : "";
-            var body = Ui.Tile(top[0], Loc.T("bike.devTitle"), null, bike.Model, 0, null, () => BikeSheet(bike, bikeClass, makerName, perf));
-            double perfScore = PerformanceScore(perf);
-            for (int i = 0; i < 2; i++)
-            {
-                var r = i < team.RiderIds.Count ? world.GetRider(team.RiderIds[i]) : null;
-                RiderHalf(body, i == 0 ? 0 : 0.62f, i == 0 ? 0.38f : 1, i, r, world, team, perf, perfScore);
-            }
-            BikeCentre(body, makerName);
+            OurBike(top[0], world, team, bike, bikeClass, makerName, perf, grid, rank);
+            GridTile(top[1], team, grid, rank);
 
             // ---- R&D and facilities
-            var side = Ui.Rows(top[1], 1, 1);
+            var side = Ui.Rows(top[2], 1, 1);
             int capacity = TeamCapabilities.ProjectCapacity(team);
             int free = capacity - running.Count;
             Ui.StatTile(side[0], Loc.T("bike.rndTile"), running.Count + "/" + capacity,
@@ -314,6 +312,34 @@ namespace MotoManager.App.UI.Screens
             return list;
         }
 
+        /// <summary>The mean level of a bike's components (0-100).</summary>
+        public static double AverageLevel(Motorcycle bike)
+        {
+            if (bike == null || bike.Components.Count == 0) return 0;
+            double sum = 0;
+            foreach (var c in bike.Components.Keys) sum += bike.Component(c);
+            return sum / bike.Components.Count;
+        }
+
+        /// <summary>Every team of our category with its bike's average level, best first.</summary>
+        private static List<KeyValuePair<Team, double>> GridLevels(WorldState world, Team team)
+        {
+            var res = new List<KeyValuePair<Team, double>>();
+            foreach (var t in world.TeamsInCategory(team.CategoryId))
+            {
+                var b = world.GetBike(t.BikeId);
+                if (b != null) res.Add(new KeyValuePair<Team, double>(t, AverageLevel(b)));
+            }
+            if (!res.Exists(kv => kv.Key == team)) res.Add(new KeyValuePair<Team, double>(team, AverageLevel(world.GetBike(team.BikeId))));
+            res.Sort((a, b) => b.Value.CompareTo(a.Value));
+            return res;
+        }
+
+        private static string TeamName(Team t)
+        {
+            return string.IsNullOrEmpty(t.ShortName) ? t.Name : t.ShortName;
+        }
+
         /// <summary>Overall on-track performance: the mean of every value except reliability (shown on its own).</summary>
         public static double PerformanceScore(BikePerformance perf)
         {
@@ -335,25 +361,36 @@ namespace MotoManager.App.UI.Screens
             return MathX.Clamp(perf[PerfAttr.Reliability] + bonus, 0, 100);
         }
 
-        private void RiderHalf(RectTransform body, float x0, float x1, int index, Rider r, WorldState world, Team team, BikePerformance perf, double perfScore)
+        /// <summary>Our bike: the average level big, the gap to the best bike, performance and reliability.</summary>
+        private void OurBike(RectTransform area, WorldState world, Team team, Motorcycle bike, BikeClassDefinition bikeClass, string makerName,
+            BikePerformance perf, List<KeyValuePair<Team, double>> grid, int rank)
         {
-            var half = UiFactory.Rect("Rider" + (index + 1), body);
-            UiFactory.Place(half, x0, 0, x1, 1);
-            if (r == null)
+            var body = Ui.Tile(area, Loc.T("ux.dev.ourBike"), null, bike.Model, 0, null, () => BikeSheet(bike, bikeClass, makerName, perf));
+            double level = AverageLevel(bike);
+            double best = grid.Count > 0 ? grid[0].Value : level;
+            ScreenKit.At(body, 0, 0.78f, 0.44f, 1, Theme.Caps(Loc.T("ux.dev.avgLevel")), Theme.TextCaption, TextAnchor.MiddleCenter, Theme.TextDim, FontStyle.Bold);
+            var v = ScreenKit.At(body, 0, 0.2f, 0.44f, 0.8f, level.ToString("0"), Theme.TextDisplay, TextAnchor.MiddleCenter, Ui.RatingColor(level), FontStyle.BoldAndItalic);
+            UiFactory.DropShadow(v, 0.4f, 2);
+            string gap = rank == 1 ? Theme.GoodText(Theme.Caps(Loc.T("ux.dev.best")))
+                : Theme.Caps(Loc.T("ux.dev.gap", (best - level).ToString("0.#", Loc.Culture)));
+            ScreenKit.At(body, 0, 0, 0.44f, 0.2f, gap, Theme.TextCaption, TextAnchor.MiddleCenter, Theme.TextDim, FontStyle.Bold);
+
+            var right = UiFactory.Rect("Stats", body);
+            UiFactory.Place(right, 0.48f, 0, 1, 1);
+            double perfScore = PerformanceScore(perf);
+            StatLine(right, 0.54f, 0.96f, Loc.T("bike.perfShort"), perfScore.ToString("0"), perfScore / 100.0, Theme.Perf);
+            // Reliability includes each rider's mechanics: the mean over the team's riders.
+            double rel = 0;
+            int n = 0;
+            foreach (var id in team.RiderIds)
             {
-                var go = UiFactory.Rect("FreeSeat", half);
-                UiFactory.Place(go, 0.05f, 0.3f, 0.95f, 0.7f);
-                Ui.SecondaryAccent(go, Loc.T("hub.freeSeat"), () => Shell.Show<MarketScreen>());
-                return;
+                var r = world.GetRider(id);
+                if (r == null) continue;
+                rel += Reliability(world, team, perf, r);
+                n++;
             }
-            // Surname and "MOTO 01" only: the rider's rating and race number live on the riders' pages.
-            ScreenKit.At(half, 0, 0.76f, 1, 1, "<b>" + Theme.Caps(r.LastName ?? r.FullName) + "</b>", Theme.TextTitle,
-                TextAnchor.MiddleLeft, Theme.Text, FontStyle.Italic);
-            ScreenKit.At(half, 0, 0.6f, 1, 0.76f, Theme.Caps(Loc.T("bike.machine", (index + 1).ToString("00"))), Theme.TextCaption,
-                TextAnchor.MiddleLeft, Theme.TextDim, FontStyle.Bold);
-            StatLine(half, 0.3f, 0.56f, Loc.T("bike.perfShort"), perfScore.ToString("0"), perfScore / 100.0, Theme.Perf);
-            double rel = Reliability(world, team, perf, r);
-            StatLine(half, 0f, 0.26f, Loc.T("bike.relShort"), rel.ToString("0") + "%", rel / 100.0, Theme.Rel);
+            rel = n > 0 ? rel / n : Reliability(world, team, perf, null);
+            StatLine(right, 0.04f, 0.46f, Loc.T("bike.relShort"), rel.ToString("0") + "%", rel / 100.0, Theme.Rel);
         }
 
         /// <summary>Caption left, value right (white), a thick bar in the figure's colour under them.</summary>
@@ -369,18 +406,61 @@ namespace MotoManager.App.UI.Screens
             Ui.Gauge(bar, fraction, color);
         }
 
-        private static void BikeCentre(RectTransform body, string makerName)
+        /// <summary>
+        /// The ranking of the category's bikes by average level: the best ones and ours with its neighbours (ours lit),
+        /// the whole list on tap.
+        /// </summary>
+        private static void GridTile(RectTransform area, Team team, List<KeyValuePair<Team, double>> grid, int rank)
         {
-            var mid = UiFactory.Rect("Bike", body);
-            UiFactory.Place(mid, 0.4f, 0, 0.6f, 1);
-            var icon = UiIcons.Icon(mid, UiIcons.Bike, Color.Lerp(Theme.TextDim, Color.white, 0.35f));
-            icon.preserveAspect = true;
-            UiFactory.Place(icon.rectTransform, 0.06f, 0.3f, 0.94f, 0.96f);
-            ScreenKit.At(mid, 0, 0.04f, 1, 0.26f, "<b>" + Theme.Caps(makerName) + "</b>", Theme.TextCaption, TextAnchor.MiddleCenter,
-                Theme.TextDim, FontStyle.Italic);
+            var body = Ui.Tile(area, Loc.T("ux.dev.grid"), () => GridSheet(team, grid), Loc.T("ux.dev.rank", rank, grid.Count));
+            int n = grid.Count;
+            if (n == 0) return;
+            var shown = new List<int>();
+            if (n <= GridRows) for (int i = 0; i < n; i++) shown.Add(i);
+            else
+            {
+                int ours = rank - 1;
+                int start = Math.Max(0, Math.Min(ours - 2, n - GridRows));
+                for (int i = start; i < start + GridRows; i++) shown.Add(i);
+                if (start > 0) shown[0] = 0;
+            }
+            double hi = grid[0].Value, lo = grid[n - 1].Value;
+            double floor = Math.Max(0, lo - Math.Max(3, (hi - lo) * 0.5));
+            for (int k = 0; k < shown.Count; k++)
+            {
+                int i = shown[k];
+                bool mine = grid[i].Key == team;
+                var row = UiFactory.Rect("Bike" + i, body);
+                UiFactory.Place(row, 0, 1 - (float)(k + 1) / GridRows, 1, 1 - (float)k / GridRows);
+                if (mine)
+                {
+                    var bg = UiFactory.Decor("Mine", row, Theme.Alpha(Theme.CurrentAccent, 0.22f));
+                    UiFactory.Stretch(bg.rectTransform);
+                }
+                Color c = mine ? Theme.Text : Color.Lerp(Theme.TextDim, Color.white, 0.2f);
+                ScreenKit.At(row, 0, 0, 0.09f, 1, (i + 1).ToString(), Theme.TextCaption, TextAnchor.MiddleCenter, c, FontStyle.Bold);
+                ScreenKit.At(row, 0.1f, 0, 0.46f, 1, Theme.Caps(TeamName(grid[i].Key)), Theme.TextCaption, TextAnchor.MiddleLeft, c,
+                    mine ? FontStyle.BoldAndItalic : FontStyle.Bold);
+                var bar = UiFactory.Rect("Bar", row);
+                UiFactory.Place(bar, 0.47f, 0.3f, 0.86f, 0.7f);
+                double f = hi > floor ? (grid[i].Value - floor) / (hi - floor) : 1;
+                Ui.Gauge(bar, f, mine ? Theme.Timing : Theme.Steel);
+                ScreenKit.At(row, 0.87f, 0, 1, 1, "<b>" + grid[i].Value.ToString("0") + "</b>", Theme.TextCaption, TextAnchor.MiddleRight, c);
+            }
         }
 
-        /// <summary>The "i" of the bike tile: maker, class and every on-track value as a bar.</summary>
+        private static void GridSheet(Team team, List<KeyValuePair<Team, double>> grid)
+        {
+            Ui.Sheet(Loc.T("ux.dev.grid"), list =>
+            {
+                UiFactory.Paragraph(list, Theme.Dim(Loc.T("ux.dev.gridInfo")), Theme.TextCaption);
+                var w = new[] { 0.8f, 4f, 1.2f };
+                for (int i = 0; i < grid.Count; i++)
+                    Ui.ListRow(list, w, new[] { (i + 1).ToString(), TeamName(grid[i].Key), grid[i].Value.ToString("0") }, i, grid[i].Key == team);
+            }, null, null, 0.56f);
+        }
+
+        /// <summary>The "i" of our bike's tile: maker, class and every on-track value as a bar.</summary>
         private static void BikeSheet(Motorcycle bike, BikeClassDefinition bikeClass, string makerName, BikePerformance perf)
         {
             Ui.Sheet(Loc.T("bike.devTitle"), list =>
@@ -417,9 +497,10 @@ namespace MotoManager.App.UI.Screens
     }
 
     /// <summary>
-    /// "I+D" tab (UX spec §3.11): the components on the left (level, tap to choose), the chosen component in the
-    /// middle (ambition, the level it would reach, gain, chance of success, cost and time) with ONE start button that
-    /// carries the selected ambition, and the projects running on the right (tap one for its effects and to cancel it).
+    /// R&amp;D, one component at a time: big tabs across the top (two rows when the bike has more than five
+    /// components); for the chosen component its level, one line on what it does; the ambition tabs with the chosen
+    /// project (new level, gain, chance of success) and ONE start button carrying that project's gain, cost and time;
+    /// on the right the projects running (progress, cancel with confirmation) and the history.
     /// </summary>
     public class ProjectsPage : ScreenBase
     {
@@ -454,9 +535,11 @@ namespace MotoManager.App.UI.Screens
 
         private string _component;
         private int _tier;
+        private string _confirmCancel;
 
         public override void Build(RectTransform content)
         {
+            var list = Page(content);
             var world = Game.World;
             var team = world.PlayerTeam;
             if (team == null) return;
@@ -468,6 +551,7 @@ namespace MotoManager.App.UI.Screens
             var done = world.Projects.FindAll(p => p.TeamId == team.Id && p.Status != ProjectStatus.InProgress);
             int capacity = TeamCapabilities.ProjectCapacity(team);
 
+            // ---- tabs: one per component of the bike (a running one in green), two rows when there are more than 5
             var comps = BikeScreen.Components(bike, bikeClass);
             if (comps.Count == 0) return;
             if (Focus != null && comps.Contains(Focus))
@@ -477,40 +561,30 @@ namespace MotoManager.App.UI.Screens
             }
             Focus = null;
             if (_component == null || !comps.Contains(_component)) _component = comps[0];
-
-            var cols = Ui.Columns12(content, 3, 6, 3);
-            ComponentList(cols[0], world, team, bike, comps, running);
-            BuildComponent(cols[1], world, team, bike, running, capacity);
-            BuildRunning(cols[2], world, team, running, done, capacity);
-        }
-
-        // ------------------------------------------------------------------ component list
-
-        private void ComponentList(RectTransform col, WorldState world, Team team, Motorcycle bike, List<string> comps, List<DevelopmentProject> running)
-        {
-            // One row per component (up to 8 fit the column without scrolling): level block, name, state.
-            int slots = Math.Max(comps.Count, 8);
-            var w = new[] { 1.1f, 2.6f };
-            for (int i = 0; i < comps.Count; i++)
+            int perRow = comps.Count <= 5 ? comps.Count : (comps.Count + 1) / 2;
+            for (int start = 0; start < comps.Count; start += perRow)
             {
-                string c = comps[i];
-                bool allowed = DevelopmentService.ComponentAllowed(world, Game.Db, team, c);
-                var project = running.Find(p => p.Component == c);
-                string name = "<b>" + Theme.Caps(Fmt.Component(c)) + "</b>";
-                if (!allowed) name = Theme.Dim(name) + "\n<size=" + Theme.TextMin + ">" + Theme.Dim(Theme.Caps(Loc.T("bike.frozen"))) + "</size>";
-                else if (project != null)
-                    name += "\n<size=" + Theme.TextMin + ">" + Theme.GoodText(Theme.Caps(Loc.T("bike.inDev", (project.DaysWorked / Math.Max(1, project.DurationDays) * 100).ToString("0")))) + "</size>";
-                string target = c;
-                // index + 4 keeps the level blocks graphite (ListRow lights the first three like a podium).
-                var row = Ui.ListRow(col, w, new[] { bike.Component(c).ToString("0"), name }, i + 4, c == _component, () =>
+                var labels = new List<string>();
+                int first = start;
+                for (int i = start; i < Math.Min(comps.Count, start + perRow); i++)
                 {
-                    if (_component != target) _tier = 0;
-                    _component = target;
+                    bool busy = running.Exists(p => p.Component == comps[i]);
+                    labels.Add(busy ? Theme.GoodText(Fmt.Component(comps[i])) : Fmt.Component(comps[i]));
+                }
+                int sel = comps.IndexOf(_component) - start;
+                Ui.Segmented(list, labels, sel >= 0 && sel < labels.Count ? sel : -1, i =>
+                {
+                    if (_component != comps[first + i]) _tier = 0;
+                    _component = comps[first + i];
+                    _confirmCancel = null;
                     Shell.Refresh();
-                });
-                float y1 = 1 - (float)i / slots, y0 = 1 - (float)(i + 1) / slots;
-                UiFactory.Place(row, 0, y0, 1, y1, 3);
+                }, 56);
             }
+
+            RectTransform left, right;
+            BikeCards.Split(list, 0.63f, out left, out right);
+            BuildComponent(left, world, team, bike, running, capacity);
+            BuildRunning(right, world, team, running, done, capacity);
         }
 
         // ------------------------------------------------------------------ selected component
@@ -529,8 +603,9 @@ namespace MotoManager.App.UI.Screens
         }
 
         /// <summary>Why a project cannot start now (null when it can).</summary>
-        private string Blocker(WorldState world, Team team, DevelopmentTemplate t, List<DevelopmentProject> running, int capacity)
+        private string Blocker(WorldState world, Team team, DevelopmentTemplate t, List<DevelopmentProject> running, int capacity, bool allowed)
         {
+            if (!allowed) return Loc.T("bike.frozen");
             if (running.Exists(p => p.TemplateId == t.Id)) return Loc.T("rnd.inProgress");
             if (running.Count >= capacity) return Loc.T("rnd.slotsFull");
             if (Accounts.Cash(world, team) < DevelopmentService.ProjectCost(world, Game.Db, team, t)) return Loc.T("rnd.noCash");
@@ -557,84 +632,88 @@ namespace MotoManager.App.UI.Screens
             bool allowed = DevelopmentService.ComponentAllowed(world, Game.Db, team, comp);
             double level = bike.Component(comp);
             var templates = Templates(bike, comp);
-            if (_tier < 0 || _tier >= templates.Count) _tier = 0;
-            var t = templates.Count > 0 ? templates[_tier] : null;
-            double quality = TeamCapabilities.ProjectQuality(world, team, comp, null);
 
-            // Season cap left (explained behind the "i", flagged as a pill when it limits the gain).
-            double capLeft = -1;
+            // Level badge and one sentence on what the component does.
+            var head = UiFactory.Row(col, 100);
+            BikeCards.Square(head, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(6, 0), 92, level.ToString("0"),
+                allowed ? Theme.Timing : Theme.Steel, Loc.T("bike.levelShort"));
+            var info = BikeCards.At(head, 0, 0, 1, 1, "<b>" + Theme.Caps(Fmt.Component(comp)) + "</b>\n" + Theme.Dim(Loc.T("compinfo." + comp)),
+                Theme.FontSmall, TextAnchor.MiddleLeft, Theme.Text, FontStyle.Normal, 0);
+            info.rectTransform.offsetMin = new Vector2(112, 0);
+            info.rectTransform.offsetMax = new Vector2(-8, 0);
+
+            if (!allowed)
+            {
+                Ui.Alert(col, Loc.T("ux.rnd.frozen"));
+                return;
+            }
+            if (templates.Count == 0)
+            {
+                Ui.Alert(col, Loc.T("ux.rnd.nothing"));
+                return;
+            }
+            if (_tier < 0 || _tier >= templates.Count) _tier = 0;
+            var t = templates[_tier];
+            double gain = Gain(t, comp);
+            double quality = TeamCapabilities.ProjectQuality(world, team, comp, null);
+            double success = MathX.Clamp(1 - t.Risk * 0.45 * (1.2 - quality / 100.0), 0, 1);
+            double projectCost = DevelopmentService.ProjectCost(world, Game.Db, team, t);
+            string blocker = Blocker(world, team, t, running, capacity, true);
+
+            // The chosen project: ambition tabs, the level it would reach and its two key figures.
+            var cardRow = UiFactory.Row(col, 230);
+            var card = BikeCards.Plate(cardRow, 0, 0, 1, 1, 0.3f, 0);
+            for (int i = 0; i < templates.Count; i++)
+            {
+                int idx = i;
+                bool on = i == _tier;
+                bool busy = running.Exists(p => p.TemplateId == templates[i].Id);
+                string label = Theme.Caps(TierName(templates[i]));
+                var b = UiFactory.Button("Tier", card.transform, busy ? Theme.GoodText(label) : label,
+                    () => { _tier = idx; Shell.Refresh(); }, on ? Theme.CurrentAccent : Color.Lerp(Theme.Panel, Theme.PanelLight, 0.55f), Theme.TextCaption);
+                UiFactory.Slant(b.image, 2.6f);
+                UiFactory.Place((RectTransform)b.transform, (float)i / templates.Count, 0.7f, (float)(i + 1) / templates.Count, 1, 2);
+                var lbl = b.GetComponentInChildren<Text>();
+                lbl.supportRichText = true;
+                Ui.Fit(lbl, Theme.TextCaption);
+                lbl.fontStyle = on ? FontStyle.BoldAndItalic : FontStyle.Bold;
+                lbl.color = on ? Theme.OnAccent : Color.Lerp(Theme.TextDim, Color.white, 0.2f);
+            }
+            double reach = Math.Min(100, level + gain);
+            BikeCards.Square(card.transform, new Vector2(0.17f, 0.45f), new Vector2(0.5f, 0.5f), Vector2.zero, 100, reach.ToString("0"),
+                Theme.Timing, Loc.T("rnd.newLevel"));
+            BikeCards.StatChip(card.transform, 0.32f, 0.22f, 0.65f, 0.68f, Loc.T("rnd.gain"), Fmt.Signed(gain), BikeCards.PerfColor);
+            BikeCards.StatChip(card.transform, 0.65f, 0.22f, 0.98f, 0.68f, Loc.T("rnd.success"), (success * 100).ToString("0") + "%", BikeCards.RelColor);
+            var notes = new List<string>();
+            var trade = new List<string>();
+            foreach (var kv in t.Effects)
+                if (kv.Key != comp || kv.Value < 0) trade.Add(Fmt.Component(kv.Key) + " " + Fmt.Signed(kv.Value));
+            if (trade.Count > 0) notes.Add(Theme.WarnText(Loc.T("rnd.tradeoff", string.Join(", ", trade.ToArray()))));
+            notes.Add(Theme.Dim(Loc.T("rnd.risk", (t.Risk * 100).ToString("0"))));
             var rules = Game.Db.GetRules(team.CategoryId, world.Season);
             if (rules != null && rules.Development.SeasonGainCap > 0)
             {
                 double used;
                 bike.SeasonGains.TryGetValue(comp, out used);
-                capLeft = Math.Max(0, rules.Development.SeasonGainCap - used);
+                double left = Math.Max(0, rules.Development.SeasonGainCap - used);
+                if (left < gain) notes.Add(Theme.WarnText(Loc.T("rnd.capLeft", left.ToString("0.#", Loc.Culture))));
             }
-            var info = new List<string> { Loc.T("compinfo." + comp) };
-            if (t != null) info.Add(Loc.T("rnd.risk", (t.Risk * 100).ToString("0")));
-            if (capLeft >= 0) info.Add(Loc.T("rnd.capLeft", capLeft.ToString("0.#", Loc.Culture)));
-            info.Add(Loc.T("ux.rnd.successInfo"));
-            info.Add(Loc.T("rnd.availableInfo"));
+            BikeCards.At(card.transform, 0.32f, 0.02f, 1, 0.22f, string.Join("   ", notes.ToArray()), Theme.TextMin, TextAnchor.MiddleCenter, Theme.Text, FontStyle.Normal, 8);
 
-            var body = Ui.Tile(col, Fmt.Component(comp), null, Theme.Caps(Loc.T("bike.levelShort")) + " " + level.ToString("0"), 0, null,
-                ScreenKit.Info(Fmt.Component(comp), info.ToArray()));
-            if (!allowed || t == null)
-            {
-                var empty = ScreenKit.List(ScreenKit.Between(body, 60, 60));
-                empty.GetComponent<VerticalLayoutGroup>().childAlignment = TextAnchor.MiddleCenter;
-                Ui.Empty(empty, null, Loc.T(!allowed ? "ux.rnd.frozen" : "ux.rnd.nothing"));
-                return;
-            }
-
-            // Ambition: one segmented row (a running ambition is shown in green).
-            var labels = new List<string>();
-            foreach (var x in templates)
-            {
-                string n = TierName(x);
-                labels.Add(running.Exists(p => p.TemplateId == x.Id) ? Theme.GoodText(n) : n);
-            }
-            Ui.Segmented(ScreenKit.List(ScreenKit.Top(body, 0, 56)), labels, _tier, i => { _tier = i; Shell.Refresh(); });
-            ScreenKit.At(ScreenKit.Top(body, 64, 34), 0, 0, 1, 1, Theme.Dim(Loc.T("compinfo." + comp)), Theme.TextCaption, TextAnchor.MiddleLeft);
-
-            double gain = Gain(t, comp);
-            double success = MathX.Clamp(1 - t.Risk * 0.45 * (1.2 - quality / 100.0), 0, 1);
-            double projectCost = DevelopmentService.ProjectCost(world, Game.Db, team, t);
-            string blocker = Blocker(world, team, t, running, capacity);
-            int days = RealDays(world, team, comp, t.DurationDays);
-            double reach = Math.Min(100, level + gain);
-
-            // Trade-offs and the season cap, only when they apply.
-            var warnings = new List<string>();
-            foreach (var kv in t.Effects)
-                if (kv.Key != comp || kv.Value < 0) warnings.Add(Fmt.Component(kv.Key) + " " + Fmt.Signed(kv.Value));
-            if (capLeft >= 0 && capLeft < gain) warnings.Add(Loc.T("rnd.capLeft", capLeft.ToString("0.#", Loc.Culture)));
-            float bottomBar = Ui.Grid.Cta + 4;
-            float pills = warnings.Count > 0 ? 48 : 0;
-            if (pills > 0)
-            {
-                var row = ScreenKit.PillRow(ScreenKit.List(ScreenKit.Bottom(body, bottomBar + 8, 36)));
-                foreach (var wtext in warnings) ScreenKit.Tag(row, wtext, Theme.Warning);
-            }
-
-            // The three figures of the chosen ambition.
-            var figs = ScreenKit.Between(body, 106, bottomBar + pills + 8);
-            ScreenKit.Figure(figs, 0, 0.36f, Loc.T("rnd.newLevel"), reach.ToString("0"), Theme.Timing,
-                Loc.T("ux.rnd.from", level.ToString("0")), Theme.TextDisplay);
-            ScreenKit.Figure(figs, 0.36f, 0.68f, Loc.T("rnd.gain"), Theme.Signed(gain));
-            ScreenKit.Figure(figs, 0.68f, 1f, Loc.T("rnd.success"), (success * 100).ToString("0") + "%");
-
-            // Cost, engineering and time beside the ONE start button, which names the selected ambition.
-            var bar = ScreenKit.Bottom(body, 0, Ui.Grid.Cta);
-            var facts = UiFactory.Rect("Facts", bar);
-            UiFactory.Place(facts, 0, 0, 0.52f, 1);
-            ScreenKit.Fact(facts, 0, 0.34f, Loc.T("rnd.cost"), MathX.FormatMoney(projectCost));
-            ScreenKit.Fact(facts, 0.34f, 0.66f, Loc.T("rnd.engineering"), Fmt.Rating(quality));
-            ScreenKit.Fact(facts, 0.66f, 1, Loc.T("rnd.time"), Loc.T("rnd.days", days));
-            var cta = UiFactory.Rect("Start", bar);
-            UiFactory.Place(cta, 0.54f, 0, 1, 1);
+            // The one start button, carrying the selected ambition's gain, cost and time (engineering beside it).
+            var bar = UiFactory.Row(col, 84);
+            BikeCards.Plate(bar, 0, 0, 0.26f, 1, 0.45f, 2);
+            Cell(bar, 0, 0.26f, Loc.T("rnd.engineering"), Fmt.Rating(quality));
             var template = t;
-            Ui.PrimaryCTA(cta, Loc.T("rnd.start"), () => StartProject(world, team, template),
-                blocker ?? Theme.Caps(TierName(t)) + " · " + Fmt.Signed(gain), blocker == null);
+            int days = RealDays(world, team, comp, t.DurationDays);
+            BikeCards.BigButton(bar, 0.26f, 0, 1, 1, Loc.T("rnd.startWith", Fmt.Signed(gain), MathX.FormatMoney(projectCost), days), blocker,
+                BikeCards.StartColor, () => StartProject(world, team, template), blocker == null);
+        }
+
+        private static void Cell(RectTransform bar, float x0, float x1, string caption, string value)
+        {
+            BikeCards.At(bar, x0, 0.56f, x1, 0.94f, Theme.Caps(caption), Theme.TextMin, TextAnchor.MiddleCenter, Color.Lerp(Theme.TextDim, Color.white, 0.2f), FontStyle.Bold, 6);
+            BikeCards.At(bar, x0, 0.06f, x1, 0.6f, "<b>" + value + "</b>", Theme.FontNormal, TextAnchor.MiddleCenter, Theme.Text, FontStyle.Italic, 6);
         }
 
         /// <summary>Calendar days a project of <paramref name="workDays"/> takes with the team's factory and staff.</summary>
@@ -648,90 +727,61 @@ namespace MotoManager.App.UI.Screens
 
         private void BuildRunning(RectTransform col, WorldState world, Team team, List<DevelopmentProject> running, List<DevelopmentProject> done, int capacity)
         {
-            var body = Ui.Tile(col, Loc.T("rnd.inProgress"), null, running.Count + "/" + capacity, 0, null,
-                ScreenKit.Info(Loc.T("rnd.inProgress"), Loc.T("rnd.cancelInfo"), Loc.T("rnd.full")));
-            var list = ScreenKit.List(ScreenKit.Between(body, 0, Ui.Grid.Hit + 8), 8);
-            foreach (var p in running) RunningRow(list, world, team, p);
+            Ui.Section(col, Loc.T("rnd.inProgress"), running.Count + "/" + capacity,
+                ScreenKit.Info(Loc.T("rnd.inProgress"), Loc.T("ux.rnd.successInfo"), Loc.T("rnd.availableInfo"), Loc.T("rnd.cancelInfo")));
+            foreach (var p in running)
+            {
+                var project = p;
+                var row = UiFactory.Row(col, 154);
+                BikeCards.Plate(row, 0, 0, 1, 1, 0.3f, 0);
+                double f = p.DaysWorked / Math.Max(1, p.DurationDays);
+                BikeCards.At(row, 0, 0.72f, 1, 0.98f, "<b>" + Theme.Caps(ProjectName(p)) + "</b>", Theme.FontSmall, TextAnchor.MiddleLeft, Theme.Text, FontStyle.Italic, 14);
+                BikeCards.Gauge(row, 0.04f, 0.56f, 0.78f, 0.68f, f, BikeCards.PerfColor);
+                BikeCards.At(row, 0.78f, 0.5f, 1, 0.74f, Theme.GoodText("<b>" + (f * 100).ToString("0") + "%</b>"), Theme.FontNormal, TextAnchor.MiddleRight, Theme.Text, FontStyle.Italic, 14);
+                int left = (int)Math.Ceiling(Math.Max(0, p.DurationDays - p.DaysWorked) / Math.Max(0.1, DevelopmentService.Speed(world, team, p)));
+                BikeCards.At(row, 0, 0.04f, 0.6f, 0.5f, Loc.T("rnd.remaining", left) + "\n" + Theme.Dim(Fmt.Effects(p.ExpectedEffects)),
+                    Theme.TextMin, TextAnchor.MiddleLeft, Theme.Text, FontStyle.Normal, 14);
+                bool armed = _confirmCancel == p.Id;
+                BikeCards.BigButton(row, 0.6f, 0, 1, 0.5f, armed ? Loc.T("rnd.cancelConfirm") : Loc.T("rnd.cancel"), null,
+                    armed ? (Color)Theme.Bad : Color.Lerp(Theme.Bad, Theme.PanelLight, 0.6f), () =>
+                    {
+                        if (_confirmCancel != project.Id)
+                        {
+                            _confirmCancel = project.Id;
+                            Shell.Refresh();
+                            return;
+                        }
+                        _confirmCancel = null;
+                        // No refund: the money is spent; cancelling only frees the slot in the factory.
+                        project.Status = ProjectStatus.Cancelled;
+                        Shell.Toast(Loc.T("rnd.cancelled", ProjectName(project)), false);
+                        Shell.Refresh();
+                    }, true, 6);
+            }
             int free = capacity - running.Count;
-            var slot = UiFactory.Row(list, 56);
-            var slotBg = slot.gameObject.AddComponent<Image>();
-            slotBg.raycastTarget = false;
-            slotBg.color = new Color(1, 1, 1, 0.025f);
-            slot.gameObject.AddComponent<Outline>().effectColor = new Color(1, 1, 1, 0.08f);
-            ScreenKit.At(slot, 0, 0, 1, 1, free > 0 ? Theme.Caps(Loc.T("bike.rndFree", free)) : Theme.WarnText(Theme.Caps(Loc.T("bike.rndFull"))),
-                Theme.TextCaption, TextAnchor.MiddleCenter, Theme.TextDim, FontStyle.Bold);
-
-            var ghost = ScreenKit.Bottom(body, 0, Ui.Grid.Hit);
-            Ui.Ghost(ghost, Loc.T("ux.rnd.history", done.Count), () => HistorySheet(done));
-        }
-
-        private void RunningRow(RectTransform list, WorldState world, Team team, DevelopmentProject p)
-        {
-            var project = p;
-            var row = UiFactory.Row(list, 104);
-            var bg = row.gameObject.AddComponent<Image>();
-            bg.color = new Color(1, 1, 1, 0.045f);
-            double f = p.DaysWorked / Math.Max(1, p.DurationDays);
-            int left = (int)Math.Ceiling(Math.Max(0, p.DurationDays - p.DaysWorked) / Math.Max(0.1, DevelopmentService.Speed(world, team, p)));
-            ScreenKit.Tap(bg, () => ProjectSheet(project, f, left));
-            var inner = UiFactory.Rect("Inner", row);
-            UiFactory.Stretch(inner);
-            inner.offsetMin = new Vector2(12, 8);
-            inner.offsetMax = new Vector2(-40, -6);
-            ScreenKit.At(inner, 0, 0.62f, 1, 1, "<b>" + Theme.Caps(ProjectName(p)) + "</b>", Theme.TextCaption, TextAnchor.MiddleLeft, Theme.Text, FontStyle.Italic);
-            var gauge = UiFactory.Rect("Gauge", inner);
-            UiFactory.Place(gauge, 0, 0.38f, 0.74f, 0.56f);
-            Ui.Gauge(gauge, f, Theme.Perf);
-            ScreenKit.At(inner, 0.74f, 0.3f, 1, 0.64f, "<b>" + (f * 100).ToString("0") + "%</b>", Theme.TextBody, TextAnchor.MiddleRight);
-            ScreenKit.At(inner, 0, 0, 1, 0.34f, Theme.Caps(Loc.T("rnd.remaining", left)), Theme.TextCaption, TextAnchor.MiddleLeft, Theme.TextDim, FontStyle.Bold);
-            var ch = UiIcons.Chevron(row, Theme.TextDim);
-            ch.rectTransform.anchorMin = ch.rectTransform.anchorMax = new Vector2(1, 0.5f);
-            ch.rectTransform.sizeDelta = new Vector2(22, 22);
-            ch.rectTransform.anchoredPosition = new Vector2(-20, 0);
-        }
-
-        /// <summary>A running project: progress, time left, expected effects and the two-tap cancel.</summary>
-        private void ProjectSheet(DevelopmentProject project, double f, int left)
-        {
-            Ui.Sheet(ProjectName(project), list =>
+            if (free > 0)
             {
-                Ui.Line(list, Loc.T("ux.rnd.progress"), (f * 100).ToString("0") + "%");
-                Ui.Line(list, Loc.T("rnd.time"), Loc.T("rnd.remaining", left));
-                Ui.Line(list, Loc.T("ux.rnd.expected"), Fmt.Effects(project.ExpectedEffects));
-                UiFactory.Paragraph(list, Theme.Dim(Loc.T("rnd.cancelInfo")), Theme.TextCaption);
-                Ui.Danger((RectTransform)list, Loc.T("rnd.cancel"), Loc.T("rnd.cancelConfirm"), "rnd.cancel." + project.Id, () =>
-                {
-                    // No refund: the money is spent; cancelling only frees the slot in the factory.
-                    project.Status = ProjectStatus.Cancelled;
-                    Ui.CloseSheet();
-                    Shell.Toast(Loc.T("rnd.cancelled", ProjectName(project)), false);
-                    Shell.Refresh();
-                }, null);
-            });
-        }
+                var row = UiFactory.Row(col, 64);
+                BikeCards.Plate(row, 0, 0, 1, 1, 0.18f, 0);
+                BikeCards.At(row, 0, 0, 1, 1, Theme.GoodText("<b>" + Theme.Caps(Loc.T("bike.rndFree", free)) + "</b>"), Theme.FontSmall, TextAnchor.MiddleCenter, Theme.Text, FontStyle.Italic);
+            }
+            else Ui.Alert(col, Loc.T("bike.rndFull"));
 
-        private static void HistorySheet(List<DevelopmentProject> done)
-        {
-            Ui.Sheet(Loc.T("ux.rnd.history", done.Count), list =>
+            Ui.Expander(col, "rnd.history", Loc.T("rnd.history", done.Count), inner =>
             {
-                if (done.Count == 0)
-                {
-                    Ui.Empty(list, null, Loc.T("rnd.noHistory"));
-                    return;
-                }
-                var w = new[] { 4.6f, 4.4f, 2.2f };
-                ScreenKit.Captions(list, w, new[] { Loc.T("rnd.col.project"), Loc.T("rnd.col.effect"), Loc.T("rnd.col.result") });
-                int n = 0;
+                var hist = Ui.Card(inner, null);
+                var w = new[] { 5f, 5f, 2.4f };
+                UiFactory.TableRow(hist, 34, w, new[] { Loc.T("rnd.col.project"), Loc.T("rnd.col.effect"), Loc.T("rnd.col.result") }, true);
                 for (int i = done.Count - 1; i >= 0; i--)
                 {
                     var p = done[i];
                     string status = p.Status == ProjectStatus.Completed ? Theme.GoodText(Loc.T("rnd.status.Completed")) : Theme.BadText(Loc.T("rnd.status." + p.Status));
-                    ScreenKit.DataRow(list, w, new[] { ProjectName(p), Fmt.Effects(p.ActualEffects), Theme.Caps(status) }, n++);
+                    UiFactory.TableRow(hist, 40, w, new[] { ProjectName(p), Fmt.Effects(p.ActualEffects), status });
                 }
-            }, null, null, 0.78f);
+                if (done.Count == 0) UiFactory.Paragraph(hist, Theme.Dim(Loc.T("rnd.noHistory")), Theme.TextCaption);
+            }, Shell.Refresh);
         }
     }
-
     /// <summary>
     /// "Instalaciones" tab (UX spec §3.12): a 2×5 grid of tiles, one screen. Each tile keeps its level, pips, a
     /// one-line effect and the upgrade price as a quiet pill; a tap opens a sheet with everything it does, the upkeep

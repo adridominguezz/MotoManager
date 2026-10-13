@@ -10,14 +10,13 @@ using UnityEngine.UI;
 namespace MotoManager.App.UI.Screens
 {
     /// <summary>
-    /// Finance summary (UX spec §3.13), one screen: four key figures (cash, budget left, end of season, lowest point),
-    /// the budget tile with what can be done about it, and the detail tile (forecast, movements, season plan).
-    /// Explanations sit behind the "i" of each tile.
+    /// Finance summary in plain words, one screen: the money available now (one big number) with one sentence on
+    /// where the season is heading; this season's income minus expenses so far; and the budget as "spent X of Y"
+    /// with what can be done about it. Forecast, movements and the season plan are behind one "see detail" link.
     /// </summary>
     public class FinanceScreen : ScreenBase
     {
         public override string Title { get { return Loc.T("tab.summary"); } }
-        private int _view;
 
         public override void Build(RectTransform content)
         {
@@ -25,59 +24,131 @@ namespace MotoManager.App.UI.Screens
             var team = world.PlayerTeam;
             if (team == null) return;
             var org = world.OrganisationOf(team);
-            double spent = Accounts.SpentThisSeason(world, team);
-            double left = team.SeasonBudget - spent;
-            double used = team.SeasonBudget > 0 ? spent / team.SeasonBudget : 0;
             CashflowForecast fc = org != null ? CashflowForecast.ForOrganisation(world, Game.Db, org) : null;
 
-            var rows = Ui.Rows(content, 140, 418);
-            // ---- four key figures
-            var tiles = Ui.Columns12(rows[0], 3, 3, 3, 3);
+            var rows = Ui.Rows(content, 1, 1);
+            var top = Ui.Columns12(rows[0], 5, 7);
+            Cash(top[0], world, team, org, fc);
+            Year(top[1], world, team);
+            Budget(rows[1], world, team, org, fc);
+        }
+
+        // ------------------------------------------------------------------ cash now
+
+        private static string Gp(CashflowPoint p)
+        {
+            string l = p.Label ?? "";
+            int i = l.LastIndexOf(" · ", StringComparison.Ordinal);
+            return i >= 0 ? l.Substring(i + 3) : l;
+        }
+
+        private void Cash(RectTransform area, WorldState world, Team team, Organisation org, CashflowForecast fc)
+        {
             double cash = org != null ? org.Cash : Accounts.Cash(world, team);
-            Figure(tiles[0], Loc.T("ux.fin.cash"), cash, null);
-            Figure(tiles[1], Loc.T("ux.fin.left"), left, Loc.T("ux.fin.used", (used * 100).ToString("0")));
+            var body = Ui.Tile(area, Loc.T("ux.fin.cash"), null, null, 0, null, ScreenKit.Info(Loc.T("ux.fin.cash"), Loc.T("ux.fin.cashInfo")));
+            var v = ScreenKit.At(body, 0, 0.5f, 1, 1, MathX.FormatMoney(cash), Theme.TextDisplay, TextAnchor.MiddleCenter,
+                cash < 0 ? Theme.Bad : Theme.Text, FontStyle.BoldAndItalic);
+            UiFactory.DropShadow(v, 0.4f, 2);
+            ScreenKit.At(body, 0, 0.36f, 1, 0.5f, Theme.Caps(Loc.T("ux.fin.cashCaption")), Theme.TextCaption, TextAnchor.MiddleCenter, Theme.TextDim, FontStyle.Bold);
+
+            // One sentence on where the season is heading.
+            string status;
+            Color color;
+            CashflowPoint broke = null, dip = null;
             if (fc != null)
+                foreach (var p in fc.Points)
+                {
+                    if (broke == null && p.Probable < 0) broke = p;
+                    if (dip == null && p.Confirmed < 0) dip = p;
+                }
+            if (fc == null)
             {
-                Figure(tiles[2], Loc.T("ux.fin.end"), fc.EndProbable, Loc.T("ux.fin.probable"));
-                Figure(tiles[3], Loc.T("ux.fin.min"), fc.MinConfirmed, Loc.T("ux.fin.confirmed"));
+                status = "";
+                color = Theme.TextDim;
+            }
+            else if (broke != null)
+            {
+                status = Loc.T("ux.fin.bad", Gp(broke));
+                color = Theme.Bad;
+            }
+            else if (fc.EndProbable < 0)
+            {
+                status = Loc.T("ux.fin.badEnd", MathX.FormatMoney(fc.EndProbable));
+                color = Theme.Bad;
+            }
+            else if (dip != null)
+            {
+                status = Loc.T("ux.fin.warn", Gp(dip));
+                color = Theme.Warning;
             }
             else
             {
-                Ui.StatTile(tiles[2], Loc.T("ux.fin.end"), "-");
-                Ui.StatTile(tiles[3], Loc.T("ux.fin.min"), "-");
+                status = Loc.T("ux.fin.good", MathX.FormatMoney(fc.EndProbable));
+                color = Theme.Good;
             }
-
-            var cols = Ui.Columns12(rows[1], 5, 7);
-            Budget(cols[0], world, team, org, fc, spent, left, used);
-            Detail(cols[1], world, team, fc);
+            ScreenKit.At(body, 0, 0, 1, 0.34f, "<b>" + status + "</b>", Theme.TextBody, TextAnchor.MiddleCenter, color);
         }
 
-        private static void Figure(RectTransform area, string title, double value, string status)
+        // ------------------------------------------------------------------ this season so far
+
+        private void Year(RectTransform area, WorldState world, Team team)
         {
-            Ui.StatTile(area, title, MathX.FormatMoney(value), status, null, value < 0 ? Theme.Bad : (Color?)null);
+            double income = 0, expenses = 0;
+            var totals = Accounts.TotalsFor(world, team.OrganisationId, world.Season, team.Id);
+            foreach (var kv in totals)
+            {
+                if (kv.Value.Cash >= 0) income += kv.Value.Cash;
+                else expenses -= kv.Value.Cash;
+            }
+            double result = income - expenses;
+            var body = Ui.Tile(area, Loc.T("ux.fin.year", world.Season), null, null, 0, null,
+                ScreenKit.Info(Loc.T("ux.fin.year", world.Season), Loc.T("ux.fin.yearInfo")));
+            double max = Math.Max(1, Math.Max(income, expenses));
+            MoneyBar(body, 0.68f, 1, Loc.T("ux.fin.income"), income, income / max, Theme.Good);
+            MoneyBar(body, 0.36f, 0.68f, Loc.T("ux.fin.expenses"), -expenses, expenses / max, Theme.Steel);
+            ScreenKit.At(body, 0, 0, 0.5f, 0.32f, Theme.Caps(Loc.T("ux.fin.result")), Theme.TextCaption, TextAnchor.MiddleLeft, Theme.TextDim, FontStyle.Bold);
+            ScreenKit.At(body, 0.5f, 0, 1, 0.32f, "<b>" + (result >= 0 ? "+" : "") + MathX.FormatMoney(result) + "</b>", Theme.TextTitle, TextAnchor.MiddleRight,
+                result >= 0 ? Theme.Good : Theme.Bad, FontStyle.Italic);
+        }
+
+        /// <summary>Caption, money on the right and a bar under them.</summary>
+        private static void MoneyBar(RectTransform parent, float y0, float y1, string caption, double value, double fraction, Color color)
+        {
+            var row = UiFactory.Rect("MoneyBar", parent);
+            UiFactory.Place(row, 0, y0, 1, y1);
+            ScreenKit.At(row, 0, 0.4f, 0.5f, 1, Theme.Caps(caption), Theme.TextCaption, TextAnchor.MiddleLeft, Color.Lerp(Theme.TextDim, Color.white, 0.25f), FontStyle.Bold);
+            ScreenKit.At(row, 0.5f, 0.4f, 1, 1, "<b>" + MathX.FormatMoney(value) + "</b>", Theme.TextBody, TextAnchor.MiddleRight, Theme.Text);
+            var bar = UiFactory.Rect("Bar", row);
+            UiFactory.Place(bar, 0, 0.06f, 1, 0.36f);
+            Ui.Gauge(bar, fraction, color);
         }
 
         // ------------------------------------------------------------------ budget
 
-        private void Budget(RectTransform col, WorldState world, Team team, Organisation org, CashflowForecast fc, double spent, double left, double used)
+        private void Budget(RectTransform area, WorldState world, Team team, Organisation org, CashflowForecast fc)
         {
-            var info = new List<string>();
-            if (org != null) info.Add(Loc.T("finance.organisation", org.Name) + " · " + Loc.T("owner." + org.Owner));
-            if (org != null && org.TeamIds.Count > 1)
-            {
-                var names = new List<string>();
-                foreach (var id in org.TeamIds) { var t = world.GetTeam(id); if (t != null) names.Add(t.Name); }
-                info.Add(Loc.T("finance.teams") + ": " + string.Join(", ", names.ToArray()));
-            }
-            if (fc != null && fc.MinConfirmed < 0) info.Add(Loc.T("finance.cashWarning", MathX.FormatMoney(fc.MinConfirmed)));
-            info.Add(Loc.T("finance.overBudgetHint"));
-            var body = Ui.Tile(col, Loc.T("ux.fin.budget"), null,
-                MathX.FormatMoney(spent) + Theme.Dim(" / " + MathX.FormatMoney(team.SeasonBudget)), 0, null,
-                ScreenKit.Info(Loc.T("ux.fin.budget"), info.ToArray()));
-            var list = ScreenKit.List(body, 8);
-            Ui.Gauge(list, Math.Min(1, used), used > 1 ? Theme.Bad : used > 0.85 ? Theme.Warning : Theme.Good);
+            double spent = Accounts.SpentThisSeason(world, team);
+            double left = team.SeasonBudget - spent;
+            double used = team.SeasonBudget > 0 ? spent / team.SeasonBudget : 0;
+            var body = Ui.Tile(area, Loc.T("ux.fin.budgetTitle"), null, null, 0, null,
+                ScreenKit.Info(Loc.T("ux.fin.budgetTitle"), Loc.T("ux.fin.budgetInfo"), Loc.T("finance.overBudgetHint")));
 
-            // What can be done about the budget: an owner moves money into it; a hired manager asks the board or cuts costs.
+            // Left: spent of budget, one bar, what is left.
+            var info = UiFactory.Rect("Spent", body);
+            UiFactory.Place(info, 0, 0, 0.52f, 1);
+            ScreenKit.At(info, 0, 0.62f, 1, 0.92f, Loc.T("ux.fin.spentOf", "<b>" + MathX.FormatMoney(spent) + "</b>", "<b>" + MathX.FormatMoney(team.SeasonBudget) + "</b>"),
+                Theme.TextTitle, TextAnchor.MiddleLeft, Theme.Text);
+            var bar = UiFactory.Rect("Bar", info);
+            UiFactory.Place(bar, 0, 0.42f, 1, 0.56f);
+            Ui.Gauge(bar, Math.Min(1, used), used > 1 ? Theme.Bad : used > 0.85 ? Theme.Warning : Theme.Good);
+            ScreenKit.At(info, 0, 0.12f, 1, 0.38f, left >= 0 ? Loc.T("ux.fin.leftOk", MathX.FormatMoney(left)) : Theme.BadText(Loc.T("ux.fin.leftOver", MathX.FormatMoney(-left))),
+                Theme.TextBody, TextAnchor.MiddleLeft, Theme.TextDim, FontStyle.Bold);
+
+            // Right: what can be done (an owner moves money into it; a hired manager asks the board or cuts costs),
+            // and the link to every detail.
+            var actions = UiFactory.Rect("Actions", body);
+            UiFactory.Place(actions, 0.56f, 0, 1, 1);
+            var list = ScreenKit.List(ScreenKit.Between(actions, 0, Ui.Grid.Hit + 8), 8);
             if (FinanceService.PlayerSetsBudget(world, team))
             {
                 double cover = Math.Max(team.SeasonBudget, spent + (fc != null ? Math.Max(0, fc.Costs) / Math.Max(1, org != null ? org.TeamIds.Count : 1) : 0));
@@ -95,84 +166,88 @@ namespace MotoManager.App.UI.Screens
             {
                 var job = world.PlayerManager != null ? world.PlayerManager.Job : null;
                 bool asked = job != null && job.BudgetRequestSeason == world.Season;
-                var row = UiFactory.Row(list, Ui.Grid.Button);
-                var a = UiFactory.Rect("Ask", row);
-                UiFactory.Place(a, 0, 0, 0.5f, 1);
-                a.offsetMax = new Vector2(-Ui.Grid.Gap / 2, 0);
-                Ui.Secondary(a, Loc.T(asked ? "finance.askedBoard" : "finance.askBoard"), () =>
+                Ui.Secondary(list, Loc.T(asked ? "finance.askedBoard" : "finance.askBoard"), () =>
                 {
                     var res = FinanceService.RequestBudget(world, team);
                     bool ok = res.Outcome == BudgetRequestOutcome.Granted || res.Outcome == BudgetRequestOutcome.Partial;
                     Shell.Toast(Loc.T("finance.board." + res.Outcome, MathX.FormatMoney(res.Granted)), ok);
                     Shell.Refresh();
                 });
-                var c = UiFactory.Rect("Cut", row);
-                UiFactory.Place(c, 0.5f, 0, 1, 1);
-                c.offsetMin = new Vector2(Ui.Grid.Gap / 2, 0);
-                Ui.Ghost(c, Loc.T("finance.cutCosts"), () => Shell.Show<StaffPage>());
+                Ui.Secondary(list, Loc.T("finance.cutCosts"), () => Shell.Show<StaffPage>());
             }
-            if (left < 0) Ui.Alert(list, Loc.T("ux.fin.over"), true);
-            if (fc != null && fc.MinConfirmed < 0) Ui.Alert(list, Loc.T("ux.fin.cashLow", MathX.FormatMoney(fc.MinConfirmed)));
+            Ui.Ghost(ScreenKit.Bottom(actions, 0, Ui.Grid.Hit), Loc.T("ux.fin.detail"), () => DetailSheet(0));
         }
 
-        // ------------------------------------------------------------------ detail
+        // ------------------------------------------------------------------ detail sheet
 
-        private void Detail(RectTransform col, WorldState world, Team team, CashflowForecast fc)
+        /// <summary>Forecast, movements and the season plan, plus the organisation (reopened on view change).</summary>
+        private void DetailSheet(int view)
         {
+            var world = Game.World;
+            var team = world.PlayerTeam;
+            if (team == null) return;
+            var org = world.OrganisationOf(team);
+            CashflowForecast fc = org != null ? CashflowForecast.ForOrganisation(world, Game.Db, org) : null;
             string[] views = { Loc.T("finance.view.forecast"), Loc.T("finance.view.actual"), Loc.T("finance.view.plan") };
-            if (_view < 0 || _view > 2) _view = 0;
-            string note = _view == 0 ? Loc.T("forecast.note") : _view == 2 ? Loc.T("finance.seasonPlan") : Loc.T("finance.actual", world.Season);
-            var body = Ui.Tile(col, Loc.T("finance.detail"), null, null, 0, null, ScreenKit.Info(views[_view], note));
-            Ui.Segmented(ScreenKit.List(ScreenKit.Top(body, 0, 56)), views, _view, i => { _view = i; Shell.Refresh(); });
-            var holder = ScreenKit.Between(body, 64, 0);
-            var detail = UiFactory.ScrollList("Detail", holder, 8);
-            UiFactory.Stretch((RectTransform)detail.parent.parent);
-            var layout = detail.GetComponent<VerticalLayoutGroup>();
-            layout.padding = new RectOffset(0, 0, 4, 8);
-            layout.spacing = 4;
-
-            if (_view == 0)
+            Ui.Sheet(Loc.T("ux.fin.detailTitle"), list =>
             {
-                if (fc == null)
+                Ui.Segmented(list, views, view, i => DetailSheet(i));
+                if (view == 0)
                 {
-                    Ui.Empty(detail, null, "-");
-                    return;
+                    if (fc == null)
+                    {
+                        Ui.Empty(list, null, "-");
+                        return;
+                    }
+                    Ui.Line(list, Loc.T("forecast.confirmedIncome"), MathX.FormatMoney(fc.ConfirmedIncome));
+                    Ui.Line(list, Loc.T("forecast.probableIncome"), MathX.FormatMoney(fc.ProbableIncome));
+                    Ui.Line(list, Loc.T("forecast.costs"), "-" + MathX.FormatMoney(fc.Costs));
+                    Ui.Line(list, Loc.T("forecast.lowest"), Theme.Money(fc.MinConfirmed));
+                    Ui.Line(list, Loc.T("forecast.endConfirmed"), Theme.Money(fc.EndConfirmed));
+                    Ui.Line(list, Loc.T("forecast.endProbable"), Theme.Money(fc.EndProbable), true);
+                    UiFactory.Paragraph(list, Theme.Dim(Loc.T("forecast.note")), Theme.TextCaption);
                 }
-                Ui.Line(detail, Loc.T("forecast.confirmedIncome"), MathX.FormatMoney(fc.ConfirmedIncome));
-                Ui.Line(detail, Loc.T("forecast.probableIncome"), MathX.FormatMoney(fc.ProbableIncome));
-                Ui.Line(detail, Loc.T("forecast.costs"), "-" + MathX.FormatMoney(fc.Costs));
-                Ui.Line(detail, Loc.T("forecast.lowest"), Theme.Money(fc.MinConfirmed));
-                Ui.Line(detail, Loc.T("forecast.endConfirmed"), Theme.Money(fc.EndConfirmed));
-                Ui.Line(detail, Loc.T("forecast.endProbable"), Theme.Money(fc.EndProbable), true);
-            }
-            else if (_view == 1)
-            {
-                var totals = Accounts.TotalsFor(world, team.OrganisationId, world.Season, team.Id);
-                var kinds = new List<LedgerKind>(totals.Keys);
-                kinds.Sort();
-                double sum = 0;
-                foreach (var k in kinds)
+                else if (view == 1)
                 {
-                    double v = totals[k].Cash;
-                    sum += v;
-                    Ui.Line(detail, Loc.T("ledger." + k), Theme.Money(v));
+                    var totals = Accounts.TotalsFor(world, team.OrganisationId, world.Season, team.Id);
+                    var kinds = new List<LedgerKind>(totals.Keys);
+                    kinds.Sort();
+                    double sum = 0;
+                    foreach (var k in kinds)
+                    {
+                        double v = totals[k].Cash;
+                        sum += v;
+                        Ui.Line(list, Loc.T("ledger." + k), Theme.Money(v));
+                    }
+                    if (kinds.Count == 0) Ui.Empty(list, null, Loc.T("finance.noMovements"));
+                    else Ui.Line(list, Loc.T("finance.net"), Theme.Money(sum), true);
                 }
-                if (kinds.Count == 0) Ui.Empty(detail, null, Loc.T("finance.noMovements"));
-                else Ui.Line(detail, Loc.T("finance.net"), Theme.Money(sum), true);
-            }
-            else
-            {
-                var f = FinanceService.SeasonForecast(world, Game.Db, team, Game.RoundsInSeason(team.CategoryId));
-                Ui.Line(detail, Loc.T("finance.plan.sponsors"), MathX.FormatMoney(f.SponsorIncome));
-                Ui.Line(detail, Loc.T("finance.plan.participation"), MathX.FormatMoney(f.ParticipationIncome));
-                Ui.Line(detail, Loc.T("finance.plan.riders"), "-" + MathX.FormatMoney(f.RiderSalaries));
-                Ui.Line(detail, Loc.T("finance.plan.staff"), "-" + MathX.FormatMoney(f.StaffSalaries));
-                Ui.Line(detail, Loc.T("finance.plan.facilities"), "-" + MathX.FormatMoney(f.FacilityUpkeep));
-                Ui.Line(detail, Loc.T("finance.plan.bikes"), "-" + MathX.FormatMoney(f.BikeLease));
-                Ui.Line(detail, Loc.T("finance.plan.licences"), "-" + MathX.FormatMoney(f.Licences));
-                Ui.Line(detail, Loc.T("finance.plan.travel"), "-" + MathX.FormatMoney(f.Travel));
-                Ui.Line(detail, Loc.T("finance.plan.balance"), Theme.Money(f.Balance), true);
-            }
+                else
+                {
+                    var f = FinanceService.SeasonForecast(world, Game.Db, team, Game.RoundsInSeason(team.CategoryId));
+                    Ui.Line(list, Loc.T("finance.plan.sponsors"), MathX.FormatMoney(f.SponsorIncome));
+                    Ui.Line(list, Loc.T("finance.plan.participation"), MathX.FormatMoney(f.ParticipationIncome));
+                    Ui.Line(list, Loc.T("finance.plan.riders"), "-" + MathX.FormatMoney(f.RiderSalaries));
+                    Ui.Line(list, Loc.T("finance.plan.staff"), "-" + MathX.FormatMoney(f.StaffSalaries));
+                    Ui.Line(list, Loc.T("finance.plan.facilities"), "-" + MathX.FormatMoney(f.FacilityUpkeep));
+                    Ui.Line(list, Loc.T("finance.plan.bikes"), "-" + MathX.FormatMoney(f.BikeLease));
+                    Ui.Line(list, Loc.T("finance.plan.licences"), "-" + MathX.FormatMoney(f.Licences));
+                    Ui.Line(list, Loc.T("finance.plan.travel"), "-" + MathX.FormatMoney(f.Travel));
+                    Ui.Line(list, Loc.T("finance.plan.balance"), Theme.Money(f.Balance), true);
+                    UiFactory.Paragraph(list, Theme.Dim(Loc.T("finance.seasonPlan")), Theme.TextCaption);
+                }
+                if (org != null)
+                {
+                    Ui.Section(list, Loc.T("finance.organisation", org.Name));
+                    Ui.Line(list, Loc.T("finance.owner"), Loc.T("owner." + org.Owner));
+                    if (org.TeamIds.Count > 1)
+                    {
+                        var names = new List<string>();
+                        foreach (var id in org.TeamIds) { var t = world.GetTeam(id); if (t != null) names.Add(t.Name); }
+                        Ui.Line(list, Loc.T("finance.teams"), string.Join(", ", names.ToArray()));
+                    }
+                }
+            }, null, null, 0.7f);
         }
     }
 
