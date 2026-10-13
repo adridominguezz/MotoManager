@@ -15,7 +15,7 @@
 - Canvas: `UiScale` gives ~1689×760 units on a 20:9 phone; after `SafeArea` the usable rect is **≈1600×730**. All numbers below are canvas units in that rect.
 - Every screen must work **without scrolling** for its primary state (overview pages). Scroll lists are allowed only for genuinely long data (standings, market, calendar, tables in detail views, sheets).
 - **Preserve every action.** Each screen section lists "Actions that must remain reachable". If an action moves, it moves to a sheet, a "⋯" menu, or a detail view — never removed.
-- Unicode symbol glyphs (`ⓘ ☂ ☁ ☀ ▼ ► ◄ ●`) must be replaced by `UiIcons` sprites (the device font may lack them).
+- Unicode symbol glyphs (`ⓘ ☂ ☁ ☀ ▼ ► ◄ ●`) must be replaced (the device font may lack them). **No new icons are added** (user decision): use an existing `UiIcons` sprite where one fits (chevrons = `UiIcons.Chevron(parent, color, degrees)`, the Back pictogram rotated), otherwise plain ASCII text from `Glyph` (`Glyph.Info` "i", `Glyph.More` "...", `Glyph.Close` "X", `Glyph.Plus`/`Minus`, `Glyph.Warning` "!") or words (weather: "SOL", "NUBES", "LLUVIA").
 - Code style: match the existing code (C# 7.3-safe, no new packages, static helpers, anchor-based layouts).
 
 ---
@@ -121,9 +121,9 @@ Remove decorative noise that competes with data: diagonal **hatch patterns** in 
 
 Min **56×56** hit area for any tappable; buttons 64; primary 72; list rows 64; tabs 56; rail cells ≥ 80 high. `UiScale.Touch()` stays (×1.2) but callers pass the base values above.
 
-### 1.12 Icons (add to `UiIcons`)
+### 1.12 Icons — no new icons
 
-Add: `Info`, `Close`, `Chevron`, `More` (⋯), `Lock`, `Inbox`, `News`, `Settings`, `Camera`, `Pause`, `Play`, `Skip`, `Sun`, `Cloud`, `Rain`, `Tyre`, `Gauge` (performance), `Wrench` (reliability), `Plus`, `Minus`, `Check`, `Warning`. Same drawing approach as the existing pictograms (`Inside(name,u,v)`).
+The user decided to keep only the existing pictograms (`Home, Team, Person, Bike, Finance, Market, Trophy, Career, Menu, Back, Star, Sponsor, Flag, Development` + the PNGs in `Resources/Icons`). Every component that takes an `icon` string draws it as a pictogram when `UiIcons.Known(icon)` is true and **as bold text otherwise**, so pass `Glyph.*` constants or short words where the original plan named Info/Close/More/Lock/Inbox/News/Settings/Camera/Pause/Play/Skip/Sun/Cloud/Rain/Tyre/Gauge/Wrench/Plus/Minus/Check/Warning. Chevrons (rows, tiles, pickers, links) are the Back pictogram rotated: `UiIcons.Chevron(parent, color, 180)` right, `90` down. The shell's inbox and news buttons are word buttons ("AVISOS", "NOTICIAS").
 
 ---
 
@@ -134,61 +134,87 @@ All in `public static class Ui` (Components.cs) unless noted. "area" = a RectTra
 ```csharp
 // ---- Theme additions (UiFactory.cs, class Theme)
 public const int TextDisplay = 56, TextKey = 44, TextTitle = 32, TextHeader = 24, TextBody = 24, TextCaption = 20, TextMin = 18;
+public static readonly Color Ink;           // #0C0D10, text on light fills
 public static readonly Color Tile;          // Lerp(Card, PanelLight, .28)
 public static readonly Color HeaderFill;    // new Color(0,0,0,.38f)
-public static readonly Color Perf, Rel;     // moved from BikeCards
+public static readonly Color Perf, Rel;     // moved from BikeCards (BikeCards.PerfColor/RelColor alias them)
 public static Color OnAccent { get; }       // recomputed in SetTeamColors/SetAccent
-public static string Signed(double v, int decimals = 0);   // "+4" green / "−0,5" red rich text
+public static Color OnColor(Color fill);    // Ink if luminance > .55 else white (any fill)
+public static string Signed(double v, int decimals = 0);   // "+4" green / "−0,5" red rich text, "0" dim
 public static string Pos(int p);                            // "P3" or "-"
+// UiFactory.Label floors every font size at 18 (Theme.TextMin); best-fit minimums must still be set >= 18 by callers (use Ui.Fit).
+
+// ---- Text symbols and chevrons (UiFactory.cs) — no new icons
+public static class Glyph { Info = "i", Close = "X", More = "...", Plus = "+", Minus = "-", Warning = "!", Check = "OK", Chevron = ">", Back = "<", Down = "v"; }
+public static bool UiIcons.Known(string name);                                  // has a pictogram; otherwise components draw the string as text
+public static Image UiIcons.Chevron(Transform parent, Color color, float degrees = 180); // Back pictogram rotated (180 right, 90 down)
 
 // ---- Layout (Components.cs)
-public static class Grid { public const float Gutter = 16, Gap = 12, Header = 48, Row = 64, Button = 64, Cta = 72, Hit = 56; }
+public static class Ui.Grid { public const float Gutter = 16, Gap = 12, Header = 48, Row = 64, Button = 64, Cta = 72, Hit = 56; }   // nested in Ui
 public static RectTransform Area(RectTransform parent, float x0, float y0, float x1, float y1);   // anchors + Gap/2 inset
-public static RectTransform[] Columns12(RectTransform parent, params int[] spans);              // horizontal split by 12-col spans, Gap between
-public static RectTransform[] Rows(RectTransform parent, params float[] shares);                // vertical split, Gap between
+public static RectTransform[] Columns12(RectTransform parent, params int[] spans);              // spans of 12 (sum < 12 leaves the right empty), Gap between
+public static RectTransform[] Rows(RectTransform parent, params float[] shares);                // vertical split top->bottom by shares, Gap between
+public static Text Fit(Text t, int max);                                                        // best fit 18..max
+public static Text Label(Transform parent, string text, int size, TextAnchor align, Color? color = null, FontStyle style = Normal); // rich, best fit >= 18; caller places
 
 // ---- Tiles & headers
 public static RectTransform HeaderStrip(Transform parent, string title, string right = null, Action onInfo = null,
-    Action onBack = null, Color? fill = null, int badge = 0, Color? badgeColor = null, bool chevron = false);   // 48 high, top-anchored, returns strip
+    Action onBack = null, Color? fill = null, int badge = 0, Color? badgeColor = null, bool chevron = false);   // 48 high, top-anchored, returns strip (an Image); children named Back/Tag/Title/Right/Badge/Chevron/Info
+public static Image Badge(Transform parent, int count, Color color);                          // rounded count, anchored right-middle
 public static RectTransform Tile(RectTransform area, string title, Action onTap = null, string right = null,
-    int badge = 0, Color? badgeColor = null, Action onInfo = null, bool dim = false, Color? edge = null, Color? headerFill = null); // returns body
+    int badge = 0, Color? badgeColor = null, Action onInfo = null, bool dim = false, Color? edge = null, Color? headerFill = null); // fills area; returns body padded 16 sides / 12 top+bottom
 public static RectTransform StatTile(RectTransform area, string title, string value, string status = null,
-    Action onTap = null, Color? valueColor = null, string icon = null, int badge = 0, Action onInfo = null, Color? edge = null);   // 1 number + 1 status
-public static RectTransform Card(Transform list, string title = null, string right = null, Action onInfo = null, Action onBack = null); // restyled (no hatch), padding 16
+    Action onTap = null, Color? valueColor = null, string icon = null, int badge = 0, Action onInfo = null, Color? edge = null);   // 1 number (TextKey, Timing) + 1 CAPS status
+public static RectTransform Card(Transform list, string title = null, string right = null, Action onInfo = null, Action onBack = null); // no hatch; returns body padded 16 (old 2nd arg "subtitle" now shows as right text)
 public static RectTransform Section(Transform list, string title, string right = null, Action onInfo = null);  // header strip alone in a list
 
-// ---- Buttons
-public static Button PrimaryCTA(RectTransform area, string label, Action onTap, string sub = null, bool enabled = true);   // disabled: sub shows the blocker
+// ---- Buttons  ("area" that is actually a layout list -> the button adds its own row)
+public static Button PrimaryCTA(RectTransform area, string label, Action onTap, string sub = null, bool enabled = true);   // disabled: sub shows the blocker, no listener
 public static Button PrimaryCTA(Transform list, string label, Action onTap, string sub = null, bool enabled = true);      // row of Grid.Cta
 public static Button Secondary(RectTransform area, string label, Action onTap, bool enabled = true);
-public static Button Ghost(RectTransform area, string label, Action onTap);                 // text + chevron
-public static Button Danger(RectTransform area, string label, string confirmLabel, string armKey, Action onConfirm, Action refresh); // two-tap, static armed key
-public static Button IconButton(Transform parent, string icon, Action onTap, Color? tint = null);   // 56 hit; caller positions
+public static Button SecondaryAccent(RectTransform area, string label, Action onTap, bool enabled = true); // dark fill, accent outline + text (shell race button, "FICHAR PILOTOS", hire buttons)
+public static Button Ghost(RectTransform area, string label, Action onTap);                 // dim text + chevron at the right end
+public static Button Danger(RectTransform area, string label, string confirmLabel, string armKey, Action onConfirm, Action refresh); // two-tap; restyles itself in place when armed (refresh optional)
+public static string ArmedKey { get; }  public static void Disarm();                         // shell disarms on page/tab change, CloseSheet disarms
+public static Button IconButton(Transform parent, string icon, Action onTap, Color? tint = null);   // 56 hit, 40 visual; icon = UiIcons name or text; centred, caller positions
 
 // ---- Info & sheets
-public static Button InfoButton(Transform headerStrip, string title, params string[] paragraphs);   // places itself at the strip's right end
-public static RectTransform Sheet(string title, Action<Transform> build, UiAct primary = null, UiAct secondary = null, float width = 0.62f);
+public static Button InfoButton(Transform headerStrip, string title, params string[] paragraphs);   // round "i" at the strip's right end; shifts Right/Badge/Chevron left
+public static RectTransform Sheet(string title, Action<Transform> build, UiAct? primary = null, UiAct? secondary = null, float width = 0.62f); // returns the body list; buttons close the sheet then run
 public static void CloseSheet();
-public static Transform SheetHost;   // set by ManagementShell.Build and by each race-flow panel root; fallback = top-most Canvas
-// Sheet: shade α.6 (tap closes), centred panel width*1600, height ≤ 85% (content-sized, scrolls), HeaderStrip with Close icon,
-// body = vertical scroll list (padding 16), optional buttons bottom-right (primary right). Only one sheet at a time.
+public static bool SheetOpen { get; }
+public static Transform SheetHost;   // set by ManagementShell.Build and by each race-flow panel root; fallback = top-most root Canvas ("Safe" child if any)
+// Sheet: shade a.6 (tap closes), centred panel width x host width, height = content (<= 85%, then scrolls), HeaderStrip with an "X" close button,
+// body = vertical scroll list (padding 16, spacing 8), optional buttons bottom-right (primary right). Only one sheet at a time.
+// NOTE: sheets live on SheetHost, not in the page: Shell.Refresh() does NOT rebuild an open sheet. Close it (or reopen it) after acting.
+// UiAct is a struct, hence UiAct? (pass UiFactory.Primary(...)/Act(...) or null).
+// Secondary/Ghost/Danger take a RectTransform: inside a sheet builder pass (RectTransform)list; they add their own row.
 
 // ---- Data atoms
-public static Image Pill(Transform parent, string text, Color fill, Color? textColor = null);       // 32 high, CAPS 20 Bold, auto width (ContentSizeFitter)
-public static Image RatingBadge(Transform parent, double value, string tag, float side);             // replaces TeamCards.RatingSquare & BikeCards.Square
-public static void Segmented(Transform list, IList<string> labels, int selected, Action<int> onSelect, float height = 56); // = restyled Chips, max 5
-public static Button Picker(RectTransform area, string caption, IList<string> options, int selected, Action<int> onSelect); // "MOTO2 ▾" → sheet list
-public static void Stepper(Transform list, string label, string value, Action minus, Action plus);   // [−] VALUE [+], 64 high (replaces MobileParts.Stepper with 4 buttons)
-public static RectTransform ListRow(Transform list, float[] widths, string[] cells, int index, bool mine, Action onTap = null, float height = 64);
-public static RectTransform PersonRow(Transform list, double level, string name, string detail, string figure, Action onTap = null, UiAct action = null); // level badge | name/detail | figure | 1 secondary button
-public static void Empty(Transform list, string icon, string text, UiAct action = null);
-public static void Alert(Transform list, string text, bool bad = false);   // visible single-line warning with Warning/Bad edge
+public static Image Pill(Transform parent, string text, Color fill, Color? textColor = null);       // 32 high, CAPS 20 Bold, auto width (layout element in a layout row; ContentSizeFitter otherwise)
+public static Image RatingBadge(Transform parent, double value, string tag, float side);             // centred square, tag shown when side >= 72; replaces TeamCards.RatingSquare & BikeCards.Square
+public static void Segmented(Transform list, IList<string> labels, int selected, Action<int> onSelect, float height = 56); // selected = PanelLight + accent underline (never filled accent); max 5 (warns)
+public static Button Picker(RectTransform area, string caption, IList<string> options, int selected, Action<int> onSelect); // "MOTO2 v" pill -> sheet list titled caption
+public static void Stepper(Transform list, string label, string value, Action minus, Action plus);   // caption | [-] VALUE [+], 64 high
+public static RectTransform ListRow(Transform list, float[] widths, string[] cells, int index, bool mine, Action onTap = null, float height = 64); // 1 column = no position block
+public static RectTransform ListRow(Transform list, float[] widths, string[] cells, int index, bool mine, float height); // former overload
+public static RectTransform PersonRow(Transform list, double level, string name, string detail, string figure, Action onTap = null, UiAct? action = null); // 72 high: badge | name/detail | figure | 1 secondary (accent outline if act.Primary)
+public static void Empty(Transform list, string icon, string text, UiAct? action = null);           // icon may be null / text; action.Primary -> PrimaryCTA else Secondary
+public static void Alert(Transform list, string text, bool bad = false);   // visible single-line warning with Warning/Bad edge and "!" block
 public static void Gauge(RectTransform area, double fraction, Color color);  // moved from BikeCards.Gauge
 public static void Pips(RectTransform area, int level, int max);            // moved from BikeCards.Pips
 public static RectTransform Segments(Transform parent, int total, int filled, Color on); // moved from TeamCards
+
+// ---- Shell (ManagementShell.cs)
+public virtual bool ScreenBase.HiddenTab => false;                  // excluded from tabs; Show<T>() still works
+public System.Func<List<KeyValuePair<string, System.Action>>> InboxSource;   // set by HubScreen; badge = count; rows CloseSheet() then run
+public List<KeyValuePair<string, System.Action>> InboxItems();  public void ShowInbox();
+public IEnumerable<NewsItem> OwnNews();  public void ShowNews();     // news sheet (§3.21), up to 12 rows
+public void OpenMenu();                                              // menu sheet
+public const float TopBarHeight = 72, RailUnits = 128;
 ```
 
-Existing APIs kept: `Kpis/Kpi` (restyled as StatTile-look, **assert ≤ 4**), `Bar`, `Line`, `Item` (min height 64, actions rendered Secondary), `Band` (no hatch), `ListCaptions` (captions ≥ 20), `Stack`, `Columns`, `Expander` (allowed only for user data lists, not explanations). `Ui.Note` keeps current behaviour but is marked `[Obsolete("Use InfoButton/Alert/Empty")]`; packages 2–5 must replace every call.
+Existing APIs kept: `Kpis/Kpi` (restyled as StatTile-look, **assert ≤ 4**), `Bar`, `Line`, `Item` (min height 64, actions rendered Secondary), `Band` (no hatch), `ListCaptions` (captions ≥ 20), `Stack`, `Columns`, `Expander` (allowed only for user data lists, not explanations). `Ui.Note` keeps current behaviour but is marked `[Obsolete("Use InfoButton/Alert/Empty")]`; packages 2–5 must replace every call. `Kpis` row is 104 high (36 caption strip + TextKey value in Timing); `Line` rows are 44 high at 24; `Chips` forwards to `Segmented`.
 
 `TeamCards`, `BikeCards`, `MobileParts`: keep their signatures but make them **thin wrappers** over the new `Ui.*` (same tokens, same look). New code must call `Ui.*` directly.
 
@@ -637,7 +663,7 @@ Order: **WP1 first** (it defines the API). WP2–WP5 may start immediately again
 
 - [ ] Theme tokens (§1.2, §1.4): `TextDisplay..TextMin`, `Tile`, `HeaderFill`, `Perf`, `Rel`, `OnAccent` (luminance rule), `Signed`, `Pos`.
 - [ ] Raise every `resizeTextMinSize` in owned files to ≥ 18; remove hatch patterns from `Ui.Card`, `Ui.Band`, `TeamCards.Strip`; card padding 16.
-- [ ] `UiIcons`: add the 22 icons of §1.12.
+- [x] ~~`UiIcons`: add the 22 icons of §1.12~~ → no new icons (user decision): `Glyph` text symbols + `UiIcons.Known` / `UiIcons.Chevron` (see §1.12).
 - [ ] All components of §2 with the exact signatures; `Ui.Kpis` asserts ≤ 4 and gets StatTile styling; `Ui.Item` min height 64 + Secondary action style; `ListRow(onTap)` overload with chevron; `Chips` → forwards to `Segmented`.
 - [ ] `Ui.Sheet` + `SheetHost` + `CloseSheet`; `InfoButton`; `Picker`; `Danger` two-tap with static armed key cleared on sheet close/page change.
 - [ ] `Ui.Note` → `[Obsolete]`, behaviour unchanged.

@@ -1,0 +1,22 @@
+{
+  "ux.rail.home": "Home",
+  "ux.rail.team": "Team",
+  "ux.rail.bike": "Bike",
+  "ux.rail.finance": "Finance",
+  "ux.rail.market": "Market",
+  "ux.rail.competition": "Season",
+  "ux.rail.career": "My career",
+  "ux.shell.inboxShort": "Inbox",
+  "ux.shell.newsShort": "News",
+  "ux.inbox.title": "Decisions waiting",
+  "ux.menu.textSize": "Text size",
+  "ux.menu.exit": "Exit to menu",
+  "ux.menu.exitConfirm": "Exit? Tap again",
+  "ux.common.on": "On",
+  "ux.common.off": "Off",
+  "ux.common.more": "More",
+  "ux.common.close": "Close",
+  "ux.common.back": "Back",
+  "ux.common.info": "Information",
+  "ux.common.confirm": "Sure? Tap again"
+}

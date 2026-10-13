@@ -104,7 +104,7 @@ namespace MotoManager.App.UI
                 tick.rectTransform.offsetMin = new Vector2(-1, 0);
                 tick.rectTransform.offsetMax = new Vector2(1, 0);
             }
-            _task = UiFactory.Label("Task", bar.transform, "", Theme.FontSmall - 4, TextAnchor.MiddleCenter, new Color(1, 1, 1, 0.6f));
+            _task = UiFactory.Label("Task", bar.transform, "", Theme.TextMin, TextAnchor.MiddleCenter, new Color(1, 1, 1, 0.6f));
             UiFactory.Place(_task.rectTransform, 0.05f, 0.02f, 0.95f, 0.26f);
         }
 

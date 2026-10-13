@@ -7,7 +7,7 @@ using UnityEngine;
 namespace MotoManager.App.UI
 {
     /// <summary>
-    /// Interface texts in Spanish and English (Resources/Localization/{es,en}.json, key -> text).
+    /// Interface texts in Spanish and English (Resources/Localization/{es,en}.json plus ux_{es,en}/*.json, key -> text).
     /// The language follows the device by default and can be changed in Settings; numbers are formatted
     /// with the language's conventions (decimal comma in Spanish).
     /// </summary>
@@ -73,11 +73,33 @@ namespace MotoManager.App.UI
             if (LanguageChanged != null) LanguageChanged();
         }
 
+        /// <summary>
+        /// The texts of a language: Localization/{lang}.json, then every file under Localization/ux_{lang}/ merged on
+        /// top (each work package of the UX redesign keeps its new keys in its own file, e.g. ux_es/wp1.json).
+        /// </summary>
         private static Dictionary<string, string> Load(string language)
         {
+            var dict = new Dictionary<string, string>();
             var asset = Resources.Load<TextAsset>("Localization/" + language);
-            if (asset == null) return new Dictionary<string, string>();
-            return JsonConvert.DeserializeObject<Dictionary<string, string>>(asset.text) ?? new Dictionary<string, string>();
+            if (asset != null) Merge(dict, asset);
+            TextAsset[] extra = null;
+            try { extra = Resources.LoadAll<TextAsset>("Localization/ux_" + language); } catch (Exception) { }
+            if (extra != null)
+            {
+                // A stable order (by name) so a key defined twice always resolves the same way.
+                Array.Sort(extra, (x, y) => string.CompareOrdinal(x.name, y.name));
+                foreach (var e in extra) Merge(dict, e);
+            }
+            return dict;
+        }
+
+        private static void Merge(Dictionary<string, string> into, TextAsset asset)
+        {
+            Dictionary<string, string> d = null;
+            try { d = JsonConvert.DeserializeObject<Dictionary<string, string>>(asset.text); }
+            catch (Exception e) { Debug.LogWarning("Localization file " + asset.name + " is not valid: " + e.Message); }
+            if (d == null) return;
+            foreach (var kv in d) into[kv.Key] = kv.Value;
         }
 
         /// <summary>Translated text for a key (falls back to English, then to the key itself).</summary>

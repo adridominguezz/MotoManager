@@ -1,0 +1,22 @@
+{
+  "ux.rail.home": "Inicio",
+  "ux.rail.team": "Equipo",
+  "ux.rail.bike": "Moto",
+  "ux.rail.finance": "Finanzas",
+  "ux.rail.market": "Mercado",
+  "ux.rail.competition": "Temporada",
+  "ux.rail.career": "Mi carrera",
+  "ux.shell.inboxShort": "Avisos",
+  "ux.shell.newsShort": "Noticias",
+  "ux.inbox.title": "Decisiones pendientes",
+  "ux.menu.textSize": "Tamaño del texto",
+  "ux.menu.exit": "Salir al menú",
+  "ux.menu.exitConfirm": "¿Salir? Toca otra vez",
+  "ux.common.on": "Sí",
+  "ux.common.off": "No",
+  "ux.common.more": "Más",
+  "ux.common.close": "Cerrar",
+  "ux.common.back": "Volver",
+  "ux.common.info": "Información",
+  "ux.common.confirm": "¿Seguro? Toca otra vez"
+}

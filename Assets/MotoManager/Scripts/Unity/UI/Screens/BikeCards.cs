@@ -9,19 +9,20 @@ namespace MotoManager.App.UI.Screens
     /// graphite tiles with a dark caps header strip and an accent tag, coloured rating squares, big figures, thick
     /// stat bars and large coloured buttons. Everything is anchored inside fixed-height rows of a scroll list, so a
     /// page fits one phone screen and only scrolls when the player opens something long.
+    /// Thin wrappers over the design system (<see cref="Ui"/>): new code calls Ui.* directly.
     /// </summary>
     internal static class BikeCards
     {
-        public const float Head = 46;
+        public const float Head = Ui.Grid.Header;
         /// <summary>Performance figures (green, like the reference game).</summary>
-        public static readonly Color PerfColor = new Color32(70, 200, 110, 255);
+        public static readonly Color PerfColor = Theme.Perf;
         /// <summary>Reliability figures (purple / magenta).</summary>
-        public static readonly Color RelColor = new Color32(196, 92, 226, 255);
+        public static readonly Color RelColor = Theme.Rel;
         /// <summary>The "build / start" call to action (blue).</summary>
         public static readonly Color StartColor = new Color32(36, 122, 226, 255);
         /// <summary>The quick "upgrade part" call to action (green).</summary>
         public static readonly Color UpgradeColor = new Color32(52, 168, 92, 255);
-        public static readonly Color Ink = new Color32(12, 13, 16, 255);
+        public static readonly Color Ink = Theme.Ink;
 
         public static string Hex(Color c)
         {
@@ -41,81 +42,27 @@ namespace MotoManager.App.UI.Screens
         public static RectTransform Tile(RectTransform parent, float x0, float y0, float x1, float y1, string title,
             Action onTap = null, string badge = null, Color? badgeColor = null, string right = null, bool accentHead = false, bool dim = false)
         {
-            Image bg;
-            Color body = Color.Lerp(Theme.Card, Theme.PanelLight, dim ? 0.1f : 0.28f);
-            if (onTap != null)
+            var area = UiFactory.Rect("TileArea", parent);
+            UiFactory.Place(area, x0, y0, x1, y1, Ui.Grid.Gap / 2);
+            var body = Ui.Tile(area, title, onTap, badge != null ? null : right, 0, null, null, dim, null, accentHead ? Theme.Accent : (Color?)null);
+            if (badge != null && title != null)
             {
-                var b = UiFactory.Button("Tile", parent, "", onTap, body, Theme.FontSmall);
-                bg = b.image;
-                var label = b.GetComponentInChildren<Text>();
-                if (label != null) label.gameObject.SetActive(false);
+                var head = body.parent.Find("Head");
+                if (head != null)
+                {
+                    var pill = Ui.Pill(head, badge, badgeColor ?? Theme.Bad);
+                    var prt = pill.rectTransform;
+                    prt.anchorMin = prt.anchorMax = new Vector2(1, 0.5f);
+                    prt.pivot = new Vector2(1, 0.5f);
+                    prt.anchoredPosition = new Vector2(onTap != null ? -40 : -8, 0);
+                    var t = head.Find("Title") as RectTransform;
+                    if (t != null) t.offsetMax = new Vector2(-170, 0);
+                }
             }
-            else
-            {
-                bg = UiFactory.Panel("Tile", parent, body);
-            }
-            bg.sprite = null;
-            UiFactory.Gradient(bg, 1.1f, 0.88f);
-            bg.gameObject.AddComponent<Outline>().effectColor = new Color(1, 1, 1, 0.06f);
-            UiFactory.Place(bg.rectTransform, x0, y0, x1, y1, 5);
-
-            var head = UiFactory.Decor("Head", bg.transform, accentHead ? Theme.Accent : new Color(0, 0, 0, 0.38f));
-            head.rectTransform.anchorMin = new Vector2(0, 1);
-            head.rectTransform.anchorMax = new Vector2(1, 1);
-            head.rectTransform.pivot = new Vector2(0.5f, 1);
-            head.rectTransform.offsetMin = new Vector2(0, -Head);
-            head.rectTransform.offsetMax = Vector2.zero;
-            if (accentHead)
-            {
-                UiFactory.Gradient(head, 1.12f, 0.86f);
-                var hatch = UiFactory.Pattern("Hatch", head.transform, UiFactory.StripesSprite, new Color(1, 1, 1, 0.1f), 18);
-                UiFactory.Place(hatch.rectTransform, 0.62f, 0, 1, 1);
-                UiFactory.Gradient(hatch, new Color(1, 1, 1, 0), Color.white, true);
-            }
-            var tag = UiFactory.Decor("Tag", head.transform, accentHead ? Color.white : dim ? (Color)Theme.Steel : Theme.Accent);
-            UiFactory.Slant(tag, 3.2f);
-            tag.rectTransform.anchorMin = new Vector2(0, 0.2f);
-            tag.rectTransform.anchorMax = new Vector2(0, 0.8f);
-            tag.rectTransform.offsetMin = new Vector2(10, 0);
-            tag.rectTransform.offsetMax = new Vector2(26, 0);
-
-            float rightSpace = badge != null ? 170 : right != null ? 260 : onTap != null ? 26 : 10;
-            var t = Text(head.transform, Theme.Caps(title), Theme.FontSmall + 2, TextAnchor.MiddleLeft, dim ? Theme.TextDim : Theme.Text, FontStyle.BoldAndItalic);
-            UiFactory.Stretch(t.rectTransform);
-            t.rectTransform.offsetMin = new Vector2(36, 0);
-            t.rectTransform.offsetMax = new Vector2(-rightSpace, 0);
-            if (right != null)
-            {
-                var r = Text(head.transform, right, Theme.FontSmall - 2, TextAnchor.MiddleRight, accentHead ? new Color(1, 1, 1, 0.85f) : Theme.TextDim, FontStyle.Italic);
-                UiFactory.Place(r.rectTransform, 1, 0, 1, 1);
-                r.rectTransform.offsetMin = new Vector2(-(rightSpace - 6), 0);
-                r.rectTransform.offsetMax = new Vector2(-12, 0);
-            }
-            if (badge != null)
-            {
-                var dot = UiFactory.Decor("Badge", head.transform, badgeColor ?? Theme.Bad);
-                UiFactory.Slant(dot, 2.4f);
-                dot.rectTransform.anchorMin = new Vector2(1, 0.14f);
-                dot.rectTransform.anchorMax = new Vector2(1, 0.86f);
-                dot.rectTransform.pivot = new Vector2(1, 0.5f);
-                dot.rectTransform.offsetMin = new Vector2(-160, 0);
-                dot.rectTransform.offsetMax = new Vector2(-8, 0);
-                var n = Text(dot.transform, Theme.Caps(badge), Theme.FontSmall - 2, TextAnchor.MiddleCenter, Ink, FontStyle.Bold);
-                UiFactory.Stretch(n.rectTransform);
-                n.rectTransform.offsetMin = new Vector2(10, 0);
-                n.rectTransform.offsetMax = new Vector2(-10, 0);
-            }
-            else if (onTap != null && right == null)
-            {
-                var arrow = Text(head.transform, "›", Theme.FontNormal, TextAnchor.MiddleRight, Theme.TextDim, FontStyle.Normal);
-                UiFactory.Stretch(arrow.rectTransform);
-                arrow.rectTransform.offsetMax = new Vector2(-10, 0);
-            }
-
-            var bodyRt = UiFactory.Rect("Body", bg.transform);
-            UiFactory.Stretch(bodyRt);
-            bodyRt.offsetMax = new Vector2(0, -Head);
-            return bodyRt;
+            // Callers lay out the whole body under the header themselves.
+            body.offsetMin = Vector2.zero;
+            body.offsetMax = new Vector2(0, title != null ? -Head : 0);
+            return body;
         }
 
         /// <summary>
@@ -129,8 +76,7 @@ namespace MotoManager.App.UI.Screens
             t.fontStyle = style;
             t.horizontalOverflow = HorizontalWrapMode.Wrap;
             t.resizeTextForBestFit = true;
-            t.resizeTextMinSize = Mathf.Min(size, 12);
-            t.resizeTextMaxSize = size;
+            Ui.Fit(t, size);
             return t;
         }
 
@@ -148,20 +94,10 @@ namespace MotoManager.App.UI.Screens
         /// <summary>A coloured square with a big dark number (rating, level) centred on (x, y) of its parent.</summary>
         public static Image Square(Transform parent, Vector2 anchor, Vector2 pivot, Vector2 pos, float side, string value, Color color, string caption = null)
         {
-            var sq = UiFactory.Decor("Square", parent, color);
-            UiFactory.Gradient(sq, 1.1f, 0.88f);
+            var sq = Ui.SquareCore(parent, value, caption, color, side);
             sq.rectTransform.anchorMin = sq.rectTransform.anchorMax = anchor;
             sq.rectTransform.pivot = pivot;
             sq.rectTransform.anchoredPosition = pos;
-            sq.rectTransform.sizeDelta = new Vector2(side, side);
-            int size = Mathf.RoundToInt(Mathf.Clamp(side * (caption != null ? 0.48f : 0.56f), 16, Theme.FontTitle));
-            var v = Text(sq.transform, value, size, TextAnchor.MiddleCenter, Ink, FontStyle.Bold);
-            UiFactory.Place(v.rectTransform, 0, caption != null ? 0.3f : 0, 1, 1);
-            if (caption != null)
-            {
-                var c = Text(sq.transform, Theme.Caps(caption), Mathf.Max(12, Mathf.RoundToInt(side * 0.17f)), TextAnchor.MiddleCenter, new Color(0, 0, 0, 0.75f), FontStyle.Bold);
-                UiFactory.Place(c.rectTransform, 0, 0.04f, 1, 0.34f);
-            }
             return sq;
         }
 
@@ -182,21 +118,9 @@ namespace MotoManager.App.UI.Screens
         /// <summary>A thick square-cut gauge filling a rect (dark track, coloured fill brightening to its tip).</summary>
         public static void Gauge(Transform parent, float x0, float y0, float x1, float y1, double fraction, Color color)
         {
-            var back = UiFactory.Decor("Gauge", parent, new Color(0, 0, 0, 0.5f));
-            UiFactory.Place(back.rectTransform, x0, y0, x1, y1);
-            var fill = UiFactory.Decor("Fill", back.transform, color);
-            UiFactory.Gradient(fill, new Color(0.75f, 0.75f, 0.75f, 1), Color.white, true);
-            fill.rectTransform.anchorMin = Vector2.zero;
-            fill.rectTransform.anchorMax = new Vector2(Mathf.Clamp01((float)fraction), 1);
-            fill.rectTransform.offsetMin = fill.rectTransform.offsetMax = Vector2.zero;
-            for (int k = 1; k < 4; k++)
-            {
-                var tick = UiFactory.Decor("Tick", back.transform, new Color(0, 0, 0, 0.55f));
-                tick.rectTransform.anchorMin = new Vector2(k * 0.25f, 0);
-                tick.rectTransform.anchorMax = new Vector2(k * 0.25f, 1);
-                tick.rectTransform.offsetMin = new Vector2(-1, 0);
-                tick.rectTransform.offsetMax = new Vector2(1, 0);
-            }
+            var area = UiFactory.Rect("GaugeArea", parent);
+            UiFactory.Place(area, x0, y0, x1, y1);
+            Ui.Gauge(area, fraction, color);
         }
 
         /// <summary>
@@ -209,7 +133,7 @@ namespace MotoManager.App.UI.Screens
             UiFactory.Place(row, 0, y0, 1, y1);
             row.offsetMin = new Vector2(pad, 0);
             row.offsetMax = new Vector2(-pad, 0);
-            var c = At(row, 0, 0.36f, 0.6f, 1, Theme.Caps(caption), Theme.FontSmall - 2, TextAnchor.MiddleLeft, Color.Lerp(Theme.TextDim, Color.white, 0.25f), FontStyle.Bold, 0);
+            var c = At(row, 0, 0.36f, 0.6f, 1, Theme.Caps(caption), Theme.TextCaption, TextAnchor.MiddleLeft, Color.Lerp(Theme.TextDim, Color.white, 0.25f), FontStyle.Bold, 0);
             c.rectTransform.offsetMin = Vector2.zero;
             var v = At(row, 0.55f, 0.2f, 1, 1, value, Theme.FontLarge, TextAnchor.MiddleRight, color, FontStyle.BoldAndItalic, 0);
             UiFactory.DropShadow(v, 0.45f, 2);
@@ -219,16 +143,9 @@ namespace MotoManager.App.UI.Screens
         /// <summary>Level pips: filled squares in timing yellow, empty ones dim.</summary>
         public static void Pips(Transform parent, float x0, float y0, float x1, float y1, int level, int max)
         {
-            var holder = UiFactory.Rect("Pips", parent);
-            UiFactory.Place(holder, x0, y0, x1, y1);
-            for (int i = 0; i < max; i++)
-            {
-                var p = UiFactory.Decor("Pip", holder, i < level ? Theme.Timing : new Color(1, 1, 1, 0.12f));
-                UiFactory.Slant(p, 4f);
-                UiFactory.Place(p.rectTransform, (float)i / max, 0, (float)(i + 1) / max, 1);
-                p.rectTransform.offsetMin = new Vector2(3, 0);
-                p.rectTransform.offsetMax = new Vector2(-3, 0);
-            }
+            var area = UiFactory.Rect("PipsArea", parent);
+            UiFactory.Place(area, x0, y0, x1, y1);
+            Ui.Pips(area, level, max);
         }
 
         /// <summary>
@@ -237,7 +154,7 @@ namespace MotoManager.App.UI.Screens
         /// </summary>
         public static Button BigButton(Transform parent, float x0, float y0, float x1, float y1, string text, string sub, Color color, Action onTap, bool enabled = true, float inset = 4)
         {
-            var b = UiFactory.Button("BigButton", parent, "", onTap, enabled ? color : Color.Lerp(Theme.PanelLight, Theme.Card, 0.3f), Theme.FontNormal);
+            var b = UiFactory.Button("BigButton", parent, "", enabled ? onTap : null, enabled ? color : Color.Lerp(Theme.PanelLight, Theme.Card, 0.3f), Theme.FontNormal);
             UiFactory.Slant(b.image, 2.2f);
             UiFactory.Gradient(b.image, 1.16f, 0.84f);
             b.gameObject.AddComponent<Outline>().effectColor = new Color(1, 1, 1, enabled ? 0.16f : 0.05f);
@@ -248,11 +165,10 @@ namespace MotoManager.App.UI.Screens
             b.colors = colors;
             var label = b.GetComponentInChildren<Text>();
             label.supportRichText = true;
-            label.text = "<b>" + Theme.Caps(text) + "</b>" + (string.IsNullOrEmpty(sub) ? "" : "\n<size=" + (Theme.FontSmall - 4) + ">" + sub + "</size>");
+            label.text = "<b>" + Theme.Caps(text) + "</b>" + (string.IsNullOrEmpty(sub) ? "" : "\n<size=" + Theme.TextCaption + ">" + sub + "</size>");
             label.fontStyle = FontStyle.Italic;
-            label.color = enabled ? Color.white : Theme.TextDim;
-            label.resizeTextMinSize = 12;
-            label.resizeTextMaxSize = Theme.FontNormal;
+            label.color = enabled ? Theme.OnColor(color) : Theme.TextDim;
+            Ui.Fit(label, Theme.FontNormal);
             label.rectTransform.offsetMin = new Vector2(18, 2);
             label.rectTransform.offsetMax = new Vector2(-18, -2);
             return b;
@@ -269,7 +185,7 @@ namespace MotoManager.App.UI.Screens
             edge.rectTransform.anchorMax = new Vector2(1, 0);
             edge.rectTransform.offsetMin = new Vector2(10, 0);
             edge.rectTransform.offsetMax = new Vector2(-10, 4);
-            At(chip.transform, 0, 0.6f, 1, 0.98f, Theme.Caps(caption), Theme.FontSmall - 4, TextAnchor.MiddleCenter, Color.Lerp(Theme.TextDim, Color.white, 0.2f), FontStyle.Bold, 6);
+            At(chip.transform, 0, 0.6f, 1, 0.98f, Theme.Caps(caption), Theme.TextMin, TextAnchor.MiddleCenter, Color.Lerp(Theme.TextDim, Color.white, 0.2f), FontStyle.Bold, 6);
             var v = At(chip.transform, 0, 0.06f, 1, 0.64f, value, Theme.FontLarge, TextAnchor.MiddleCenter, color, FontStyle.BoldAndItalic, 6);
             UiFactory.DropShadow(v, 0.45f, 2);
         }

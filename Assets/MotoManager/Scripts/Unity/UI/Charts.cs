@@ -44,7 +44,7 @@ namespace MotoManager.App.UI
 
             var row = UiFactory.Row(list, height);
             var plot = UiFactory.Panel("Plot", row, new Color(0, 0, 0, 0.35f));
-            UiFactory.Place(plot.rectTransform, 0.07f, 0.12f, 1, 1);
+            UiFactory.Place(plot.rectTransform, 0.08f, 0.12f, 1, 1);
             plot.raycastTarget = false;
             // Guide lines and scale.
             for (int g = 0; g <= 4; g++)
@@ -56,13 +56,17 @@ namespace MotoManager.App.UI
                 line.rectTransform.offsetMin = new Vector2(0, -1);
                 line.rectTransform.offsetMax = new Vector2(0, 1);
                 double value = invert ? max - (max - min) * y : min + (max - min) * y;
-                var label = UiFactory.Label("Scale", row, format(value), Theme.FontSmall - 8, TextAnchor.MiddleRight, Theme.TextDim);
+                var label = UiFactory.Label("Scale", row, format(value), Theme.TextMin, TextAnchor.MiddleRight, Theme.TextDim);
                 float yy = 0.12f + y * 0.88f;
-                UiFactory.Place(label.rectTransform, 0, yy - 0.06f, 0.065f, yy + 0.06f);
+                UiFactory.Place(label.rectTransform, 0, yy - 0.07f, 0.075f, yy + 0.07f);
+                label.horizontalOverflow = HorizontalWrapMode.Overflow;
+                label.verticalOverflow = VerticalWrapMode.Overflow;
             }
-            var first = UiFactory.Label("X0", row, xFirst, Theme.FontSmall - 8, TextAnchor.UpperLeft, Theme.TextDim);
-            UiFactory.Place(first.rectTransform, 0.07f, 0, 0.4f, 0.11f);
-            var last = UiFactory.Label("X1", row, xLast, Theme.FontSmall - 8, TextAnchor.UpperRight, Theme.TextDim);
+            var first = UiFactory.Label("X0", row, xFirst, Theme.TextMin, TextAnchor.UpperLeft, Theme.TextDim);
+            first.verticalOverflow = VerticalWrapMode.Overflow;
+            UiFactory.Place(first.rectTransform, 0.08f, 0, 0.4f, 0.11f);
+            var last = UiFactory.Label("X1", row, xLast, Theme.TextMin, TextAnchor.UpperRight, Theme.TextDim);
+            last.verticalOverflow = VerticalWrapMode.Overflow;
             UiFactory.Place(last.rectTransform, 0.6f, 0, 1, 0.11f);
 
             // Lines: the highlighted ones last so they sit on top.
@@ -88,7 +92,7 @@ namespace MotoManager.App.UI
             }
 
             // Legend: coloured marks and names (up to two rows).
-            var legend = UiFactory.Row(list, series.Count > 4 ? 64 : 34);
+            var legend = UiFactory.Row(list, series.Count > 4 ? 72 : 36);
             int perRow = Math.Min(4, Math.Max(1, series.Count));
             for (int i = 0; i < series.Count && i < 8; i++)
             {
@@ -98,11 +102,11 @@ namespace MotoManager.App.UI
                 float y1 = series.Count > 4 ? (line == 0 ? 1f : 0.5f) : 1f, y0 = series.Count > 4 ? y1 - 0.5f : 0f;
                 var mark = UiFactory.Decor("Mark", legend, s.Color);
                 UiFactory.Place(mark.rectTransform, x0, y0 + (y1 - y0) * 0.35f, x0 + 0.02f, y0 + (y1 - y0) * 0.65f);
-                var t = UiFactory.Label("Name", legend, s.Highlight ? "<b>" + s.Name + "</b>" : s.Name, Theme.FontSmall - 6, TextAnchor.MiddleLeft, s.Highlight ? Theme.Text : Theme.TextDim);
+                var t = UiFactory.Label("Name", legend, s.Highlight ? "<b>" + s.Name + "</b>" : s.Name, Theme.TextCaption, TextAnchor.MiddleLeft, s.Highlight ? Theme.Text : Theme.TextDim);
                 t.supportRichText = true;
                 t.resizeTextForBestFit = true;
-                t.resizeTextMinSize = Theme.FontSmall - 10;
-                t.resizeTextMaxSize = Theme.FontSmall - 6;
+                t.resizeTextMinSize = Theme.TextMin;
+                t.resizeTextMaxSize = Theme.TextCaption;
                 UiFactory.Place(t.rectTransform, x0 + 0.025f, y0, x1 - 0.01f, y1);
             }
             return row;

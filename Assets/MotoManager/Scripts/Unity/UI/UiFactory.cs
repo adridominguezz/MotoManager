@@ -27,10 +27,65 @@ namespace MotoManager.App.UI
         public static readonly Color Good = new Color32(70, 185, 115, 255);
         public static readonly Color Warning = new Color32(235, 180, 45, 255);
         public static readonly Color Bad = new Color32(220, 55, 55, 255);
+        // Legacy sizes (kept for compatibility). Never subtract from FontSmall: 18 is the floor (TextMin).
         public const int FontSmall = 22;
         public const int FontNormal = 28;
         public const int FontLarge = 40;
         public const int FontTitle = 56;
+
+        // ---- Type scale (UX spec §1.2)
+        /// <summary>Hero number (rating, P1, cash in a hero tile), bold italic.</summary>
+        public const int TextDisplay = 56;
+        /// <summary>The one key number of a tile, bold italic, timing yellow by default.</summary>
+        public const int TextKey = 44;
+        /// <summary>Page / hero names, bold italic caps.</summary>
+        public const int TextTitle = 32;
+        /// <summary>Tile and card header strips, bold italic caps (CTA labels use 28).</summary>
+        public const int TextHeader = 24;
+        /// <summary>List cells and label/value lines.</summary>
+        public const int TextBody = 24;
+        /// <summary>Captions under numbers, column captions, status lines: bold caps, dim.</summary>
+        public const int TextCaption = 20;
+        /// <summary>Absolute floor for any font size and any resizeTextMinSize.</summary>
+        public const int TextMin = 18;
+
+        /// <summary>Dark ink for text on light fills (rating badges, position blocks, light accents).</summary>
+        public static readonly Color Ink = new Color32(12, 13, 16, 255);
+        /// <summary>Surface of every tile.</summary>
+        public static readonly Color Tile = Color.Lerp(new Color32(25, 27, 32, 255), new Color32(44, 47, 55, 255), 0.28f);
+        /// <summary>Header strip over a tile or card (black at 38%).</summary>
+        public static readonly Color HeaderFill = new Color(0, 0, 0, 0.38f);
+        /// <summary>Bike performance figures (green).</summary>
+        public static readonly Color Perf = new Color32(70, 200, 110, 255);
+        /// <summary>Bike reliability figures (purple).</summary>
+        public static readonly Color Rel = new Color32(196, 92, 226, 255);
+
+        /// <summary>Text colour on an accent fill: ink on light team colours, white otherwise.</summary>
+        public static Color OnAccent { get; private set; } = Color.white;
+
+        /// <summary>Readable text colour on a fill: ink when its luminance is above 0.55, white otherwise.</summary>
+        public static Color OnColor(Color fill)
+        {
+            float lum = 0.2126f * fill.r + 0.7152f * fill.g + 0.0722f * fill.b;
+            return lum > 0.55f ? Ink : Color.white;
+        }
+
+        /// <summary>A signed delta as rich text: "+4" green, "−0,5" red (Unicode minus), "0" dim.</summary>
+        public static string Signed(double v, int decimals = 0)
+        {
+            decimals = Mathf.Clamp(decimals, 0, 6);
+            string fmt = "F" + decimals;
+            string abs = Math.Abs(v).ToString(fmt, Loc.Culture);
+            double rounded = Math.Round(Math.Abs(v), decimals);
+            if (rounded == 0) return Dim(0.0.ToString(fmt, Loc.Culture));
+            return v > 0 ? GoodText("+" + abs) : BadText("−" + abs);
+        }
+
+        /// <summary>A position as "P3", or "-" when there is none.</summary>
+        public static string Pos(int p)
+        {
+            return p > 0 ? "P" + p : "-";
+        }
 
         public const string DimHex = "#969BA5";
         public const string GoodHex = "#46B973";
@@ -80,6 +135,7 @@ namespace MotoManager.App.UI
             Color c;
             if (!Readable(primary, out c) && !Readable(secondary, out c)) c = Brand;
             Accent = c;
+            OnAccent = OnColor(c);
         }
 
         private static bool Readable(string hex, out Color c)
@@ -99,6 +155,7 @@ namespace MotoManager.App.UI
         {
             CurrentAccent = c;
             CurrentAccentHex = "#" + ColorUtility.ToHtmlStringRGB(c);
+            OnAccent = OnColor(c);
         }
 
         /// <summary>Text in the current section accent, lightened so it reads on the dark panels.</summary>
@@ -509,7 +566,8 @@ namespace MotoManager.App.UI
             var t = rt.gameObject.AddComponent<Text>();
             t.font = Font;
             t.text = text;
-            t.fontSize = size;
+            // 18 units is the floor for any text (UX spec §1.2).
+            t.fontSize = Mathf.Max(size, Theme.TextMin);
             t.alignment = align;
             t.color = color ?? Theme.Text;
             t.horizontalOverflow = HorizontalWrapMode.Wrap;
@@ -538,8 +596,8 @@ namespace MotoManager.App.UI
             label.rectTransform.offsetMax = new Vector2(-6, 0);
             // On a narrow phone a long caption shrinks (and may take two lines) instead of being cut.
             label.resizeTextForBestFit = true;
-            label.resizeTextMinSize = Mathf.Max(10, size - 12);
-            label.resizeTextMaxSize = size;
+            label.resizeTextMaxSize = Mathf.Max(size, Theme.TextMin);
+            label.resizeTextMinSize = Mathf.Min(label.resizeTextMaxSize, Mathf.Max(Theme.TextMin, size - 12));
             DropShadow(label, 0.35f, 1.5f);
             if (onClick != null) button.onClick.AddListener(() =>
             {
@@ -651,22 +709,22 @@ namespace MotoManager.App.UI
                     x += widths[i];
                     continue;
                 }
-                var t = Label("Cell" + i, row, header ? Theme.Caps(cell) : cell, header ? Theme.FontSmall - 2 : Theme.FontSmall,
+                var t = Label("Cell" + i, row, header ? Theme.Caps(cell) : cell, header ? Theme.TextCaption : Theme.FontSmall,
                     i == 0 ? TextAnchor.MiddleLeft : TextAnchor.MiddleCenter, header ? new Color32(176, 181, 190, 255) : (textColor ?? Theme.Text));
                 if (header)
                 {
                     t.fontStyle = FontStyle.Bold;
                     // Upper-case titles in narrow columns shrink instead of wrapping out of the band.
                     t.resizeTextForBestFit = true;
-                    t.resizeTextMinSize = Theme.FontSmall - 8;
-                    t.resizeTextMaxSize = Theme.FontSmall - 2;
+                    t.resizeTextMinSize = Theme.TextMin;
+                    t.resizeTextMaxSize = Theme.TextCaption;
                 }
                 t.supportRichText = true;
                 if (!header && UiScale.Compact)
                 {
                     // Narrow columns on a phone: text shrinks a little rather than spilling into the next column.
                     t.resizeTextForBestFit = true;
-                    t.resizeTextMinSize = Theme.FontSmall - 8;
+                    t.resizeTextMinSize = Theme.TextMin;
                     t.resizeTextMaxSize = Theme.FontSmall;
                 }
                 Place(t.rectTransform, x / total, 0, (x + widths[i]) / total, 1);
@@ -772,8 +830,10 @@ namespace MotoManager.App.UI
             for (int i = 0; i < buttons.Length; i++)
             {
                 var b = Button("Button", row, buttons[i].Key, buttons[i].Value, buttons[i].Color, Theme.FontSmall + 2);
-                if (buttons[i].Primary) b.GetComponentInChildren<Text>().fontStyle = FontStyle.BoldAndItalic;
-                else if (buttons[i].Selected) b.GetComponentInChildren<Text>().fontStyle = FontStyle.Bold;
+                var label = b.GetComponentInChildren<Text>();
+                if (buttons[i].Primary || buttons[i].Selected) label.color = Theme.OnColor(buttons[i].Color);
+                if (buttons[i].Primary) label.fontStyle = FontStyle.BoldAndItalic;
+                else if (buttons[i].Selected) label.fontStyle = FontStyle.Bold;
                 Place((RectTransform)b.transform, (float)i / buttons.Length, 0, (float)(i + 1) / buttons.Length, 1, 4);
             }
         }
@@ -852,6 +912,16 @@ namespace MotoManager.App.UI
         }
     }
     /// <summary>
+    /// Plain-text symbols for the controls that have no pictogram (the game keeps only its existing icons). They use
+    /// ASCII so every device font has them. Pass them wherever a component takes an icon name.
+    /// </summary>
+    public static class Glyph
+    {
+        public const string Info = "i", Close = "X", More = "...", Plus = "+", Minus = "-", Warning = "!", Check = "OK",
+            Chevron = ">", Back = "<", Down = "v";
+    }
+
+    /// <summary>
     /// Single-colour pictograms drawn from code (home, riders, bike, money, transfers, trophy, career...), so the
     /// navigation and the hub do not depend on symbol glyphs the device font may lack. Each is a white, softly
     /// anti-aliased sprite tinted by its Image.
@@ -864,6 +934,33 @@ namespace MotoManager.App.UI
 
         private const int Size = 96, Samples = 3;
         private static readonly Dictionary<string, Sprite> Cache = new Dictionary<string, Sprite>();
+        private static readonly HashSet<string> Drawn = new HashSet<string>
+        {
+            Home, Team, Person, Bike, Finance, Market, Trophy, Career, Menu, Back, Star, Sponsor, Flag, Development
+        };
+
+        /// <summary>
+        /// True for a name that has a pictogram (designed PNG or drawn shape). Components that take an icon name
+        /// (<see cref="Ui.IconButton"/>, <see cref="Ui.Empty"/>, <see cref="Ui.StatTile"/>) draw any other string as
+        /// plain text instead, so text symbols from <see cref="Glyph"/> ("i", "...", "X") work everywhere.
+        /// </summary>
+        public static bool Known(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return false;
+            if (Drawn.Contains(name) || Cache.ContainsKey(name)) return true;
+            return Resources.Load<Texture2D>("Icons/" + name) != null;
+        }
+
+        /// <summary>
+        /// The Back chevron turned to point right (<paramref name="degrees"/> = 180), down (90) or up (-90): the
+        /// chevron of tappable rows and tiles, the caret of pickers.
+        /// </summary>
+        public static Image Chevron(Transform parent, Color color, float degrees = 180)
+        {
+            var img = Icon(parent, Back, color);
+            img.rectTransform.localRotation = Quaternion.Euler(0, 0, degrees);
+            return img;
+        }
 
         /// <summary>The sprite of a named pictogram (an empty square for an unknown name).</summary>
         public static Sprite Get(string name)
