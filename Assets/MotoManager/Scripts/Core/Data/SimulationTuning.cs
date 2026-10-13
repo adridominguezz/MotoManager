@@ -63,6 +63,13 @@ namespace MotoManager.Core.Data
         // --- Reliability: failures per bike per race hour at Reliability 50
         public double BaseFailureRatePerHour = 0.07;
 
+        /// <summary>
+        /// Races and sprints run this fraction of their real distance so a weekend is quick to watch. Tyre wear,
+        /// fuel use and failure risk per lap are scaled by the inverse, so a race ends with the same wear, fuel and
+        /// risk as the full distance (the strategy stays the real one, only shorter).
+        /// </summary>
+        public double RaceLengthFactor = 0.5;
+
         // --- Start
         public double JumpStartChance = 0.002;
     }

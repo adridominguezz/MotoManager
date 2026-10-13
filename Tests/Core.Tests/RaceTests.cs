@@ -66,6 +66,25 @@ namespace MotoManager.Tests
         }
 
         [Fact]
+        public void ShortenedRaceEndsWithTheSameTyreWearAndFuel()
+        {
+            var full = MakeRace("motogp", "jerez", 91, 0.1);
+            var half = MakeRace("motogp", "jerez", 91, 0.1, (int)Math.Round(full.Laps * 0.5));
+            half.DistanceScale = half.Laps / (double)full.Laps;
+            var a = new RaceSimulation(full);
+            var b = new RaceSimulation(half);
+            a.RunToEnd();
+            b.RunToEnd();
+            double wearA = 0, wearB = 0, fuelA = 0, fuelB = 0;
+            int nA = 0, nB = 0;
+            foreach (var r in a.Riders) if (r.Status == RaceStatus.Finished) { wearA += r.Rear.Wear; fuelA += r.Fuel; nA++; }
+            foreach (var r in b.Riders) if (r.Status == RaceStatus.Finished) { wearB += r.Rear.Wear; fuelB += r.Fuel; nB++; }
+            wearA /= nA; wearB /= nB; fuelA /= nA; fuelB /= nB;
+            Assert.InRange(wearB / wearA, 0.85, 1.15);
+            Assert.InRange(fuelB - fuelA, -2.5, 2.5);
+        }
+
+        [Fact]
         public void SameSeedSameRace()
         {
             var a = new RaceSimulation(MakeRace("motogp", "jerez", 77, 0.1));

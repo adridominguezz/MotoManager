@@ -115,7 +115,7 @@ namespace MotoManager.App.UI
             {
                 var e = players[i];
                 TireCompound front, rear;
-                RaceAI.ChooseTires(rules, model.TrackTemp, weather.InitialWetness, w.Circuit.Abrasiveness, laps, e.Rider.Attributes.TireManagement, out front, out rear);
+                RaceAI.ChooseTires(rules, model.TrackTemp, weather.InitialWetness, w.Circuit.Abrasiveness, w.FullLapsFor(session), e.Rider.Attributes.TireManagement, out front, out rear);
                 var choice = new TireChoice { Front = front, Rear = rear };
                 _choices[e.Rider.Id] = choice;
                 int grid = w.QualifyingOrder.IndexOf(e.Rider.Id) + 1;

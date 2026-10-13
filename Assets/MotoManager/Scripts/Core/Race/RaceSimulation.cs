@@ -1189,7 +1189,8 @@ namespace MotoManager.Core.Race
             double bikeWear = 1 + (50 - bike[PerfAttr.TireWear]) / 200.0;
             double paceHeat = r.Pace == PaceMode.Push ? 1.06 : r.Pace == PaceMode.Conserve ? 0.94 : 1.0;
             double wet = Weather.TrackWetness;
-            double scale = Rules.Tires.WearScale;
+            // Shortened races wear the tyres faster per lap, so the stint ends as worn as over the full distance.
+            double scale = Rules.Tires.WearScale / Math.Max(0.05, Config.DistanceScale);
             TireModel.Update(r.Front, fs, move, dt, r.Speed, Weather.TrackTemp, wet, Config.Circuit.Abrasiveness, riderWear, bikeWear, paceHeat, scale, Tuning);
             TireModel.Update(r.Rear, rs, move, dt, r.Speed, Weather.TrackTemp, wet, Config.Circuit.Abrasiveness, riderWear, bikeWear, paceHeat, scale, Tuning);
 
@@ -1198,14 +1199,14 @@ namespace MotoManager.Core.Race
                 double throttle = r.Phase == RidingPhase.Straight ? 1.35 : r.Phase == RidingPhase.CornerExit ? 1.1 : r.Phase == RidingPhase.Braking ? 0.15 : 0.6;
                 double pace = r.Pace == PaceMode.Push ? 1.05 : r.Pace == PaceMode.Conserve ? 0.92 : 1.0;
                 double eff = 1.04 - 0.08 * bike[PerfAttr.FuelEfficiency] / 100.0;
-                r.Fuel -= Rules.Fuel.ConsumptionPerKm / 1000.0 * move * throttle * pace * eff;
+                r.Fuel -= Rules.Fuel.ConsumptionPerKm / 1000.0 * move * throttle * pace * eff / Math.Max(0.05, Config.DistanceScale);
                 if (r.Fuel < 0) r.Fuel = 0;
             }
 
             if (!Config.TimeTrial)
             {
                 double rel = bike[PerfAttr.Reliability] + r.Entry.ReliabilityBonus;
-                double hazard = Tuning.BaseFailureRatePerHour / 3600.0 * Math.Exp((50 - rel) / 30.0) * (r.Pace == PaceMode.Push ? 1.3 : 1.0) * dt;
+                double hazard = Tuning.BaseFailureRatePerHour / 3600.0 * Math.Exp((50 - rel) / 30.0) * (r.Pace == PaceMode.Push ? 1.3 : 1.0) * dt / Math.Max(0.05, Config.DistanceScale);
                 if (_rng.Chance(hazard)) MechanicalProblem(r);
             }
         }

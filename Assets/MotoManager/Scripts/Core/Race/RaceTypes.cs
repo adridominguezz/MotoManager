@@ -78,6 +78,8 @@ namespace MotoManager.Core.Race
         public SessionType SessionType = SessionType.Race;
         public string SessionName = "Race";
         public int Laps = 20;
+        /// <summary>Laps run / laps of the full distance (see SimulationTuning.RaceLengthFactor); 1 = full race.</summary>
+        public double DistanceScale = 1.0;
         public ulong Seed = 1;
         public double TimeStep = 0.05;
         public WeatherSetup Weather = new WeatherSetup();

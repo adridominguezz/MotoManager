@@ -68,12 +68,28 @@ namespace MotoManager.Core.Season
             get { return IsComplete ? null : Rules.Weekend.Sessions[SessionIndex]; }
         }
 
+        /// <summary>Laps actually run: races and sprints are shortened by the tuning's race length factor.</summary>
         public int LapsFor(SessionDefinition s)
+        {
+            int full = FullLapsFor(s);
+            if (s.Type != SessionType.Race && s.Type != SessionType.Sprint) return full;
+            double factor = Db.Tuning != null && Db.Tuning.RaceLengthFactor > 0 ? Db.Tuning.RaceLengthFactor : 1.0;
+            return Math.Max(3, (int)Math.Round(full * factor));
+        }
+
+        /// <summary>Laps of the real race distance (what tyre choices and strategy are planned for).</summary>
+        public int FullLapsFor(SessionDefinition s)
         {
             int laps;
             if (Circuit.LapsOverride != null && Circuit.LapsOverride.TryGetValue(CategoryId, out laps) && s.Type == SessionType.Race) return laps;
             double km = Rules.RaceDistanceKm * s.DistanceFraction;
             return Math.Max(3, (int)Math.Round(km * 1000 / Circuit.LengthM));
+        }
+
+        /// <summary>Laps run / full laps for a session (1 for practice and qualifying).</summary>
+        public double DistanceScaleFor(SessionDefinition s)
+        {
+            return Math.Min(1.0, LapsFor(s) / (double)Math.Max(1, FullLapsFor(s)));
         }
 
         private void BuildEntries()
@@ -279,6 +295,7 @@ namespace MotoManager.Core.Season
                 SessionType = s.Type,
                 SessionName = s.Name,
                 Laps = laps,
+                DistanceScale = DistanceScaleFor(s),
                 Seed = DeterministicRandom.Combine(_seed, DeterministicRandom.Hash(s.Id)),
                 TimeStep = timeStep,
                 Weather = weather,
@@ -304,7 +321,7 @@ namespace MotoManager.Core.Season
                 }
                 else
                 {
-                    RaceAI.ChooseTires(Rules, weatherModel.TrackTemp, weather.InitialWetness, Circuit.Abrasiveness, laps, e.Rider.Attributes.TireManagement, out front, out rear,
+                    RaceAI.ChooseTires(Rules, weatherModel.TrackTemp, weather.InitialWetness, Circuit.Abrasiveness, FullLapsFor(s), e.Rider.Attributes.TireManagement, out front, out rear,
                         TeamAI.RaceRisk(e.Team));
                 }
                 e.FrontCompound = front;

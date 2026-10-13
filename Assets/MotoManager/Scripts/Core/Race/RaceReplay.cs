@@ -34,7 +34,7 @@ namespace MotoManager.Core.Race
             var config = new RaceConfig
             {
                 Rules = src.Rules, Circuit = src.Circuit, Tuning = src.Tuning, SessionType = src.SessionType, SessionName = src.SessionName,
-                Laps = src.Laps, Seed = src.Seed, TimeStep = src.TimeStep, Weather = src.Weather, FuelLimitLitres = src.FuelLimitLitres,
+                Laps = src.Laps, DistanceScale = src.DistanceScale, Seed = src.Seed, TimeStep = src.TimeStep, Weather = src.Weather, FuelLimitLitres = src.FuelLimitLitres,
                 TrackEvolution = src.TrackEvolution, TimeTrial = src.TimeTrial, MaxDurationS = src.MaxDurationS,
                 ReferenceLaps = src.ReferenceLaps != null ? new Dictionary<string, double>(src.ReferenceLaps) : null
             };
