@@ -52,34 +52,81 @@ namespace MotoManager.App.Race
             return v;
         }
 
+        /// <summary>A team's livery for the bike model: its three colours and template (defaults for teams that never chose).</summary>
+        public static BikeLivery LiveryOf(Core.World.Team team)
+        {
+            var dark = new Color32(21, 22, 26, 255);
+            if (team == null) return new BikeLivery(new Color(0.8f, 0.1f, 0.1f), Color.white, dark, 0);
+            var c = team.Colors;
+            return new BikeLivery(UI.UiFactory.ParseColor(c.Primary, new Color(0.8f, 0.1f, 0.1f)), UI.UiFactory.ParseColor(c.Secondary, Color.white),
+                UI.UiFactory.ParseColor(c.TertiaryOrDefault(), dark), c.StyleFor(team.Id));
+        }
+
+        /// <summary>Helmet in the livery: the second colour or the accent (stable per rider, so team-mates usually differ).</summary>
+        public static Color32 HelmetOf(BikeLivery livery, string riderId)
+        {
+            return Core.Common.DeterministicRandom.Hash(riderId ?? "") % 2UL == 0 ? livery.Secondary : livery.Tertiary;
+        }
+
+        private static Material _bikeMaterial;
+
+        /// <summary>Material for bikes and riders (MotoManager/BikeLit; the plain vertex-colour material if it is missing).</summary>
+        public static Material BikeMaterial
+        {
+            get
+            {
+                if (_bikeMaterial == null)
+                {
+                    var shader = Resources.Load<Shader>("Shaders/BikeLit");
+                    _bikeMaterial = shader != null ? new Material(shader) { name = "BikeLit", enableInstancing = true } : MeshBuilder.SharedMaterial;
+                }
+                return _bikeMaterial;
+            }
+        }
+
+        /// <summary>
+        /// Builds a bike and its rider under <paramref name="parent"/>: the bike mesh, the rider's body on the seat and two
+        /// legs pivoting at the hips, so poses only move transforms (<see cref="BikeModel.Pose"/>). Used by the race and
+        /// by the livery showcase.
+        /// </summary>
+        public static void BuildRig(Transform parent, BikeLivery livery, Color32 helmet, Material material, out Transform rider, out Transform legL, out Transform legR)
+        {
+            var bike = new MeshBuilder();
+            BikeModel.BuildBike(bike, livery);
+            bike.ToObject("BikeMesh", parent, material);
+            rider = new GameObject("Rider").transform;
+            rider.SetParent(parent, false);
+            rider.localPosition = BikeModel.Seat;
+            var body = new MeshBuilder();
+            BikeModel.BuildRiderBody(body, livery, helmet);
+            body.ToObject("RiderMesh", rider, material);
+            legL = BuildLeg(rider, -1, livery, material);
+            legR = BuildLeg(rider, 1, livery, material);
+        }
+
+        private static Transform BuildLeg(Transform rider, int side, BikeLivery livery, Material material)
+        {
+            var leg = new GameObject(side < 0 ? "LegL" : "LegR").transform;
+            leg.SetParent(rider, false);
+            leg.localPosition = BikeModel.HipLocal(side);
+            var mb = new MeshBuilder();
+            BikeModel.BuildLeg(mb, side, livery);
+            mb.ToObject("LegMesh", leg, material);
+            return leg;
+        }
+
         private void Build()
         {
-            var team = State.Entry.Team;
-            var primary = UI.UiFactory.ParseColor(team != null ? team.Colors.Primary : null, new Color(0.8f, 0.1f, 0.1f));
-            var secondary = UI.UiFactory.ParseColor(team != null ? team.Colors.Secondary : null, Color.white);
-            PrimaryColor = primary;
-            // Helmet colour is personal (stable per rider).
-            float hue = (float)(Core.Common.DeterministicRandom.Hash(State.Entry.Rider.Id) % 360UL) / 360f;
-            Color32 helmet = Color.HSVToRGB(hue, 0.55f, 0.95f);
-            Color32 p = primary;
-            Color32 s = secondary;
+            var livery = LiveryOf(State.Entry.Team);
+            PrimaryColor = livery.Primary;
+            Color32 p = livery.Primary;
+            Color32 s = livery.Secondary;
 
             // Bike: pivot at the contact patch line so leaning rotates around the tyres (see BikeModel for the shapes).
+            // Rider: body on the seat, legs pivoting at the hips, so cornering poses only move transforms.
             Body = new GameObject("Body").transform;
             Body.SetParent(transform, false);
-            var bike = new MeshBuilder();
-            BikeModel.BuildBike(bike, p, s);
-            bike.ToObject("BikeMesh", Body);
-
-            // Rider: body on the seat, legs pivoting at the hips, so cornering poses only move transforms.
-            _rider = new GameObject("Rider").transform;
-            _rider.SetParent(Body, false);
-            _rider.localPosition = BikeModel.Seat;
-            var rider = new MeshBuilder();
-            BikeModel.BuildRiderBody(rider, p, s, helmet);
-            rider.ToObject("RiderMesh", _rider);
-            _legL = BuildLeg(-1, p, s);
-            _legR = BuildLeg(1, p, s);
+            BuildRig(Body, livery, HelmetOf(livery, State.Entry.Rider.Id), BikeMaterial, out _rider, out _legL, out _legR);
 
             // Far-view marker: a dot in team colour with a dark rim, plus a halo for the player's riders.
             Marker = new GameObject("Marker").transform;
@@ -98,16 +145,6 @@ namespace MotoManager.App.Race
             Visible = true;
         }
 
-        private Transform BuildLeg(int side, Color32 p, Color32 s)
-        {
-            var leg = new GameObject(side < 0 ? "LegL" : "LegR").transform;
-            leg.SetParent(_rider, false);
-            leg.localPosition = BikeModel.HipLocal(side);
-            var mb = new MeshBuilder();
-            BikeModel.BuildLeg(mb, side, p, s);
-            mb.ToObject("LegMesh", leg);
-            return leg;
-        }
 
         private bool IsOut
         {

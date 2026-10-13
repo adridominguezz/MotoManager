@@ -34,6 +34,42 @@ namespace MotoManager.Tests
         }
 
         [Fact]
+        public void LiveriesOfOlderSavesGetDefaultsAndChosenOnesRoundTrip()
+        {
+            var game = GameController.NewGame(TestData.Db, new NewGameOptions { Seed = 503, PlayerTeamId = "aspar_moto3" });
+            var w = game.World;
+            var mine = w.PlayerTeam;
+            mine.Colors.Primary = "#1E5AA8";
+            mine.Colors.Secondary = "#FFD100";
+            mine.Colors.Tertiary = "#F4F4F2";
+            mine.Colors.Style = 5;
+            var obj = JObject.Parse(SaveSystem.Serialize(w));
+            // Older saves have no accent colour or livery template: strip them from every other team.
+            foreach (var t in ((JObject)obj["Teams"]).Properties())
+            {
+                if (t.Name == mine.Id) continue;
+                var colors = (JObject)t.Value["Colors"];
+                colors.Remove("Tertiary");
+                colors.Remove("Style");
+            }
+            var loaded = SaveSystem.Deserialize(obj.ToString());
+            var again = loaded.Teams[mine.Id].Colors;
+            Assert.Equal("#F4F4F2", again.TertiaryOrDefault());
+            Assert.Equal(5, again.StyleFor(mine.Id));
+            foreach (var t in loaded.Teams.Values)
+            {
+                if (t.Id == mine.Id) continue;
+                Assert.Equal(-1, t.Colors.Style);
+                int style = t.Colors.StyleFor(t.Id);
+                Assert.InRange(style, 0, MotoManager.Core.World.TeamColors.AutoStyles - 1);
+                Assert.Equal(style, t.Colors.StyleFor(t.Id));
+                var accent = t.Colors.TertiaryOrDefault();
+                Assert.False(string.IsNullOrEmpty(accent));
+                Assert.NotEqual(accent, t.Colors.Primary, StringComparer.OrdinalIgnoreCase);
+            }
+        }
+
+        [Fact]
         public void ASaveFromANewerVersionIsRefused()
         {
             var game = GameController.NewGame(TestData.Db, new NewGameOptions { Seed = 502 });

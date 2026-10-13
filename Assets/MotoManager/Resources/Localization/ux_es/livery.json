@@ -1,0 +1,21 @@
+{
+  "livery.title": "Editar equipo",
+  "livery.edit": "Editar equipo",
+  "livery.apply": "Aplicar",
+  "livery.applied": "Decoración aplicada",
+  "livery.presets": "Colores preestablecidos",
+  "livery.custom": "Colores personalizados",
+  "livery.style": "Estilo {0}",
+  "livery.style.0": "Partido con filete",
+  "livery.style.1": "Partido alto",
+  "livery.style.2": "Franja lateral",
+  "livery.style.3": "Flecha",
+  "livery.style.4": "Bloques",
+  "livery.style.5": "Banda en el depósito",
+  "livery.style.6": "Degradado al colín",
+  "livery.style.7": "Franja central",
+  "livery.slot.primary": "Principal",
+  "livery.slot.secondary": "Secundario",
+  "livery.slot.accent": "Detalle",
+  "livery.dragHint": "Desliza para girar la moto"
+}

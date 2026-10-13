@@ -1,0 +1,21 @@
+{
+  "livery.title": "Edit team",
+  "livery.edit": "Edit team",
+  "livery.apply": "Apply",
+  "livery.applied": "Livery applied",
+  "livery.presets": "Preset colours",
+  "livery.custom": "Custom colours",
+  "livery.style": "Style {0}",
+  "livery.style.0": "Split with pinstripe",
+  "livery.style.1": "High split",
+  "livery.style.2": "Side stripe",
+  "livery.style.3": "Arrow",
+  "livery.style.4": "Blocks",
+  "livery.style.5": "Tank band",
+  "livery.style.6": "Tail fade",
+  "livery.style.7": "Centre stripe",
+  "livery.slot.primary": "Main",
+  "livery.slot.secondary": "Second",
+  "livery.slot.accent": "Accent",
+  "livery.dragHint": "Swipe to turn the bike"
+}

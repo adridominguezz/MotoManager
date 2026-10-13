@@ -90,8 +90,66 @@ namespace MotoManager.Core.World
     [Serializable]
     public class TeamColors
     {
+        /// <summary>Number of bike livery templates (see the race view's BikeModel).</summary>
+        public const int StyleCount = 8;
+        /// <summary>Templates used when a team has not chosen one: the two-tone splits with an accent pinstripe.</summary>
+        public const int AutoStyles = 2;
+
+        /// <summary>Main colour: most of the fairing and the leathers.</summary>
         public string Primary = "#CC0000";
+        /// <summary>Second colour: the lower or nose part of the livery, stripes, the leathers' arms.</summary>
         public string Secondary = "#FFFFFF";
+        /// <summary>Accent colour: pinstripes and details. Empty (older saves, data teams): derived from the other two.</summary>
+        public string Tertiary;
+        /// <summary>Livery template, 0..StyleCount-1; -1 (older saves, data teams): chosen per team, see <see cref="StyleFor"/>.</summary>
+        public int Style = -1;
+
+        private static readonly string[] AccentCandidates = { "#15161A", "#F4F4F2", "#F28C28", "#E10600", "#F5C518", "#1E88E5", "#2DBE60" };
+
+        /// <summary>The accent colour: the chosen one, or the candidate that stands out best against both team colours.</summary>
+        public string TertiaryOrDefault()
+        {
+            if (!string.IsNullOrEmpty(Tertiary)) return Tertiary;
+            double lp = Luminance(Primary, 0.2), ls = Luminance(Secondary, 1);
+            string best = AccentCandidates[0];
+            double bestScore = -1;
+            foreach (var c in AccentCandidates)
+            {
+                double lc = Luminance(c, 0.5);
+                double score = Math.Min(Contrast(lc, lp), Contrast(lc, ls));
+                if (score > bestScore + 0.05) { bestScore = score; best = c; }
+            }
+            return best;
+        }
+
+        /// <summary>The livery template of a team: the chosen one, or a stable two-tone split for teams that never chose.</summary>
+        public int StyleFor(string teamId)
+        {
+            if (Style >= 0 && Style < StyleCount) return Style;
+            return (int)(Common.DeterministicRandom.Hash(teamId ?? "") % (ulong)AutoStyles);
+        }
+
+        private static double Contrast(double a, double b)
+        {
+            return (Math.Max(a, b) + 0.05) / (Math.Min(a, b) + 0.05);
+        }
+
+        /// <summary>WCAG relative luminance of a "#RRGGBB" colour (<paramref name="fallback"/> when it cannot be read).</summary>
+        public static double Luminance(string hex, double fallback)
+        {
+            if (string.IsNullOrEmpty(hex)) return fallback;
+            string h = hex.TrimStart('#');
+            if (h.Length < 6) return fallback;
+            int rgb;
+            if (!int.TryParse(h.Substring(0, 6), System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture, out rgb)) return fallback;
+            return 0.2126 * Channel((rgb >> 16) & 255) + 0.7152 * Channel((rgb >> 8) & 255) + 0.0722 * Channel(rgb & 255);
+        }
+
+        private static double Channel(int v)
+        {
+            double c = v / 255.0;
+            return c <= 0.03928 ? c / 12.92 : Math.Pow((c + 0.055) / 1.055, 2.4);
+        }
     }
 
     [Serializable]

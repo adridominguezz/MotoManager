@@ -211,6 +211,17 @@ namespace MotoManager.App.Race
         /// </summary>
         public void Hull(IList<Ring> rings, Color32? backCap, Color32? frontCap)
         {
+            Hull(rings, backCap, frontCap, null);
+        }
+
+        /// <summary>
+        /// <see cref="Hull(IList{Ring},Color32?,Color32?)"/> with per-triangle colours: <paramref name="paint"/>(ring s,
+        /// band i, triangle t) colours the two triangles of the quad between rings s and s + 1 and points i and i + 1
+        /// (t = 0: the triangle along ring s's edge and the upper corner of ring s + 1; t = 1: the one along ring s + 1's
+        /// lower edge), so liveries can step diagonally across a quad. Null uses the rings' bands.
+        /// </summary>
+        public void Hull(IList<Ring> rings, Color32? backCap, Color32? frontCap, System.Func<int, int, int, Color32> paint)
+        {
             int n = rings[0].Half.Length;
             int count = rings.Count;
             // Smooth normals of the right half, from the ring tangent and the tangent along Z.
@@ -239,18 +250,31 @@ namespace MotoManager.App.Race
                     var r1 = rings[s + 1];
                     for (int i = 0; i + 1 < n; i++)
                     {
-                        var col = r0.Bands[Mathf.Min(i, r0.Bands.Length - 1)];
+                        Color32 col, col2;
+                        if (paint != null) { col = paint(s, i, 0); col2 = paint(s, i, 1); }
+                        else col = col2 = r0.Bands[Mathf.Min(i, r0.Bands.Length - 1)];
                         int a = HullVertex(r0, s, i, side, normals, col);
                         int b = HullVertex(r0, s, i + 1, side, normals, col);
-                        int c = HullVertex(r1, s + 1, i, side, normals, col);
                         int d = HullVertex(r1, s + 1, i + 1, side, normals, col);
-                        if (side > 0) { _tris.Add(a); _tris.Add(b); _tris.Add(d); _tris.Add(a); _tris.Add(d); _tris.Add(c); }
-                        else { _tris.Add(a); _tris.Add(d); _tris.Add(b); _tris.Add(a); _tris.Add(c); _tris.Add(d); }
+                        int a2 = a, d2 = d;
+                        if (!Same(col, col2))
+                        {
+                            a2 = HullVertex(r0, s, i, side, normals, col2);
+                            d2 = HullVertex(r1, s + 1, i + 1, side, normals, col2);
+                        }
+                        int c = HullVertex(r1, s + 1, i, side, normals, col2);
+                        if (side > 0) { _tris.Add(a); _tris.Add(b); _tris.Add(d); _tris.Add(a2); _tris.Add(d2); _tris.Add(c); }
+                        else { _tris.Add(a); _tris.Add(d); _tris.Add(b); _tris.Add(a2); _tris.Add(c); _tris.Add(d2); }
                     }
                 }
             }
             if (backCap.HasValue) HullCap(rings[0], false, backCap.Value);
             if (frontCap.HasValue) HullCap(rings[count - 1], true, frontCap.Value);
+        }
+
+        private static bool Same(Color32 x, Color32 y)
+        {
+            return x.r == y.r && x.g == y.g && x.b == y.b && x.a == y.a;
         }
 
         private int HullVertex(Ring r, int s, int i, int side, Vector3[,] normals, Color32 col)
@@ -285,7 +309,7 @@ namespace MotoManager.App.Race
         /// points; <paramref name="colors"/>[i] colours the band between profile[i] and profile[i + 1].
         /// The profile should run from -X to +X along the outside so the faces point outwards.
         /// </summary>
-        public void Lathe(Vector3 center, IList<Vector2> profile, IList<Color32> colors, int sides = 12)
+        public void Lathe(Vector3 center, IList<Vector2> profile, IList<Color32> colors, int sides = 12, System.Func<int, int, Color32?> segment = null)
         {
             int n = profile.Count;
             var pn = new Vector2[n];
@@ -298,6 +322,11 @@ namespace MotoManager.App.Race
             for (int i = 0; i + 1 < n; i++)
             {
                 var col = colors[Mathf.Min(i, colors.Count - 1)];
+                if (segment != null && segment(i, 0).HasValue)
+                {
+                    LatheBand(center, profile, pn, i, sides, k => segment(i, k) ?? col);
+                    continue;
+                }
                 int start = _verts.Count;
                 for (int k = 0; k <= sides; k++)
                 {
@@ -316,6 +345,29 @@ namespace MotoManager.App.Race
                     _tris.Add(a); _tris.Add(a + 1); _tris.Add(b);
                     _tris.Add(b); _tris.Add(a + 1); _tris.Add(b + 1);
                 }
+            }
+        }
+
+        /// <summary>One band of a lathe with its own colour per segment (sidewall lettering, dashes).</summary>
+        private void LatheBand(Vector3 center, IList<Vector2> profile, Vector2[] pn, int i, int sides, System.Func<int, Color32> color)
+        {
+            for (int k = 0; k < sides; k++)
+            {
+                var col = color(k);
+                int start = _verts.Count;
+                for (int e = 0; e < 2; e++)
+                {
+                    float a = Mathf.PI * 2 * (k + e) / sides;
+                    float sa = Mathf.Sin(a), ca = Mathf.Cos(a);
+                    for (int j = 0; j < 2; j++)
+                    {
+                        var p = profile[i + j];
+                        var nn = pn[i + j];
+                        Vertex(center + new Vector3(p.y, p.x * sa, p.x * ca), new Vector3(nn.y, nn.x * sa, nn.x * ca), col);
+                    }
+                }
+                _tris.Add(start); _tris.Add(start + 1); _tris.Add(start + 2);
+                _tris.Add(start + 2); _tris.Add(start + 1); _tris.Add(start + 3);
             }
         }
 
@@ -451,11 +503,17 @@ namespace MotoManager.App.Race
 
         public GameObject ToObject(string name, Transform parent)
         {
+            return ToObject(name, parent, null);
+        }
+
+        /// <summary>The mesh as a child object drawn with <paramref name="material"/> (null: the shared vertex-colour material).</summary>
+        public GameObject ToObject(string name, Transform parent, Material material)
+        {
             var go = new GameObject(name);
             go.transform.SetParent(parent, false);
             go.AddComponent<MeshFilter>().sharedMesh = ToMesh(name);
             var mr = go.AddComponent<MeshRenderer>();
-            mr.sharedMaterial = SharedMaterial;
+            mr.sharedMaterial = material != null ? material : SharedMaterial;
             mr.shadowCastingMode = ShadowCastingMode.Off;
             mr.receiveShadows = false;
             return go;

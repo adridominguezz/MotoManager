@@ -96,6 +96,11 @@ namespace MotoManager.App.UI.Screens
             var plate = UiFactory.Row(colours, Ui.Grid.Cta);
             var pc = Ui.Columns12(plate, 2, 8);
             FoundingPanel.Plate(pc[1], team.Name, team.Colors.Primary, team.Colors.Secondary);
+            Wp4Ui.Chevron(Ui.Secondary(colours, Loc.T("livery.edit"), () =>
+            {
+                LiveryEditorPage.PendingTeamId = team.Id;
+                Shell.Show<LiveryEditorPage>();
+            }));
         }
 
         private void Riders(RectTransform area, WorldState world, GameDatabase db, Team team, int capacity)

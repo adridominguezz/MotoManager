@@ -296,6 +296,12 @@ namespace MotoManager.App.UI.Screens
             {
                 var l = (RectTransform)list;
                 Wp4Ui.Chevron(Ui.Secondary(l, Loc.T("ux.org.setup"), () => { Ui.CloseSheet(); Shell.Show<TeamSetupPage>(); }));
+                Wp4Ui.Chevron(Ui.Secondary(l, Loc.T("livery.edit"), () =>
+                {
+                    Ui.CloseSheet();
+                    LiveryEditorPage.PendingTeamId = _teamId;
+                    Shell.Show<LiveryEditorPage>();
+                }));
                 Wp4Ui.Chevron(Ui.Secondary(l, Loc.T("ux.org.foundAnother"), () => { Ui.CloseSheet(); Shell.Show<CareerFoundPage>(); }));
             }, null, null, 0.46f));
             var list2 = Wp4Ui.ListIn(body, 8);
@@ -361,6 +367,12 @@ namespace MotoManager.App.UI.Screens
                 var to = db.GetCategory(team.PendingCategoryId);
                 Ui.Line(list, Loc.T("org.moving"), Theme.WarnText(to != null ? to.Name : team.PendingCategoryId));
             }
+            var edited = team;
+            Wp4Ui.Chevron(Ui.Secondary(list, Loc.T("livery.edit"), () =>
+            {
+                LiveryEditorPage.PendingTeamId = edited.Id;
+                Shell.Show<LiveryEditorPage>();
+            }));
             if (mine) return;
             if (breaking) Ui.Alert(list, Loc.T("ux.career.breakAlert"));
             var t = team;

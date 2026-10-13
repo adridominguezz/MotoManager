@@ -202,7 +202,7 @@ namespace MotoManager.App.UI.Screens
             Add("nav.finance", new FinanceScreen(), new SponsorsPage(), new ShopScreen());
             Add("nav.market", new MarketScreen());
             Add("nav.competition", new StandingsScreen(), new CalendarScreen(), new HistoryScreen());
-            Add("nav.career", new CareerSummaryPage(), new CareerOffersPage(), new CareerOrgPage(), new TeamSetupPage(), new CareerFoundPage());
+            Add("nav.career", new CareerSummaryPage(), new CareerOffersPage(), new CareerOrgPage(), new TeamSetupPage(), new CareerFoundPage(), new LiveryEditorPage());
 
             foreach (var s in _sections) BuildNavCell(nav, s);
             Show(_sections[0]);
