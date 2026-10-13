@@ -19,6 +19,8 @@ namespace MotoManager.App.UI
         private RaceView _view;
         private RectTransform _root;
         private Text _lapText;
+        private Text _towerLap;
+        private string _sessionTitle = "";
         private Text _conditions;
         private Text _flag;
         private Image _flagBg;
@@ -36,6 +38,8 @@ namespace MotoManager.App.UI
         private const float CardLeft = 0.755f;
         private const float TopH = 64f, StripH = 48f, Gap = 8f;
         private const float TowerRowH = 40f;
+        // Tower header (session caption over the big lap count) and the gap-mode line under it.
+        private const float TowerHeadH = 76f, TowerGapH = 40f;
         private const string GapPref = "MotoManager.RaceGapMode";
         private Text _gapLabel;
         /// <summary>Gaps to the rider ahead (interval) instead of to the leader.</summary>
@@ -66,6 +70,9 @@ namespace MotoManager.App.UI
             public Text Name;
             public Text Gap;
             public Text Tires;
+            public Image NumberBox;
+            public Text Number;
+            public Image Fastest;
         }
 
         /// <summary>One segment of a segmented control (speed, camera): lit and underlined when active.</summary>
@@ -77,10 +84,11 @@ namespace MotoManager.App.UI
 
             public void Set(bool on)
             {
-                Fill.color = on ? Theme.PanelLight : Color.Lerp(Theme.Background, Theme.Panel, 0.85f);
+                // Dark small-radius boxes (they sit over the 3D track); the active one has light text and a
+                // short thick underline, the others dim text.
+                Fill.color = Theme.Alpha(Theme.Chrome, on ? 0.92f : 0.75f);
                 if (Underline.enabled != on) Underline.enabled = on;
-                Label.color = on ? Color.white : Color.Lerp(Theme.TextDim, Color.white, 0.2f);
-                UiFactory.Style(Label, FontStyle.Bold);
+                Label.color = on ? Theme.Text : Theme.TextDim;
             }
         }
 
@@ -135,11 +143,11 @@ namespace MotoManager.App.UI
             var t = b.GetComponentInChildren<Text>();
             UiFactory.Style(t, FontStyle.Bold);
             Ui.Fit(t, Theme.TextBody);
-            var line = UiFactory.Decor("Underline", b.transform, Theme.Accent);
-            line.rectTransform.anchorMin = new Vector2(0, 0);
-            line.rectTransform.anchorMax = new Vector2(1, 0);
-            line.rectTransform.offsetMin = new Vector2(22, 3);
-            line.rectTransform.offsetMax = new Vector2(-22, 6);
+            var line = UiFactory.Decor("Underline", b.transform, Theme.Text);
+            line.rectTransform.anchorMin = new Vector2(0.25f, 0);
+            line.rectTransform.anchorMax = new Vector2(0.75f, 0);
+            line.rectTransform.offsetMin = new Vector2(0, 3);
+            line.rectTransform.offsetMax = new Vector2(0, 7);
             var s = new Segment { Fill = b.image, Underline = line, Label = t };
             s.Set(false);
             return s;
@@ -148,6 +156,7 @@ namespace MotoManager.App.UI
         private void Build(string title)
         {
             var sim = _view.Sim;
+            _sessionTitle = title ?? "";
 
             // Name tags under everything else.
             // On the whole screen (they follow the riders), behind the HUD that stays in the safe area.
@@ -298,34 +307,76 @@ namespace MotoManager.App.UI
         }
 
         /// <summary>
-        /// Timing tower, always on the left: a header with the gap mode, then fixed 40-unit rows (a finger can tap
-        /// them, the text always fits) that scroll when the field is longer than the screen.
+        /// Timing tower in the TV-broadcast style, always on the left: a compact near-black panel; a header with the
+        /// session in red caps over the big lap count; a "GAP" line that toggles leader / interval; then dense 40-unit
+        /// rows (position, thin team bar, rider code, number in a team-colour square, gap, tyres, fastest-lap tag) that
+        /// scroll when the field is longer than the screen. Tap a row to follow that rider.
         /// </summary>
         private void BuildTower(RaceSimulation sim)
         {
-            var tower = UiFactory.Panel("Tower", _root, Theme.Alpha(Theme.Panel, 0.9f));
-            UiFactory.Chamfer(tower, 3f);
+            var tower = UiFactory.Panel("Tower", _root, Theme.Alpha(Theme.Chrome, 0.88f));
+            UiFactory.Surface(tower);
             _tower = Region(_root, "TowerArea", 0.005f, TowerRight, TopH + Gap, Gap);
             tower.rectTransform.SetParent(_tower, false);
             UiFactory.Stretch(tower.rectTransform);
-            var head = Ui.HeaderStrip(tower.transform, Loc.T("race.standings"));
-            var title = head.Find("Title") as RectTransform;
-            if (title != null) title.offsetMax = new Vector2(-170, 0);
+
+            // Header: session caption (race red) over the lap count in the display face.
+            var head = UiFactory.Rect("Head", tower.transform);
+            head.anchorMin = new Vector2(0, 1);
+            head.anchorMax = new Vector2(1, 1);
+            head.pivot = new Vector2(0.5f, 1);
+            head.offsetMin = new Vector2(0, -TowerHeadH);
+            head.offsetMax = Vector2.zero;
+            var session = TowerLabel("Session", head, Theme.TextCaption, TextAnchor.LowerLeft, Theme.Readable(Theme.Race, Theme.Chrome, 4.5f));
+            UiFactory.Style(session, FontStyle.Bold);
+            session.text = Theme.Caps(_sessionTitle);
+            UiFactory.Place(session.rectTransform, 0, 0.6f, 1, 1);
+            session.rectTransform.offsetMin = new Vector2(12, 0);
+            _towerLap = TowerLabel("Lap", head, Theme.TextTitle, TextAnchor.MiddleLeft, Theme.Text);
+            UiFactory.Display(_towerLap);
+            UiFactory.Place(_towerLap.rectTransform, 0, 0, 1, 0.62f);
+            _towerLap.rectTransform.offsetMin = new Vector2(12, 0);
+            _towerLap.rectTransform.offsetMax = new Vector2(-10, 0);
+
+            // The GAP line: a plain text toggle between hairlines (leader / interval).
             try { _gapToAhead = PlayerPrefs.GetInt(GapPref, 0) == 1; } catch (System.Exception) { }
-            var gapArea = RaceUi.RightSlot(head, 160, 6, 6);
-            var gapButton = Ui.Secondary(gapArea, "", () =>
+            var gapRow = UiFactory.Panel("GapMode", tower.transform, Theme.Alpha(Color.white, 0.04f));
+            gapRow.rectTransform.anchorMin = new Vector2(0, 1);
+            gapRow.rectTransform.anchorMax = new Vector2(1, 1);
+            gapRow.rectTransform.pivot = new Vector2(0.5f, 1);
+            gapRow.rectTransform.offsetMin = new Vector2(0, -TowerHeadH - TowerGapH);
+            gapRow.rectTransform.offsetMax = new Vector2(0, -TowerHeadH);
+            var gapButton = gapRow.gameObject.AddComponent<Button>();
+            gapButton.targetGraphic = gapRow;
+            UiFactory.PressFeedback(gapButton, gapRow.color);
+            gapButton.onClick.AddListener(() =>
             {
+                GameAudio.ClickSound();
                 _gapToAhead = !_gapToAhead;
                 try { PlayerPrefs.SetInt(GapPref, _gapToAhead ? 1 : 0); } catch (System.Exception) { }
                 RefreshTower();
             });
-            gapButton.gameObject.name = "GapMode";
-            _gapLabel = gapButton.GetComponentInChildren<Text>();
-            Ui.Fit(_gapLabel, Theme.TextCaption);
+            for (int k = 0; k < 2; k++)
+            {
+                var rule = UiFactory.Decor("Rule", gapRow.transform, Theme.Alpha(Color.white, 0.14f));
+                rule.rectTransform.anchorMin = new Vector2(0, k);
+                rule.rectTransform.anchorMax = new Vector2(1, k);
+                rule.rectTransform.offsetMin = new Vector2(0, k == 0 ? 0 : -1);
+                rule.rectTransform.offsetMax = new Vector2(0, k == 0 ? 1 : 0);
+            }
+            var gapCaption = TowerLabel("Caption", gapRow.transform, Theme.TextCaption, TextAnchor.MiddleLeft, Theme.TextDim);
+            UiFactory.Style(gapCaption, FontStyle.Bold);
+            gapCaption.text = "GAP";
+            UiFactory.Place(gapCaption.rectTransform, 0, 0, 0.3f, 1);
+            gapCaption.rectTransform.offsetMin = new Vector2(12, 0);
+            _gapLabel = TowerLabel("Mode", gapRow.transform, Theme.TextCaption, TextAnchor.MiddleRight, Theme.Text);
+            UiFactory.Style(_gapLabel, FontStyle.Bold);
+            UiFactory.Place(_gapLabel.rectTransform, 0.3f, 0, 1, 1);
+            _gapLabel.rectTransform.offsetMax = new Vector2(-12, 0);
 
             var viewport = UiFactory.Panel("Viewport", tower.transform, new Color(0, 0, 0, 0));
             UiFactory.Stretch(viewport.rectTransform);
-            viewport.rectTransform.offsetMax = new Vector2(0, -Ui.Grid.Header - 2);
+            viewport.rectTransform.offsetMax = new Vector2(0, -TowerHeadH - TowerGapH - 2);
             viewport.rectTransform.offsetMin = new Vector2(0, 4);
             viewport.gameObject.AddComponent<RectMask2D>();
             var content = UiFactory.Rect("Content", viewport.transform);
@@ -355,23 +406,45 @@ namespace MotoManager.App.UI
                 int index = i;
                 button.onClick.AddListener(() => OnRowClicked(index));
                 row.Edge = UiFactory.SideStripe(row.Rect, Theme.Accent, 4, 0);
-                // Position number in a light block with dark type (TV timing tower).
-                var posBlock = UiFactory.Decor("PosBlock", row.Rect, Theme.Plate);
-                UiFactory.Slant(posBlock, 4f);
-                UiFactory.Place(posBlock.rectTransform, 0.02f, 0.1f, 0.15f, 0.9f);
-                row.Position = TowerLabel("Pos", posBlock.transform, Theme.TextBody - 2, TextAnchor.MiddleCenter, Theme.Ink);
-                UiFactory.Style(row.Position, FontStyle.BoldAndItalic);
+                var hair = UiFactory.Decor("Rule", row.Rect, Theme.Divider);
+                hair.rectTransform.anchorMin = new Vector2(0, 0);
+                hair.rectTransform.anchorMax = new Vector2(1, 0);
+                hair.rectTransform.offsetMin = Vector2.zero;
+                hair.rectTransform.offsetMax = new Vector2(0, 1);
+                // Position: a plain number in the display face (broadcast tower), no plate.
+                var posBlock = UiFactory.Decor("PosBlock", row.Rect, Color.clear);
+                UiFactory.Place(posBlock.rectTransform, 0.015f, 0.08f, 0.12f, 0.92f);
+                row.Position = TowerLabel("Pos", posBlock.transform, Theme.TextBody - 2, TextAnchor.MiddleCenter, Theme.Text);
+                UiFactory.Display(row.Position);
                 UiFactory.Stretch(row.Position.rectTransform);
                 row.PosBlock = posBlock;
                 row.TeamBar = UiFactory.Decor("Team", row.Rect, Color.white);
-                UiFactory.Place(row.TeamBar.rectTransform, 0.165f, 0.2f, 0.178f, 0.8f);
+                UiFactory.Place(row.TeamBar.rectTransform, 0.13f, 0.18f, 0.142f, 0.82f);
                 row.Name = TowerLabel("Name", row.Rect, Theme.TextBody - 2, TextAnchor.MiddleLeft, Theme.Text);
                 UiFactory.Style(row.Name, FontStyle.Bold);
-                UiFactory.Place(row.Name.rectTransform, 0.195f, 0, 0.6f, 1);
-                row.Gap = TowerLabel("Gap", row.Rect, Theme.TextCaption, TextAnchor.MiddleRight, Theme.TextDim);
-                UiFactory.Place(row.Gap.rectTransform, 0.6f, 0, 0.86f, 1);
+                UiFactory.Place(row.Name.rectTransform, 0.16f, 0, 0.46f, 1);
+                // Fastest lap: a small purple "FL" tag after the rider code.
+                row.Fastest = UiFactory.Decor("Fastest", row.Rect, Theme.Fastest);
+                UiFactory.Slant(row.Fastest, 4f);
+                UiFactory.Place(row.Fastest.rectTransform, 0.375f, 0.2f, 0.465f, 0.8f);
+                var fl = TowerLabel("FL", row.Fastest.transform, Theme.TextMin, TextAnchor.MiddleCenter, Theme.OnColor(Theme.Fastest));
+                UiFactory.Style(fl, FontStyle.Bold);
+                fl.text = "FL";
+                UiFactory.Stretch(fl.rectTransform);
+                row.Fastest.enabled = false;
+                fl.enabled = false;
+                // Rider number in a small team-colour square.
+                row.NumberBox = UiFactory.Decor("NumberBox", row.Rect, Color.white);
+                UiFactory.Round(row.NumberBox, 6f);
+                UiFactory.Place(row.NumberBox.rectTransform, 0.475f, 0.14f, 0.585f, 0.86f);
+                row.Number = TowerLabel("Number", row.NumberBox.transform, Theme.TextCaption, TextAnchor.MiddleCenter, Theme.Ink);
+                UiFactory.Display(row.Number);
+                UiFactory.Stretch(row.Number.rectTransform);
+                row.Gap = TowerLabel("Gap", row.Rect, Theme.TextCaption, TextAnchor.MiddleRight, Theme.Text);
+                UiFactory.Style(row.Gap, FontStyle.Bold);
+                UiFactory.Place(row.Gap.rectTransform, 0.59f, 0, 0.85f, 1);
                 row.Tires = TowerLabel("Tires", row.Rect, Theme.TextCaption, TextAnchor.MiddleCenter, Theme.TextDim);
-                UiFactory.Place(row.Tires.rectTransform, 0.86f, 0, 1, 1);
+                UiFactory.Place(row.Tires.rectTransform, 0.85f, 0, 1, 1);
                 _rows.Add(row);
             }
         }
@@ -421,6 +494,7 @@ namespace MotoManager.App.UI
             var sim = _view.Sim;
             int lap = Mathf.Clamp(sim.LeaderLap + 1, 1, sim.TotalLaps);
             _lapText.text = sim.ChequeredFlag ? Loc.T("race.finish") : (sim.Tick == 0 ? Loc.T("race.grid") : Loc.T("race.lap", lap, sim.TotalLaps));
+            if (_towerLap != null) _towerLap.text = Theme.Caps(_lapText.text);
             var w = sim.Weather;
             _conditions.text = Theme.Caps(Loc.T("ux.race.cond", Loc.Or("weather." + w.Condition, w.Condition.ToString()), w.TrackTemp.ToString("0"), (w.TrackWetness * 100).ToString("0")) +
                                (_forecast >= 0 ? "  ·  " + Loc.T("ux.race.condRain", (_forecast * 100).ToString("0")) : ""));
@@ -484,9 +558,21 @@ namespace MotoManager.App.UI
                 bool mine = r.Entry.IsPlayer;
                 bool selected = r.Index == _view.SelectedRider;
                 row.Position.text = (p + 1).ToString();
-                row.TeamBar.color = RaceUi.TeamColor(team != null ? team.Colors.Primary : null);
-                row.Name.text = r.Entry.Rider.ShortName.ToUpperInvariant() + (r.PendingLongLaps > 0 ? " " + Theme.WarnText("LL") : "");
+                row.Position.color = p == 0 ? Theme.Timing : Theme.Text;
+                var teamColor = RaceUi.TeamColor(team != null ? team.Colors.Primary : null);
+                row.TeamBar.color = teamColor;
+                row.Name.text = RiderCode(r.Entry.Rider) + (r.PendingLongLaps > 0 ? " " + Theme.WarnText("LL") : "");
                 row.Name.color = Theme.Text;
+                int number = r.Entry.Rider.Number;
+                row.NumberBox.color = teamColor;
+                row.Number.text = number > 0 ? number.ToString() : "-";
+                row.Number.color = Theme.OnColor(teamColor);
+                bool fastest = r.BestLapTime < double.MaxValue && System.Math.Abs(r.BestLapTime - sim.FastestLap) < 0.0005;
+                if (row.Fastest.enabled != fastest)
+                {
+                    row.Fastest.enabled = fastest;
+                    row.Fastest.GetComponentInChildren<Text>().enabled = fastest;
+                }
                 row.Gap.text = GapText(sim, r, p);
                 row.Tires.text = CompoundLetter(r.Front.Compound) + "/" + CompoundLetter(r.Rear.Compound);
                 row.Tires.color = mine ? Theme.Text : Theme.TextDim;
@@ -494,8 +580,16 @@ namespace MotoManager.App.UI
                 if (mine) row.Background.color = Theme.Alpha(Theme.Accent, selected ? 0.38f : 0.24f);
                 else row.Background.color = selected ? new Color(1, 1, 1, 0.14f) : new Color(1, 1, 1, p % 2 == 1 ? 0.035f : 0f);
                 if (row.Edge.enabled != mine) row.Edge.enabled = mine;
-                row.PosBlock.color = p == 0 ? Theme.Timing : Theme.Plate;
             }
+        }
+
+        /// <summary>Broadcast rider code: first initial and the first three letters of the surname ("J MAR").</summary>
+        private static string RiderCode(MotoManager.Core.World.Rider rider)
+        {
+            string last = (rider.LastName ?? "").Trim();
+            string code = (last.Length > 3 ? last.Substring(0, 3) : last).ToUpperInvariant();
+            string first = (rider.FirstName ?? "").Trim();
+            return first.Length > 0 ? char.ToUpperInvariant(first[0]) + " " + code : code;
         }
 
         private static string GapText(RaceSimulation sim, RiderRaceState r, int position)

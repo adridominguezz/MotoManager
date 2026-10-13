@@ -193,10 +193,10 @@ namespace MotoManager.App.UI
                 t.rectTransform.offsetMin = new Vector2(10, 0);
                 t.rectTransform.offsetMax = new Vector2(-10, 0);
                 var line = UiFactory.Decor("Underline", b.transform, Theme.Accent);
-                line.rectTransform.anchorMin = new Vector2(0, 0);
-                line.rectTransform.anchorMax = new Vector2(1, 0);
-                line.rectTransform.offsetMin = new Vector2(22, 3);
-                line.rectTransform.offsetMax = new Vector2(-22, 6);
+                line.rectTransform.anchorMin = new Vector2(0.25f, 0);
+                line.rectTransform.anchorMax = new Vector2(0.75f, 0);
+                line.rectTransform.offsetMin = new Vector2(0, 3);
+                line.rectTransform.offsetMax = new Vector2(0, 7);
                 into[i] = new Choice { Fill = b.image, Underline = line, Label = t };
             }
         }
@@ -207,11 +207,10 @@ namespace MotoManager.App.UI
             for (int i = 0; i < row.Length; i++)
             {
                 bool on = i == active;
-                row[i].Fill.color = on ? Theme.PanelLight : Color.Lerp(Theme.Background, Theme.Panel, 0.85f);
+                row[i].Fill.color = Theme.Alpha(Theme.Chrome, on ? 0.92f : 0.75f);
                 row[i].Underline.enabled = on;
                 row[i].Underline.color = auto ? Theme.Steel : Theme.Accent;
-                row[i].Label.color = on ? Color.white : Color.Lerp(Theme.TextDim, Color.white, 0.15f);
-                UiFactory.Style(row[i].Label, FontStyle.Bold);
+                row[i].Label.color = on ? Theme.Text : Theme.TextDim;
             }
         }
 

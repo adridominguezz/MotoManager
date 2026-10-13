@@ -3,11 +3,11 @@
 ## Resumen (para el usuario)
 
 - **Qué se ha hecho:** una pasada **solo de estilo** (colores, tipografía, botones, bordes, radios, sombras, degradados, cabeceras, etiquetas). **No se ha movido, añadido ni quitado** ninguna sección, baldosa, lista, botón, página ni flujo, y no hay iconos nuevos.
-- **Estética MotoGP (web oficial), traducida a nuestro juego oscuro:** superficies casi negras con texto claro; **un rojo de carrera** (#D80F0A) para el botón principal y para los estados "en directo / próximo"; títulos y números grandes en una letra **muy gruesa, ancha y recta**; texto normal en una sans limpia y en **minúscula normal** (no todo en mayúsculas); botones en forma de **cápsula** (principal rojo relleno, secundarios con borde fino); la **barra roja inclinada "/"** antes de cada título; **bloques de dato** con leyenda pequeña + número enorme y una barra roja fina a la izquierda; **línea roja fina en la base** de baldosas, tarjetas y hojas; **brillo rojo oscuro** muy suave detrás de la cabecera; filas de clasificación con número de posición grande y sin "placa", líneas finas entre filas.
+- **Estética MotoGP (web oficial), traducida a nuestro juego oscuro:** superficies casi negras con texto claro; **un rojo de carrera** (#D80F0A) para el botón principal y para los estados "en directo / próximo"; títulos y números grandes en una letra **muy gruesa, ancha y recta**; texto normal en una sans limpia y en **minúscula normal** (no todo en mayúsculas); **solo el botón principal es una cápsula roja**; el resto de botones y filtros son cajas con **radio pequeño** (~7) y borde fino, y las pestañas son **texto con subrayado corto y grueso** (como la app oficial); la **barra roja inclinada "/"** antes de cada título; **bloques de dato** con leyenda pequeña + número enorme y una barra roja fina a la izquierda; **línea roja fina en la base** de baldosas, tarjetas y hojas; **brillo rojo oscuro** muy suave detrás de la cabecera; filas de clasificación con número de posición grande y sin "placa", líneas finas entre filas.
 - **El color del equipo se mantiene como identidad:** tu fila en las tablas (degradado del color del equipo + borde), barra lateral del menú, línea bajo la barra superior, subrayado de pestañas, bordes de los botones "secundario de acento", bandas de clasificación, chapas de dorsal. El **botón principal pasa a rojo de carrera siempre** (antes era el color del equipo): así es igual de reconocible con cualquier equipo y nunca choca con equipos de color claro.
 - **Fuentes (licencia OFL, incluidas con su licencia):** **Russo One** para títulos y números (parecida en espíritu a la de MotoGP, que es propietaria y **no** se usa) y **Titillium Web** para el resto. Si faltan, el juego vuelve a la fuente integrada de Unity.
 - **Correcciones de accesibilidad:** el rojo de "negativo" en textos no llegaba al contraste mínimo (3,8:1) → ahora 5,9:1; el texto en color del equipo se aclara automáticamente hasta 4,5:1 (antes, con equipos azul oscuro, quedaba ~3:1); el texto sobre rellenos de color se elige midiendo el contraste real; el estado **pulsado** ahora se ve en todos los botones y filas (antes era casi invisible en los grises oscuros) y no se queda "resaltado" tras tocar en el móvil; "aviso" (naranja) ya no se confunde con el amarillo de cronometraje.
-- **Menos ruido:** fuera sombras en los textos, degradados en todas las superficies, cursivas en todo y la mezcla de esquinas cortadas/inclinadas/redondeadas: ahora **cápsula = control**, **radio pequeño = superficie**, **inclinado = etiqueta/marca** (barra "/", etiquetas tipo "FINISHED", dorsales), **recto = datos** (barras, indicadores).
+- **Menos ruido:** fuera sombras en los textos, degradados en todas las superficies, cursivas en todo y la mezcla de esquinas cortadas/inclinadas/redondeadas: ahora **cápsula = solo el botón principal**, **radio pequeño = controles y superficies**, **texto + subrayado = pestañas**, **inclinado = etiqueta/marca** (barra "/", etiquetas tipo "FINISHED", dorsales), **recto = datos** (barras, indicadores).
 
 ---
 
@@ -119,11 +119,13 @@ Helpers: `Theme.Contrast(a, b)`, `Theme.Luminance(c)`, `Theme.OnColor(fill)`, `T
 
 | Token / primitive | Value | Use |
 |---|---|---|
-| `UiFactory.Capsule(img)` | fully rounded ends (radius > half height) | buttons, toggles, picker, top-bar pills, icon plates, count badges |
+| `UiFactory.Capsule(img)` | fully rounded ends (radius > half height) | **only the primary CTA** (`PrimaryCTA`, `UiAct` primary, race-red `BigButton`), plus round count badges and icon plates |
+| `UiFactory.Control(img)` / `ControlRadius` | ≈ 7 units | every other button, filter box, picker, in-race toggle (default of `UiFactory.Button`) |
+| `Ui.TextTab(button, on, size)` | no box; selected = light bold text + 4-unit underline (56% wide), others dim | `Ui.Segmented` (all in-page tabs and filters), shell section tabs, top-bar AVISOS / NOTICIAS (text buttons) |
 | `UiFactory.Surface(img)` / `SurfaceRadius` | ≈ 6 units | tiles, cards, sheets, KPI tiles, toasts, rating squares, inputs, alerts, list items |
 | `UiFactory.Slant` | forward lean | **tags & marks only**: title slash, corner-tag pills (`Ui.Pill`), rider-number badges, race-tower/grid position blocks |
 | square | — | gauges (slim, centred), pips, contract segments, hairlines |
-| `UiFactory.Ring(parent, color)` | ~2-unit hollow capsule stroke | outline buttons (Secondary, SecondaryAccent, Danger idle, Picker, top-bar pills) |
+| `UiFactory.Ring(parent, color)` | ~1.4-unit hollow stroke, small radius | outline buttons (Secondary, SecondaryAccent, Danger idle), Picker, R&D tier filter boxes |
 | `UiFactory.Slash(parent, color)` | thin slanted red bar | before every header-strip / section / top-bar title |
 | `UiFactory.BottomRule(parent)` | 2-unit race-red line | bottom of tiles, cards, sheets, career path cards (dim tiles: 35%) |
 | `UiFactory.Glow(parent, x, y, size, a)` | radial dark-red glow (generated sprite) | shell background, top centre-left, 16% |
@@ -139,8 +141,10 @@ Helpers: `Theme.Contrast(a, b)`, `Theme.Luminance(c)`, `Theme.OnColor(fill)`, `T
 | **Secondary accent** | team colour 10% | team colour ring (≥ 3:1) | `AccentInk` (≥ 4.5:1) | as Secondary | as Secondary |
 | **Ghost / link** | none | — | dim CAPS + chevron | text dims ×0.6 | — |
 | **Danger** | red 10% → armed solid `Bad` | red ring → none when armed | `BadHex` → `OnColor(Bad)` | as Secondary / darker | — |
-| **Segmented / toggles** | track white 6%; selected `Text` | — | selected `Ink`, others dim-light | light-up | — |
-| **Tabs (shell)** | white 2% / selected 7% | — | Bold CAPS, selected `Text` | light-up | — |
+| **Segmented = text tabs** (`Ui.Segmented`, shell tabs) | none (row hairline) | — | Bold CAPS; selected `Text` + short thick `Text` underline, others `TextDim` | label dims ×0.6 | — |
+| **Filter boxes** (R&D tiers) | white 3% / selected team colour 16% | thin ring (team colour when selected) | Bold CAPS 20, `Text` / `TextDim` | light-up | — |
+| **Top-bar blocks** (cash, championship) | none, 1-unit divider on the left | — | dim caption over bold value | label dims | — |
+| **In-race toggles** (speed, camera, rider orders) | chrome 75% / 92%, small radius | — | `Text` + short underline when active, `TextDim` otherwise | light-up | — |
 | **Rows & tiles** (tappable) | surface | — | — | light-up (visible on translucent rows) | — |
 
 No hover tint and no "selected" tint (touch-first; Unity otherwise keeps the last-tapped button highlighted).
@@ -163,7 +167,16 @@ No hover tint and no "selected" tint (touch-first; Unity otherwise keeps the las
 
 ---
 
-## 3. Verification
+## 3. Revision 2 (user feedback on device screenshots)
+
+- **Too many full pills** (top-bar pills, section tabs, component chips, ambition chips, CONTRATAR outlines, the big INICIAR button): the capsule is now reserved for the single red primary CTA. All other buttons default to a ~7-unit radius (`UiFactory.Control`); outlines use a small-radius ring.
+- **Tabs and chip rows** follow the official app: `Ui.Segmented` (component chips, ambitions, filters, views) and the shell's section tabs are plain text tabs with a short thick underline; no boxes, no white "selected pill".
+- **Top bar**: cash / championship are flat text blocks (caption over value) separated by thin dividers; AVISOS / NOTICIAS are text buttons keeping the count badge; the race button is a small-radius team-colour outline.
+- **INICIAR was blue** because `BikeCards.StartColor` was a hard-coded blue (36,122,226). It now equals the primary token (`Theme.Race`) and race-red `BigButton`s take the capsule.
+- **R&D tier choices** (incremental / new spec / experimental) are filter boxes: small radius, thin outline, team colour when selected.
+- **Race HUD timing tower** (TV-broadcast style, `RaceHud.BuildTower`): near-black compact panel with the small surface radius; header with the session in red caps over the big lap count ("VUELTA 6/6") in the display face; a "GAP" line (text toggle between hairlines) that switches leader / interval; dense 40-unit rows separated by hairlines: plain display position (leader in timing yellow), thin team-colour bar, rider code in bold caps ("J MAR"), rider number in a small team-colour square, gap/interval (OUT / DNF / PIT / CRASH as before), tyre letters, and a small purple "FL" tag on the fastest-lap holder. The player's riders keep the team-colour highlight and edge; tap to follow, scrolling and the gap preference are unchanged. Minimum text 18 holds (rows 40 high, text 18–22).
+
+## 4. Verification
 
 - `cd Tests/UnityCheck && dotnet build` → 0 errors.
 - `dotnet build --no-incremental -p:DefineConstants="UNITY_ANDROID%3BUNITY_2021_3_OR_NEWER"` → 0 errors.

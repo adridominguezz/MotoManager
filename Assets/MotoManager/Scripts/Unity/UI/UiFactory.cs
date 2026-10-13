@@ -496,19 +496,29 @@ namespace MotoManager.App.UI
         public const float SurfaceRadius = 3.4f;
 
         /// <summary>
-        /// Fully rounded ends (a capsule): buttons, segmented toggles and the top-bar pills. The corner radius is larger
-        /// than half of any control height, and uGUI scales sliced borders down to fit, so the ends are always round.
+        /// Fully rounded ends (a capsule): reserved for the one primary CTA of a screen (and round count badges / icon
+        /// plates). The corner radius is larger than half of any control height, and uGUI scales sliced borders down to
+        /// fit, so the ends are always round.
         /// </summary>
         public static Image Capsule(Image img)
         {
             return Round(img, 0.45f);
         }
 
+        /// <summary>Corner multiplier of controls: a small ~7-unit radius (filters, secondary buttons, chips).</summary>
+        public const float ControlRadius = 2.8f;
+
+        /// <summary>The control shape: a small even radius (about 7 units), like the filter boxes of the reference app.</summary>
+        public static Image Control(Image img)
+        {
+            return Round(img, ControlRadius);
+        }
+
         private static Sprite _ring;
 
         /// <summary>
-        /// A rounded-rectangle outline (about 1.3 px stroke, 9-sliced, hollow): the thin border of outline pill buttons.
-        /// Same corner geometry as <see cref="RoundedSprite"/>, so it lines up with <see cref="Capsule"/> fills.
+        /// A rounded-rectangle outline (9-sliced, hollow): the thin border of outline buttons and filter boxes. Same
+        /// corner geometry as <see cref="RoundedSprite"/>, so it lines up with <see cref="Control"/> fills.
         /// </summary>
         public static Sprite RingSprite
         {
@@ -516,7 +526,7 @@ namespace MotoManager.App.UI
             {
                 if (_ring != null) return _ring;
                 const int size = 64, r = 20;
-                const float stroke = 1.3f;
+                const float stroke = 4f; // ≈ 1.4 units at ControlRadius
                 var tex = NewTexture(size, size, false);
                 var px = new Color32[size * size];
                 for (int y = 0; y < size; y++)
@@ -537,8 +547,8 @@ namespace MotoManager.App.UI
         }
 
         /// <summary>
-        /// A thin capsule outline stretched over <paramref name="parent"/> (outline pill buttons, pickers). Decorative:
-        /// the parent keeps the clicks and the press tint.
+        /// A thin small-radius outline stretched over <paramref name="parent"/> (outline buttons, pickers, filter
+        /// boxes). Decorative: the parent keeps the clicks and the press tint.
         /// </summary>
         public static Image Ring(Transform parent, Color color)
         {
@@ -546,7 +556,7 @@ namespace MotoManager.App.UI
             img.sprite = RingSprite;
             img.type = Image.Type.Sliced;
             img.fillCenter = false;
-            img.pixelsPerUnitMultiplier = 0.45f;
+            img.pixelsPerUnitMultiplier = ControlRadius;
             Stretch(img.rectTransform);
             return img;
         }
@@ -872,9 +882,9 @@ namespace MotoManager.App.UI
         {
             var fill = color ?? Theme.PanelLight;
             var img = Panel(name, parent, fill);
-            // Flat capsule (no gloss, no shadow), bold sans label; the press state lights dark fills and darkens
-            // bright ones so the feedback shows on every fill.
-            Capsule(img);
+            // Flat small-radius box (no gloss, no shadow), bold sans label; the press state lights dark fills and
+            // darkens bright ones so the feedback shows on every fill. Only the primary CTA becomes a capsule.
+            Control(img);
             var button = img.gameObject.AddComponent<Button>();
             PressFeedback(button, fill);
             var label = Label("Label", img.transform, text, size, TextAnchor.MiddleCenter);
@@ -1114,6 +1124,7 @@ namespace MotoManager.App.UI
                 var b = Button("Button", row, buttons[i].Key, buttons[i].Value, buttons[i].Color, Theme.FontSmall + 2);
                 var label = b.GetComponentInChildren<Text>();
                 if (buttons[i].Primary || buttons[i].Selected) label.color = Theme.OnColor(buttons[i].Color);
+                if (buttons[i].Primary) Capsule(b.image);
                 Style(label, FontStyle.Bold);
                 Place((RectTransform)b.transform, (float)i / buttons.Length, 0, (float)(i + 1) / buttons.Length, 1, 4);
             }

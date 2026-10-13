@@ -668,13 +668,15 @@ namespace MotoManager.App.UI.Screens
                 bool busy = running.Exists(p => p.TemplateId == templates[i].Id);
                 string label = Theme.Caps(TierName(templates[i]));
                 var b = UiFactory.Button("Tier", card.transform, busy ? Theme.GoodText(label) : label,
-                    () => { _tier = idx; Shell.Refresh(); }, on ? Theme.CurrentAccent : Color.Lerp(Theme.Panel, Theme.PanelLight, 0.55f), Theme.TextCaption);
+                    () => { _tier = idx; Shell.Refresh(); }, Theme.Alpha(on ? Theme.CurrentAccent : Color.white, on ? 0.16f : 0.03f), Theme.TextCaption);
                 UiFactory.Place((RectTransform)b.transform, (float)i / templates.Count, 0.7f, (float)(i + 1) / templates.Count, 1, 2);
+                // Filter-box look: small radius, thin outline (team colour when selected).
+                UiFactory.Ring(b.transform, on ? Theme.Readable(Theme.CurrentAccent, Theme.Card, 3f) : Theme.Alpha(Color.white, 0.2f));
                 var lbl = b.GetComponentInChildren<Text>();
                 lbl.supportRichText = true;
                 Ui.Fit(lbl, Theme.TextCaption);
                 UiFactory.Style(lbl, FontStyle.Bold);
-                lbl.color = on ? Theme.OnAccent : Color.Lerp(Theme.TextDim, Color.white, 0.2f);
+                lbl.color = on ? Theme.Text : Theme.TextDim;
             }
             double reach = Math.Min(100, level + gain);
             BikeCards.Square(card.transform, new Vector2(0.17f, 0.45f), new Vector2(0.5f, 0.5f), Vector2.zero, 100, reach.ToString("0"),

@@ -18,8 +18,8 @@ namespace MotoManager.App.UI.Screens
         public static readonly Color PerfColor = Theme.Perf;
         /// <summary>Reliability figures (purple / magenta).</summary>
         public static readonly Color RelColor = Theme.Rel;
-        /// <summary>The "build / start" call to action (blue).</summary>
-        public static readonly Color StartColor = new Color32(36, 122, 226, 255);
+        /// <summary>The "build / start" call to action: the primary action colour (race red).</summary>
+        public static readonly Color StartColor = Theme.Race;
         /// <summary>The quick "upgrade part" call to action (green).</summary>
         public static readonly Color UpgradeColor = new Color32(52, 168, 92, 255);
         public static readonly Color Ink = Theme.Ink;
@@ -154,6 +154,8 @@ namespace MotoManager.App.UI.Screens
         {
             var b = UiFactory.Button("BigButton", parent, "", enabled ? onTap : null, enabled ? color : Color.Lerp(Theme.PanelLight, Theme.Card, 0.3f), Theme.FontNormal);
             UiFactory.Place((RectTransform)b.transform, x0, y0, x1, y1, inset);
+            // A primary call to action (race red) keeps the capsule; other colours are small-radius boxes.
+            if (enabled && color == Theme.Race) UiFactory.Capsule(b.image);
             b.interactable = enabled && onTap != null;
             var colors = b.colors;
             colors.disabledColor = Color.white;

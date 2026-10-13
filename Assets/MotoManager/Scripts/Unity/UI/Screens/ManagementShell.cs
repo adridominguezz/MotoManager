@@ -598,7 +598,6 @@ namespace MotoManager.App.UI.Screens
         private void BuildTabs(List<int> visible)
         {
             int slots = Mathf.Max(MaxTabs, visible.Count);
-            var accent = Theme.CurrentAccent;
             for (int k = 0; k < visible.Count; k++)
             {
                 int idx = visible[k];
@@ -609,23 +608,13 @@ namespace MotoManager.App.UI.Screens
                     Ui.Disarm();
                     _section.Current = idx;
                     Refresh();
-                }, on ? Theme.Alpha(Color.white, 0.07f) : Theme.Alpha(Color.white, 0.02f), 22);
+                }, Color.clear, 22);
                 UiFactory.Place((RectTransform)b.transform, (float)k / slots, 0, (float)(k + 1) / slots, 1);
                 var brt = (RectTransform)b.transform;
                 brt.offsetMin = new Vector2(k == 0 ? 0 : 4, 0);
                 brt.offsetMax = new Vector2(-4, 0);
-                var label = b.GetComponentInChildren<Text>();
-                label.color = on ? Theme.Text : Color.Lerp(Theme.TextDim, Theme.Text, 0.2f);
-                UiFactory.Style(label, FontStyle.Bold);
-                label.rectTransform.offsetMin = new Vector2(16, 0);
-                label.rectTransform.offsetMax = new Vector2(-16, 0);
-                Ui.Fit(label, 22);
-                if (!on) continue;
-                var underline = UiFactory.Decor("Underline", b.transform, accent);
-                underline.rectTransform.anchorMin = new Vector2(0, 0);
-                underline.rectTransform.anchorMax = new Vector2(1, 0);
-                underline.rectTransform.offsetMin = new Vector2(22, 3);
-                underline.rectTransform.offsetMax = new Vector2(-22, 6);
+                // Section tabs as plain text: selected light bold over a short thick underline, the others dim.
+                Ui.TextTab(b, on, 22);
             }
         }
 
@@ -692,7 +681,11 @@ namespace MotoManager.App.UI.Screens
             {
                 var holder = UiFactory.Rect("Word", _right);
                 holder.sizeDelta = new Vector2(WordWidth, Ui.Grid.Hit);
-                b = Ui.Secondary(holder, icon, onTap);
+                // A plain text button (no box), like the reference app's top bar.
+                b = UiFactory.Button("Word", holder, Theme.Caps(icon), onTap, Color.clear, 22);
+                UiFactory.Stretch((RectTransform)b.transform);
+                Ui.TextTab(b, false, 22);
+                b.GetComponentInChildren<Text>().color = Theme.Text;
                 var hle = holder.gameObject.AddComponent<LayoutElement>();
                 hle.preferredWidth = WordWidth;
                 return b;
@@ -720,9 +713,15 @@ namespace MotoManager.App.UI.Screens
 
         private void Pill(string caption, string value, System.Action onTap)
         {
-            var b = UiFactory.Button("Pill", _right, "", onTap, Theme.Alpha(Color.white, 0.04f), Theme.TextBody);
+            // A flat text block (caption over value) with a thin divider on its left, no box.
+            var b = UiFactory.Button("Pill", _right, "", onTap, Color.clear, Theme.TextBody);
             ((RectTransform)b.transform).sizeDelta = new Vector2(PillWidth, Ui.Grid.Hit);
-            UiFactory.Ring(b.transform, Theme.Alpha(Color.white, 0.22f));
+            b.image.sprite = null;
+            var divider = UiFactory.Decor("Divider", b.transform, Theme.Alpha(Color.white, 0.16f));
+            divider.rectTransform.anchorMin = new Vector2(0, 0.18f);
+            divider.rectTransform.anchorMax = new Vector2(0, 0.82f);
+            divider.rectTransform.offsetMin = Vector2.zero;
+            divider.rectTransform.offsetMax = new Vector2(1, 0);
             var le = b.gameObject.AddComponent<LayoutElement>();
             le.preferredWidth = PillWidth;
             le.minWidth = PillWidth * 0.7f;
@@ -734,6 +733,10 @@ namespace MotoManager.App.UI.Screens
             Ui.Fit(label, Theme.TextBody);
             label.rectTransform.offsetMin = new Vector2(14, 0);
             label.rectTransform.offsetMax = new Vector2(-14, 0);
+            b.targetGraphic = label;
+            var colors = b.colors;
+            colors.pressedColor = new Color(0.6f, 0.6f, 0.6f, 1f);
+            b.colors = colors;
         }
 
         /// <summary>Saves and goes back to the start screen (continue, new career, language).</summary>

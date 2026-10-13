@@ -393,7 +393,7 @@ namespace MotoManager.App.UI
 
         private static Button MakeButton(Transform parent, string name, string label, Action onTap, Look look, bool enabled, string sub = null)
         {
-            // Primary: solid race-red capsule. Secondary: thin light outline capsule on a faint fill.
+            // Primary: solid race-red capsule. Secondary: thin light outline, small radius, faint fill.
             // SecondaryAccent: the same outline in the team colour. Disabled: no outline colour, dim text, flat fill.
             Color fill;
             switch (look)
@@ -405,6 +405,8 @@ namespace MotoManager.App.UI
             }
             int size = look == Look.Primary ? 28 : 22;
             var b = UiFactory.Button(name, parent, "", enabled ? onTap : null, fill, size);
+            // The one primary CTA keeps the capsule; every other button is a small-radius box.
+            if (look == Look.Primary) UiFactory.Capsule(b.image);
             if (look == Look.Secondary)
                 UiFactory.Ring(b.transform, enabled ? Theme.Stroke : Theme.Alpha(Color.white, 0.12f));
             if (look == Look.SecondaryAccent)
@@ -465,7 +467,7 @@ namespace MotoManager.App.UI
             return PrimaryCTA(UiFactory.Row(list, Grid.Cta), label, onTap, sub, enabled);
         }
 
-        /// <summary>A secondary button (thin light outline capsule, bold CAPS 22) filling the area (64 high in a list).</summary>
+        /// <summary>A secondary button (thin light outline, small radius, bold CAPS 22) filling the area (64 high in a list).</summary>
         public static Button Secondary(RectTransform area, string label, Action onTap, bool enabled = true)
         {
             return Filled(area, Grid.Button, "Secondary", label, onTap, Look.Secondary, enabled);
@@ -507,7 +509,7 @@ namespace MotoManager.App.UI
         }
 
         /// <summary>
-        /// A destructive action with a built-in two-tap confirmation: a red outline capsule with red text showing
+        /// A destructive action with a built-in two-tap confirmation: a red outline box with red text showing
         /// <paramref name="label"/>; the first tap arms it (solid Bad fill, <paramref name="confirmLabel"/>, restyled in place, then
         /// <paramref name="refresh"/> if given); the second runs <paramref name="onConfirm"/>. One armed key at a time
         /// (static), cleared by <see cref="Disarm"/>, <see cref="CloseSheet"/> and page changes.
@@ -842,32 +844,54 @@ namespace MotoManager.App.UI
         }
 
         /// <summary>
-        /// One row of capsule toggles on a faint capsule track (in-page choices), at most 5: the selected one is a light
-        /// capsule with ink text, the others transparent with light-dim text (never a filled accent). Height at least 56.
+        /// One row of text tabs (in-page choices and filters), at most 5, as in the championship's app: no boxes; the
+        /// selected tab is light bold text over a short thick underline, the others dim. Height at least 56.
         /// </summary>
         public static void Segmented(Transform list, IList<string> labels, int selected, Action<int> onSelect, float height = 56)
         {
             if (labels.Count > 5) Debug.LogWarning("Ui.Segmented: " + labels.Count + " segments (max 5); use Ui.Picker");
             var row = UiFactory.Row(list, Mathf.Max(height, Grid.Hit));
-            var track = UiFactory.Decor("Track", row, Theme.Alpha(Color.white, 0.06f));
-            UiFactory.Capsule(track);
-            UiFactory.Stretch(track.rectTransform);
+            var rule = UiFactory.Decor("Rule", row, Theme.Divider);
+            rule.rectTransform.anchorMin = new Vector2(0, 0);
+            rule.rectTransform.anchorMax = new Vector2(1, 0);
+            rule.rectTransform.offsetMin = Vector2.zero;
+            rule.rectTransform.offsetMax = new Vector2(0, 1);
             int n = Mathf.Max(1, labels.Count);
             for (int i = 0; i < labels.Count; i++)
             {
                 int idx = i;
-                bool on = i == selected;
                 var b = UiFactory.Button("Segment", row, Theme.Caps(labels[i]), () => { if (onSelect != null) onSelect(idx); },
-                    on ? Theme.Text : Theme.Alpha(Color.white, 0.02f), 22);
-                UiFactory.Place((RectTransform)b.transform, (float)i / n, 0, (float)(i + 1) / n, 1, 4);
-                var t = b.GetComponentInChildren<Text>();
-                t.supportRichText = true;
-                UiFactory.Style(t, FontStyle.Bold);
-                t.color = on ? Theme.Ink : Color.Lerp(Theme.TextDim, Theme.Text, 0.25f);
-                Fit(t, 22);
-                t.rectTransform.offsetMin = new Vector2(14, 0);
-                t.rectTransform.offsetMax = new Vector2(-14, 0);
+                    Color.clear, 22);
+                UiFactory.Place((RectTransform)b.transform, (float)i / n, 0, (float)(i + 1) / n, 1, 2);
+                TextTab(b, i == selected, 22);
             }
+        }
+
+        /// <summary>
+        /// Turns a button into a text tab: no box, bold CAPS label (light when <paramref name="on"/>, dim otherwise),
+        /// and for the selected tab a short thick underline (4 units) in light text colour. The press dims the label.
+        /// </summary>
+        public static void TextTab(Button b, bool on, int size)
+        {
+            b.image.color = Color.clear;
+            b.image.sprite = null;
+            var t = b.GetComponentInChildren<Text>();
+            t.supportRichText = true;
+            UiFactory.Style(t, FontStyle.Bold);
+            t.color = on ? Theme.Text : Theme.TextDim;
+            Fit(t, size);
+            t.rectTransform.offsetMin = new Vector2(10, 6);
+            t.rectTransform.offsetMax = new Vector2(-10, 0);
+            b.targetGraphic = t;
+            var colors = b.colors;
+            colors.pressedColor = new Color(0.6f, 0.6f, 0.6f, 1f);
+            b.colors = colors;
+            if (!on) return;
+            var line = UiFactory.Decor("Underline", b.transform, Theme.Text);
+            line.rectTransform.anchorMin = new Vector2(0.22f, 0);
+            line.rectTransform.anchorMax = new Vector2(0.78f, 0);
+            line.rectTransform.offsetMin = new Vector2(0, 0);
+            line.rectTransform.offsetMax = new Vector2(0, 4);
         }
 
         /// <summary>
