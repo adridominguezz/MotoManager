@@ -18,7 +18,7 @@ namespace MotoManager.App.UI
         private WeekendSimulation _weekend;
         private Action _onStart;
         private readonly Dictionary<string, TireChoice> _choices = new Dictionary<string, TireChoice>();
-        private readonly List<KeyValuePair<Image, Func<bool>>> _toggles = new List<KeyValuePair<Image, Func<bool>>>();
+        private readonly List<Action> _slots = new List<Action>();
 
         public static PreRaceDialog Show(WeekendSimulation weekend, Action onStart)
         {
@@ -26,14 +26,16 @@ namespace MotoManager.App.UI
             var dialog = canvas.gameObject.AddComponent<PreRaceDialog>();
             dialog._weekend = weekend;
             dialog._onStart = onStart;
-            dialog.Build(UiFactory.SafeRoot(canvas));
+            var root = UiFactory.SafeRoot(canvas, Theme.Background);
+            RaceUi.HostSheets(canvas.gameObject, root);
+            dialog.Build(root);
             return dialog;
         }
 
         /// <summary>
-        /// Phone layout in the style of mobile racing managers: a top bar with the circuit and laps and one big start
-        /// button; the weather on the right; one large card per rider (number, name, grid slot) with the front and
-        /// rear tyre shown as coloured tyres that change compound with a tap.
+        /// Phone layout in the style of mobile racing managers: a 72-unit top bar with the event, laps and the one
+        /// big start button; the circuit and the weather in two tiles; one large card per rider (number, name, grid
+        /// slot) with the front and rear tyre drawn in the compound colour; a tap opens the tyre picker.
         /// </summary>
         private void Build(RectTransform root)
         {
@@ -50,67 +52,28 @@ namespace MotoManager.App.UI
             double rain = model.ForecastRainProbability(raceSeconds, skill);
             bool wet = weather.InitialWetness > 0.35;
 
-            var bg = UiFactory.Panel("Backdrop", root, new Color(0.05f, 0.06f, 0.08f, 0.94f));
-            UiFactory.Stretch(bg.rectTransform);
-            UiFactory.Gradient(bg, 1.15f, 0.8f);
+            RaceUi.Backdrop(root);
+            RectTransform cta;
+            string sessionName = Loc.Or("session." + session.Name, session.Name);
+            RaceUi.TopBar(root, Loc.Round(w.Round.Name), sessionName + " · " + Loc.T("pre.laps", laps), 440, out cta);
+            Ui.PrimaryCTA(cta, Loc.T("ux.race.start"), StartRace);
 
-            // Top bar: event and session, laps, start.
-            var bar = UiFactory.Panel("Bar", root, new Color(0.02f, 0.025f, 0.035f, 0.95f));
-            UiFactory.Place(bar.rectTransform, 0, 0.86f, 1, 1);
-            var name = UiFactory.Label("Event", bar.transform, Theme.Caps(Loc.Round(w.Round.Name)), Theme.FontLarge, TextAnchor.MiddleLeft);
-            UiFactory.RaceTitle(name);
-            name.resizeTextForBestFit = true;
-            name.resizeTextMinSize = Theme.FontSmall;
-            name.resizeTextMaxSize = Theme.FontLarge;
-            UiFactory.Place(name.rectTransform, 0.02f, 0.05f, 0.42f, 0.95f);
-            var lapsBlock = UiFactory.Panel("Laps", bar.transform, new Color(1, 1, 1, 0.07f));
-            UiFactory.Place(lapsBlock.rectTransform, 0.43f, 0.12f, 0.6f, 0.88f);
-            var lapsText = UiFactory.Label("Text", lapsBlock.transform, Theme.Caps(Loc.T("pre.laps", laps)), Theme.FontNormal, TextAnchor.MiddleCenter);
-            lapsText.fontStyle = FontStyle.BoldAndItalic;
-            lapsText.resizeTextForBestFit = true;
-            lapsText.resizeTextMinSize = Theme.FontSmall - 6;
-            lapsText.resizeTextMaxSize = Theme.FontNormal;
-            UiFactory.Stretch(lapsText.rectTransform);
-            var start = UiFactory.Button("Start", bar.transform, Theme.Caps(Loc.T("pre.start")) + "  ›", StartRace, Theme.Accent, Theme.FontLarge);
-            UiFactory.Slant(start.image, 2.4f);
-            start.GetComponentInChildren<Text>().fontStyle = FontStyle.BoldAndItalic;
-            UiFactory.Place((RectTransform)start.transform, 0.64f, 0.1f, 0.995f, 0.9f);
-
-            // Weather: big symbol, rain chance and track temperature; the track's character underneath.
-            var wx = UiFactory.Panel("Weather", root, Theme.Panel);
-            UiFactory.Chamfer(wx, 1.6f);
-            UiFactory.Place(wx.rectTransform, 0.6f, 0.62f, 0.995f, 0.84f);
-            var icon = UiFactory.Label("Icon", wx.transform, wet || rain > 0.5 ? "☂" : rain > 0.2 ? "☁" : "☀", Theme.FontTitle, TextAnchor.MiddleCenter, wet || rain > 0.5 ? new Color(0.36f, 0.75f, 0.92f) : Theme.Timing);
-            UiFactory.Place(icon.rectTransform, 0, 0, 0.24f, 1);
-            var rainText = UiFactory.Label("Rain", wx.transform, "<b>" + (rain * 100).ToString("0") + "%</b> " + Theme.Dim(Loc.T("pre.rainShort")), Theme.FontNormal, TextAnchor.LowerLeft);
-            rainText.supportRichText = true;
-            rainText.resizeTextForBestFit = true;
-            rainText.resizeTextMinSize = Theme.FontSmall - 6;
-            rainText.resizeTextMaxSize = Theme.FontNormal;
-            UiFactory.Place(rainText.rectTransform, 0.26f, 0.5f, 0.98f, 0.95f);
-            var temps = UiFactory.Label("Temps", wx.transform, Loc.T(wet ? "pre.wet" : "pre.dry", model.AirTemp.ToString("0"), model.TrackTemp.ToString("0")), Theme.FontSmall - 4, TextAnchor.UpperLeft, Theme.TextDim);
-            temps.resizeTextForBestFit = true;
-            temps.resizeTextMinSize = Theme.FontSmall - 10;
-            temps.resizeTextMaxSize = Theme.FontSmall - 4;
-            UiFactory.Place(temps.rectTransform, 0.26f, 0.05f, 0.98f, 0.48f);
-
-            var profile = TrackProfile.Compute(TrackModel.Get(w.Circuit));
-            var traits = new List<string>();
-            foreach (var t in profile.Traits) traits.Add(Loc.T("trait." + t));
-            if (traits.Count == 0) traits.Add(Loc.T("trait.Balanced"));
-            var track = UiFactory.Label("Track", root, Theme.Caps(Loc.Or("circuit." + w.Circuit.Id, w.Circuit.Name)) + "\n" + Theme.Dim(string.Join(" · ", traits.ToArray())), Theme.FontNormal, TextAnchor.MiddleLeft);
-            track.supportRichText = true;
-            track.fontStyle = FontStyle.Bold;
-            track.resizeTextForBestFit = true;
-            track.resizeTextMinSize = Theme.FontSmall - 6;
-            track.resizeTextMaxSize = Theme.FontNormal;
-            UiFactory.Place(track.rectTransform, 0.02f, 0.62f, 0.58f, 0.84f);
+            const float infoH = 140;
+            var info = RaceUi.Content(root, RaceUi.BarH + 12, 0);
+            info.anchorMin = new Vector2(0, 1);
+            info.offsetMin = new Vector2(RaceUi.Pad, -RaceUi.BarH - 12 - infoH);
+            var cols = Ui.Columns12(info, 7, 5);
+            TrackTile(cols[0], w);
+            WeatherTile(cols[1], model, wet, rain);
 
             // One big card per rider, side by side.
             var players = new List<RaceEntry>();
             foreach (var e in w.Entries) if (e.IsPlayer) players.Add(e);
-            int n = Mathf.Max(1, players.Count);
-            float cw = 0.99f / n;
+            var cards = RaceUi.Content(root, RaceUi.BarH + 12 + infoH + Ui.Grid.Gap, RaceUi.Pad);
+            if (players.Count == 0) return;
+            var spans = new int[players.Count];
+            for (int i = 0; i < spans.Length; i++) spans[i] = 12 / Mathf.Max(1, players.Count);
+            var areas = Ui.Columns12(cards, spans);
             for (int i = 0; i < players.Count; i++)
             {
                 var e = players[i];
@@ -119,12 +82,56 @@ namespace MotoManager.App.UI
                 var choice = new TireChoice { Front = front, Rear = rear };
                 _choices[e.Rider.Id] = choice;
                 int grid = w.QualifyingOrder.IndexOf(e.Rider.Id) + 1;
-                var card = UiFactory.Panel("Rider", root, Theme.Panel);
-                UiFactory.Chamfer(card, 1.4f);
-                UiFactory.Place(card.rectTransform, 0.005f + cw * i, 0.02f, cw * (i + 1) - 0.005f, 0.6f);
-                RiderCard((RectTransform)card.transform, e, grid, rules, choice, RaceHud.CompoundLetter(front) + "/" + RaceHud.CompoundLetter(rear));
+                RiderCard(areas[i], e, grid, rules, choice, front, rear);
             }
-            RefreshToggles();
+            RefreshSlots();
+        }
+
+        /// <summary>The circuit: name, its two main traits as pills; every trait in the info sheet.</summary>
+        private static void TrackTile(RectTransform area, WeekendSimulation w)
+        {
+            var profile = TrackProfile.Compute(TrackModel.Get(w.Circuit));
+            var traits = new List<string>();
+            foreach (var t in profile.Traits) traits.Add(Loc.T("trait." + t));
+            if (traits.Count == 0) traits.Add(Loc.T("trait.Balanced"));
+            string circuit = Loc.Or("circuit." + w.Circuit.Id, w.Circuit.Name);
+            var all = new List<string>();
+            foreach (var t in traits) all.Add("·  " + t);
+            var body = Ui.Tile(area, circuit, null, null, 0, null,
+                () => Ui.Sheet(circuit, list =>
+                {
+                    foreach (var t in all) UiFactory.Paragraph(list, t, Theme.TextBody);
+                }));
+            float x = 0;
+            for (int i = 0; i < traits.Count && i < 2; i++)
+            {
+                var p = RaceUi.PillAt(body, traits[i], Theme.PanelLight, x, Theme.Text);
+                LayoutRebuilder.ForceRebuildLayoutImmediate(p.rectTransform);
+                x += Mathf.Max(120, p.rectTransform.rect.width) + Ui.Grid.Gap;
+            }
+            if (traits.Count > 2) RaceUi.PillAt(body, "+" + (traits.Count - 2), new Color(1, 1, 1, 0.06f), x, Theme.TextDim);
+        }
+
+        /// <summary>Weather in words (SOL / NUBES / LLUVIA), the rain chance and the temperatures.</summary>
+        private static void WeatherTile(RectTransform area, WeatherModel model, bool wet, double rain)
+        {
+            string temps = Loc.T(wet ? "pre.wet" : "pre.dry", model.AirTemp.ToString("0"), model.TrackTemp.ToString("0"));
+            string forecast = Loc.T("pre.forecast", (rain * 100).ToString("0"));
+            var body = Ui.Tile(area, Loc.T("ux.race.weather"), null, null, 0, null,
+                () => Ui.Sheet(Loc.T("ux.race.weather"), list =>
+                {
+                    UiFactory.Paragraph(list, temps, Theme.TextBody);
+                    UiFactory.Paragraph(list, forecast, Theme.TextBody);
+                }));
+            var word = RaceUi.Label(body, Theme.Caps(RaceUi.WeatherWord(wet, rain)), Theme.TextTitle, TextAnchor.MiddleLeft,
+                RaceUi.WeatherColor(wet, rain), FontStyle.BoldAndItalic);
+            UiFactory.Place(word.rectTransform, 0, 0, 0.3f, 1);
+            var chance = RaceUi.Label(body, "<b>" + (rain * 100).ToString("0") + "%</b> <size=" + Theme.TextCaption + ">" +
+                Theme.Dim(Theme.Caps(Loc.T("pre.rainShort"))) + "</size>", Theme.TextTitle, TextAnchor.MiddleLeft, Theme.Text);
+            UiFactory.Place(chance.rectTransform, 0.3f, 0, 0.66f, 1);
+            var t = RaceUi.Label(body, Theme.Caps(Loc.T("ux.race.temps", model.AirTemp.ToString("0"), model.TrackTemp.ToString("0"))),
+                Theme.TextCaption, TextAnchor.MiddleRight, Theme.TextDim, FontStyle.Bold);
+            UiFactory.Place(t.rectTransform, 0.66f, 0, 1, 1);
         }
 
         private static readonly Color TyreDark = new Color(0.09f, 0.09f, 0.1f, 1f);
@@ -141,110 +148,219 @@ namespace MotoManager.App.UI
             }
         }
 
-        private void RiderCard(RectTransform card, RaceEntry e, int grid, CategoryRules rules, TireChoice choice, string advice)
+        /// <summary>
+        /// A tyre drawn from the shared rounded sprite (dark rubber, the compound band, the rim, the hub), centred in
+        /// its parent with <paramref name="size"/> units. Returns the band to colour.
+        /// </summary>
+        public static Image Tyre(Transform parent, float size)
         {
-            var team = e.Team;
-            var teamColor = UiFactory.ParseColor(team != null ? team.Colors.Primary : null, Theme.Accent);
-            // Header strip in team colour: number, first name over the surname, grid slot in timing yellow.
-            var head = UiFactory.Panel("Head", card, Color.Lerp(teamColor, Theme.Panel, 0.55f));
-            UiFactory.Place(head.rectTransform, 0, 0.66f, 1, 1);
-            UiFactory.Gradient(head, Color.white, new Color(1, 1, 1, 0.6f), true);
-            var num = UiFactory.Panel("Number", head.transform, teamColor);
-            UiFactory.Chamfer(num, 1.6f);
-            UiFactory.Place(num.rectTransform, 0.02f, 0.1f, 0.2f, 0.9f);
-            var numText = UiFactory.Label("N", num.transform, e.Rider.Number.ToString(), Theme.FontTitle, TextAnchor.MiddleCenter, Color.white);
-            numText.fontStyle = FontStyle.BoldAndItalic;
-            numText.resizeTextForBestFit = true;
-            numText.resizeTextMinSize = Theme.FontNormal;
-            numText.resizeTextMaxSize = Theme.FontTitle;
-            numText.gameObject.AddComponent<Outline>().effectColor = new Color(0, 0, 0, 0.6f);
-            UiFactory.Stretch(numText.rectTransform);
-            var first = UiFactory.Label("First", head.transform, e.Rider.FirstName, Theme.FontSmall - 2, TextAnchor.LowerLeft, Theme.TextDim);
-            UiFactory.Place(first.rectTransform, 0.23f, 0.55f, 0.72f, 0.95f);
-            var last = UiFactory.Label("Last", head.transform, Theme.Caps(e.Rider.LastName), Theme.FontLarge, TextAnchor.UpperLeft);
-            last.fontStyle = FontStyle.BoldAndItalic;
-            last.resizeTextForBestFit = true;
-            last.resizeTextMinSize = Theme.FontSmall;
-            last.resizeTextMaxSize = Theme.FontLarge;
-            UiFactory.Place(last.rectTransform, 0.23f, 0.05f, 0.72f, 0.58f);
-            var gridBox = UiFactory.Panel("Grid", head.transform, Theme.Timing);
-            UiFactory.Slant(gridBox, 2.4f);
-            UiFactory.Place(gridBox.rectTransform, 0.74f, 0.2f, 0.98f, 0.8f);
-            var gridText = UiFactory.Label("P", gridBox.transform, grid > 0 ? "P" + grid : "-", Theme.FontLarge, TextAnchor.MiddleCenter, new Color32(12, 13, 16, 255));
-            gridText.fontStyle = FontStyle.BoldAndItalic;
-            gridText.resizeTextForBestFit = true;
-            gridText.resizeTextMinSize = Theme.FontSmall;
-            gridText.resizeTextMaxSize = Theme.FontLarge;
-            UiFactory.Stretch(gridText.rectTransform);
-
-            // Front and rear tyre: tap to change compound.
-            TyreSlot(card, Loc.T("pre.front"), rules, 0.02f, 0.49f, () => choice.Front, c => choice.Front = c);
-            TyreSlot(card, Loc.T("pre.rear"), rules, 0.51f, 0.98f, () => choice.Rear, c => choice.Rear = c);
-            var adv = UiFactory.Label("Advice", card, Loc.T("pre.engineer", advice), Theme.FontSmall - 6, TextAnchor.MiddleCenter, Theme.TextDim);
-            adv.resizeTextForBestFit = true;
-            adv.resizeTextMinSize = Theme.FontSmall - 12;
-            adv.resizeTextMaxSize = Theme.FontSmall - 6;
-            UiFactory.Place(adv.rectTransform, 0.02f, 0.0f, 0.98f, 0.1f);
+            var tyre = UiFactory.Decor("Rubber", parent, TyreDark);
+            UiFactory.Round(tyre, 0.12f);
+            var tr = tyre.rectTransform;
+            tr.anchorMin = tr.anchorMax = new Vector2(0.5f, 0.5f);
+            tr.sizeDelta = new Vector2(size, size);
+            var band = UiFactory.Decor("Band", tr, Color.white);
+            UiFactory.Round(band, 0.15f);
+            band.rectTransform.anchorMin = band.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            band.rectTransform.sizeDelta = new Vector2(size * 0.73f, size * 0.73f);
+            var rim = UiFactory.Decor("Rim", band.rectTransform, TyreDark);
+            UiFactory.Round(rim, 0.2f);
+            rim.rectTransform.anchorMin = rim.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            rim.rectTransform.sizeDelta = new Vector2(size * 0.6f, size * 0.6f);
+            var hub = UiFactory.Decor("Hub", rim.rectTransform, Theme.Steel);
+            UiFactory.Round(hub, 0.4f);
+            hub.rectTransform.anchorMin = hub.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            hub.rectTransform.sizeDelta = new Vector2(size * 0.19f, size * 0.19f);
+            return band;
         }
 
-        private void TyreSlot(RectTransform card, string label, CategoryRules rules, float x0, float x1, Func<TireCompound> get, Action<TireCompound> set)
+        private void RiderCard(RectTransform area, RaceEntry e, int grid, CategoryRules rules, TireChoice choice, TireCompound adviceFront, TireCompound adviceRear)
         {
-            var compounds = rules.Tires.Compounds;
-            var slot = UiFactory.Button("Tyre " + label, card, "", () =>
-            {
-                // Next compound allowed by the rules.
-                int idx = 0;
-                for (int i = 0; i < compounds.Count; i++) if (compounds[i].Compound == get()) idx = i;
-                set(compounds[(idx + 1) % compounds.Count].Compound);
-                RefreshToggles();
-            }, new Color(1, 1, 1, 0.05f));
-            UiFactory.Place((RectTransform)slot.transform, x0, 0.11f, x1, 0.64f, 4);
+            var team = e.Team;
+            var teamColor = RaceUi.TeamColor(team != null ? team.Colors.Primary : null);
+            var body = Ui.Tile(area, null, null, null, 0, null, null, false, teamColor);
+
+            // Head: number plate, first name over the surname, grid slot in timing yellow.
+            var head = UiFactory.Rect("Head", body);
+            head.anchorMin = new Vector2(0, 1);
+            head.anchorMax = new Vector2(1, 1);
+            head.pivot = new Vector2(0.5f, 1);
+            head.offsetMin = new Vector2(0, -92);
+            head.offsetMax = Vector2.zero;
+            var plateArea = UiFactory.Rect("PlateArea", head);
+            plateArea.anchorMin = new Vector2(0, 0);
+            plateArea.anchorMax = new Vector2(0, 1);
+            plateArea.pivot = new Vector2(0, 0.5f);
+            plateArea.offsetMin = new Vector2(0, 4);
+            plateArea.offsetMax = new Vector2(104, -4);
+            RaceUi.Plate(plateArea, e.Rider.Number, teamColor, Theme.TextDisplay);
+            var first = RaceUi.Label(head, e.Rider.FirstName, Theme.TextCaption, TextAnchor.LowerLeft, Theme.TextDim, FontStyle.Bold);
+            UiFactory.Stretch(first.rectTransform);
+            first.rectTransform.anchorMin = new Vector2(0, 0.58f);
+            first.rectTransform.offsetMin = new Vector2(120, 0);
+            first.rectTransform.offsetMax = new Vector2(-150, 0);
+            var last = RaceUi.Label(head, Theme.Caps(e.Rider.LastName), Theme.FontLarge, TextAnchor.UpperLeft, Theme.Text, FontStyle.BoldAndItalic);
+            UiFactory.DropShadow(last, 0.4f, 2);
+            UiFactory.Stretch(last.rectTransform);
+            last.rectTransform.anchorMax = new Vector2(1, 0.6f);
+            last.rectTransform.offsetMin = new Vector2(120, 0);
+            last.rectTransform.offsetMax = new Vector2(-150, 0);
+            var gridCap = RaceUi.Label(head, Theme.Caps(Loc.T("post.k.grid")), Theme.TextCaption, TextAnchor.LowerCenter, Theme.TextDim, FontStyle.Bold);
+            gridCap.rectTransform.anchorMin = new Vector2(1, 0.62f);
+            gridCap.rectTransform.anchorMax = new Vector2(1, 1);
+            gridCap.rectTransform.pivot = new Vector2(1, 0.5f);
+            gridCap.rectTransform.offsetMin = new Vector2(-136, 0);
+            gridCap.rectTransform.offsetMax = new Vector2(0, 0);
+            var gridArea = UiFactory.Rect("Grid", head);
+            gridArea.anchorMin = new Vector2(1, 0);
+            gridArea.anchorMax = new Vector2(1, 0.62f);
+            gridArea.pivot = new Vector2(1, 0.5f);
+            gridArea.offsetMin = new Vector2(-136, 2);
+            gridArea.offsetMax = new Vector2(0, 0);
+            RaceUi.Block(gridArea, Theme.Pos(grid), Theme.Timing, Theme.TextKey);
+
+            var rule = UiFactory.Decor("Rule", body, Theme.Divider);
+            rule.rectTransform.anchorMin = new Vector2(0, 1);
+            rule.rectTransform.anchorMax = new Vector2(1, 1);
+            rule.rectTransform.offsetMin = new Vector2(0, -101);
+            rule.rectTransform.offsetMax = new Vector2(0, -99);
+
+            // Front and rear tyre: a tap opens the picker.
+            var tyres = UiFactory.Rect("Tyres", body);
+            UiFactory.Stretch(tyres);
+            tyres.offsetMin = new Vector2(0, 56);
+            tyres.offsetMax = new Vector2(0, -112);
+            var halves = Ui.Columns12(tyres, 6, 6);
+            string surname = e.Rider.LastName;
+            TyreSlot(halves[0], Loc.T("pre.front"), surname, rules, () => choice.Front, c => choice.Front = c, adviceFront);
+            TyreSlot(halves[1], Loc.T("pre.rear"), surname, rules, () => choice.Rear, c => choice.Rear = c, adviceRear);
+
+            // The engineer's call as a pill (details in the info sheet).
+            var foot = UiFactory.Rect("Foot", body);
+            foot.anchorMin = new Vector2(0, 0);
+            foot.anchorMax = new Vector2(1, 0);
+            foot.pivot = new Vector2(0.5f, 0);
+            foot.offsetMin = Vector2.zero;
+            foot.offsetMax = new Vector2(0, 44);
+            string advice = RaceHud.CompoundLetter(adviceFront) + "/" + RaceHud.CompoundLetter(adviceRear);
+            RaceUi.PillAt(foot, Loc.T("ux.race.engineer", advice), Theme.PanelLight, 0, Theme.Text);
+            var tip = RaceUi.Label(foot, Theme.Caps(Loc.T("ux.race.tapToChange")), Theme.TextCaption, TextAnchor.MiddleRight, Theme.TextDim, FontStyle.Bold);
+            UiFactory.Place(tip.rectTransform, 0.45f, 0, 1, 1);
+        }
+
+        private void TyreSlot(RectTransform area, string label, string surname, CategoryRules rules, Func<TireCompound> get, Action<TireCompound> set, TireCompound advice)
+        {
+            var slot = UiFactory.Button("Tyre " + label, area, "", () => OpenPicker(label, surname, rules, get, set, advice),
+                Color.Lerp(Theme.Background, Theme.Panel, 0.85f));
+            UiFactory.Stretch((RectTransform)slot.transform);
+            slot.gameObject.AddComponent<Outline>().effectColor = new Color(1, 1, 1, 0.07f);
             var st = (RectTransform)slot.transform;
-            // A tyre: dark rubber, a coloured band for the compound, the dark rim inside.
-            var tyre = UiFactory.Panel("Rubber", st, TyreDark);
-            UiFactory.Round(tyre, 0.12f);
-            tyre.raycastTarget = false;
-            var tr = tyre.rectTransform;
-            tr.anchorMin = tr.anchorMax = new Vector2(0.24f, 0.5f);
-            tr.sizeDelta = new Vector2(104, 104);
-            var band = UiFactory.Panel("Band", tr, Color.white);
-            UiFactory.Round(band, 0.15f);
-            band.raycastTarget = false;
-            band.rectTransform.anchorMin = band.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
-            band.rectTransform.sizeDelta = new Vector2(76, 76);
-            var rim = UiFactory.Panel("Rim", band.rectTransform, TyreDark);
-            UiFactory.Round(rim, 0.2f);
-            rim.raycastTarget = false;
-            rim.rectTransform.anchorMin = rim.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
-            rim.rectTransform.sizeDelta = new Vector2(62, 62);
-            var hub = UiFactory.Panel("Hub", rim.rectTransform, Theme.Timing);
-            UiFactory.Round(hub, 0.4f);
-            hub.raycastTarget = false;
-            hub.rectTransform.anchorMin = hub.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
-            hub.rectTransform.sizeDelta = new Vector2(20, 20);
-            var cap = UiFactory.Label("Label", st, Theme.Caps(label), Theme.FontSmall - 6, TextAnchor.LowerLeft, Theme.TextDim);
-            UiFactory.Place(cap.rectTransform, 0.48f, 0.55f, 0.98f, 0.92f);
-            var compound = UiFactory.Label("Compound", st, "", Theme.FontNormal, TextAnchor.UpperLeft);
-            compound.fontStyle = FontStyle.BoldAndItalic;
-            compound.resizeTextForBestFit = true;
-            compound.resizeTextMinSize = Theme.FontSmall - 6;
-            compound.resizeTextMaxSize = Theme.FontNormal;
-            UiFactory.Place(compound.rectTransform, 0.48f, 0.12f, 0.98f, 0.55f);
-            var change = UiFactory.Label("Change", st, "›", Theme.FontSmall - 4, TextAnchor.UpperRight, Theme.TextDim);
-            UiFactory.Place(change.rectTransform, 0.8f, 0.6f, 0.97f, 0.95f);
+            var cap = RaceUi.Label(st, Theme.Caps(label), Theme.TextCaption, TextAnchor.UpperLeft, Theme.TextDim, FontStyle.Bold);
+            UiFactory.Stretch(cap.rectTransform);
+            cap.rectTransform.offsetMin = new Vector2(16, 0);
+            cap.rectTransform.offsetMax = new Vector2(-48, -10);
+            var ch = UiIcons.Chevron(st, Theme.TextDim);
+            ch.rectTransform.anchorMin = ch.rectTransform.anchorMax = new Vector2(1, 1);
+            ch.rectTransform.sizeDelta = new Vector2(22, 22);
+            ch.rectTransform.anchoredPosition = new Vector2(-24, -22);
+            // The tyre fills the left part, the compound name the right.
+            var holder = UiFactory.Rect("TyreHolder", st);
+            UiFactory.Place(holder, 0, 0.02f, 0.5f, 0.8f);
+            var band = Tyre(holder, 150);
+            var fit = holder.gameObject.AddComponent<TyreFit>();
+            fit.Tyre = (RectTransform)band.transform.parent;
+            var compound = RaceUi.Label(st, "", Theme.TextTitle, TextAnchor.MiddleLeft, Theme.Text, FontStyle.BoldAndItalic);
+            UiFactory.Place(compound.rectTransform, 0.5f, 0.3f, 1, 0.8f);
+            compound.rectTransform.offsetMax = new Vector2(-12, 0);
+            var letter = RaceUi.Label(st, "", Theme.TextCaption, TextAnchor.UpperLeft, Theme.TextDim, FontStyle.Bold);
+            UiFactory.Place(letter.rectTransform, 0.5f, 0.06f, 1, 0.3f);
+            letter.rectTransform.offsetMax = new Vector2(-12, 0);
             _slots.Add(() =>
             {
                 var c = get();
                 band.color = CompoundColor(c);
                 compound.text = Theme.Caps(Loc.T("tyre." + c));
+                letter.text = Theme.Caps(Hint(rules, c)) + (c == advice ? "  " + Theme.GoodText(Theme.Caps(Loc.T("ux.race.recommended"))) : "");
             });
         }
 
-        private readonly List<Action> _slots = new List<Action>();
-
-        private void RefreshToggles()
+        /// <summary>One line on what a compound is for (relative to the others allowed by the rules).</summary>
+        private static string Hint(CategoryRules rules, TireCompound c)
         {
-            foreach (var t in _toggles) t.Key.color = t.Value() ? Theme.Accent : Theme.PanelLight;
+            var spec = rules.Tires.Get(c);
+            if (spec.IsWet) return Loc.T(c == TireCompound.Intermediate ? "ux.race.hint.inter" : "ux.race.hint.wet");
+            double min = double.MaxValue, max = double.MinValue;
+            int dry = 0;
+            foreach (var s in rules.Tires.Compounds)
+            {
+                if (s.IsWet) continue;
+                dry++;
+                min = Math.Min(min, s.WearRate);
+                max = Math.Max(max, s.WearRate);
+            }
+            if (dry <= 1 || max - min < 1e-6) return Loc.T("ux.race.hint.balanced");
+            if (spec.WearRate <= min + 1e-6) return Loc.T("ux.race.hint.durable");
+            if (spec.WearRate >= max - 1e-6) return Loc.T("ux.race.hint.grip");
+            return Loc.T("ux.race.hint.balanced");
+        }
+
+        /// <summary>The tyre picker: one row per compound the rules allow, the active one marked.</summary>
+        private void OpenPicker(string label, string surname, CategoryRules rules, Func<TireCompound> get, Action<TireCompound> set, TireCompound advice)
+        {
+            Ui.Sheet(label + " · " + surname, list =>
+            {
+                foreach (var spec in rules.Tires.Compounds)
+                {
+                    var c = spec.Compound;
+                    bool active = c == get();
+                    Action pick = () =>
+                    {
+                        set(c);
+                        Ui.CloseSheet();
+                        RefreshSlots();
+                    };
+                    var row = UiFactory.Row(list, 96);
+                    var bg = row.gameObject.AddComponent<Image>();
+                    bg.color = active ? Theme.Alpha(Theme.Accent, 0.18f) : new Color(1, 1, 1, 0.045f);
+                    var b = row.gameObject.AddComponent<Button>();
+                    b.targetGraphic = bg;
+                    b.onClick.AddListener(() =>
+                    {
+                        GameAudio.ClickSound();
+                        pick();
+                    });
+                    if (active) UiFactory.SideStripe(row, Theme.Accent, 6, 0);
+                    var holder = UiFactory.Rect("Tyre", row);
+                    holder.anchorMin = new Vector2(0, 0);
+                    holder.anchorMax = new Vector2(0, 1);
+                    holder.pivot = new Vector2(0, 0.5f);
+                    holder.offsetMin = new Vector2(16, 0);
+                    holder.offsetMax = new Vector2(96, 0);
+                    Tyre(holder, 76).color = CompoundColor(c);
+                    var name = RaceUi.Label(row, Theme.Caps(Loc.T("tyre." + c)), Theme.TextHeader, TextAnchor.LowerLeft, Theme.Text, FontStyle.BoldAndItalic);
+                    UiFactory.Place(name.rectTransform, 0, 0.5f, 0.62f, 0.92f);
+                    name.rectTransform.offsetMin = new Vector2(112, 0);
+                    string sub = Theme.Caps(Hint(rules, c)) + (c == advice ? "  " + Theme.GoodText(Theme.Caps(Loc.T("ux.race.recommended"))) : "");
+                    var hint = RaceUi.Label(row, sub, Theme.TextCaption, TextAnchor.UpperLeft, Theme.TextDim, FontStyle.Bold);
+                    UiFactory.Place(hint.rectTransform, 0, 0.08f, 0.62f, 0.5f);
+                    hint.rectTransform.offsetMin = new Vector2(112, 0);
+                    var act = UiFactory.Rect("Action", row);
+                    UiFactory.Place(act, 0.64f, 0.16f, 1, 0.84f);
+                    act.offsetMax = new Vector2(-12, 0);
+                    if (active)
+                    {
+                        var p = Ui.Pill(act, Loc.T("ux.race.active"), Theme.Accent);
+                        p.rectTransform.anchorMin = p.rectTransform.anchorMax = new Vector2(1, 0.5f);
+                        p.rectTransform.pivot = new Vector2(1, 0.5f);
+                        p.rectTransform.anchoredPosition = Vector2.zero;
+                    }
+                    else Ui.Secondary(act, Loc.T("ux.race.select"), pick);
+                }
+            }, null, null, 0.56f);
+        }
+
+        private void RefreshSlots()
+        {
             foreach (var s in _slots) s();
         }
 
@@ -253,6 +369,35 @@ namespace MotoManager.App.UI
             foreach (var kv in _choices) _weekend.PlayerTireChoices[kv.Key] = kv.Value;
             Destroy(gameObject);
             if (_onStart != null) _onStart();
+        }
+    }
+
+    /// <summary>Keeps a drawn tyre as large as its holder allows (square, 92% of the smaller side).</summary>
+    internal class TyreFit : MonoBehaviour
+    {
+        public RectTransform Tyre;
+        private int _frames;
+
+        private void LateUpdate()
+        {
+            if (Tyre == null) return;
+            var r = ((RectTransform)transform).rect;
+            float side = Mathf.Max(32, Mathf.Min(r.width, r.height) * 0.92f);
+            Tyre.sizeDelta = new Vector2(side, side);
+            float k = side;
+            var band = Tyre.Find("Band") as RectTransform;
+            if (band != null)
+            {
+                band.sizeDelta = new Vector2(k * 0.73f, k * 0.73f);
+                var rim = band.Find("Rim") as RectTransform;
+                if (rim != null)
+                {
+                    rim.sizeDelta = new Vector2(k * 0.6f, k * 0.6f);
+                    var hub = rim.Find("Hub") as RectTransform;
+                    if (hub != null) hub.sizeDelta = new Vector2(k * 0.19f, k * 0.19f);
+                }
+            }
+            if (++_frames > 3) enabled = false;
         }
     }
 }
