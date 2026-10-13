@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using MotoManager.Core.Career;
 using MotoManager.Core.Common;
-using MotoManager.Core.Economy;
 using MotoManager.Core.Season;
 using MotoManager.Core.World;
 using UnityEngine;
@@ -11,9 +10,11 @@ using UnityEngine.UI;
 namespace MotoManager.App.UI
 {
     /// <summary>
-    /// Starting a career: the manager's profile, then either a job at an existing team (only the teams that would
-    /// hire this profile) or founding a team (capital, loan, founding sponsors and only the categories the money can
-    /// sustain). Business rules live in <see cref="CareerService"/>; this only presents them.
+    /// Starting a career (UX spec §3.29): a header with the steps (PERFIL > CAMINO > EMPLEO / FUNDAR) and the manager's
+    /// money, the step itself, and a bottom bar with "‹ VOLVER" on the left and the primary on the right. Profile: name,
+    /// nationality and a grid of backgrounds (all their figures behind "i"). Path: two big tiles. Jobs: a tile per team
+    /// that would hire this profile, the terms and ACEPTAR in a sheet. Founding: <see cref="FoundingPanel"/>. Business
+    /// rules live in <see cref="CareerService"/>; this only presents them.
     /// </summary>
     public class CareerStartFlow
     {
@@ -21,78 +22,90 @@ namespace MotoManager.App.UI
 
         private readonly GameSession _session;
         private readonly GameController _game;
-        private readonly RectTransform _list;
-        private readonly Text _status;
+        private readonly RectTransform _area;
+        private readonly Action _exit;
         private Step _step = Step.Profile;
 
         private string _first = "Alex", _last = "Rider", _nation = "ES", _background = "team_staff";
         private ManagerProfile _manager;
-        private double _investShare = 0.5, _loanShare = 0;
-        private string _category, _supplier, _teamName = "";
+        private FoundingState _found = new FoundingState();
 
-        public CareerStartFlow(GameSession session, GameController game, RectTransform list, Text status)
+        /// <param name="area">The rect the flow fills (rebuilt on every step).</param>
+        /// <param name="exit">Back from the first step (the start screen's menu).</param>
+        public CareerStartFlow(GameSession session, GameController game, RectTransform area, Action exit)
         {
             _session = session;
             _game = game;
-            _list = list;
-            _status = status;
+            _area = area;
+            _exit = exit;
         }
 
         private WorldState World { get { return _game.World; } }
 
-        private static string Money(double v)
-        {
-            return (v < 0 ? "<color=#E10600>" : "") + MathX.FormatMoney(v) + (v < 0 ? "</color>" : "");
-        }
-
         public void Render()
         {
-            UiFactory.Clear(_list);
+            Ui.CloseSheet();
+            UiFactory.Clear(_area);
+            Header();
+            var content = Wp4Ui.Below(_area, 64 + Ui.Grid.Gap, Ui.Grid.Cta + Ui.Grid.Gap);
+            var footer = Ui.Columns12(Wp4Ui.BottomStrip(_area, Ui.Grid.Cta), 3, 5, 4);
             switch (_step)
             {
-                case Step.Profile: Profile(); break;
-                case Step.Path: Path(); break;
-                case Step.Jobs: Jobs(); break;
-                case Step.Founding: Founding(); break;
+                case Step.Profile: Profile(content, footer); break;
+                case Step.Path: Path(content, footer); break;
+                case Step.Jobs: Jobs(content, footer); break;
+                case Step.Founding: Founding(content, footer); break;
             }
+        }
+
+        /// <summary>The steps, the current one bright, and the manager's money on the right.</summary>
+        private void Header()
+        {
+            var bar = Wp4Ui.TopStrip(_area, 64);
+            var title = Ui.Label(bar, Theme.Caps(Loc.T("career.new")), Theme.TextTitle, TextAnchor.UpperLeft, Theme.Text, FontStyle.BoldAndItalic);
+            UiFactory.Place(title.rectTransform, 0, 0.4f, 0.6f, 1);
+            string third = _step == Step.Founding ? Loc.T("ux.start.stepFound") : _step == Step.Jobs ? Loc.T("ux.start.stepJob") : Loc.T("ux.start.stepJobOrFound");
+            var names = new[] { Loc.T("ux.start.stepProfile"), Loc.T("ux.start.stepPath"), third };
+            int at = _step == Step.Profile ? 0 : _step == Step.Path ? 1 : 2;
+            var parts = new List<string>();
+            for (int i = 0; i < names.Length; i++)
+                parts.Add(i == at ? "<b>" + Theme.Caps(names[i]) + "</b>" : Theme.Dim(Theme.Caps(names[i])));
+            var steps = Ui.Label(bar, string.Join(Theme.Dim("  " + Glyph.Chevron + "  "), parts.ToArray()), Theme.TextCaption, TextAnchor.LowerLeft, Theme.Text, FontStyle.Normal);
+            UiFactory.Place(steps.rectTransform, 0, 0, 0.6f, 0.42f);
+            if (_manager == null) return;
+            var money = Ui.Label(bar, Theme.Dim(Theme.Caps(_manager.FullName)) + "\n<b>" + Loc.T("career.wealthNow", MathX.FormatMoney(_manager.PersonalWealth)) + "</b>",
+                Theme.TextBody, TextAnchor.MiddleRight, Theme.Text, FontStyle.Normal);
+            UiFactory.Place(money.rectTransform, 0.6f, 0, 1, 1);
         }
 
         // ------------------------------------------------------------------ profile
 
-        private void Profile()
+        private void Profile(RectTransform content, RectTransform[] footer)
         {
-            _status.text = Loc.T("career.profile.status");
-            UiFactory.Heading(_list, Loc.T("career.profile"));
-            UiFactory.Input(_list, Loc.T("career.firstName"), _first, v => _first = v);
-            UiFactory.Input(_list, Loc.T("career.lastName"), _last, v => _last = v);
+            var cols = Ui.Columns12(content, 4, 8);
+            var me = Wp4Ui.ListIn(Ui.Tile(cols[0], Loc.T("career.profile"), null, null, 0, null, Wp4Ui.Info(Loc.T("career.profile"), Loc.T("career.profile.status"))), 8);
+            UiFactory.Input(me, Loc.T("career.firstName"), _first, v => _first = v, 56);
+            UiFactory.Input(me, Loc.T("career.lastName"), _last, v => _last = v, 56);
             var nations = new List<string>(_game.Db.NamePools.Keys);
             nations.Sort(StringComparer.Ordinal);
-            UiFactory.ButtonRow(_list, 56, UiFactory.Act(Loc.T("career.nationality", _nation), () =>
-            {
-                int i = nations.IndexOf(_nation);
-                _nation = nations.Count > 0 ? nations[(i + 1) % nations.Count] : _nation;
-                Render();
-            }));
+            Wp4Ui.CaptionedPicker(me, Loc.T("ux.start.nationality"), nations, nations.IndexOf(_nation), i => { _nation = nations[i]; Render(); });
 
-            UiFactory.Heading(_list, Loc.T("career.background"));
-            var w = new[] { 3.2f, 1f, 1f, 1f, 1f, 1f, 1f, 2f, 1.6f };
-            UiFactory.TableRow(_list, 38, w, new[] { "", Loc.T("career.rep"), Loc.T("career.neg"), Loc.T("career.sport"), Loc.T("career.fin"), Loc.T("career.rel"), Loc.T("career.com"), Loc.T("career.wealth"), "" }, true);
+            var grid = Ui.Tile(cols[1], Loc.T("career.background"));
             var list = new List<ManagerBackground>(_game.Db.ManagerBackgrounds.Values);
             list.Sort((a, b) => a.PersonalWealth.CompareTo(b.PersonalWealth));
-            foreach (var bg in list)
+            int perRow = 3, rowsN = Math.Max(1, (list.Count + perRow - 1) / perRow);
+            var shares = new float[rowsN];
+            for (int i = 0; i < rowsN; i++) shares[i] = 1;
+            var rows = Ui.Rows(grid, shares);
+            for (int i = 0; i < list.Count; i++)
             {
-                var b = bg;
-                bool chosen = _background == bg.Id;
-                var row = UiFactory.TableRow(_list, 52, w, new[]
-                {
-                    "<b>" + Loc.T("background." + bg.Id) + "</b>", bg.Reputation.ToString("0"), bg.Negotiation.ToString("0"), bg.SportingManagement.ToString("0"),
-                    bg.Finance.ToString("0"), bg.Relations.ToString("0"), bg.Commercial.ToString("0"), MathX.FormatMoney(bg.PersonalWealth), ""
-                }, false, chosen ? new Color(0.94f, 0.7f, 0.16f, 0.16f) : (Color?)null);
-                var button = UiFactory.Button("Pick", row, chosen ? "●" : Loc.T("career.choose"), () => { _background = b.Id; Render(); }, chosen ? Theme.Accent : Theme.PanelLight, Theme.FontSmall - 4);
-                UiFactory.InColumn(button, w, w.Length - 1);
-                UiFactory.Paragraph(_list, "<color=#9AA4B2>" + Loc.T("background." + bg.Id + ".desc") + "</color>", Theme.FontSmall - 2);
+                var bg = list[i];
+                var cell = Ui.Columns12(rows[i / perRow], 4, 4, 4)[i % perRow];
+                BackgroundTile(cell, bg, _background == bg.Id);
             }
-            UiFactory.ButtonRow(_list, 64, UiFactory.Primary(Loc.T("career.next"), () =>
+
+            Wp4Ui.BackLink(footer[0], Loc.T("career.back"), _exit);
+            Wp4Ui.Chevron(Ui.PrimaryCTA(footer[2], Loc.T("career.next"), () =>
             {
                 _manager = CareerService.CreatePlayer(World, _game.Db, _first, _last, _nation, _background);
                 _step = Step.Path;
@@ -100,168 +113,125 @@ namespace MotoManager.App.UI
             }));
         }
 
+        private void BackgroundTile(RectTransform area, ManagerBackground bg, bool chosen)
+        {
+            string name = Loc.T("background." + bg.Id);
+            var body = Ui.Tile(area, name, () => { _background = bg.Id; Render(); }, null, 0, null, () => Ui.Sheet(name, l =>
+            {
+                UiFactory.Paragraph(l, Loc.T("background." + bg.Id + ".desc"), Theme.TextBody);
+                Ui.Line(l, Loc.T("career.wealth"), "<b>" + MathX.FormatMoney(bg.PersonalWealth) + "</b>", true);
+                Ui.Line(l, Loc.T("mycareer.fame"), bg.Reputation.ToString("0"));
+                Ui.Line(l, Loc.T("mycareer.skill.negotiation"), bg.Negotiation.ToString("0"));
+                Ui.Line(l, Loc.T("mycareer.skill.sporting"), bg.SportingManagement.ToString("0"));
+                Ui.Line(l, Loc.T("mycareer.skill.finance"), bg.Finance.ToString("0"));
+                Ui.Line(l, Loc.T("mycareer.skill.relations"), bg.Relations.ToString("0"));
+                Ui.Line(l, Loc.T("mycareer.skill.commercial"), bg.Commercial.ToString("0"));
+            }, null, null, 0.5f), false, chosen ? Theme.CurrentAccent : (Color?)null);
+            var v = Ui.Label(body, MathX.FormatMoney(bg.PersonalWealth), Theme.TextKey, TextAnchor.MiddleCenter, chosen ? Theme.Timing : Color.Lerp(Theme.Timing, Theme.TextDim, 0.4f), FontStyle.BoldAndItalic);
+            UiFactory.Place(v.rectTransform, 0, 0.42f, 1, 1);
+            var skills = new List<KeyValuePair<string, double>>
+            {
+                new KeyValuePair<string, double>("career.neg", bg.Negotiation),
+                new KeyValuePair<string, double>("career.sport", bg.SportingManagement),
+                new KeyValuePair<string, double>("career.fin", bg.Finance),
+                new KeyValuePair<string, double>("career.rel", bg.Relations),
+                new KeyValuePair<string, double>("career.com", bg.Commercial)
+            };
+            skills.Sort((a, b) => b.Value.CompareTo(a.Value));
+            var pills = UiFactory.Rect("Pills", body);
+            UiFactory.Place(pills, 0, 0, 1, 0.38f);
+            var h = pills.gameObject.AddComponent<HorizontalLayoutGroup>();
+            h.spacing = 8;
+            h.childAlignment = TextAnchor.MiddleCenter;
+            h.childControlWidth = true;
+            h.childControlHeight = false;
+            h.childForceExpandWidth = false;
+            h.childForceExpandHeight = false;
+            for (int i = 0; i < 2 && i < skills.Count; i++)
+                Ui.Pill(pills, Loc.T(skills[i].Key) + " " + skills[i].Value.ToString("0"), Theme.PanelLight);
+        }
+
         // ------------------------------------------------------------------ path
 
-        private void Path()
+        private void Path(RectTransform content, RectTransform[] footer)
         {
-            _status.text = _manager.FullName + "\n" + Loc.T("career.wealthNow", MathX.FormatMoney(_manager.PersonalWealth));
-            UiFactory.Heading(_list, Loc.T("career.path"));
-            UiFactory.Paragraph(_list, Loc.T("career.path.employed"), Theme.FontSmall);
-            UiFactory.ButtonRow(_list, 64, UiFactory.Primary(Loc.T("career.findJob"), () => { _step = Step.Jobs; Render(); }));
-            UiFactory.Paragraph(_list, Loc.T("career.path.found"), Theme.FontSmall);
-            UiFactory.ButtonRow(_list, 64, UiFactory.Primary(Loc.T("career.foundTeam"), () =>
+            var cols = Ui.Columns12(content, 6, 6);
+            PathTile(cols[0], Loc.T("career.findJob"), Loc.T("ux.start.jobLine"), Loc.T("career.path.employed"), UiIcons.Career, () => { _step = Step.Jobs; Render(); });
+            PathTile(cols[1], Loc.T("career.foundTeam"), Loc.T("ux.start.foundLine"), Loc.T("career.path.found"), UiIcons.Flag, () =>
             {
-                CareerService.FoundingSponsorOffers(World, _game.Db, _manager, World.Rng.Fork("founding-sponsors"));
+                _found = new FoundingState();
                 _step = Step.Founding;
                 Render();
-            }));
+            });
+            Wp4Ui.BackLink(footer[0], Loc.T("career.back"), () => { _step = Step.Profile; Render(); });
+        }
+
+        private static void PathTile(RectTransform area, string title, string line, string info, string icon, Action go)
+        {
+            var body = Ui.Tile(area, title, go, null, 0, null, Wp4Ui.Info(title, info));
+            var img = UiIcons.Icon(body, icon, Theme.Alpha(Theme.TextDim, 0.7f));
+            img.rectTransform.anchorMin = img.rectTransform.anchorMax = new Vector2(0.5f, 0.6f);
+            img.rectTransform.sizeDelta = new Vector2(140, 140);
+            var t = Ui.Label(body, Theme.Caps(line), Theme.TextHeader, TextAnchor.MiddleCenter, Theme.Text, FontStyle.Bold);
+            UiFactory.Place(t.rectTransform, 0, 0.08f, 1, 0.28f);
         }
 
         // ------------------------------------------------------------------ jobs
 
-        private void Jobs()
+        private void Jobs(RectTransform content, RectTransform[] footer)
         {
             var offers = CareerService.JobOffers(World, _game.Db, _manager);
-            _status.text = Loc.T("career.jobs.status", offers.Count);
-            UiFactory.Heading(_list, Loc.T("career.jobs"));
-            if (offers.Count == 0) UiFactory.Paragraph(_list, Loc.T("career.jobs.none"), Theme.FontSmall);
-            var w = new[] { 3.4f, 1.4f, 1.6f, 1.6f, 1.6f, 2.2f, 1.6f };
-            UiFactory.TableRow(_list, 38, w, new[] { Loc.T("career.col.team"), Loc.T("career.col.category"), Loc.T("career.col.salary"), Loc.T("career.col.budget"),
-                Loc.T("career.col.autonomy"), Loc.T("career.col.objective"), "" }, true);
+            var list = Wp4Ui.ScrollIn(content, Ui.Grid.Gap);
+            Ui.Section(list, Loc.T("career.jobs"), Theme.Caps(Loc.T("career.jobs.status", offers.Count)),
+                Wp4Ui.Info(Loc.T("career.jobs"), Loc.T("career.jobs.note"), offers.Count == 0 ? Loc.T("career.jobs.none") : null));
+            if (offers.Count == 0) Ui.Empty(list, UiIcons.Career, Loc.T("ux.start.noJobs"));
+            RectTransform[] cols = null;
+            int k = 0;
             foreach (var o in offers)
             {
                 var offer = o;
                 var team = World.GetTeam(o.TeamId);
+                if (team == null) continue;
                 var org = World.GetOrganisation(o.OrganisationId);
                 var cat = _game.Db.GetCategory(o.CategoryId);
-                var row = UiFactory.TableRow(_list, 56, w, new[]
+                if (k % 3 == 0) cols = Ui.Columns12(UiFactory.Row(list, 200), 4, 4, 4);
+                var body = Ui.Tile(cols[k % 3], team.Name, () => Ui.Sheet(team.Name, l =>
                 {
-                    "<b>" + team.Name + "</b>\n<color=#9AA4B2>" + Loc.T("owner." + org.Owner) + " · " + Loc.T("career.seasons", o.Seasons) + "</color>",
-                    cat.ShortName, MathX.FormatMoney(o.SalaryPerSeason), MathX.FormatMoney(o.AssignedBudget), Loc.T("autonomy." + o.Autonomy), Loc.T("objective." + o.Objective), ""
-                });
-                var b = UiFactory.Button("Accept", row, Loc.T("career.accept"), () =>
+                    Ui.Line(l, Loc.T("career.col.category"), cat != null ? cat.Name : o.CategoryId);
+                    Ui.Line(l, Loc.T("career.col.objective"), Loc.T("objective." + offer.Objective));
+                    Ui.Line(l, Loc.T("career.col.salary"), "<b>" + MathX.FormatMoney(offer.SalaryPerSeason) + "</b>", true);
+                    Ui.Line(l, Loc.T("career.col.budget"), MathX.FormatMoney(offer.AssignedBudget));
+                    Ui.Line(l, Loc.T("career.col.autonomy"), Loc.T("autonomy." + offer.Autonomy));
+                    if (org != null) Ui.Line(l, Loc.T("finance.owner"), Loc.T("owner." + org.Owner));
+                    Ui.Line(l, Loc.T("ux.career.seasons"), offer.Seasons.ToString());
+                }, UiFactory.Primary(Loc.T("career.accept"), () =>
                 {
                     var r = CareerService.AcceptJob(World, _game.Db, _manager, offer);
                     if (r.Ok) _session.StartCareer(_game);
-                }, Theme.Accent, Theme.FontSmall - 4);
-                UiFactory.InColumn(b, w, w.Length - 1);
+                }), null, 0.5f), cat != null ? cat.ShortName : null);
+                var v = Ui.Label(body, MathX.FormatMoney(o.SalaryPerSeason), Theme.TextKey, TextAnchor.MiddleCenter, Theme.Timing, FontStyle.BoldAndItalic);
+                UiFactory.Place(v.rectTransform, 0, 0.36f, 1, 1);
+                var s = Ui.Label(body, Theme.Caps(Loc.T("objective." + o.Objective) + " · " + Loc.T("ux.career.perSeason")), Theme.TextCaption, TextAnchor.MiddleCenter, Theme.TextDim, FontStyle.Bold);
+                UiFactory.Place(s.rectTransform, 0, 0, 1, 0.34f);
+                k++;
             }
-            UiFactory.Paragraph(_list, "<color=#9AA4B2>" + Loc.T("career.jobs.note") + "</color>", Theme.FontSmall - 2);
-            UiFactory.ButtonRow(_list, 56, UiFactory.Act(Loc.T("career.back"), () => { _step = Step.Path; Render(); }));
+            Wp4Ui.BackLink(footer[0], Loc.T("career.back"), () => { _step = Step.Path; Render(); });
         }
 
         // ------------------------------------------------------------------ founding
 
-        private void Founding()
+        private void Founding(RectTransform content, RectTransform[] footer)
         {
-            var db = _game.Db;
-            double wealth = _manager.PersonalWealth;
-            double invest = Math.Round(wealth * _investShare);
-            var terms = CareerService.LoanTermsFor(_manager, invest);
-            double loan = Math.Round(terms.MaxAmount * _loanShare / 10000) * 10000;
-            _status.text = Loc.T("career.found.status", MathX.FormatMoney(invest + loan));
-
-            UiFactory.Heading(_list, Loc.T("career.capital"));
-            UiFactory.ButtonRow(_list, 52,
-                UiFactory.Option(Loc.T("career.invest", "25%"), _investShare == 0.25, () => { _investShare = 0.25; Render(); }),
-                UiFactory.Option(Loc.T("career.invest", "50%"), _investShare == 0.5, () => { _investShare = 0.5; Render(); }),
-                UiFactory.Option(Loc.T("career.invest", "75%"), _investShare == 0.75, () => { _investShare = 0.75; Render(); }),
-                UiFactory.Option(Loc.T("career.invest", "100%"), _investShare == 1, () => { _investShare = 1; Render(); }));
-            UiFactory.ButtonRow(_list, 52,
-                UiFactory.Option(Loc.T("career.loanNone"), _loanShare == 0, () => { _loanShare = 0; Render(); }),
-                UiFactory.Option(Loc.T("career.loanHalf"), _loanShare == 0.5, () => { _loanShare = 0.5; Render(); }),
-                UiFactory.Option(Loc.T("career.loanMax"), _loanShare == 1, () => { _loanShare = 1; Render(); }));
-            var w2 = new[] { 5f, 3f };
-            UiFactory.TableRow(_list, 40, w2, new[] { Loc.T("career.ownMoney"), MathX.FormatMoney(invest) + " / " + MathX.FormatMoney(wealth) });
-            UiFactory.TableRow(_list, 40, w2, new[] { Loc.T("career.wealthLeft"), MathX.FormatMoney(wealth - invest) });
-            UiFactory.TableRow(_list, 40, w2, new[] { Loc.T("career.loan"), MathX.FormatMoney(loan) + "  <color=#9AA4B2>" + Loc.T("career.loanTerms", MathX.FormatMoney(terms.MaxAmount), (terms.Rate * 100).ToString("0.0"), terms.Seasons) + "</color>" });
-
-            // Founding sponsors: tied to a category, they only pay if the team is founded there.
-            UiFactory.Heading(_list, Loc.T("career.sponsors"));
-            bool any = false;
-            foreach (var o in World.SponsorOffers)
+            FoundingPanel.Build(content, _game, _manager, _found, Render, res =>
             {
-                if (o.TeamId != CareerService.FoundingProbeId) continue;
-                any = true;
-                var cat = db.GetCategory(o.RequiredCategoryId);
-                UiFactory.Paragraph(_list, "<b>" + o.Name + "</b> <color=#9AA4B2>" + o.Industry + "</color> — " + Loc.T("career.sponsorTerms", MathX.FormatMoney(o.PaymentPerSeason), o.Seasons, cat != null ? cat.ShortName : o.RequiredCategoryId), Theme.FontSmall);
-            }
-            if (!any) UiFactory.Paragraph(_list, "<color=#9AA4B2>" + Loc.T("career.noSponsors") + "</color>", Theme.FontSmall);
-
-            // Only categories the money can sustain can be chosen.
-            UiFactory.Heading(_list, Loc.T("career.categories"));
-            var w = new[] { 2f, 2f, 1.6f, 1.6f, 1.6f, 1.6f, 1.6f, 1.6f, 1.5f };
-            UiFactory.TableRow(_list, 38, w, new[] { Loc.T("career.col.category"), Loc.T("career.col.verdict"), Loc.T("career.col.startup"), Loc.T("career.col.operating"),
-                Loc.T("career.col.confirmed"), Loc.T("career.col.probable"), Loc.T("career.col.lowest"), Loc.T("career.col.reserve"), "" }, true);
-            foreach (var r in CareerService.FoundingOptions(World, db, _manager, invest, loan))
-            {
-                var rep = r;
-                var cat = db.GetCategory(r.CategoryId);
-                string verdict = r.Verdict == Viability.Viable ? "<color=#3CC878>" : r.Verdict == Viability.Risky ? "<color=#F0B428>" : "<color=#E10600>";
-                verdict += Loc.T("viability." + r.Verdict) + "</color>";
-                bool selectable = r.Verdict == Viability.Viable || r.Verdict == Viability.Risky;
-                var row = UiFactory.TableRow(_list, 50, w, new[]
+                if (res.Ok)
                 {
-                    cat.ShortName, verdict, Money(-r.StartupTotal), Money(-r.OperatingCost), MathX.FormatMoney(r.ConfirmedIncome), MathX.FormatMoney(r.ProbableIncome),
-                    Money(r.MinCashConfirmed), MathX.FormatMoney(r.Reserve), ""
-                }, false, _category == r.CategoryId ? new Color(0.94f, 0.7f, 0.16f, 0.16f) : (Color?)null);
-                if (selectable)
-                {
-                    var b = UiFactory.Button("Pick", row, Loc.T("career.choose"), () => { _category = rep.CategoryId; _supplier = null; Render(); }, Theme.PanelLight, Theme.FontSmall - 4);
-                    UiFactory.InColumn(b, w, w.Length - 1);
+                    Screens.TeamSetupPage.OpenOnStart = true;
+                    _session.StartCareer(_game);
                 }
-                if (r.Reasons.Count > 0 && r.Verdict != Viability.Viable)
-                {
-                    var reasons = new List<string>();
-                    foreach (var reason in r.Reasons) reasons.Add(Loc.T("reason." + reason));
-                    string missing = r.Shortfall > 0 && r.Verdict != Viability.NotAvailable ? " " + Loc.T("career.shortfall", MathX.FormatMoney(r.Shortfall)) : "";
-                    UiFactory.Paragraph(_list, "<color=#9AA4B2>   " + string.Join(" · ", reasons.ToArray()) + missing + "</color>", Theme.FontSmall - 4);
-                }
-            }
-
-            if (_category != null)
-            {
-                var cat = db.GetCategory(_category);
-                UiFactory.Heading(_list, Loc.T("career.supplier", cat.Name));
-                var suppliers = CareerService.Suppliers(World, _category);
-                var acts = new List<UiAct>();
-                foreach (var m in suppliers)
-                {
-                    var maker = m;
-                    acts.Add(UiFactory.Option(m.Name, _supplier == m.Id, () => { _supplier = maker.Id; Render(); }));
-                }
-                UiFactory.ButtonRow(_list, 52, acts.ToArray());
-                UiFactory.Input(_list, Loc.T("career.teamName"), _teamName, v => _teamName = v);
-
-                if (_supplier != null)
-                {
-                    var report = ViabilityService.Evaluate(World, db, new TeamPlan
-                    {
-                        CategoryId = _category, Capital = invest + loan, Reputation = CareerService.NewTeamReputation(_manager),
-                        ConfirmedSponsorIncome = CareerService.ConfirmedFoundingSponsorship(World, _category),
-                        LoanAmount = loan, LoanRate = terms.Rate, LoanSeasons = terms.Seasons
-                    });
-                    UiFactory.Paragraph(_list, Loc.T("career.summary", MathX.FormatMoney(report.StartupTotal), MathX.FormatMoney(report.LiquidityAfterStartup),
-                        MathX.FormatMoney(report.EndCashConfirmed), MathX.FormatMoney(report.EndCashProbable)), Theme.FontSmall);
-                    if (report.Verdict == Viability.Risky)
-                        UiFactory.Paragraph(_list, "<color=#F0B428>" + Loc.T("career.riskyWarning") + "</color>", Theme.FontSmall);
-                    UiFactory.ButtonRow(_list, 64, UiFactory.Primary(Loc.T("career.confirmFound"), () =>
-                    {
-                        string name = string.IsNullOrEmpty(_teamName.Trim()) ? _manager.LastName + " Racing" : _teamName.Trim();
-                        var res = CareerService.Found(World, db, _manager, new FoundingPlan { CategoryId = _category, ManufacturerId = _supplier, TeamName = name, Investment = invest, Loan = loan });
-                        if (res.Ok)
-                        {
-                            Screens.TeamSetupPage.OpenOnStart = true;
-                            _session.StartCareer(_game);
-                        }
-                        else
-                        {
-                            _status.text = res.Message;
-                        }
-                    }));
-                }
-            }
-            UiFactory.ButtonRow(_list, 56, UiFactory.Act(Loc.T("career.back"), () => { _step = Step.Path; _category = null; Render(); }));
+                else Render();
+            });
+            Wp4Ui.BackLink(footer[0], Loc.T("career.back"), () => { _step = Step.Path; _found.Category = null; Render(); });
         }
     }
 }
