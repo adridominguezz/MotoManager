@@ -9,9 +9,11 @@ using UnityEngine.UI;
 namespace MotoManager.App.UI
 {
     /// <summary>
-    /// Plays the next event: the player's practice and qualifying run on the worker thread, every race/sprint of the
-    /// player's category is shown in the race view, then the rest of the event (other categories, economy, news)
-    /// is completed in the background.
+    /// Plays the next event (MM4 §1.5, linear with CONTINUAR): the event intro (circuit, round, forecast, weekend
+    /// stepper); the player's practice and qualifying run on the worker thread; the qualifying result; every
+    /// race/sprint of the player's category is shown (pre-race, race view, post-race with the podium); then the rest of
+    /// the event (other categories, economy, news) is completed in the background and the closing screens follow:
+    /// updated championship and event balance, then back to management.
     /// </summary>
     public class RaceFlow
     {
@@ -21,6 +23,10 @@ namespace MotoManager.App.UI
         private LiveEvent _event;
         private string _summary = "";
         private bool _qualifyingShown;
+        private EventRecap _recap;
+
+        /// <summary>The player's weekend while its race flow runs (the post-race screen draws the stepper from it).</summary>
+        internal static WeekendSimulation ActiveWeekend;
 
         public RaceFlow(GameSession session, GameObject menuToHide, Action<string> onDone)
         {
@@ -35,8 +41,26 @@ namespace MotoManager.App.UI
             _session.Run(Loc.T("busy.weekend"), () =>
             {
                 _event = game.BeginNextEvent();
-                AdvanceToNextRace();
-            }, ShowNextRaceOrFinish);
+                // The closing screens compare the championship and the ledger with how they were now.
+                if (_event != null && _event.PlayerWeekend != null) _recap = EventRecap.Capture(game, _event.PlayerWeekend);
+            }, ShowIntro);
+        }
+
+        /// <summary>
+        /// MM4 §1.5 step 1/3: the event's intro (circuit, round, forecast, the weekend stepper) before practice and
+        /// qualifying are simulated.
+        /// </summary>
+        private void ShowIntro()
+        {
+            var weekend = _event != null ? _event.PlayerWeekend : null;
+            if (weekend == null)
+            {
+                ShowNextRaceOrFinish();
+                return;
+            }
+            if (_menuToHide != null) _menuToHide.SetActive(false);
+            ActiveWeekend = weekend;
+            WeekendIntroPanel.Show(weekend, _recap, () => _session.Run(Loc.T("ux.mm4c.busyPractice"), AdvanceToNextRace, ShowNextRaceOrFinish));
         }
 
         /// <summary>Worker thread: runs practice/qualifying/warm-up of the player's weekend until a race is due.</summary>
@@ -58,6 +82,7 @@ namespace MotoManager.App.UI
             if (weekend != null && !weekend.IsComplete && weekend.CurrentIsRace)
             {
                 if (_menuToHide != null) _menuToHide.SetActive(false);
+                ActiveWeekend = weekend;
                 // First the qualifying result: where we start.
                 if (!_qualifyingShown && weekend.QualifyingOrder.Count > 0)
                 {
@@ -93,11 +118,21 @@ namespace MotoManager.App.UI
         {
             var game = _session.Game;
             var ev = _event;
-            _session.Run(Loc.T("busy.restOfEvent"), () => game.CompleteEvent(ev), () =>
+            var recap = _recap;
+            _session.Run(Loc.T("busy.restOfEvent"), () =>
             {
-                if (_menuToHide != null) _menuToHide.SetActive(true);
+                game.CompleteEvent(ev);
+                if (recap != null) recap.Finish(game);
+            }, () =>
+            {
+                ActiveWeekend = null;
                 _session.Save();
-                _onDone("<b>" + Loc.Round(ev.Plan.Round.Name) + "</b>\n" + _summary);
+                // After the podium (post-race): the updated championship, the event balance, then management.
+                EventRecap.ShowClosing(recap, () =>
+                {
+                    if (_menuToHide != null) _menuToHide.SetActive(true);
+                    _onDone("<b>" + Loc.Round(ev.Plan.Round.Name) + "</b>\n" + _summary);
+                });
             });
         }
     }
@@ -110,6 +145,32 @@ namespace MotoManager.App.UI
     internal static class RaceUi
     {
         public const float BarH = 72, Pad = 16;
+        /// <summary>Width of the slanted primary block at the right end of a race-flow top bar.</summary>
+        public const float ActionW = 300;
+        /// <summary>Lean of the slanted blocks (same as the management header's).</summary>
+        private const float BlockSlant = 0.7f;
+
+        /// <summary>
+        /// The one primary action of a race-flow screen (MM4 §1.2/§2, as in part 1): a race-red slanted block filling
+        /// <paramref name="slot"/> (the top bar's right slot, full height), CAPS label and a chevron, like the
+        /// management header's main action.
+        /// </summary>
+        public static Button ActionBlock(RectTransform slot, string label, Action onTap)
+        {
+            var b = UiFactory.Button("MainAction", slot, Theme.Caps(label), onTap, Theme.Action, 28);
+            UiFactory.Slant(b.image, BlockSlant);
+            UiFactory.Stretch((RectTransform)b.transform);
+            var t = b.GetComponentInChildren<Text>();
+            t.color = Theme.OnAction;
+            Ui.Fit(t, 28);
+            t.rectTransform.offsetMin = new Vector2(36, 2);
+            t.rectTransform.offsetMax = new Vector2(-44, -2);
+            var ch = UiIcons.Chevron(b.transform, Theme.OnAction);
+            ch.rectTransform.anchorMin = ch.rectTransform.anchorMax = new Vector2(1, 0.5f);
+            ch.rectTransform.sizeDelta = new Vector2(22, 22);
+            ch.rectTransform.anchoredPosition = new Vector2(-30, 0);
+            return b;
+        }
 
         /// <summary>Full-screen dark backdrop of a race-flow panel.</summary>
         public static Image Backdrop(RectTransform root, float alpha = 1f)
