@@ -115,3 +115,55 @@ inventar funcionalidad nueva sin consultar.)
   balance / clasificaciones, con la simulación real.
 - Tablas con zebra, tarjetas de cabecera de dos tonos, CTA inclinado, aplicados de forma consistente.
 - Sin regresiones (simular evento, cerrar temporada, guardar, menú, tamaño de texto...).
+
+## Implementación
+
+### Parte 1 — cabecera persistente con una única acción principal contextual (hecho)
+
+Código: `Assets/MotoManager/Scripts/Unity/UI/Screens/ManagementShell.cs` (`BuildTopBar`, `BuildTopBarContent`,
+`BuildAction`, `PageHasPrimary`, `BuildPills`). Textos nuevos: `Resources/Localization/ux_{es,en}/mm4.json`.
+
+**Composición de la barra superior (72 de alto, de izquierda a derecha):**
+1. **Bloque de volver**: paralelogramo inclinado oscuro (`Theme.PanelLight`, `UiFactory.Slant`) a toda la altura de
+   la barra, con el pictograma `UiIcons.Back` (chevron ‹). Visible en todas las páginas salvo Inicio. Mantiene el
+   comportamiento de antes (`Back()`: historial de páginas abiertas desde otra; si no hay, Inicio).
+2. **Título** de pantalla en mayúsculas (tipografía display) sobre la fecha; en Inicio, el nombre del equipo. La
+   etiqueta de progreso sustituye a la fecha mientras se simula (sin cambios).
+3. **Bloques de recursos** (texto plano: leyenda sobre valor, separador fino; siguen siendo pulsables):
+   caja (→ Finanzas; en rojo si es negativa), **reputación del mánager** (→ Mánager; nuevo) y posición/puntos en el
+   campeonato (→ Clasificaciones). Sin equipo solo se muestra la reputación.
+4. **AVISOS** (con su contador) y **NOTICIAS**, sin cambios.
+5. **Acción principal**: bloque inclinado a toda la altura en el extremo derecho, etiqueta en mayúsculas + chevron.
+
+**Regla de la acción principal (decisión):**
+- La función es **siempre la acción de carrera** que ya calculaba el shell: `ContinueShort()` / `Continue()` →
+  "CARRERA" (siguiente evento del equipo, simulando antes los de otros campeonatos), "SIMULAR" (sin equipo, evento a
+  evento), "TERMINAR TEMP." (simula el resto) o "CERRAR TEMP." (`CloseSeason()`). Es igual en Inicio y en el resto de
+  páginas.
+- No se usa "INICIO" en las páginas de gestión: Inicio ya es alcanzable con el bloque de volver y con la primera
+  celda del rail, y cambiar la función del bloque según la página haría desaparecer el botón de carrera que antes
+  estaba en todas las subpáginas (regla: no perder acciones). En MotoManager, la acción que "mueve la partida" es la
+  carrera, que es el equivalente del "CONTINUAR"/"CARRERA" de MM4.
+- **Una sola acción principal por pantalla**: el bloque es **rojo de carrera** (`Theme.Action`, texto `OnAction`)
+  cuando es la única principal; si la página que se acaba de construir muestra su propio botón principal rojo
+  (`Ui.PrimaryCTA` o botón grande rojo; lo detecta `PageHasPrimary()` tras construir la página: aceptar
+  patrocinador, hacer oferta, proponer, renovar, siguiente/terminar en la configuración del equipo, ver ofertas,
+  INICIAR de I+D…), el bloque pasa a **oscuro** (`PanelLight`, texto en color de equipo legible) con la misma
+  posición y función. Así la confirmación propia de la página sigue siendo el único botón rojo.
+- **Inicio**: la ficha "Próxima carrera" ya no tiene su propio `PrimaryCTA` (CARRERA / CERRAR TEMP.), que duplicaba
+  la acción de la cabecera; conserva SIMULAR EVENTO y SIMULAR TEMPORADA como secundarios (`HomeScreen.cs`,
+  `RaceTile`; cambio mínimo). Con temporada terminada la ficha queda sin botones y la cabecera dice CERRAR TEMP.
+  Inicio sin equipo mantiene "VER OFERTAS" como principal, así que allí la acción de la cabecera (SIMULAR) se ve
+  oscura.
+
+**MM4 §2 aplicado en el shell:** una acción principal por pantalla arriba a la derecha en bloque inclinado; rojo
+para negativos (caja); títulos, botones y etiquetas de bloques en mayúsculas, cifras en negrita. Tablas/zebra,
+tarjetas de dos tonos y modales quedan fuera de esta parte.
+
+**Desviación consciente de `VISUAL_STYLE.md`:** allí "inclinado = solo etiquetas/marcas" y "cápsula = solo el
+principal". Por decisión del usuario (adoptar la cabecera de MM4), los dos bloques de la cabecera (volver y acción
+principal) son inclinados; el `PrimaryCTA` dentro de las páginas sigue siendo cápsula roja.
+
+**Sin cambios:** rail de iconos, pestañas, AVISOS/NOTICIAS, menú, bloqueo durante simulaciones (los bloques nuevos
+son `Button` y se bloquean igual), historial y volver, y todas las acciones (simular evento/temporada, cerrar
+temporada, guardar…). Sin iconos nuevos; texto mínimo 18 (las etiquetas se ajustan con `Ui.Fit`).

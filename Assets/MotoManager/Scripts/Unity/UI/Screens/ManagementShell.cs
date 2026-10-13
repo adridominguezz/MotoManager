@@ -50,8 +50,8 @@ namespace MotoManager.App.UI.Screens
 
     /// <summary>
     /// The career interface (UX spec §3.1): a fixed 128-unit icon rail on the left (the menu on top, then one
-    /// pictogram per section), a 72-unit top bar (back, page title and date, cash and championship pills, inbox and
-    /// news buttons, the race button on sub-pages), up to 4 tabs (56) for the pages of a section, and the active page
+    /// pictogram per section), a 72-unit top bar (MM4 §1.2: slanted back block off the hub, page title and date, cash /
+    /// reputation / championship blocks, inbox and news buttons, the one main action as a slanted block), up to 4 tabs (56) for the pages of a section, and the active page
     /// in the content rect (1440×570 with tabs, 1440×634 without on a 1600×730 safe area). Sheets open over the safe
     /// root (<see cref="Ui.SheetHost"/>). Long simulations run on the session's worker thread while a progress label
     /// replaces the date.
@@ -67,6 +67,8 @@ namespace MotoManager.App.UI.Screens
         private RectTransform _right;
         private RectTransform _info;
         private Button _back;
+        /// <summary>Holder of the header's one contextual action (MM4 §1.2), rebuilt on every refresh.</summary>
+        private RectTransform _action;
         private Text _header;
         private Text _subHeader;
         private Text _busy;
@@ -90,7 +92,9 @@ namespace MotoManager.App.UI.Screens
         /// <summary>Width of the icon rail, in canvas units.</summary>
         public const float RailUnits = 128;
         private const float TabHeight = 56, TabGap = 8, Gutter = Ui.Grid.Gutter;
-        private const float GoWidth = 240, PillWidth = 176, WordWidth = 128;
+        private const float ActionWidth = 232, BackWidth = 96, PillWidth = 176, RepWidth = 120, WordWidth = 128;
+        /// <summary>Lean of the header's slanted blocks (back, main action): slant-sprite pixels-per-unit multiplier.</summary>
+        private const float BlockSlant = 0.7f;
         private const int MaxTabs = 4, MaxNews = 12;
 
         /// <summary>Result of the last simulated or played event, shown on the home page.</summary>
@@ -228,12 +232,20 @@ namespace MotoManager.App.UI.Screens
             _headerLine.rectTransform.offsetMax = new Vector2(0, 2);
             UiFactory.Gradient(_headerLine, Color.white, new Color(1, 1, 1, 0.05f), true);
 
-            // Back (inside a sub-page): a 56-unit icon button at the left end.
-            _back = Ui.IconButton(header.transform, UiIcons.Back, Back);
+            // Back (every page but the hub, MM4 §1.2): a dark slanted block the full height of the bar at its left
+            // end, with the Back pictogram (a left chevron).
+            _back = UiFactory.Button("Back", header.transform, "", Back, Theme.PanelLight, Theme.TextBody);
+            UiFactory.Slant(_back.image, BlockSlant);
             var brt = (RectTransform)_back.transform;
-            brt.anchorMin = brt.anchorMax = new Vector2(0, 0.5f);
+            brt.anchorMin = new Vector2(0, 0);
+            brt.anchorMax = new Vector2(0, 1);
             brt.pivot = new Vector2(0, 0.5f);
-            brt.anchoredPosition = new Vector2(8, 0);
+            brt.offsetMin = new Vector2(-12, 0);
+            brt.offsetMax = new Vector2(BackWidth - 12, 0);
+            var backIcon = UiIcons.Icon(_back.transform, UiIcons.Back, Theme.Text);
+            backIcon.rectTransform.anchorMin = backIcon.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            backIcon.rectTransform.anchoredPosition = new Vector2(4, 0);
+            backIcon.rectTransform.sizeDelta = new Vector2(32, 32);
 
             // Title (team on the hub, page on sub-pages) over the date.
             _info = UiFactory.Rect("Info", header.transform);
@@ -245,13 +257,21 @@ namespace MotoManager.App.UI.Screens
             _busy = Ui.Label(_info, "", Theme.TextCaption, TextAnchor.UpperLeft, Theme.Warning, FontStyle.Bold);
             UiFactory.Place(_busy.rectTransform, 0, 0.04f, 1, 0.42f);
 
-            // Right end: pills, inbox, news and the race button, laid out right to left (rebuilt on refresh).
+            // Far right: the one main action, a slanted block the full height of the bar (MM4 §1.2).
+            _action = UiFactory.Rect("Action", header.transform);
+            _action.anchorMin = new Vector2(1, 0);
+            _action.anchorMax = new Vector2(1, 1);
+            _action.pivot = new Vector2(1, 0.5f);
+            _action.offsetMin = new Vector2(-ActionWidth, 0);
+            _action.offsetMax = Vector2.zero;
+
+            // Before it: resource blocks, inbox and news, laid out right to left (rebuilt on refresh).
             _right = UiFactory.Rect("Right", header.transform);
             _right.anchorMin = new Vector2(1, 0);
             _right.anchorMax = new Vector2(1, 1);
             _right.pivot = new Vector2(1, 0.5f);
             _right.offsetMin = new Vector2(0, 0);
-            _right.offsetMax = new Vector2(-8, 0);
+            _right.offsetMax = new Vector2(-ActionWidth - 16, 0);
             var h = _right.gameObject.AddComponent<HorizontalLayoutGroup>();
             h.spacing = 8;
             h.childAlignment = TextAnchor.MiddleRight;
@@ -619,9 +639,11 @@ namespace MotoManager.App.UI.Screens
         }
 
         /// <summary>
-        /// Top bar: back on sub-pages, the title (team on the hub, page elsewhere) over the date, then the cash and
-        /// championship pills, the inbox (with its count) and news buttons, and the race button on sub-pages
-        /// (secondary-accent: the hub's race tile is the primary there).
+        /// Top bar (MM4 §1.2, see docs/MM4_REFERENCIA.md "Implementación"): the slanted back block on every page but
+        /// the hub, the title (team on the hub, page elsewhere) over the date, the resource blocks (cash, manager
+        /// reputation, championship), AVISOS and NOTICIAS, and the one main action as a slanted block at the right
+        /// end: always the race action (<see cref="ContinueShort"/> / <see cref="Continue"/>), race red when it is the
+        /// screen's only primary, a dark block when the page shows its own primary CTA.
         /// </summary>
         private void BuildTopBarContent(WorldState world, Team team)
         {
@@ -631,7 +653,7 @@ namespace MotoManager.App.UI.Screens
             _subHeader.text = Theme.Caps(world.CurrentDate.ToString("d MMM yyyy", Loc.Culture));
 
             UiFactory.Clear(_right);
-            if (team != null) BuildPills(world, team);
+            BuildPills(world, team);
             var inbox = InboxItems();
             if (team != null || inbox.Count > 0)
             {
@@ -648,25 +670,53 @@ namespace MotoManager.App.UI.Screens
             }
             var news = TopIcon(Loc.T("ux.shell.newsShort"), ShowNews);
             news.gameObject.name = "News";
-            if (!hub)
-            {
-                var go = UiFactory.Rect("Continue", _right);
-                go.sizeDelta = new Vector2(GoWidth, Ui.Grid.Hit);
-                var le = go.gameObject.AddComponent<LayoutElement>();
-                le.preferredWidth = GoWidth;
-                le.minWidth = GoWidth * 0.7f;
-                var b = Ui.SecondaryAccent(go, ContinueShort(), Continue);
-                var t = b.GetComponentInChildren<Text>();
-                t.rectTransform.offsetMax = new Vector2(-36, -2);
-                var ch = UiIcons.Chevron(b.transform, t.color);
-                ch.rectTransform.anchorMin = ch.rectTransform.anchorMax = new Vector2(1, 0.5f);
-                ch.rectTransform.sizeDelta = new Vector2(20, 20);
-                ch.rectTransform.anchoredPosition = new Vector2(-22, 0);
-            }
+            BuildAction(!PageHasPrimary());
             LayoutRebuilder.ForceRebuildLayoutImmediate(_right);
-            float rightWidth = LayoutUtility.GetPreferredWidth(_right);
-            _info.offsetMin = new Vector2(hub ? Gutter : 8 + Ui.Grid.Hit + 8, 0);
-            _info.offsetMax = new Vector2(-rightWidth - 24, 0);
+            float rightWidth = LayoutUtility.GetPreferredWidth(_right) + ActionWidth + 16;
+            _info.offsetMin = new Vector2(hub ? Gutter : BackWidth - 12 + Gutter, 0);
+            _info.offsetMax = new Vector2(-rightWidth - 16, 0);
+        }
+
+        /// <summary>
+        /// The header's main action: a slanted block the full height of the bar with the race action's short label
+        /// and a chevron. <paramref name="primary"/>: race-red fill (the screen's one primary); otherwise a dark block
+        /// with team-colour text, so a page's own primary CTA stays the only red button on screen.
+        /// </summary>
+        private void BuildAction(bool primary)
+        {
+            UiFactory.Clear(_action);
+            var fill = primary ? Theme.Action : Theme.PanelLight;
+            var ink = primary ? Theme.OnAction : Theme.AccentInk;
+            var b = UiFactory.Button("MainAction", _action, Theme.Caps(ContinueShort()), Continue, fill, 28);
+            UiFactory.Slant(b.image, BlockSlant);
+            UiFactory.Stretch((RectTransform)b.transform);
+            var t = b.GetComponentInChildren<Text>();
+            t.color = ink;
+            Ui.Fit(t, 28);
+            t.rectTransform.offsetMin = new Vector2(36, 2);
+            t.rectTransform.offsetMax = new Vector2(-44, -2);
+            var ch = UiIcons.Chevron(b.transform, ink);
+            ch.rectTransform.anchorMin = ch.rectTransform.anchorMax = new Vector2(1, 0.5f);
+            ch.rectTransform.sizeDelta = new Vector2(22, 22);
+            ch.rectTransform.anchoredPosition = new Vector2(-30, 0);
+        }
+
+        /// <summary>
+        /// Whether the page just built shows its own red primary (a <see cref="Ui.PrimaryCTA"/> or a race-red big
+        /// button): then the header action steps down to the dark block (one primary per screen, MM4 §2).
+        /// </summary>
+        private bool PageHasPrimary()
+        {
+            var red = Theme.Action;
+            foreach (var b in _content.GetComponentsInChildren<Button>())
+            {
+                var img = b.image;
+                if (img == null) continue;
+                var c = img.color;
+                if (Mathf.Abs(c.r - red.r) < 0.02f && Mathf.Abs(c.g - red.g) < 0.02f && Mathf.Abs(c.b - red.b) < 0.02f && c.a > 0.9f)
+                    return true;
+            }
+            return false;
         }
 
         /// <summary>A 56-unit top-bar button: a known pictogram, or a short word.</summary>
@@ -695,9 +745,18 @@ namespace MotoManager.App.UI.Screens
             return b;
         }
 
-        /// <summary>Resource pills: cash (→ finance) and the team's championship position and points (→ standings).</summary>
+        /// <summary>
+        /// Resource blocks: cash (→ finance; red when negative, MM4 §2, via Theme.Money), the manager's reputation (→ manager page) and
+        /// the team's championship position and points (→ standings). Without a team only the reputation shows.
+        /// </summary>
         private void BuildPills(WorldState world, Team team)
         {
+            var me = world.PlayerManager;
+            if (team == null)
+            {
+                if (me != null) Pill(Loc.T("ux.mm4.rep"), me.Reputation.ToString("0"), () => Show<ManagerPage>(), RepWidth);
+                return;
+            }
             ChampionshipState champ;
             int pos = 0;
             double pts = 0;
@@ -708,14 +767,15 @@ namespace MotoManager.App.UI.Screens
                     if (table[i].Id == team.Id) { pos = i + 1; pts = table[i].Points; }
             }
             Pill(Loc.T("home.tile.cash"), Theme.Money(Accounts.Cash(world, team)), () => Show<FinanceScreen>());
+            if (me != null) Pill(Loc.T("ux.mm4.rep"), me.Reputation.ToString("0"), () => Show<ManagerPage>(), RepWidth);
             Pill(Loc.T("home.tile.championship"), Theme.Pos(pos) + " · " + Loc.T("home.tile.points", pts.ToString("0")), () => Show<StandingsScreen>());
         }
 
-        private void Pill(string caption, string value, System.Action onTap)
+        private void Pill(string caption, string value, System.Action onTap, float width = PillWidth)
         {
             // A flat text block (caption over value) with a thin divider on its left, no box.
             var b = UiFactory.Button("Pill", _right, "", onTap, Color.clear, Theme.TextBody);
-            ((RectTransform)b.transform).sizeDelta = new Vector2(PillWidth, Ui.Grid.Hit);
+            ((RectTransform)b.transform).sizeDelta = new Vector2(width, Ui.Grid.Hit);
             b.image.sprite = null;
             var divider = UiFactory.Decor("Divider", b.transform, Theme.Alpha(Color.white, 0.16f));
             divider.rectTransform.anchorMin = new Vector2(0, 0.18f);
@@ -723,8 +783,8 @@ namespace MotoManager.App.UI.Screens
             divider.rectTransform.offsetMin = Vector2.zero;
             divider.rectTransform.offsetMax = new Vector2(1, 0);
             var le = b.gameObject.AddComponent<LayoutElement>();
-            le.preferredWidth = PillWidth;
-            le.minWidth = PillWidth * 0.7f;
+            le.preferredWidth = width;
+            le.minWidth = width * 0.7f;
             var label = b.GetComponentInChildren<Text>();
             label.supportRichText = true;
             label.alignment = TextAnchor.MiddleCenter;

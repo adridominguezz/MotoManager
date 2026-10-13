@@ -229,13 +229,12 @@ namespace MotoManager.App.UI.Screens
         // ------------------------------------------------------------------ next race
 
         /// <summary>
-        /// The next race: round and date in the header, the Grand Prix name and the last result, then the three
-        /// buttons: race (the screen's primary), simulate the Grand Prix and simulate the season.
+        /// The next race: round and date in the header, the Grand Prix name and the last result, then simulate the
+        /// Grand Prix and simulate the season. Racing (or closing the season) is the header's main action.
         /// </summary>
         private void RaceTile(RectTransform area, WorldState world, Team team)
         {
             var next = Shell.NextOwnEvent();
-            bool racing = next != null && next.Categories.Contains(team.CategoryId);
             RectTransform body;
             if (next == null)
             {
@@ -261,14 +260,10 @@ namespace MotoManager.App.UI.Screens
                 UiFactory.Place(last.rectTransform, 0, 0.48f, 1, 0.68f);
             }
 
+            // The race / close-season action is the header's main action (MM4 §1.2, docs/MM4_REFERENCIA.md
+            // "Implementación"): the tile keeps only the two simulations, so the hub has one primary.
+            if (next == null) return;
             var row = Wp2Ui.BottomStrip(body, Ui.Grid.Cta);
-            string label = racing || next == null ? Shell.ContinueShort() : Loc.T("shell.short.simulate");
-            Action go = racing || next == null ? (Action)Shell.Continue : Shell.SimulateEvent;
-            if (next == null)
-            {
-                Wp2Ui.Chevron(Ui.PrimaryCTA(Ui.Columns12(row, 6)[0], label, go));
-                return;
-            }
             var cols = Ui.Columns12(row, 3, 3, 6);
             var simEvent = UiFactory.Rect("SimEvent", cols[0]);
             UiFactory.Place(simEvent, 0, 0.06f, 1, 0.94f);
@@ -276,7 +271,6 @@ namespace MotoManager.App.UI.Screens
             var simSeason = UiFactory.Rect("SimSeason", cols[1]);
             UiFactory.Place(simSeason, 0, 0.06f, 1, 0.94f);
             Ui.Secondary(simSeason, Loc.T("home.simulateSeasonShort"), Shell.SimulateSeason);
-            Wp2Ui.Chevron(Ui.PrimaryCTA(cols[2], label, go));
         }
 
         // ------------------------------------------------------------------ decisions
