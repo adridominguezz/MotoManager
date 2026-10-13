@@ -185,20 +185,18 @@ namespace MotoManager.App.UI
                 int idx = i;
                 float x0 = 0.22f + 0.26f * i, x1 = x0 + 0.26f;
                 var b = UiFactory.Button("Option", row, Theme.Caps(labels[i]), () => onPick(idx), Color.Lerp(Theme.Background, Theme.Panel, 0.85f), Theme.TextCaption);
-                UiFactory.Slant(b.image, 2.6f);
                 UiFactory.Place((RectTransform)b.transform, x0, 0, x1, 1, 2);
                 var t = b.GetComponentInChildren<Text>();
-                t.fontStyle = FontStyle.Bold;
+                UiFactory.Style(t, FontStyle.Bold);
                 Ui.Fit(t, Theme.TextCaption);
                 t.verticalOverflow = VerticalWrapMode.Overflow;
                 t.rectTransform.offsetMin = new Vector2(10, 0);
                 t.rectTransform.offsetMax = new Vector2(-10, 0);
                 var line = UiFactory.Decor("Underline", b.transform, Theme.Accent);
-                UiFactory.Slant(line, 6f);
                 line.rectTransform.anchorMin = new Vector2(0, 0);
                 line.rectTransform.anchorMax = new Vector2(1, 0);
-                line.rectTransform.offsetMin = new Vector2(4, 0);
-                line.rectTransform.offsetMax = new Vector2(-6, 4);
+                line.rectTransform.offsetMin = new Vector2(22, 3);
+                line.rectTransform.offsetMax = new Vector2(-22, 6);
                 into[i] = new Choice { Fill = b.image, Underline = line, Label = t };
             }
         }
@@ -213,7 +211,7 @@ namespace MotoManager.App.UI
                 row[i].Underline.enabled = on;
                 row[i].Underline.color = auto ? Theme.Steel : Theme.Accent;
                 row[i].Label.color = on ? Color.white : Color.Lerp(Theme.TextDim, Color.white, 0.15f);
-                row[i].Label.fontStyle = on ? FontStyle.BoldAndItalic : FontStyle.Bold;
+                UiFactory.Style(row[i].Label, FontStyle.Bold);
             }
         }
 
@@ -290,7 +288,7 @@ namespace MotoManager.App.UI
             string best = r.BestLapTime < double.MaxValue ? MathX.FormatLapTime(r.BestLapTime) : "-";
             bool fastest = r.BestLapTime < double.MaxValue && Math.Abs(r.BestLapTime - sim.FastestLap) < 0.0005;
             _laps.text = Theme.Dim(Theme.Caps(Loc.T("card.lastLap"))) + " <b>" + last + "</b>   " + Theme.Dim(Theme.Caps(Loc.T("card.bestLap"))) + " <b>" +
-                         (fastest ? "<color=#B266FF>" + best + "</color>" : best) + "</b>";
+                         (fastest ? "<color=" + Theme.FastestHex + ">" + best + "</color>" : best) + "</b>";
 
             string status = r.HasIssue ? Loc.T("cmd.issue") : r.PendingLongLaps > 0 ? Loc.T("cmd.longLap", r.PendingLongLaps) :
                 r.Status != RaceStatus.Racing ? Loc.T("race.status." + r.Status) : "";

@@ -47,7 +47,7 @@ namespace MotoManager.App.UI
         {
             var t = UiFactory.Label("Text", parent, text, size, align, color ?? Theme.Text);
             t.supportRichText = true;
-            t.fontStyle = style;
+            UiFactory.Style(t, style);
             t.horizontalOverflow = HorizontalWrapMode.Wrap;
             return Fit(t, size);
         }
@@ -75,9 +75,9 @@ namespace MotoManager.App.UI
             img.raycastTarget = true;
             var b = img.gameObject.AddComponent<Button>();
             b.targetGraphic = img;
+            // Rows and tiles are dark or translucent: the press lights them up (visible on every surface).
+            UiFactory.PressFeedback(b, img.color);
             var colors = b.colors;
-            colors.highlightedColor = new Color(1.1f, 1.1f, 1.1f, 1f);
-            colors.pressedColor = new Color(0.8f, 0.8f, 0.8f, 1f);
             colors.disabledColor = Color.white;
             b.colors = colors;
             b.onClick.AddListener(() =>
@@ -92,7 +92,7 @@ namespace MotoManager.App.UI
         {
             if (UiIcons.Known(icon)) return UiIcons.Icon(parent, icon, color);
             var t = UiFactory.Label("Glyph", parent, icon ?? "", textSize, TextAnchor.MiddleCenter, color);
-            t.fontStyle = FontStyle.Bold;
+            UiFactory.Style(t, FontStyle.Bold);
             t.horizontalOverflow = HorizontalWrapMode.Overflow;
             t.verticalOverflow = VerticalWrapMode.Overflow;
             return t;
@@ -159,10 +159,10 @@ namespace MotoManager.App.UI
         // ================================================================== tiles and headers
 
         /// <summary>
-        /// A 48-unit header strip along the top of <paramref name="parent"/>: an optional back chevron, a slanted tag,
-        /// the CAPS title, then from the right end: info "i", chevron, count badge and the right-hand text. Filled
-        /// strips (<paramref name="fill"/>) use readable ink on the fill. Children are named Back, Tag, Title, Right,
-        /// Badge, Chevron and Info. Returns the strip.
+        /// A 48-unit header strip along the top of <paramref name="parent"/>: an optional back chevron, the red slash,
+        /// the CAPS title in the display face, then from the right end: info "i", chevron, count badge and the
+        /// right-hand text (sans). Filled strips (<paramref name="fill"/>) use readable ink on the fill. Children are
+        /// named Back, Tag, Title, Right, Badge, Chevron and Info. Returns the strip.
         /// </summary>
         public static RectTransform HeaderStrip(Transform parent, string title, string right = null, Action onInfo = null,
             Action onBack = null, Color? fill = null, int badge = 0, Color? badgeColor = null, bool chevron = false)
@@ -175,8 +175,7 @@ namespace MotoManager.App.UI
             rt.offsetMin = new Vector2(0, -Grid.Header);
             rt.offsetMax = Vector2.zero;
             bool filled = fill.HasValue && fill.Value.a > 0.6f;
-            Color ink = filled ? Theme.OnColor(fill.Value) : Color.white;
-            if (filled) UiFactory.Gradient(head, 1.1f, 0.9f);
+            Color ink = filled ? Theme.OnColor(fill.Value) : Theme.Text;
 
             float left = 0;
             if (onBack != null)
@@ -189,12 +188,13 @@ namespace MotoManager.App.UI
                 brt.anchoredPosition = new Vector2(0, 0);
                 left = Grid.Hit;
             }
-            var tag = UiFactory.Decor("Tag", head.transform, filled ? ink : Theme.Accent);
-            UiFactory.Slant(tag, 3.2f);
-            tag.rectTransform.anchorMin = new Vector2(0, 0.22f);
-            tag.rectTransform.anchorMax = new Vector2(0, 0.78f);
-            tag.rectTransform.offsetMin = new Vector2(left + 10, 0);
-            tag.rectTransform.offsetMax = new Vector2(left + 24, 0);
+            // The red slash that opens every section title ("/ TITLE"); ink on filled strips.
+            var tag = UiFactory.Slash(head.transform, filled ? ink : Theme.Race);
+            tag.gameObject.name = "Tag";
+            tag.rectTransform.anchorMin = new Vector2(0, 0.28f);
+            tag.rectTransform.anchorMax = new Vector2(0, 0.72f);
+            tag.rectTransform.offsetMin = new Vector2(left + 12, 0);
+            tag.rectTransform.offsetMax = new Vector2(left + 22, 0);
 
             // From the right end leftwards.
             float cursor = 8;
@@ -224,16 +224,15 @@ namespace MotoManager.App.UI
                 cursor += 50;
             }
             var t = Txt(head.transform, "Title", Theme.Caps(title ?? ""), Theme.TextHeader, TextAnchor.MiddleLeft, ink, FontStyle.BoldAndItalic);
-            UiFactory.DropShadow(t, 0.35f, 1.5f);
             UiFactory.Stretch(t.rectTransform);
-            t.rectTransform.offsetMin = new Vector2(left + 34, 0);
+            t.rectTransform.offsetMin = new Vector2(left + 32, 0);
             t.rectTransform.offsetMax = new Vector2(-cursor - 4, 0);
             if (!string.IsNullOrEmpty(right))
             {
                 t.rectTransform.anchorMax = new Vector2(0.55f, 1);
                 t.rectTransform.offsetMax = new Vector2(-4, 0);
                 var r = Txt(head.transform, "Right", right, Theme.TextCaption, TextAnchor.MiddleRight,
-                    filled ? ink : Color.Lerp(Theme.TextDim, Color.white, 0.3f), FontStyle.Bold);
+                    filled ? ink : Color.Lerp(Theme.TextDim, Theme.Text, 0.3f), FontStyle.Bold);
                 UiFactory.Place(r.rectTransform, 0.55f, 0, 1, 1);
                 r.rectTransform.offsetMax = new Vector2(-cursor - 4, 0);
             }
@@ -244,21 +243,22 @@ namespace MotoManager.App.UI
         public static Image Badge(Transform parent, int count, Color color)
         {
             var dot = UiFactory.Decor("Badge", parent, color);
-            UiFactory.Round(dot, 1.2f);
+            UiFactory.Capsule(dot);
             dot.rectTransform.anchorMin = dot.rectTransform.anchorMax = new Vector2(1, 0.5f);
             dot.rectTransform.pivot = new Vector2(1, 0.5f);
             dot.rectTransform.anchoredPosition = new Vector2(-8, 0);
             dot.rectTransform.sizeDelta = new Vector2(42, 32);
             var n = UiFactory.Label("Count", dot.transform, count > 99 ? "99+" : count.ToString(), Theme.TextCaption, TextAnchor.MiddleCenter, Theme.OnColor(color));
-            n.fontStyle = FontStyle.Bold;
+            UiFactory.Style(n, FontStyle.Bold);
             UiFactory.Stretch(n.rectTransform);
             return dot;
         }
 
         /// <summary>
-        /// A tile filling <paramref name="area"/>: tile surface, a header strip (chevron when tappable, badge, info),
-        /// optional coloured left edge. The whole tile is the button when <paramref name="onTap"/> is set. Returns the
-        /// padded body under the header (16 at the sides, 12 top and bottom).
+        /// A tile filling <paramref name="area"/>: flat tile surface (small radius, 1-unit edge, thin race-red rule
+        /// along the bottom), a header strip (chevron when tappable, badge, info), optional coloured left edge. The
+        /// whole tile is the button when <paramref name="onTap"/> is set. Returns the padded body under the header
+        /// (16 at the sides, 12 top and bottom).
         /// </summary>
         public static RectTransform Tile(RectTransform area, string title, Action onTap = null, string right = null,
             int badge = 0, Color? badgeColor = null, Action onInfo = null, bool dim = false, Color? edge = null, Color? headerFill = null)
@@ -266,8 +266,9 @@ namespace MotoManager.App.UI
             var bg = UiFactory.Panel("Tile", area, dim ? Color.Lerp(Theme.Card, Theme.Tile, 0.4f) : Theme.Tile);
             bg.raycastTarget = onTap != null;
             UiFactory.Stretch(bg.rectTransform);
-            UiFactory.Gradient(bg, 1.08f, 0.92f);
-            bg.gameObject.AddComponent<Outline>().effectColor = new Color(1, 1, 1, 0.06f);
+            UiFactory.Surface(bg);
+            bg.gameObject.AddComponent<Outline>().effectColor = Theme.Edge;
+            UiFactory.BottomRule(bg.transform, dim ? Theme.Alpha(Theme.Race, 0.35f) : Theme.Race);
             if (onTap != null) Tappable(bg, onTap);
             float edgeW = 0;
             if (edge.HasValue)
@@ -302,8 +303,10 @@ namespace MotoManager.App.UI
         }
 
         /// <summary>
-        /// A tile with one key number (TextKey, timing yellow unless <paramref name="valueColor"/>) and at most one
-        /// CAPS status line; an optional pictogram (or text symbol) above the number. Returns the body.
+        /// A tile with one key number (TextKey in the display face, timing yellow unless <paramref name="valueColor"/>)
+        /// and at most one sentence-case status line; an optional pictogram (or text symbol) above the number. Without
+        /// a pictogram it reads as a stat block: a thin race-red bar, the number and the caption set left. Returns the
+        /// body.
         /// </summary>
         public static RectTransform StatTile(RectTransform area, string title, string value, string status = null,
             Action onTap = null, Color? valueColor = null, string icon = null, int badge = 0, Action onInfo = null, Color? edge = null)
@@ -316,17 +319,26 @@ namespace MotoManager.App.UI
                 top = 0.64f;
                 var holder = UiFactory.Rect("IconHolder", body);
                 UiFactory.Place(holder, 0, top, 1, 1);
-                var g = Symbol(holder, icon, Color.Lerp(Theme.TextDim, Color.white, 0.3f), Theme.TextTitle);
+                var g = Symbol(holder, icon, Color.Lerp(Theme.TextDim, Theme.Text, 0.3f), Theme.TextTitle);
                 g.rectTransform.anchorMin = g.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
                 g.rectTransform.sizeDelta = new Vector2(48, 48);
             }
-            var v = Txt(body, "Value", value ?? "", Theme.TextKey, TextAnchor.MiddleCenter, valueColor ?? Theme.Timing, FontStyle.BoldAndItalic);
-            UiFactory.DropShadow(v, 0.4f, 2);
+            bool block = string.IsNullOrEmpty(icon);
+            var v = Txt(body, "Value", value ?? "", Theme.TextKey, block ? TextAnchor.MiddleLeft : TextAnchor.MiddleCenter, valueColor ?? Theme.Timing, FontStyle.BoldAndItalic);
             UiFactory.Place(v.rectTransform, 0, statusH, 1, top);
+            if (block)
+            {
+                // Stat block: a thin red bar at the left of the number and its caption.
+                var bar = UiFactory.Decor("StatBar", body, Theme.Race);
+                UiFactory.Place(bar.rectTransform, 0, 0.08f, 0, 0.92f);
+                bar.rectTransform.offsetMax = new Vector2(3, 0);
+                v.rectTransform.offsetMin = new Vector2(14, 0);
+            }
             if (statusH > 0)
             {
-                var s = Txt(body, "Status", Theme.Caps(status), Theme.TextCaption, TextAnchor.MiddleCenter, Theme.TextDim, FontStyle.Bold);
+                var s = Txt(body, "Status", status, Theme.TextCaption, block ? TextAnchor.MiddleLeft : TextAnchor.MiddleCenter, Theme.TextDim, FontStyle.Normal);
                 UiFactory.Place(s.rectTransform, 0, 0, 1, statusH);
+                if (block) s.rectTransform.offsetMin = new Vector2(14, 0);
             }
             return body;
         }
@@ -348,8 +360,9 @@ namespace MotoManager.App.UI
             var bg = stack.gameObject.AddComponent<Image>();
             bg.color = Theme.Card;
             bg.raycastTarget = false;
-            UiFactory.Gradient(bg, 1.04f, 0.96f);
-            stack.gameObject.AddComponent<Outline>().effectColor = new Color(1, 1, 1, 0.05f);
+            UiFactory.Surface(bg);
+            stack.gameObject.AddComponent<Outline>().effectColor = Theme.Edge;
+            UiFactory.BottomRule(stack, Theme.Race);
             if (title != null)
             {
                 var row = UiFactory.Row(stack, Grid.Header);
@@ -380,19 +393,22 @@ namespace MotoManager.App.UI
 
         private static Button MakeButton(Transform parent, string name, string label, Action onTap, Look look, bool enabled, string sub = null)
         {
+            // Primary: solid race-red capsule. Secondary: thin light outline capsule on a faint fill.
+            // SecondaryAccent: the same outline in the team colour. Disabled: no outline colour, dim text, flat fill.
             Color fill;
             switch (look)
             {
-                case Look.Primary: fill = enabled ? Theme.Accent : Color.Lerp(Theme.PanelLight, Theme.Card, 0.3f); break;
-                case Look.SecondaryAccent: fill = Color.Lerp(Theme.Background, Theme.Panel, 0.8f); break;
+                case Look.Primary: fill = enabled ? Theme.Action : Theme.Alpha(Theme.PanelLight, 0.55f); break;
+                case Look.SecondaryAccent: fill = Theme.Alpha(Theme.CurrentAccent, enabled ? 0.10f : 0.04f); break;
                 case Look.Ghost: fill = new Color(1, 1, 1, 0f); break;
-                default: fill = enabled ? Theme.PanelLight : Color.Lerp(Theme.PanelLight, Theme.Card, 0.5f); break;
+                default: fill = Theme.Alpha(Color.white, enabled ? 0.05f : 0.025f); break;
             }
             int size = look == Look.Primary ? 28 : 22;
             var b = UiFactory.Button(name, parent, "", enabled ? onTap : null, fill, size);
-            if (look == Look.Primary) UiFactory.Slant(b.image, 2.2f);
-            if (look == Look.SecondaryAccent) b.gameObject.AddComponent<Outline>().effectColor = Theme.Alpha(Theme.Accent, enabled ? 1f : 0.35f);
-            if (look == Look.SecondaryAccent) b.gameObject.GetComponent<Outline>().effectDistance = new Vector2(2, -2);
+            if (look == Look.Secondary)
+                UiFactory.Ring(b.transform, enabled ? Theme.Stroke : Theme.Alpha(Color.white, 0.12f));
+            if (look == Look.SecondaryAccent)
+                UiFactory.Ring(b.transform, enabled ? Theme.Readable(Theme.CurrentAccent, Theme.Card, 3f) : Theme.Alpha(Color.white, 0.12f));
             b.interactable = enabled && onTap != null;
             var colors = b.colors;
             colors.disabledColor = Color.white;
@@ -402,13 +418,21 @@ namespace MotoManager.App.UI
             Color text;
             switch (look)
             {
-                case Look.Primary: text = enabled ? Theme.OnAccent : Theme.TextDim; break;
-                case Look.SecondaryAccent: text = enabled ? Color.Lerp(Theme.Accent, Color.white, 0.25f) : Theme.TextDim; break;
-                case Look.Ghost: text = Color.Lerp(Theme.TextDim, Color.white, 0.15f); break;
-                default: text = enabled ? Color.white : Theme.TextDim; break;
+                case Look.Primary: text = enabled ? Theme.OnAction : Theme.TextDim; break;
+                case Look.SecondaryAccent: text = enabled ? Theme.AccentInk : Theme.TextDim; break;
+                case Look.Ghost: text = Color.Lerp(Theme.TextDim, Theme.Text, 0.15f); break;
+                default: text = enabled ? Theme.Text : Theme.TextDim; break;
             }
             t.color = text;
-            t.fontStyle = look == Look.Primary ? FontStyle.BoldAndItalic : FontStyle.Bold;
+            UiFactory.Style(t, FontStyle.Bold);
+            if (look == Look.Ghost)
+            {
+                // A link has no fill to tint: the press dims its text instead.
+                b.targetGraphic = t;
+                var gc = b.colors;
+                gc.pressedColor = new Color(0.6f, 0.6f, 0.6f, 1f);
+                b.colors = gc;
+            }
             t.text = Theme.Caps(label ?? "") + (string.IsNullOrEmpty(sub) ? "" : "\n<size=" + Theme.TextCaption + ">" + sub + "</size>");
             if (!string.IsNullOrEmpty(sub)) t.lineSpacing = 0.9f;
             Fit(t, size);
@@ -426,8 +450,9 @@ namespace MotoManager.App.UI
         }
 
         /// <summary>
-        /// The one main action of a screen: accent fill, slanted, OnAccent bold italic CAPS 28 and an optional 20-unit
-        /// sub-line (cost · days). Disabled: graphite, and <paramref name="sub"/> says what blocks it.
+        /// The one main action of a screen: race-red capsule, bold sans CAPS 28 (light text) and an optional 20-unit
+        /// sub-line (cost · days). Disabled: flat translucent graphite with dim text, and <paramref name="sub"/> says
+        /// what blocks it.
         /// </summary>
         public static Button PrimaryCTA(RectTransform area, string label, Action onTap, string sub = null, bool enabled = true)
         {
@@ -440,15 +465,16 @@ namespace MotoManager.App.UI
             return PrimaryCTA(UiFactory.Row(list, Grid.Cta), label, onTap, sub, enabled);
         }
 
-        /// <summary>A secondary button (graphite fill, white bold CAPS 22) filling the area (64 high in a list).</summary>
+        /// <summary>A secondary button (thin light outline capsule, bold CAPS 22) filling the area (64 high in a list).</summary>
         public static Button Secondary(RectTransform area, string label, Action onTap, bool enabled = true)
         {
             return Filled(area, Grid.Button, "Secondary", label, onTap, Look.Secondary, enabled);
         }
 
         /// <summary>
-        /// Secondary with an accent outline and accent text (dark fill): the shell's race button on sub-pages, browse
-        /// pages' "go" buttons, hire buttons in lists. Never counts as the screen's primary.
+        /// Secondary with a team-colour outline and team-colour text (lightened to read on the dark surfaces): the
+        /// shell's race button on sub-pages, browse pages' "go" buttons, hire buttons in lists. Never counts as the
+        /// screen's primary.
         /// </summary>
         public static Button SecondaryAccent(RectTransform area, string label, Action onTap, bool enabled = true)
         {
@@ -481,8 +507,8 @@ namespace MotoManager.App.UI
         }
 
         /// <summary>
-        /// A destructive action with a built-in two-tap confirmation: Bad at 45% showing <paramref name="label"/>; the
-        /// first tap arms it (full Bad, <paramref name="confirmLabel"/>, restyled in place, then
+        /// A destructive action with a built-in two-tap confirmation: a red outline capsule with red text showing
+        /// <paramref name="label"/>; the first tap arms it (solid Bad fill, <paramref name="confirmLabel"/>, restyled in place, then
         /// <paramref name="refresh"/> if given); the second runs <paramref name="onConfirm"/>. One armed key at a time
         /// (static), cleared by <see cref="Disarm"/>, <see cref="CloseSheet"/> and page changes.
         /// </summary>
@@ -490,12 +516,16 @@ namespace MotoManager.App.UI
         {
             var host = Host(area, Grid.Button);
             bool armed = _armed != null && _armed == armKey;
-            var b = UiFactory.Button("Danger", host, "", null, armed ? Theme.Bad : Theme.Alpha(Theme.Bad, 0.45f), 22);
+            var b = UiFactory.Button("Danger", host, "", null, armed ? Theme.Bad : Theme.Alpha(Theme.Bad, 0.10f), 22);
             UiFactory.Stretch((RectTransform)b.transform);
+            var ring = UiFactory.Ring(b.transform, Theme.Bad);
+            ring.enabled = !armed;
             var t = b.GetComponentInChildren<Text>();
             t.supportRichText = true;
-            t.fontStyle = FontStyle.Bold;
-            t.color = Color.white;
+            UiFactory.Style(t, FontStyle.Bold);
+            Color idleText;
+            ColorUtility.TryParseHtmlString(Theme.BadHex, out idleText);
+            t.color = armed ? Theme.OnColor(Theme.Bad) : idleText;
             t.text = Theme.Caps(armed ? confirmLabel : label);
             Fit(t, 22);
             t.rectTransform.offsetMin = new Vector2(12, 2);
@@ -512,6 +542,8 @@ namespace MotoManager.App.UI
                 }
                 _armed = armKey;
                 b.image.color = Theme.Bad;
+                ring.enabled = false;
+                t.color = Theme.OnColor(Theme.Bad);
                 t.text = Theme.Caps(confirmLabel);
                 if (refresh != null) refresh();
             });
@@ -529,7 +561,7 @@ namespace MotoManager.App.UI
             rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
             rt.sizeDelta = new Vector2(Grid.Hit, Grid.Hit);
             var plate = UiFactory.Decor("Plate", hit.transform, new Color(1, 1, 1, 0.08f));
-            UiFactory.Chamfer(plate, 3f);
+            UiFactory.Capsule(plate);
             plate.rectTransform.anchorMin = plate.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
             plate.rectTransform.sizeDelta = new Vector2(40, 40);
             var g = Symbol(plate.transform, icon, tint ?? Theme.Text, Theme.TextHeader);
@@ -537,11 +569,7 @@ namespace MotoManager.App.UI
             g.rectTransform.sizeDelta = new Vector2(28, 28);
             var b = hit.gameObject.AddComponent<Button>();
             b.targetGraphic = plate;
-            var colors = b.colors;
-            colors.highlightedColor = new Color(1.4f, 1.4f, 1.4f, 1f);
-            colors.pressedColor = new Color(2f, 2f, 2f, 1f);
-            colors.disabledColor = new Color(0.6f, 0.6f, 0.6f, 0.6f);
-            b.colors = colors;
+            UiFactory.PressFeedback(b, plate.color);
             if (onTap != null) b.onClick.AddListener(() =>
             {
                 GameAudio.ClickSound();
@@ -564,15 +592,12 @@ namespace MotoManager.App.UI
             ring.rectTransform.sizeDelta = new Vector2(36, 36);
             ring.gameObject.AddComponent<Outline>().effectColor = Theme.Alpha(color, 0.5f);
             var t = UiFactory.Label("I", ring.transform, Glyph.Info, Theme.TextHeader, TextAnchor.MiddleCenter, color);
-            t.fontStyle = FontStyle.BoldAndItalic;
+            UiFactory.Style(t, FontStyle.Bold);
             t.verticalOverflow = VerticalWrapMode.Overflow;
             UiFactory.Stretch(t.rectTransform);
             var b = hit.gameObject.AddComponent<Button>();
             b.targetGraphic = ring;
-            var colors = b.colors;
-            colors.highlightedColor = new Color(1.4f, 1.4f, 1.4f, 1f);
-            colors.pressedColor = new Color(2f, 2f, 2f, 1f);
-            b.colors = colors;
+            UiFactory.PressFeedback(b, ring.color);
             b.onClick.AddListener(() =>
             {
                 GameAudio.ClickSound();
@@ -664,9 +689,11 @@ namespace MotoManager.App.UI
             _sheet = shade.gameObject;
 
             var panel = UiFactory.Panel("SheetPanel", shade.transform, Theme.Card);
-            UiFactory.Gradient(panel, 1.05f, 0.95f);
+            UiFactory.Surface(panel);
+            // The one raised surface: an offset shadow for elevation, a 1-unit edge, the red closing rule.
             UiFactory.DropShadow(panel, 0.6f, 6);
-            panel.gameObject.AddComponent<Outline>().effectColor = new Color(1, 1, 1, 0.1f);
+            panel.gameObject.AddComponent<Outline>().effectColor = Theme.Edge;
+            UiFactory.BottomRule(panel.transform, Theme.Race);
             float w = Mathf.Clamp(width, 0.2f, 0.98f);
             var prt = panel.rectTransform;
             prt.anchorMin = new Vector2(0.5f - w / 2, 0.5f);
@@ -749,8 +776,8 @@ namespace MotoManager.App.UI
         // ================================================================== data atoms
 
         /// <summary>
-        /// A 32-unit slanted pill (CAPS 20 bold), as wide as its text. In a layout row it is a layout element; elsewhere
-        /// it sizes itself and the caller sets its anchors / position.
+        /// A 32-unit slanted tag (CAPS 20 bold sans), as wide as its text: the corner-tag look ("FINISHED", "UP NEXT").
+        /// In a layout row it is a layout element; elsewhere it sizes itself and the caller sets its anchors / position.
         /// </summary>
         public static Image Pill(Transform parent, string text, Color fill, Color? textColor = null)
         {
@@ -768,9 +795,9 @@ namespace MotoManager.App.UI
             le.preferredHeight = 32;
             le.minHeight = 32;
             var t = UiFactory.Label("Text", pill.transform, Theme.Caps(text ?? ""), Theme.TextCaption, TextAnchor.MiddleCenter,
-                textColor ?? (fill.a < 0.5f ? Color.white : Theme.OnColor(fill)));
+                textColor ?? (fill.a < 0.5f ? Theme.Text : Theme.OnColor(fill)));
             t.supportRichText = true;
-            t.fontStyle = FontStyle.Bold;
+            UiFactory.Style(t, FontStyle.Bold);
             t.horizontalOverflow = HorizontalWrapMode.Overflow;
             if (!IsList(parent))
             {
@@ -782,7 +809,8 @@ namespace MotoManager.App.UI
         }
 
         /// <summary>
-        /// The rating in a coloured square (rating colour, ink number) with a small CAPS tag under it ("VAL") when the
+        /// The rating in a coloured rounded square (rating colour, readable display-face number) with a small CAPS tag
+        /// under it ("VAL") when the
         /// square is at least 72 units. Centred in its parent with <paramref name="side"/> units; caller repositions.
         /// </summary>
         public static Image RatingBadge(Transform parent, double value, string tag, float side)
@@ -795,15 +823,14 @@ namespace MotoManager.App.UI
         internal static Image SquareCore(Transform parent, string value, string tag, Color fill, float side)
         {
             var sq = UiFactory.Decor("Rating", parent, fill);
-            UiFactory.Gradient(sq, 1.08f, 0.9f);
-            UiFactory.DropShadow(sq, 0.35f, 2);
+            UiFactory.Surface(sq);
             sq.rectTransform.anchorMin = sq.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
             sq.rectTransform.pivot = new Vector2(0.5f, 0.5f);
             sq.rectTransform.sizeDelta = new Vector2(side, side);
             Color ink = Theme.OnColor(fill);
             bool withTag = !string.IsNullOrEmpty(tag) && side >= 72;
             int size = Mathf.RoundToInt(Mathf.Clamp(side * (withTag ? 0.46f : 0.54f), Theme.TextMin, Theme.TextDisplay));
-            var n = Txt(sq.transform, "Value", value, size, TextAnchor.MiddleCenter, ink, FontStyle.Bold);
+            var n = Txt(sq.transform, "Value", value, size, TextAnchor.MiddleCenter, ink, FontStyle.BoldAndItalic);
             UiFactory.Place(n.rectTransform, 0, withTag ? 0.3f : 0, 1, 1);
             if (withTag)
             {
@@ -815,36 +842,31 @@ namespace MotoManager.App.UI
         }
 
         /// <summary>
-        /// One row of slanted segments (in-page choices), at most 5: the selected one lighter, bold italic, with a
-        /// 4-unit accent underline (never a filled accent). Height at least 56.
+        /// One row of capsule toggles on a faint capsule track (in-page choices), at most 5: the selected one is a light
+        /// capsule with ink text, the others transparent with light-dim text (never a filled accent). Height at least 56.
         /// </summary>
         public static void Segmented(Transform list, IList<string> labels, int selected, Action<int> onSelect, float height = 56)
         {
             if (labels.Count > 5) Debug.LogWarning("Ui.Segmented: " + labels.Count + " segments (max 5); use Ui.Picker");
             var row = UiFactory.Row(list, Mathf.Max(height, Grid.Hit));
+            var track = UiFactory.Decor("Track", row, Theme.Alpha(Color.white, 0.06f));
+            UiFactory.Capsule(track);
+            UiFactory.Stretch(track.rectTransform);
             int n = Mathf.Max(1, labels.Count);
             for (int i = 0; i < labels.Count; i++)
             {
                 int idx = i;
                 bool on = i == selected;
                 var b = UiFactory.Button("Segment", row, Theme.Caps(labels[i]), () => { if (onSelect != null) onSelect(idx); },
-                    on ? Theme.PanelLight : Color.Lerp(Theme.Background, Theme.Panel, 0.85f), 22);
-                UiFactory.Slant(b.image, 2.6f);
-                UiFactory.Place((RectTransform)b.transform, (float)i / n, 0, (float)(i + 1) / n, 1, 3);
+                    on ? Theme.Text : Theme.Alpha(Color.white, 0.02f), 22);
+                UiFactory.Place((RectTransform)b.transform, (float)i / n, 0, (float)(i + 1) / n, 1, 4);
                 var t = b.GetComponentInChildren<Text>();
                 t.supportRichText = true;
-                t.fontStyle = on ? FontStyle.BoldAndItalic : FontStyle.Bold;
-                t.color = on ? Color.white : Color.Lerp(Theme.TextDim, Color.white, 0.2f);
+                UiFactory.Style(t, FontStyle.Bold);
+                t.color = on ? Theme.Ink : Color.Lerp(Theme.TextDim, Theme.Text, 0.25f);
                 Fit(t, 22);
                 t.rectTransform.offsetMin = new Vector2(14, 0);
                 t.rectTransform.offsetMax = new Vector2(-14, 0);
-                if (!on) continue;
-                var line = UiFactory.Decor("Underline", b.transform, Theme.CurrentAccent);
-                UiFactory.Slant(line, 6f);
-                line.rectTransform.anchorMin = new Vector2(0, 0);
-                line.rectTransform.anchorMax = new Vector2(1, 0);
-                line.rectTransform.offsetMin = new Vector2(4, 0);
-                line.rectTransform.offsetMax = new Vector2(-6, 4);
             }
         }
 
@@ -872,13 +894,12 @@ namespace MotoManager.App.UI
                         row.gameObject.name = "Option";
                     }
                 }, null, null, 0.42f);
-            }, Color.Lerp(Theme.Background, Theme.Panel, 0.9f), 22);
-            UiFactory.Slant(b.image, 3f);
-            b.gameObject.AddComponent<Outline>().effectColor = new Color(1, 1, 1, 0.14f);
+            }, Theme.Alpha(Color.white, 0.05f), 22);
+            UiFactory.Ring(b.transform, Theme.Stroke);
             UiFactory.Stretch((RectTransform)b.transform);
             var t = b.GetComponentInChildren<Text>();
-            t.fontStyle = FontStyle.Bold;
-            t.color = Color.white;
+            UiFactory.Style(t, FontStyle.Bold);
+            t.color = Theme.Text;
             Fit(t, 22);
             t.rectTransform.offsetMin = new Vector2(16, 0);
             t.rectTransform.offsetMax = new Vector2(-44, 0);
@@ -893,7 +914,7 @@ namespace MotoManager.App.UI
         public static void Stepper(Transform list, string label, string value, Action minus, Action plus)
         {
             var row = UiFactory.Row(list, Grid.Row);
-            var l = Txt(row, "Label", Theme.Caps(label ?? ""), Theme.TextCaption, TextAnchor.MiddleLeft, Theme.TextDim, FontStyle.Bold);
+            var l = Txt(row, "Label", label ?? "", Theme.TextCaption, TextAnchor.MiddleLeft, Theme.TextDim, FontStyle.Normal);
             UiFactory.Place(l.rectTransform, 0, 0, 0.38f, 1);
             l.rectTransform.offsetMin = new Vector2(4, 0);
             var m = MakeButton(row, "Minus", Glyph.Minus, minus, Look.Secondary, minus != null);
@@ -913,16 +934,17 @@ namespace MotoManager.App.UI
             prt.offsetMin = new Vector2(-Grid.Button, 4);
             prt.offsetMax = new Vector2(0, -4);
             Fit(p.GetComponentInChildren<Text>(), Theme.TextTitle);
-            var v = Txt(row, "Value", "<b>" + value + "</b>", Theme.TextBody, TextAnchor.MiddleCenter, Theme.Text, FontStyle.Normal);
+            var v = Txt(row, "Value", value, Theme.TextBody, TextAnchor.MiddleCenter, Theme.Text, FontStyle.BoldAndItalic);
             UiFactory.Place(v.rectTransform, 0.38f, 0, 1, 1);
             v.rectTransform.offsetMin = new Vector2(Grid.Button + 8, 0);
             v.rectTransform.offsetMax = new Vector2(-Grid.Button - 8, 0);
         }
 
         /// <summary>
-        /// A 64-unit list row (standings, rankings, any table): alternate shading by <paramref name="index"/>, the first
-        /// cell as a slanted position block, the second left-aligned bold, the rest centred (24, rich text). The
-        /// player's row (<paramref name="mine"/>) is lit in the accent with an edge bar. With <paramref name="onTap"/>
+        /// A 64-unit list row (standings, rankings, any table): a faint alternate shade by <paramref name="index"/> and a
+        /// hairline under it, the first cell as a big display-face position number, the second left-aligned bold, the
+        /// rest centred (24, rich text). The player's row (<paramref name="mine"/>) is lit with a team-colour gradient
+        /// fading right and a 4-unit team-colour edge. With <paramref name="onTap"/>
         /// the whole row is the button and a chevron sits at the right. At most 4 data columns + position.
         /// </summary>
         public static RectTransform ListRow(Transform list, float[] widths, string[] cells, int index, bool mine, Action onTap = null, float height = 64)
@@ -930,11 +952,16 @@ namespace MotoManager.App.UI
             var row = UiFactory.Row(list, height);
             var bg = row.gameObject.AddComponent<Image>();
             bg.raycastTarget = false;
-            bg.color = mine ? Theme.Alpha(Theme.CurrentAccent, 0.32f) : index % 2 == 0 ? new Color(1, 1, 1, 0.055f) : new Color(1, 1, 1, 0.02f);
+            bg.color = mine ? Theme.Alpha(Theme.CurrentAccent, 0.5f) : index % 2 == 0 ? new Color(1, 1, 1, 0.035f) : new Color(1, 1, 1, 0.012f);
+            var hair = UiFactory.Decor("Rule", row, Theme.Divider);
+            hair.rectTransform.anchorMin = new Vector2(0, 0);
+            hair.rectTransform.anchorMax = new Vector2(1, 0);
+            hair.rectTransform.offsetMin = Vector2.zero;
+            hair.rectTransform.offsetMax = new Vector2(0, 1);
             if (mine)
             {
-                UiFactory.Gradient(bg, Color.white, new Color(1, 1, 1, 0.45f), true);
-                UiFactory.SideStripe(row, Theme.CurrentAccent, 6, 0);
+                UiFactory.Gradient(bg, Color.white, new Color(1, 1, 1, 0.2f), true);
+                UiFactory.SideStripe(row, Theme.CurrentAccent, 4, 0);
             }
             if (onTap != null)
             {
@@ -957,13 +984,13 @@ namespace MotoManager.App.UI
                 x += widths[i];
                 if (i == 0 && posBlock)
                 {
-                    var block = UiFactory.Decor("Pos", area, mine ? Color.white : index < 3 ? new Color(0.9f, 0.91f, 0.93f, 1f) : Theme.PanelLight);
-                    UiFactory.Slant(block, 3.2f);
+                    // Standings style: the position as a big plain display number, no plate.
+                    var block = UiFactory.Decor("Pos", area, Color.clear);
                     UiFactory.Place(block.rectTransform, x0, 0, x1, 1);
                     block.rectTransform.offsetMin = new Vector2(10, 8);
                     block.rectTransform.offsetMax = new Vector2(-2, -8);
-                    var n = Txt(block.transform, "Cell0", cells[0] ?? "", Theme.TextBody, TextAnchor.MiddleCenter,
-                        mine || index < 3 ? Theme.Ink : Theme.Text, FontStyle.BoldAndItalic);
+                    var n = Txt(block.transform, "Cell0", cells[0] ?? "", Theme.TextTitle, TextAnchor.MiddleCenter,
+                        Theme.Text, FontStyle.BoldAndItalic);
                     UiFactory.Stretch(n.rectTransform);
                     continue;
                 }
@@ -993,9 +1020,14 @@ namespace MotoManager.App.UI
             const float h = 72;
             var row = UiFactory.Row(list, h);
             var bg = row.gameObject.AddComponent<Image>();
-            bg.color = new Color(1, 1, 1, 0.045f);
+            bg.color = new Color(1, 1, 1, 0.035f);
             bg.raycastTarget = false;
             if (onTap != null) Tappable(bg, onTap);
+            var hair = UiFactory.Decor("Rule", row, Theme.Divider);
+            hair.rectTransform.anchorMin = new Vector2(0, 0);
+            hair.rectTransform.anchorMax = new Vector2(1, 0);
+            hair.rectTransform.offsetMin = Vector2.zero;
+            hair.rectTransform.offsetMax = new Vector2(0, 1);
             var badge = RatingBadge(row, level, null, 56);
             badge.rectTransform.anchorMin = badge.rectTransform.anchorMax = new Vector2(0, 0.5f);
             badge.rectTransform.pivot = new Vector2(0, 0.5f);
@@ -1043,8 +1075,8 @@ namespace MotoManager.App.UI
         }
 
         /// <summary>
-        /// An empty state centred in a list: a dim pictogram (known UiIcons name) or text symbol at 64, one CAPS line at
-        /// 22 and an optional secondary button.
+        /// An empty state centred in a list: a dim pictogram (known UiIcons name) or text symbol at 64, one
+        /// sentence-case line at 22 and an optional secondary button.
         /// </summary>
         public static void Empty(Transform list, string icon, string text, UiAct? action = null)
         {
@@ -1065,7 +1097,7 @@ namespace MotoManager.App.UI
                 g.rectTransform.sizeDelta = new Vector2(64, 64);
             }
             var textRow = UiFactory.Row(box, 40);
-            var t = Txt(textRow, "Text", Theme.Caps(text ?? ""), 22, TextAnchor.MiddleCenter, Theme.TextDim, FontStyle.Bold);
+            var t = Txt(textRow, "Text", text ?? "", 22, TextAnchor.MiddleCenter, Theme.TextDim, FontStyle.Normal);
             UiFactory.Stretch(t.rectTransform);
             if (action.HasValue)
             {
@@ -1078,7 +1110,7 @@ namespace MotoManager.App.UI
             }
         }
 
-        /// <summary>A visible one-line warning (Warning colour, or Bad) with a coloured edge and a "!" block.</summary>
+        /// <summary>A visible one-line warning (Warning colour, or Bad): a tinted rounded band with a slanted "!" tag.</summary>
         public static void Alert(Transform list, string text, bool bad = false)
         {
             Color c = bad ? Theme.Bad : Theme.Warning;
@@ -1086,7 +1118,7 @@ namespace MotoManager.App.UI
             var bg = row.gameObject.AddComponent<Image>();
             bg.color = Theme.Alpha(c, 0.13f);
             bg.raycastTarget = false;
-            UiFactory.SideStripe(row, c, 6, 0);
+            UiFactory.Surface(bg);
             var mark = UiFactory.Decor("Mark", row, c);
             UiFactory.Slant(mark, 3f);
             mark.rectTransform.anchorMin = mark.rectTransform.anchorMax = new Vector2(0, 0.5f);
@@ -1094,7 +1126,7 @@ namespace MotoManager.App.UI
             mark.rectTransform.anchoredPosition = new Vector2(16, 0);
             mark.rectTransform.sizeDelta = new Vector2(34, 32);
             var g = UiFactory.Label("Glyph", mark.transform, Glyph.Warning, Theme.TextHeader, TextAnchor.MiddleCenter, Theme.OnColor(c));
-            g.fontStyle = FontStyle.Bold;
+            UiFactory.Style(g, FontStyle.Bold);
             UiFactory.Stretch(g.rectTransform);
             var t = Txt(row, "Text", text ?? "", 22, TextAnchor.MiddleLeft, Theme.Text, FontStyle.Bold);
             UiFactory.Stretch(t.rectTransform);
@@ -1102,20 +1134,22 @@ namespace MotoManager.App.UI
             t.rectTransform.offsetMax = new Vector2(-12, 0);
         }
 
-        /// <summary>A thick square-cut gauge filling the area: dark track, quarter ticks, a fill brightening to its tip.</summary>
+        /// <summary>
+        /// A slim square-cut gauge in the middle of the area (comparison-bar look): faint track, flat fill, quarter
+        /// ticks cut into it.
+        /// </summary>
         public static void Gauge(RectTransform area, double fraction, Color color)
         {
             var host = Host(area, 24);
-            var back = UiFactory.Decor("Gauge", host, new Color(0, 0, 0, 0.5f));
-            UiFactory.Stretch(back.rectTransform);
+            var back = UiFactory.Decor("Gauge", host, Theme.Alpha(Color.white, 0.1f));
+            UiFactory.Place(back.rectTransform, 0, 0.25f, 1, 0.75f);
             var fill = UiFactory.Decor("Fill", back.transform, color);
-            UiFactory.Gradient(fill, new Color(0.75f, 0.75f, 0.75f, 1), Color.white, true);
             fill.rectTransform.anchorMin = Vector2.zero;
             fill.rectTransform.anchorMax = new Vector2(Mathf.Clamp01((float)fraction), 1);
             fill.rectTransform.offsetMin = fill.rectTransform.offsetMax = Vector2.zero;
             for (int k = 1; k < 4; k++)
             {
-                var tick = UiFactory.Decor("Tick", back.transform, new Color(0, 0, 0, 0.55f));
+                var tick = UiFactory.Decor("Tick", back.transform, Theme.Alpha(Theme.Card, 0.9f));
                 tick.rectTransform.anchorMin = new Vector2(k * 0.25f, 0);
                 tick.rectTransform.anchorMax = new Vector2(k * 0.25f, 1);
                 tick.rectTransform.offsetMin = new Vector2(-1, 0);
@@ -1131,7 +1165,6 @@ namespace MotoManager.App.UI
             for (int i = 0; i < max; i++)
             {
                 var p = UiFactory.Decor("Pip", holder, i < level ? Theme.Timing : new Color(1, 1, 1, 0.12f));
-                UiFactory.Slant(p, 4f);
                 UiFactory.Place(p.rectTransform, (float)i / max, 0, (float)(i + 1) / max, 1);
                 p.rectTransform.offsetMin = new Vector2(3, 0);
                 p.rectTransform.offsetMax = new Vector2(-3, 0);
@@ -1147,7 +1180,6 @@ namespace MotoManager.App.UI
             for (int i = 0; i < total; i++)
             {
                 var seg = UiFactory.Decor("Segment", bar, i < filled ? on : new Color(1, 1, 1, 0.1f));
-                UiFactory.Slant(seg, 4f);
                 float x0 = (float)i / total, x1 = (float)(i + 1) / total;
                 UiFactory.Place(seg.rectTransform, x0 + (i > 0 ? gap : 0), 0, x1 - (i < total - 1 ? gap : 0), 1);
             }
@@ -1156,7 +1188,10 @@ namespace MotoManager.App.UI
 
         // ================================================================== existing pieces (restyled)
 
-        /// <summary>Key figures in a row (at most 4): tile look, CAPS caption strip on top, the value in timing yellow.</summary>
+        /// <summary>
+        /// Key figures in a row (at most 4) as stat blocks: tile surface with a thin race-red bar at the left, a
+        /// sentence-case dim caption on top, the value in the display face (timing yellow).
+        /// </summary>
         public static void Kpis(Transform list, params string[][] items)
         {
             if (items.Length > 4) Debug.LogWarning("Ui.Kpis: " + items.Length + " figures (max 4)");
@@ -1165,24 +1200,26 @@ namespace MotoManager.App.UI
             {
                 var tile = UiFactory.Panel("Kpi", row, Theme.Tile);
                 tile.raycastTarget = false;
-                UiFactory.Chamfer(tile, 2.4f);
+                UiFactory.Surface(tile);
                 UiFactory.Place(tile.rectTransform, (float)i / items.Length, 0, (float)(i + 1) / items.Length, 1, 4);
-                UiFactory.Gradient(tile, 1.06f, 0.94f);
-                var head = UiFactory.Decor("Head", tile.transform, Theme.HeaderFill);
+                var bar = UiFactory.Decor("StatBar", tile.transform, Theme.Race);
+                UiFactory.Place(bar.rectTransform, 0, 0.14f, 0, 0.86f);
+                bar.rectTransform.offsetMin = new Vector2(8, 0);
+                bar.rectTransform.offsetMax = new Vector2(11, 0);
+                var head = UiFactory.Decor("Head", tile.transform, Color.clear);
                 head.rectTransform.anchorMin = new Vector2(0, 1);
                 head.rectTransform.anchorMax = new Vector2(1, 1);
                 head.rectTransform.pivot = new Vector2(0.5f, 1);
                 head.rectTransform.offsetMin = new Vector2(0, -36);
                 head.rectTransform.offsetMax = new Vector2(-10, 0);
-                var c = Txt(head.transform, "Caption", Theme.Caps(items[i].Length > 1 ? items[i][1] : ""), Theme.TextCaption, TextAnchor.MiddleCenter,
-                    Color.Lerp(Theme.TextDim, Color.white, 0.25f), FontStyle.Bold);
+                var c = Txt(head.transform, "Caption", items[i].Length > 1 ? items[i][1] : "", Theme.TextCaption, TextAnchor.MiddleLeft,
+                    Theme.TextDim, FontStyle.Normal);
                 UiFactory.Stretch(c.rectTransform);
-                c.rectTransform.offsetMin = new Vector2(8, 0);
+                c.rectTransform.offsetMin = new Vector2(20, 0);
                 c.rectTransform.offsetMax = new Vector2(-4, 0);
-                var v = Txt(tile.transform, "Value", items[i].Length > 0 ? items[i][0] : "", Theme.TextKey, TextAnchor.MiddleCenter, Theme.Timing, FontStyle.BoldAndItalic);
-                UiFactory.DropShadow(v, 0.45f, 2);
+                var v = Txt(tile.transform, "Value", items[i].Length > 0 ? items[i][0] : "", Theme.TextKey, TextAnchor.MiddleLeft, Theme.Timing, FontStyle.BoldAndItalic);
                 UiFactory.Stretch(v.rectTransform);
-                v.rectTransform.offsetMin = new Vector2(8, 4);
+                v.rectTransform.offsetMin = new Vector2(20, 4);
                 v.rectTransform.offsetMax = new Vector2(-8, -38);
             }
         }
@@ -1225,9 +1262,9 @@ namespace MotoManager.App.UI
         {
             var row = UiFactory.Rect("Item", list);
             var bg = row.gameObject.AddComponent<Image>();
-            bg.color = new Color(1, 1, 1, 0.045f);
+            bg.color = new Color(1, 1, 1, 0.035f);
             bg.raycastTarget = false;
-            UiFactory.SideStripe(row, Theme.Steel, 3, 10);
+            UiFactory.Surface(bg);
             var h = row.gameObject.AddComponent<HorizontalLayoutGroup>();
             h.padding = new RectOffset(16, 8, 8, 8);
             h.spacing = 12;
@@ -1279,12 +1316,13 @@ namespace MotoManager.App.UI
                 if (!Open.Remove(key)) Open.Add(key);
                 refresh();
             }, new Color(1, 1, 1, open ? 0.08f : 0.05f), Theme.FontSmall);
+            UiFactory.Surface(b.image);
             b.gameObject.AddComponent<LayoutElement>().preferredHeight = Grid.Hit;
             var label = b.GetComponentInChildren<Text>();
             label.supportRichText = true;
             label.alignment = TextAnchor.MiddleLeft;
-            label.color = open ? Theme.Text : Color.Lerp(Theme.TextDim, Color.white, 0.15f);
-            label.fontStyle = open ? FontStyle.Bold : FontStyle.Normal;
+            label.color = open ? Theme.Text : Color.Lerp(Theme.TextDim, Theme.Text, 0.15f);
+            UiFactory.Style(label, open ? FontStyle.Bold : FontStyle.Normal);
             label.rectTransform.offsetMin = new Vector2(48, 0);
             var ch = UiIcons.Chevron(b.transform, Theme.CurrentAccent, open ? 90 : 180);
             ch.rectTransform.anchorMin = ch.rectTransform.anchorMax = new Vector2(0, 0.5f);
@@ -1381,17 +1419,15 @@ namespace MotoManager.App.UI
             return rt;
         }
 
-        /// <summary>Accent band on top of a big list (standings): CAPS bold italic title and an optional figure right.</summary>
+        /// <summary>Team-colour band on top of a big list (standings): display-face CAPS title and an optional figure right.</summary>
         public static RectTransform Band(Transform list, string title, string right = null, float height = 56)
         {
             var row = UiFactory.Row(list, height);
             var bg = row.gameObject.AddComponent<Image>();
             bg.color = Theme.CurrentAccent;
             bg.raycastTarget = false;
-            UiFactory.Gradient(bg, 1.1f, 0.9f);
             Color ink = Theme.OnColor(Theme.CurrentAccent);
-            var t = Txt(row, "Title", "<b>" + Theme.Caps(title) + "</b>", Theme.FontNormal, TextAnchor.MiddleLeft, ink, FontStyle.Italic);
-            UiFactory.DropShadow(t, 0.3f, 1.5f);
+            var t = Txt(row, "Title", Theme.Caps(title), Theme.FontNormal, TextAnchor.MiddleLeft, ink, FontStyle.BoldAndItalic);
             UiFactory.Place(t.rectTransform, 0, 0, right != null ? 0.65f : 1, 1);
             t.rectTransform.offsetMin = new Vector2(18, 0);
             if (right != null)
@@ -1403,20 +1439,25 @@ namespace MotoManager.App.UI
             return row;
         }
 
-        /// <summary>Column captions under a <see cref="Band"/>: dim CAPS 20 on a dark strip.</summary>
+        /// <summary>Column captions under a <see cref="Band"/>: dim bold sentence-case 20 on a faint strip with a hairline.</summary>
         public static RectTransform ListCaptions(Transform list, float[] widths, string[] captions, float height = 40)
         {
             var row = UiFactory.Row(list, Mathf.Max(height, 36));
             var bg = row.gameObject.AddComponent<Image>();
-            bg.color = new Color(0, 0, 0, 0.5f);
+            bg.color = Theme.Alpha(Theme.Ink, 0.35f);
             bg.raycastTarget = false;
+            var hair = UiFactory.Decor("Rule", row, Theme.Alpha(Color.white, 0.14f));
+            hair.rectTransform.anchorMin = new Vector2(0, 0);
+            hair.rectTransform.anchorMax = new Vector2(1, 0);
+            hair.rectTransform.offsetMin = Vector2.zero;
+            hair.rectTransform.offsetMax = new Vector2(0, 1);
             float total = 0, x = 0;
             foreach (var w in widths) total += w;
             if (total <= 0) total = 1;
             for (int i = 0; i < captions.Length && i < widths.Length; i++)
             {
-                var c = Txt(row, "Caption" + i, Theme.Caps(captions[i] ?? ""), Theme.TextCaption,
-                    i <= 1 ? TextAnchor.MiddleLeft : TextAnchor.MiddleCenter, Color.Lerp(Theme.TextDim, Color.white, 0.15f), FontStyle.Bold);
+                var c = Txt(row, "Caption" + i, captions[i] ?? "", Theme.TextCaption,
+                    i <= 1 ? TextAnchor.MiddleLeft : TextAnchor.MiddleCenter, Theme.TextDim, FontStyle.Bold);
                 UiFactory.Place(c.rectTransform, x / total, 0, (x + widths[i]) / total, 1);
                 c.rectTransform.offsetMin = new Vector2(i == 0 ? 14 : 8, 0);
                 x += widths[i];

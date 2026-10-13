@@ -80,7 +80,7 @@ namespace MotoManager.App.UI
                 Fill.color = on ? Theme.PanelLight : Color.Lerp(Theme.Background, Theme.Panel, 0.85f);
                 if (Underline.enabled != on) Underline.enabled = on;
                 Label.color = on ? Color.white : Color.Lerp(Theme.TextDim, Color.white, 0.2f);
-                Label.fontStyle = on ? FontStyle.BoldAndItalic : FontStyle.Bold;
+                UiFactory.Style(Label, FontStyle.Bold);
             }
         }
 
@@ -131,17 +131,15 @@ namespace MotoManager.App.UI
         private static Segment MakeSegment(Transform parent, string label, System.Action onTap, float x0, float x1)
         {
             var b = UiFactory.Button("Segment", parent, label, () => onTap(), Color.Lerp(Theme.Background, Theme.Panel, 0.85f), Theme.TextBody);
-            UiFactory.Slant(b.image, 2.6f);
             UiFactory.Place((RectTransform)b.transform, x0, 0, x1, 1, 3);
             var t = b.GetComponentInChildren<Text>();
-            t.fontStyle = FontStyle.Bold;
+            UiFactory.Style(t, FontStyle.Bold);
             Ui.Fit(t, Theme.TextBody);
             var line = UiFactory.Decor("Underline", b.transform, Theme.Accent);
-            UiFactory.Slant(line, 6f);
             line.rectTransform.anchorMin = new Vector2(0, 0);
             line.rectTransform.anchorMax = new Vector2(1, 0);
-            line.rectTransform.offsetMin = new Vector2(4, 0);
-            line.rectTransform.offsetMax = new Vector2(-6, 4);
+            line.rectTransform.offsetMin = new Vector2(22, 3);
+            line.rectTransform.offsetMax = new Vector2(-22, 6);
             var s = new Segment { Fill = b.image, Underline = line, Label = t };
             s.Set(false);
             return s;
@@ -174,7 +172,7 @@ namespace MotoManager.App.UI
                 _tags.Add(t);
                 // Number inside the far-view dot.
                 var n = UiFactory.Label("DotNumber", _tagLayer, "", Theme.FontSmall, TextAnchor.MiddleCenter, Color.white);
-                n.fontStyle = FontStyle.Bold;
+                UiFactory.Style(n, FontStyle.Bold);
                 n.rectTransform.sizeDelta = new Vector2(48, 30);
                 n.rectTransform.anchorMin = n.rectTransform.anchorMax = Vector2.zero;
                 n.gameObject.AddComponent<Outline>().effectColor = new Color(0, 0, 0, 0.85f);
@@ -358,17 +356,17 @@ namespace MotoManager.App.UI
                 button.onClick.AddListener(() => OnRowClicked(index));
                 row.Edge = UiFactory.SideStripe(row.Rect, Theme.Accent, 4, 0);
                 // Position number in a light block with dark type (TV timing tower).
-                var posBlock = UiFactory.Decor("PosBlock", row.Rect, new Color(0.9f, 0.91f, 0.93f, 1f));
+                var posBlock = UiFactory.Decor("PosBlock", row.Rect, Theme.Plate);
                 UiFactory.Slant(posBlock, 4f);
                 UiFactory.Place(posBlock.rectTransform, 0.02f, 0.1f, 0.15f, 0.9f);
                 row.Position = TowerLabel("Pos", posBlock.transform, Theme.TextBody - 2, TextAnchor.MiddleCenter, Theme.Ink);
-                row.Position.fontStyle = FontStyle.BoldAndItalic;
+                UiFactory.Style(row.Position, FontStyle.BoldAndItalic);
                 UiFactory.Stretch(row.Position.rectTransform);
                 row.PosBlock = posBlock;
                 row.TeamBar = UiFactory.Decor("Team", row.Rect, Color.white);
                 UiFactory.Place(row.TeamBar.rectTransform, 0.165f, 0.2f, 0.178f, 0.8f);
                 row.Name = TowerLabel("Name", row.Rect, Theme.TextBody - 2, TextAnchor.MiddleLeft, Theme.Text);
-                row.Name.fontStyle = FontStyle.Bold;
+                UiFactory.Style(row.Name, FontStyle.Bold);
                 UiFactory.Place(row.Name.rectTransform, 0.195f, 0, 0.6f, 1);
                 row.Gap = TowerLabel("Gap", row.Rect, Theme.TextCaption, TextAnchor.MiddleRight, Theme.TextDim);
                 UiFactory.Place(row.Gap.rectTransform, 0.6f, 0, 0.86f, 1);
@@ -402,7 +400,7 @@ namespace MotoManager.App.UI
                     double last;
                     if (_adviceShownAt.TryGetValue(m.Key, out last) && sim.Time - last < 30) continue;
                     _adviceShownAt[m.Key] = sim.Time;
-                    string color = m.Severity >= 2 ? Theme.BadHex : m.Severity == 1 ? Theme.WarnHex : "#8FB4D4";
+                    string color = m.Severity >= 2 ? Theme.BadHex : m.Severity == 1 ? Theme.WarnHex : Theme.InfoHex;
                     _engineerLines.Add("<color=" + color + "><b>" + Loc.T("feed.engineer") + "</b></color>  " + m.Text);
                     if (_engineerLines.Count > 3) _engineerLines.RemoveAt(0);
                     added = true;
@@ -496,7 +494,7 @@ namespace MotoManager.App.UI
                 if (mine) row.Background.color = Theme.Alpha(Theme.Accent, selected ? 0.38f : 0.24f);
                 else row.Background.color = selected ? new Color(1, 1, 1, 0.14f) : new Color(1, 1, 1, p % 2 == 1 ? 0.035f : 0f);
                 if (row.Edge.enabled != mine) row.Edge.enabled = mine;
-                row.PosBlock.color = p == 0 ? Theme.Timing : new Color(0.9f, 0.91f, 0.93f, 1f);
+                row.PosBlock.color = p == 0 ? Theme.Timing : Theme.Plate;
             }
         }
 
@@ -507,7 +505,7 @@ namespace MotoManager.App.UI
                 case RaceStatus.Crashed: return r.RemountAt > 0 ? Theme.WarnText(Loc.T("tower.crash")) : Theme.BadText(Loc.T("tower.out"));
                 case RaceStatus.Retired: return Theme.BadText(Loc.T("tower.dnf"));
                 case RaceStatus.Disqualified: return "DSQ";
-                case RaceStatus.InPitLane: return "<color=#8FB4D4>" + Loc.T("tower.pit") + "</color>";
+                case RaceStatus.InPitLane: return "<color=" + Theme.InfoHex + ">" + Loc.T("tower.pit") + "</color>";
             }
             if (position == 0) return r.Status == RaceStatus.Finished ? MathX.FormatLapTime(r.FinishTime) : Theme.Caps(Loc.T("tower.leader"));
             if (r.LapsDown > 0) return Loc.T(r.LapsDown > 1 ? "tower.laps" : "tower.lap", r.LapsDown);

@@ -148,13 +148,13 @@ namespace MotoManager.App.UI.Screens
             Ui.SheetHost = root;
             var bg = UiFactory.Panel("Background", root, Theme.Background);
             UiFactory.Stretch(bg.rectTransform);
-            // Carbon floor: a very faint weave, a touch lighter at the top, and two thin diagonal livery lines in the
-            // team colour at the far right.
-            UiFactory.Gradient(bg, 1.25f, 0.9f);
+            // Near-black floor: a very faint weave, a soft dark-red glow at the top (the hero glow of the
+            // championship's pages) and two thin diagonal livery lines in the team colour at the far right.
             bg.gameObject.AddComponent<RectMask2D>();
-            var weave = UiFactory.Pattern("Carbon", bg.transform, UiFactory.CarbonSprite, new Color(1, 1, 1, 0.022f), 10);
+            var weave = UiFactory.Pattern("Carbon", bg.transform, UiFactory.CarbonSprite, new Color(1, 1, 1, 0.018f), 10);
             UiFactory.Stretch(weave.rectTransform);
             UiFactory.Gradient(weave, Color.white, new Color(1, 1, 1, 0.3f));
+            UiFactory.Glow(bg.transform, 0.32f, 1f, 1500, 0.16f);
             for (int i = 0; i < 2; i++)
             {
                 var band = UiFactory.Decor("Livery", bg.transform, Color.white);
@@ -177,18 +177,16 @@ namespace MotoManager.App.UI.Screens
 
             // Toast: bottom centre of the content, 640 × 64.
             _toastBg = UiFactory.Panel("Toast", root, Theme.Alpha(Theme.Panel, 0.98f));
-            UiFactory.Chamfer(_toastBg, 1.6f);
+            UiFactory.Surface(_toastBg);
             var trt = _toastBg.rectTransform;
             trt.anchorMin = trt.anchorMax = new Vector2(0.5f, 0);
             trt.pivot = new Vector2(0.5f, 0);
             trt.sizeDelta = new Vector2(640, 64);
             trt.anchoredPosition = new Vector2(RailUnits / 2, 24);
-            UiFactory.Gradient(_toastBg, 1.1f, 0.92f);
             UiFactory.DropShadow(_toastBg, 0.5f, 4);
-            _toastBg.gameObject.AddComponent<Outline>().effectColor = new Color(1, 1, 1, 0.1f);
-            _toastStripe = UiFactory.SideStripe(_toastBg.transform, Theme.Good, 6, 12);
+            _toastBg.gameObject.AddComponent<Outline>().effectColor = Theme.Edge;
+            _toastStripe = UiFactory.SideStripe(_toastBg.transform, Theme.Good, 4, 12);
             _toast = Ui.Label(_toastBg.transform, "", Theme.TextBody, TextAnchor.MiddleCenter, Theme.Text, FontStyle.Bold);
-            UiFactory.DropShadow(_toast, 0.4f, 1.5f);
             UiFactory.Stretch(_toast.rectTransform);
             _toast.rectTransform.offsetMin = new Vector2(20, 4);
             _toast.rectTransform.offsetMax = new Vector2(-16, -4);
@@ -216,20 +214,18 @@ namespace MotoManager.App.UI.Screens
 
         private void BuildTopBar(RectTransform root)
         {
-            var header = UiFactory.Panel("TopBar", root, Color.Lerp(Theme.Background, Theme.Panel, 0.55f));
+            var header = UiFactory.Panel("TopBar", root, Theme.Chrome);
             var hrt = header.rectTransform;
             hrt.anchorMin = new Vector2(0, 1);
             hrt.anchorMax = new Vector2(1, 1);
             hrt.pivot = new Vector2(0.5f, 1);
             hrt.offsetMin = new Vector2(RailUnits, -TopBarHeight);
             hrt.offsetMax = Vector2.zero;
-            UiFactory.Gradient(header, 1.15f, 0.95f);
-            UiFactory.DropShadow(header, 0.45f, 3);
             _headerLine = UiFactory.Decor("AccentLine", header.transform, Theme.Accent);
             _headerLine.rectTransform.anchorMin = new Vector2(0, 0);
             _headerLine.rectTransform.anchorMax = new Vector2(1, 0);
             _headerLine.rectTransform.offsetMin = new Vector2(0, 0);
-            _headerLine.rectTransform.offsetMax = new Vector2(0, 3);
+            _headerLine.rectTransform.offsetMax = new Vector2(0, 2);
             UiFactory.Gradient(_headerLine, Color.white, new Color(1, 1, 1, 0.05f), true);
 
             // Back (inside a sub-page): a 56-unit icon button at the left end.
@@ -243,9 +239,8 @@ namespace MotoManager.App.UI.Screens
             _info = UiFactory.Rect("Info", header.transform);
             UiFactory.Stretch(_info);
             _header = Ui.Label(_info, "", Theme.TextTitle, TextAnchor.LowerLeft, Theme.Text, FontStyle.BoldAndItalic);
-            UiFactory.DropShadow(_header, 0.45f, 2);
             UiFactory.Place(_header.rectTransform, 0, 0.42f, 1, 0.98f);
-            _subHeader = Ui.Label(_info, "", Theme.TextCaption, TextAnchor.UpperLeft, Theme.TextDim, FontStyle.Bold);
+            _subHeader = Ui.Label(_info, "", Theme.TextCaption, TextAnchor.UpperLeft, Theme.TextDim, FontStyle.Normal);
             UiFactory.Place(_subHeader.rectTransform, 0, 0.04f, 1, 0.42f);
             _busy = Ui.Label(_info, "", Theme.TextCaption, TextAnchor.UpperLeft, Theme.Warning, FontStyle.Bold);
             UiFactory.Place(_busy.rectTransform, 0, 0.04f, 1, 0.42f);
@@ -269,22 +264,20 @@ namespace MotoManager.App.UI.Screens
 
         private RectTransform BuildRail(RectTransform root)
         {
-            var rail = UiFactory.Panel("Rail", root, Color.Lerp(Theme.Background, Theme.Panel, 0.7f));
+            var rail = UiFactory.Panel("Rail", root, Theme.Chrome);
             var rrt = rail.rectTransform;
             rrt.anchorMin = new Vector2(0, 0);
             rrt.anchorMax = new Vector2(0, 1);
             rrt.pivot = new Vector2(0, 0.5f);
             rrt.offsetMin = Vector2.zero;
             rrt.offsetMax = new Vector2(RailUnits, 0);
-            UiFactory.Gradient(rail, 1.08f, 0.9f);
-            UiFactory.DropShadow(rail, 0.4f, 2);
-            var edge = UiFactory.Decor("Edge", rail.transform, new Color(1, 1, 1, 0.06f));
+            var edge = UiFactory.Decor("Edge", rail.transform, Theme.Divider);
             edge.rectTransform.anchorMin = new Vector2(1, 0);
             edge.rectTransform.anchorMax = new Vector2(1, 1);
             edge.rectTransform.offsetMin = new Vector2(-2, 0);
             edge.rectTransform.offsetMax = Vector2.zero;
             // The menu: the top cell, level with the top bar.
-            var more = UiFactory.Button("MenuButton", rail.transform, "", OpenMenu, new Color(0, 0, 0, 0.35f), Theme.FontLarge);
+            var more = UiFactory.Button("MenuButton", rail.transform, "", OpenMenu, Theme.Alpha(Color.white, 0.03f), Theme.FontLarge);
             more.image.sprite = null;
             var mrt = (RectTransform)more.transform;
             mrt.anchorMin = new Vector2(0, 1);
@@ -360,9 +353,9 @@ namespace MotoManager.App.UI.Screens
             {
                 bool on = _sections[i] == section;
                 _navButtons[i].color = on ? Theme.PanelLight : Color.clear;
-                _navLabels[i].color = on ? Color.white : Color.Lerp(Theme.TextDim, Color.white, 0.1f);
-                _navLabels[i].fontStyle = on ? FontStyle.BoldAndItalic : FontStyle.Bold;
-                _navIcons[i].color = on ? Color.white : Theme.Alpha(Theme.TextDim, 0.85f);
+                _navLabels[i].color = on ? Theme.Text : Color.Lerp(Theme.TextDim, Theme.Text, 0.1f);
+                UiFactory.Style(_navLabels[i], FontStyle.Bold);
+                _navIcons[i].color = on ? Theme.Text : Theme.Alpha(Theme.TextDim, 0.85f);
                 _navBars[i].color = accent;
                 _navBars[i].gameObject.SetActive(on);
             }
@@ -616,25 +609,23 @@ namespace MotoManager.App.UI.Screens
                     Ui.Disarm();
                     _section.Current = idx;
                     Refresh();
-                }, on ? Theme.PanelLight : Color.Lerp(Theme.Background, Theme.Panel, 0.85f), 22);
-                UiFactory.Slant(b.image, 2.4f);
+                }, on ? Theme.Alpha(Color.white, 0.07f) : Theme.Alpha(Color.white, 0.02f), 22);
                 UiFactory.Place((RectTransform)b.transform, (float)k / slots, 0, (float)(k + 1) / slots, 1);
                 var brt = (RectTransform)b.transform;
                 brt.offsetMin = new Vector2(k == 0 ? 0 : 4, 0);
                 brt.offsetMax = new Vector2(-4, 0);
                 var label = b.GetComponentInChildren<Text>();
-                label.color = on ? Color.white : Color.Lerp(Theme.TextDim, Color.white, 0.2f);
-                label.fontStyle = on ? FontStyle.BoldAndItalic : FontStyle.Bold;
+                label.color = on ? Theme.Text : Color.Lerp(Theme.TextDim, Theme.Text, 0.2f);
+                UiFactory.Style(label, FontStyle.Bold);
                 label.rectTransform.offsetMin = new Vector2(16, 0);
                 label.rectTransform.offsetMax = new Vector2(-16, 0);
                 Ui.Fit(label, 22);
                 if (!on) continue;
                 var underline = UiFactory.Decor("Underline", b.transform, accent);
-                UiFactory.Slant(underline, 6f);
                 underline.rectTransform.anchorMin = new Vector2(0, 0);
                 underline.rectTransform.anchorMax = new Vector2(1, 0);
-                underline.rectTransform.offsetMin = new Vector2(4, 0);
-                underline.rectTransform.offsetMax = new Vector2(-6, 4);
+                underline.rectTransform.offsetMin = new Vector2(22, 3);
+                underline.rectTransform.offsetMax = new Vector2(-22, 6);
             }
         }
 
@@ -729,17 +720,16 @@ namespace MotoManager.App.UI.Screens
 
         private void Pill(string caption, string value, System.Action onTap)
         {
-            var b = UiFactory.Button("Pill", _right, "", onTap, new Color(0, 0, 0, 0.4f), Theme.TextBody);
-            UiFactory.Slant(b.image, 3f);
+            var b = UiFactory.Button("Pill", _right, "", onTap, Theme.Alpha(Color.white, 0.04f), Theme.TextBody);
             ((RectTransform)b.transform).sizeDelta = new Vector2(PillWidth, Ui.Grid.Hit);
-            b.gameObject.AddComponent<Outline>().effectColor = new Color(1, 1, 1, 0.07f);
+            UiFactory.Ring(b.transform, Theme.Alpha(Color.white, 0.22f));
             var le = b.gameObject.AddComponent<LayoutElement>();
             le.preferredWidth = PillWidth;
             le.minWidth = PillWidth * 0.7f;
             var label = b.GetComponentInChildren<Text>();
             label.supportRichText = true;
             label.alignment = TextAnchor.MiddleCenter;
-            label.text = "<size=" + Theme.TextMin + ">" + Theme.Dim(Theme.Caps(caption)) + "</size>\n<b>" + value + "</b>";
+            label.text = "<size=" + Theme.TextMin + ">" + Theme.Dim(caption) + "</size>\n<b>" + value + "</b>";
             label.lineSpacing = 0.85f;
             Ui.Fit(label, Theme.TextBody);
             label.rectTransform.offsetMin = new Vector2(14, 0);

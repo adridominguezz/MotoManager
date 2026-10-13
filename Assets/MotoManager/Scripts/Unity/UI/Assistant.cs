@@ -50,12 +50,11 @@ namespace MotoManager.App.UI
 
             // Pit-radio card: graphite panel with angled corners, an accent strip on top and a light message plate.
             var card = UiFactory.Panel("Card", root, Theme.Panel);
-            UiFactory.Chamfer(card, 1.2f);
+            UiFactory.Surface(card);
             UiFactory.Place(card.rectTransform, 0.24f, 0.08f, 0.76f, 0.38f);
             card.raycastTarget = false;
-            UiFactory.Gradient(card, 1.1f, 0.92f);
             UiFactory.DropShadow(card, 0.5f, 5);
-            card.gameObject.AddComponent<Outline>().effectColor = new Color(1, 1, 1, 0.1f);
+            card.gameObject.AddComponent<Outline>().effectColor = Theme.Edge;
             var strip = UiFactory.Decor("Accent", card.transform, Theme.Accent);
             strip.rectTransform.anchorMin = new Vector2(0, 1);
             strip.rectTransform.anchorMax = new Vector2(0.6f, 1);
@@ -73,7 +72,7 @@ namespace MotoManager.App.UI
             ring.effectColor = Theme.Alpha(Theme.Accent, 0.85f);
             ring.effectDistance = new Vector2(2, -2);
             var initial = UiFactory.Label("Initial", avatar.transform, Name.Substring(0, 1), Theme.FontTitle, TextAnchor.MiddleCenter, Theme.Text);
-            initial.fontStyle = FontStyle.BoldAndItalic;
+            UiFactory.Style(initial, FontStyle.BoldAndItalic);
             UiFactory.DropShadow(initial, 0.5f, 3);
             UiFactory.Stretch(initial.rectTransform);
             var who = UiFactory.Label("Who", card.transform, Theme.Caps(Loc.T("assistant.role")) + "\n<b>" + Name + "</b>", Theme.FontSmall, TextAnchor.MiddleCenter, Color.white);
@@ -93,7 +92,7 @@ namespace MotoManager.App.UI
             UiFactory.Place(_text.rectTransform, 0.05f, 0.05f, 0.95f, 0.95f);
 
             var tap = UiFactory.Label("Tap", root, Theme.Caps(Loc.T("assistant.tap")), Theme.FontNormal, TextAnchor.MiddleCenter, Theme.Timing);
-            tap.fontStyle = FontStyle.BoldAndItalic;
+            UiFactory.Style(tap, FontStyle.BoldAndItalic);
             Ui.Fit(tap, Theme.FontNormal);
             tap.gameObject.AddComponent<Outline>().effectColor = new Color(0, 0, 0, 0.6f);
             UiFactory.Place(tap.rectTransform, 0.3f, 0.01f, 0.7f, 0.075f);

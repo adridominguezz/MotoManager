@@ -141,7 +141,6 @@ namespace MotoManager.App.UI.Screens
             var first = Ui.Label(area, r.FirstName ?? "", Theme.TextBody, TextAnchor.LowerLeft, Theme.TextDim, FontStyle.Italic);
             UiFactory.Place(first.rectTransform, 0, 0.5f, 1, 0.62f);
             var name = Ui.Label(area, Theme.Caps(r.LastName), Theme.TextTitle + 8, TextAnchor.MiddleLeft, Theme.Text, FontStyle.BoldAndItalic);
-            UiFactory.DropShadow(name, 0.4f, 2);
             UiFactory.Place(name.rectTransform, 0, 0.34f, 1, 0.5f);
 
             var figures = UiFactory.Rect("Figures", area);
@@ -171,7 +170,6 @@ namespace MotoManager.App.UI.Screens
             var c = Ui.Label(area, Theme.Caps(caption), Theme.TextCaption, TextAnchor.LowerLeft, Theme.TextDim, FontStyle.Bold);
             UiFactory.Place(c.rectTransform, 0, 0.58f, 1, 1);
             var v = Ui.Label(area, value, Theme.TextKey, TextAnchor.MiddleLeft, Theme.Timing, FontStyle.BoldAndItalic);
-            UiFactory.DropShadow(v, 0.4f, 2);
             UiFactory.Place(v.rectTransform, 0, 0, 1, 0.6f);
         }
 
@@ -199,7 +197,6 @@ namespace MotoManager.App.UI.Screens
             img.preserveAspect = true;
             UiFactory.Place(img.rectTransform, 0, 0.24f, 0.48f, 1);
             var v = Ui.Label(body, value, Theme.TextDisplay + 16, TextAnchor.MiddleCenter, valueColor ?? Theme.Timing, FontStyle.BoldAndItalic);
-            UiFactory.DropShadow(v, 0.4f, 2);
             UiFactory.Place(v.rectTransform, 0.48f, 0.24f, 1, 1);
             if (string.IsNullOrEmpty(status)) return;
             var s = Ui.Label(body, Theme.Caps(status), Theme.TextCaption, TextAnchor.MiddleCenter, Theme.TextDim, FontStyle.Bold);

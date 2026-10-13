@@ -1006,7 +1006,6 @@ namespace MotoManager.App.UI.Screens
             var name = Ui.Label(body, Theme.Caps(string.Join(" / ", names.ToArray())), Theme.TextHeader, TextAnchor.MiddleLeft, Theme.Text, FontStyle.BoldAndItalic);
             UiFactory.Place(name.rectTransform, 0, 0, 0.64f, 1);
             var lv = Ui.Label(body, best.ToString("0"), Theme.TextKey, TextAnchor.MiddleRight, Theme.Timing, FontStyle.BoldAndItalic);
-            UiFactory.DropShadow(lv, 0.4f, 2);
             UiFactory.Place(lv.rectTransform, 0.64f, 0, 1, 1);
         }
 

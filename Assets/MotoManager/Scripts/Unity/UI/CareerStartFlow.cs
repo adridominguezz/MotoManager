@@ -217,11 +217,12 @@ namespace MotoManager.App.UI
         {
             var card = UiFactory.Panel("PathCard", area, Theme.Tile);
             UiFactory.Stretch(card.rectTransform);
-            UiFactory.Chamfer(card, 2.4f);
-            UiFactory.Gradient(card, 1.08f, 0.92f);
-            card.gameObject.AddComponent<Outline>().effectColor = new Color(1, 1, 1, 0.06f);
+            UiFactory.Surface(card);
+            card.gameObject.AddComponent<Outline>().effectColor = Theme.Edge;
+            UiFactory.BottomRule(card.transform, Theme.Race);
             var tap = card.gameObject.AddComponent<Button>();
             tap.targetGraphic = card;
+            UiFactory.PressFeedback(tap, card.color);
             tap.onClick.AddListener(() =>
             {
                 GameAudio.ClickSound();
@@ -248,7 +249,6 @@ namespace MotoManager.App.UI
             img.rectTransform.anchoredPosition = new Vector2(-28, -6);
             img.rectTransform.sizeDelta = new Vector2(190, 190);
             var t = Ui.Label(hero, Theme.Caps(title), Theme.TextDisplay, TextAnchor.LowerLeft, Color.white, FontStyle.BoldAndItalic);
-            UiFactory.DropShadow(t, 0.45f, 2);
             UiFactory.Place(t.rectTransform, 0, 0.36f, 0.78f, 1);
             t.rectTransform.offsetMin = new Vector2(28, 0);
             t.rectTransform.offsetMax = new Vector2(0, -12);

@@ -25,7 +25,7 @@ namespace MotoManager.App.UI.Screens
         {
             var t = UiFactory.Label(name, parent, text, max, align, color ?? Theme.Text);
             t.supportRichText = true;
-            t.fontStyle = style;
+            UiFactory.Style(t, style);
             t.horizontalOverflow = HorizontalWrapMode.Wrap;
             t.resizeTextForBestFit = true;
             t.resizeTextMaxSize = Mathf.Max(max, Theme.TextMin);
@@ -127,7 +127,7 @@ namespace MotoManager.App.UI.Screens
             UiFactory.Place((RectTransform)b.transform, x0, y0, x1, y1, inset);
             var t = b.GetComponentInChildren<Text>();
             t.supportRichText = true;
-            t.fontStyle = FontStyle.BoldAndItalic;
+            UiFactory.Style(t, FontStyle.BoldAndItalic);
             Ui.Fit(t, size);
             t.rectTransform.offsetMin = new Vector2(10, 4);
             t.rectTransform.offsetMax = new Vector2(-10, -4);
@@ -159,15 +159,12 @@ namespace MotoManager.App.UI.Screens
             }
             Color ink = Theme.OnAccent;
             var f = Text(panel.transform, "First", first ?? "", Theme.FontNormal, Theme.TextMin, TextAnchor.LowerLeft, Theme.Alpha(ink, 0.9f), FontStyle.Italic);
-            UiFactory.DropShadow(f, 0.45f, 1.5f);
             Place(f.rectTransform, 0, 0.5f, 1, 0.7f, 20, right);
             var l = Text(panel.transform, "Last", Theme.Caps(last ?? ""), Theme.FontTitle, Theme.TextMin, TextAnchor.MiddleLeft, ink, FontStyle.BoldAndItalic);
-            UiFactory.DropShadow(l, 0.5f, 2);
             Place(l.rectTransform, 0, 0.2f, 1, 0.52f, 16, right);
             if (!string.IsNullOrEmpty(under))
             {
                 var u = Text(panel.transform, "Under", under, Theme.FontSmall, Theme.TextMin, TextAnchor.MiddleLeft, Theme.Alpha(ink, 0.85f));
-                UiFactory.DropShadow(u, 0.45f, 1.5f);
                 Place(u.rectTransform, 0, 0.02f, 1, 0.21f, 20, right);
             }
         }
@@ -229,12 +226,11 @@ namespace MotoManager.App.UI.Screens
             if (onInfo != null)
             {
                 var i = UiFactory.Label("Info", head.transform, "(" + Glyph.Info + ")", Theme.TextCaption, TextAnchor.MiddleRight, Theme.TextDim);
-                i.fontStyle = FontStyle.BoldAndItalic;
+                UiFactory.Style(i, FontStyle.BoldAndItalic);
                 Place(i.rectTransform, 0, 0, 1, 1, 0, 8);
             }
             Edge(b.transform, level >= 0 ? Ui.RatingColor(level) : Theme.Steel, true, 7);
             var v = Text(b.transform, "Value", value, Theme.FontTitle - 6, Theme.TextMin, TextAnchor.MiddleCenter, Color.white, FontStyle.BoldAndItalic);
-            UiFactory.DropShadow(v, 0.4f, 2);
             UiFactory.Place(v.rectTransform, 0, 0.02f, 1, 0.64f);
         }
 

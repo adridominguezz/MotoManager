@@ -135,7 +135,7 @@ namespace MotoManager.App.UI
         /// </summary>
         public static RectTransform TopBar(RectTransform root, string title, string sub, float ctaWidth, out RectTransform cta)
         {
-            var bar = UiFactory.Panel("TopBar", root, Theme.Alpha(Theme.Panel, 0.97f));
+            var bar = UiFactory.Panel("TopBar", root, Theme.Alpha(Theme.Chrome, 0.97f));
             var rt = bar.rectTransform;
             rt.anchorMin = new Vector2(0, 1);
             rt.anchorMax = new Vector2(1, 1);
@@ -148,16 +148,15 @@ namespace MotoManager.App.UI
             line.rectTransform.offsetMin = Vector2.zero;
             line.rectTransform.offsetMax = new Vector2(0, 2);
             UiFactory.Gradient(line, Color.white, new Color(1, 1, 1, 0.05f), true);
-            var tag = UiFactory.Decor("Tag", rt, Theme.Accent);
-            UiFactory.Slant(tag, 3.2f);
-            tag.rectTransform.anchorMin = new Vector2(0, 0.24f);
-            tag.rectTransform.anchorMax = new Vector2(0, 0.76f);
+            var tag = UiFactory.Slash(rt, Theme.Race);
+            tag.gameObject.name = "Tag";
+            tag.rectTransform.anchorMin = new Vector2(0, 0.28f);
+            tag.rectTransform.anchorMax = new Vector2(0, 0.72f);
             tag.rectTransform.offsetMin = new Vector2(Pad, 0);
-            tag.rectTransform.offsetMax = new Vector2(Pad + 14, 0);
-            string text = "<b>" + Theme.Caps(title ?? "") + "</b>" +
+            tag.rectTransform.offsetMax = new Vector2(Pad + 12, 0);
+            string text = Theme.Caps(title ?? "") +
                           (string.IsNullOrEmpty(sub) ? "" : "   <size=" + Theme.TextCaption + ">" + Theme.Dim(Theme.Caps(sub)) + "</size>");
-            var t = Label(rt, text, Theme.TextTitle, TextAnchor.MiddleLeft, Theme.Text, FontStyle.Italic);
-            UiFactory.DropShadow(t, 0.4f, 1.5f);
+            var t = Label(rt, text, Theme.TextTitle, TextAnchor.MiddleLeft, Theme.Text, FontStyle.BoldAndItalic);
             UiFactory.Stretch(t.rectTransform);
             t.rectTransform.offsetMin = new Vector2(Pad + 26, 0);
             t.rectTransform.offsetMax = new Vector2(ctaWidth > 0 ? -ctaWidth - 2 * Pad : -Pad, 0);
@@ -228,8 +227,8 @@ namespace MotoManager.App.UI
         {
             var fill = Color.Lerp(teamColor, Theme.Card, 0.25f);
             var plate = UiFactory.Decor("Plate", area, fill);
-            UiFactory.Chamfer(plate, 1.8f);
-            UiFactory.Gradient(plate, 1.1f, 0.85f);
+            UiFactory.Surface(plate);
+
             UiFactory.Stretch(plate.rectTransform);
             var n = Label(plate.transform, number.ToString(), size, TextAnchor.MiddleCenter, Theme.OnColor(fill), FontStyle.BoldAndItalic);
             UiFactory.Stretch(n.rectTransform);

@@ -73,7 +73,7 @@ namespace MotoManager.App.UI.Screens
         {
             var t = UiFactory.Label("Text", parent, text, size, align, color);
             t.supportRichText = true;
-            t.fontStyle = style;
+            UiFactory.Style(t, style);
             t.horizontalOverflow = HorizontalWrapMode.Wrap;
             t.resizeTextForBestFit = true;
             Ui.Fit(t, size);
@@ -108,7 +108,6 @@ namespace MotoManager.App.UI.Screens
             UiFactory.Slant(badge, 2.4f);
             UiFactory.Place(badge.rectTransform, x0, y0, x1, y1);
             var num = Text(badge.transform, "#" + (number > 0 ? number.ToString() : "-"), Theme.FontNormal, TextAnchor.MiddleCenter, Color.white, FontStyle.BoldAndItalic);
-            UiFactory.DropShadow(num, 0.4f, 1.5f);
             UiFactory.Stretch(num.rectTransform);
             num.rectTransform.offsetMin = new Vector2(6, 0);
             num.rectTransform.offsetMax = new Vector2(-6, 0);
@@ -136,7 +135,6 @@ namespace MotoManager.App.UI.Screens
             var c = At(row, 0, 0.36f, 0.6f, 1, Theme.Caps(caption), Theme.TextCaption, TextAnchor.MiddleLeft, Color.Lerp(Theme.TextDim, Color.white, 0.25f), FontStyle.Bold, 0);
             c.rectTransform.offsetMin = Vector2.zero;
             var v = At(row, 0.55f, 0.2f, 1, 1, value, Theme.FontLarge, TextAnchor.MiddleRight, color, FontStyle.BoldAndItalic, 0);
-            UiFactory.DropShadow(v, 0.45f, 2);
             Gauge(row, 0, 0.06f, 0.62f, 0.3f, fraction, color);
         }
 
@@ -149,15 +147,12 @@ namespace MotoManager.App.UI.Screens
         }
 
         /// <summary>
-        /// A large coloured action button (bold italic caps, optional second line). Disabled buttons stay visible,
-        /// greyed, with the reason in the second line.
+        /// A large coloured action button (flat capsule, bold caps, optional second line). Disabled buttons stay
+        /// visible, greyed, with the reason in the second line.
         /// </summary>
         public static Button BigButton(Transform parent, float x0, float y0, float x1, float y1, string text, string sub, Color color, Action onTap, bool enabled = true, float inset = 4)
         {
             var b = UiFactory.Button("BigButton", parent, "", enabled ? onTap : null, enabled ? color : Color.Lerp(Theme.PanelLight, Theme.Card, 0.3f), Theme.FontNormal);
-            UiFactory.Slant(b.image, 2.2f);
-            UiFactory.Gradient(b.image, 1.16f, 0.84f);
-            b.gameObject.AddComponent<Outline>().effectColor = new Color(1, 1, 1, enabled ? 0.16f : 0.05f);
             UiFactory.Place((RectTransform)b.transform, x0, y0, x1, y1, inset);
             b.interactable = enabled && onTap != null;
             var colors = b.colors;
@@ -166,7 +161,7 @@ namespace MotoManager.App.UI.Screens
             var label = b.GetComponentInChildren<Text>();
             label.supportRichText = true;
             label.text = "<b>" + Theme.Caps(text) + "</b>" + (string.IsNullOrEmpty(sub) ? "" : "\n<size=" + Theme.TextCaption + ">" + sub + "</size>");
-            label.fontStyle = FontStyle.Italic;
+            UiFactory.Style(label, FontStyle.Normal);
             label.color = enabled ? Theme.OnColor(color) : Theme.TextDim;
             Ui.Fit(label, Theme.FontNormal);
             label.rectTransform.offsetMin = new Vector2(18, 2);
@@ -187,7 +182,6 @@ namespace MotoManager.App.UI.Screens
             edge.rectTransform.offsetMax = new Vector2(-10, 4);
             At(chip.transform, 0, 0.6f, 1, 0.98f, Theme.Caps(caption), Theme.TextMin, TextAnchor.MiddleCenter, Color.Lerp(Theme.TextDim, Color.white, 0.2f), FontStyle.Bold, 6);
             var v = At(chip.transform, 0, 0.06f, 1, 0.64f, value, Theme.FontLarge, TextAnchor.MiddleCenter, color, FontStyle.BoldAndItalic, 6);
-            UiFactory.DropShadow(v, 0.45f, 2);
         }
 
         /// <summary>A plain dark panel anchored in its parent (sections inside a row).</summary>

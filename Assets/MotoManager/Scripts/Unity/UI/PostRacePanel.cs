@@ -234,7 +234,7 @@ namespace MotoManager.App.UI
             posArea.pivot = new Vector2(0.5f, 1);
             posArea.sizeDelta = new Vector2(winner ? 160 : 136, winner ? 84 : 72);
             posArea.anchoredPosition = new Vector2(0, -4);
-            RaceUi.Block(posArea, "P" + e.Position, winner ? Theme.Timing : new Color(0.9f, 0.91f, 0.93f, 1f), winner ? Theme.TextDisplay : Theme.TextKey);
+            RaceUi.Block(posArea, "P" + e.Position, winner ? Theme.Timing : Theme.Plate, winner ? Theme.TextDisplay : Theme.TextKey);
 
             var plateArea = UiFactory.Rect("PlateArea", body);
             plateArea.anchorMin = plateArea.anchorMax = new Vector2(0.5f, 0.5f);
@@ -245,7 +245,6 @@ namespace MotoManager.App.UI
             var first = RaceUi.Label(body, r.Entry.Rider.FirstName, Theme.TextCaption, TextAnchor.MiddleCenter, Theme.TextDim, FontStyle.Bold);
             UiFactory.Place(first.rectTransform, 0, 0.3f, 1, 0.4f);
             var last = RaceUi.Label(body, Theme.Caps(r.Entry.Rider.LastName), Theme.TextTitle, TextAnchor.MiddleCenter, Theme.Text, FontStyle.BoldAndItalic);
-            UiFactory.DropShadow(last, 0.4f, 2);
             UiFactory.Place(last.rectTransform, 0, 0.18f, 1, 0.31f);
             string teamName = team != null ? team.ShortName ?? team.Name : "";
             var tn = RaceUi.Label(body, Theme.Caps(teamName), Theme.TextCaption, TextAnchor.MiddleCenter, Theme.TextDim, FontStyle.Bold);
@@ -293,7 +292,7 @@ namespace MotoManager.App.UI
                     head[i + 1] = "S" + (i + 1);
                     bool top = i < fastest.Length && Math.Abs(rep.BestSectors[i] - fastest[i]) < 0.0005;
                     string t = rep.BestSectors[i] >= double.MaxValue ? "-" : rep.BestSectors[i].ToString("0.000", Loc.Culture);
-                    mine[i + 1] = top ? "<color=#B266FF>" + t + "</color>" : t;
+                    mine[i + 1] = top ? "<color=" + Theme.FastestHex + ">" + t + "</color>" : t;
                     best[i + 1] = i < fastest.Length && fastest[i] < double.MaxValue ? fastest[i].ToString("0.000", Loc.Culture) : "-";
                 }
                 UiFactory.TableRow(card, 40, w, head, true);
@@ -370,7 +369,7 @@ namespace MotoManager.App.UI
                 string gainedText = finished && gained != 0 ? "  <size=" + Theme.TextCaption + ">" + Theme.Signed(gained) + "</size>" : "";
                 int pts = finished && e.Position - 1 < points.Count ? points[e.Position - 1] : 0;
                 var notes = new List<string>();
-                if (e.FastestLap) notes.Add("<color=#B266FF>" + Theme.Caps(Loc.T("ux.race.fastestLap")) + "</color>");
+                if (e.FastestLap) notes.Add("<color=" + Theme.FastestHex + ">" + Theme.Caps(Loc.T("ux.race.fastestLap")) + "</color>");
                 if (e.Note != null) notes.Add(Theme.WarnText(e.Note));
                 if (r.Penalties.Count > 0 && e.Note == null) notes.Add(Theme.WarnText(Loc.T("post.penalty", r.Penalties.Count)));
                 if (r.HasIssue) notes.Add(Theme.WarnText(Loc.T("post.issue")));

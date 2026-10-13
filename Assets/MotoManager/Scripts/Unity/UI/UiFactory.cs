@@ -7,25 +7,45 @@ using UnityEngine.UI;
 namespace MotoManager.App.UI
 {
     /// <summary>
-    /// Shared colours and sizes so every screen looks consistent: a pit-wall / timing-screen look with carbon and
-    /// graphite surfaces, white and cool-grey text, and one accent (the player's team colour) used sparingly for the
-    /// main action, the selected state and thin highlight strips. Semantic colours (good / warning / bad) are muted
-    /// and kept for data only; timing yellow is the single secondary highlight.
+    /// Shared colours and sizes so every screen looks consistent (docs/VISUAL_STYLE.md). The look follows the
+    /// championship's own broadcast/web style: near-black surfaces with clean light text, one strong race red for the
+    /// main action and live/next status, the player's team colour as identity (own row, row edges, header tags, tab
+    /// and rail markers), heavy upright display type for titles and big numbers, and a clean sans in sentence case for
+    /// body and captions. Semantic colours (good / warning / bad / info) are kept for data only; timing yellow is the
+    /// key-number highlight.
     /// </summary>
     public static class Theme
     {
-        public static readonly Color Background = new Color32(10, 11, 14, 255);   // carbon black
-        public static readonly Color Panel = new Color32(18, 20, 24, 255);        // rails, header, lists
-        public static readonly Color Card = new Color32(25, 27, 32, 255);         // content cards (graphite)
-        public static readonly Color PanelLight = new Color32(44, 47, 55, 255);   // buttons, tiles
-        /// <summary>Brand red of the game (start screen, loading).</summary>
-        public static readonly Color Brand = new Color32(229, 56, 59, 255);
-        /// <summary>Main action colour: the player's team colour while managing a team, the brand red otherwise.</summary>
+        // ---- Neutrals: near-black with a faint cool cast (never pure #000 surfaces behind text)
+        /// <summary>Page floor.</summary>
+        public static readonly Color Background = new Color32(8, 9, 11, 255);
+        /// <summary>Navigation chrome (top bar, rail): the deepest black, like the site's navigation bar.</summary>
+        public static readonly Color Chrome = new Color32(3, 3, 4, 255);
+        /// <summary>Rails, header, lists.</summary>
+        public static readonly Color Panel = new Color32(17, 19, 23, 255);
+        /// <summary>Content cards and sheets.</summary>
+        public static readonly Color Card = new Color32(23, 25, 30, 255);
+        /// <summary>Raised controls (secondary buttons, selected tabs).</summary>
+        public static readonly Color PanelLight = new Color32(42, 45, 51, 255);
+
+        /// <summary>Race red: the primary call to action and live / up-next status (independent of the team colour).</summary>
+        public static readonly Color Race = new Color32(216, 15, 10, 255);
+        /// <summary>Brand red of the game (start screen, loading) = race red.</summary>
+        public static readonly Color Brand = Race;
+        /// <summary>Identity accent: the player's team colour while managing a team, the brand red otherwise.</summary>
         public static Color Accent { get; private set; } = Brand;
-        public static readonly Color Text = new Color32(242, 243, 245, 255);
-        public static readonly Color TextDim = new Color32(150, 155, 165, 255);
+        /// <summary>Fill of the one primary action of a screen (race red).</summary>
+        public static Color Action { get { return Race; } }
+
+        /// <summary>Body text: off-white (not pure white) for less glare on the black surfaces.</summary>
+        public static readonly Color Text = new Color32(244, 245, 247, 255);
+        /// <summary>Secondary text: 6.9:1 on tiles, 7.4:1 on cards.</summary>
+        public static readonly Color TextDim = new Color32(163, 168, 177, 255);
+
+        // ---- Semantic set (fills); the *Hex strings are the text variants, all ≥ 5:1 on cards
         public static readonly Color Good = new Color32(70, 185, 115, 255);
-        public static readonly Color Warning = new Color32(235, 180, 45, 255);
+        /// <summary>Attention: amber-orange, kept clearly apart from timing yellow (key numbers).</summary>
+        public static readonly Color Warning = new Color32(242, 159, 69, 255);
         public static readonly Color Bad = new Color32(220, 55, 55, 255);
         // Legacy sizes (kept for compatibility). Never subtract from FontSmall: 18 is the floor (TextMin).
         public const int FontSmall = 22;
@@ -33,42 +53,85 @@ namespace MotoManager.App.UI
         public const int FontLarge = 40;
         public const int FontTitle = 56;
 
-        // ---- Type scale (UX spec §1.2)
-        /// <summary>Hero number (rating, P1, cash in a hero tile), bold italic.</summary>
+        // ---- Type scale (UX spec §1.2). "Display" = the heavy wide display face (UiFactory.DisplayFont).
+        /// <summary>Hero number (rating, P1, cash in a hero tile): display face.</summary>
         public const int TextDisplay = 56;
-        /// <summary>The one key number of a tile, bold italic, timing yellow by default.</summary>
+        /// <summary>The one key number of a tile: display face, timing yellow by default.</summary>
         public const int TextKey = 44;
-        /// <summary>Page / hero names, bold italic caps.</summary>
+        /// <summary>Page / hero names: display face, caps.</summary>
         public const int TextTitle = 32;
-        /// <summary>Tile and card header strips, bold italic caps (CTA labels use 28).</summary>
+        /// <summary>Tile and card header strips: display face, caps (CTA labels: sans bold caps 28).</summary>
         public const int TextHeader = 24;
-        /// <summary>List cells and label/value lines.</summary>
+        /// <summary>List cells and label/value lines: sans.</summary>
         public const int TextBody = 24;
-        /// <summary>Captions under numbers, column captions, status lines: bold caps, dim.</summary>
+        /// <summary>Captions under numbers, column captions, status lines: sans, sentence case, dim.</summary>
         public const int TextCaption = 20;
         /// <summary>Absolute floor for any font size and any resizeTextMinSize.</summary>
         public const int TextMin = 18;
 
-        /// <summary>Dark ink for text on light fills (rating badges, position blocks, light accents).</summary>
-        public static readonly Color Ink = new Color32(12, 13, 16, 255);
+        /// <summary>Dark ink for text on light fills (rating badges, position plates, light accents).</summary>
+        public static readonly Color Ink = new Color32(10, 11, 13, 255);
         /// <summary>Surface of every tile.</summary>
-        public static readonly Color Tile = Color.Lerp(new Color32(25, 27, 32, 255), new Color32(44, 47, 55, 255), 0.28f);
-        /// <summary>Header strip over a tile or card (black at 38%).</summary>
-        public static readonly Color HeaderFill = new Color(0, 0, 0, 0.38f);
+        public static readonly Color Tile = new Color32(28, 31, 36, 255);
+        /// <summary>Header strip over a tile or card: a faint darker band (ink at 30%), no heavy black slab.</summary>
+        public static readonly Color HeaderFill = new Color(10 / 255f, 11 / 255f, 13 / 255f, 0.3f);
+        /// <summary>Light plate behind dark numbers (rider number badges, position blocks of the race tower).</summary>
+        public static readonly Color Plate = new Color32(236, 238, 241, 255);
         /// <summary>Bike performance figures (green).</summary>
         public static readonly Color Perf = new Color32(70, 200, 110, 255);
         /// <summary>Bike reliability figures (purple).</summary>
         public static readonly Color Rel = new Color32(196, 92, 226, 255);
+        /// <summary>Fastest-lap / personal-best purple (timing-screen convention).</summary>
+        public static readonly Color Fastest = new Color32(178, 102, 255, 255);
 
-        /// <summary>Text colour on an accent fill: ink on light team colours, white otherwise.</summary>
+        /// <summary>Text colour on an accent fill: ink on light team colours, light text otherwise.</summary>
         public static Color OnAccent { get; private set; } = Color.white;
 
-        /// <summary>Readable text colour on a fill: ink when its luminance is above 0.55, white otherwise.</summary>
+        /// <summary>Text colour on the race-red action fill.</summary>
+        public static Color OnAction { get { return OnColor(Race); } }
+
+        /// <summary>WCAG relative luminance of a colour (sRGB).</summary>
+        public static float Luminance(Color c)
+        {
+            return 0.2126f * Lin(c.r) + 0.7152f * Lin(c.g) + 0.0722f * Lin(c.b);
+        }
+
+        private static float Lin(float v)
+        {
+            return v <= 0.04045f ? v / 12.92f : Mathf.Pow((v + 0.055f) / 1.055f, 2.4f);
+        }
+
+        /// <summary>WCAG contrast ratio between two opaque colours (1..21).</summary>
+        public static float Contrast(Color a, Color b)
+        {
+            float la = Luminance(a), lb = Luminance(b);
+            return (Mathf.Max(la, lb) + 0.05f) / (Mathf.Min(la, lb) + 0.05f);
+        }
+
+        /// <summary>
+        /// Readable text colour on a fill, by measured contrast: light text while it reaches 3.6:1 (labels on fills are
+        /// bold and large), otherwise whichever of light text and ink contrasts more.
+        /// </summary>
         public static Color OnColor(Color fill)
         {
-            float lum = 0.2126f * fill.r + 0.7152f * fill.g + 0.0722f * fill.b;
-            return lum > 0.55f ? Ink : Color.white;
+            float light = Contrast(Text, fill);
+            if (light >= 3.6f) return Text;
+            return Contrast(Ink, fill) > light ? Ink : Text;
         }
+
+        /// <summary>
+        /// <paramref name="c"/> lightened just enough to read as text on <paramref name="surface"/> (at least
+        /// <paramref name="ratio"/>:1), so dark team colours still work as accent text.
+        /// </summary>
+        public static Color Readable(Color c, Color surface, float ratio = 4.5f)
+        {
+            c.a = 1;
+            for (int i = 0; i < 20 && Contrast(c, surface) < ratio; i++) c = Color.Lerp(c, Color.white, 0.12f);
+            return c;
+        }
+
+        /// <summary>The current accent as text on cards (≥ 4.5:1).</summary>
+        public static Color AccentInk { get { return Readable(CurrentAccent, Card); } }
 
         /// <summary>A signed delta as rich text: "+4" green, "−0,5" red (Unicode minus), "0" dim.</summary>
         public static string Signed(double v, int decimals = 0)
@@ -87,17 +150,27 @@ namespace MotoManager.App.UI
             return p > 0 ? "P" + p : "-";
         }
 
-        public const string DimHex = "#969BA5";
+        public const string DimHex = "#A3A8B1";
         public const string GoodHex = "#46B973";
-        public const string WarnHex = "#EBB42D";
-        public const string BadHex = "#DC3737";
+        public const string WarnHex = "#F29F45";
+        /// <summary>Bad as text: lighter than the Bad fill so it reads on cards (5.9:1; the fill gives 3.8:1).</summary>
+        public const string BadHex = "#F26B6B";
+        /// <summary>Pit lane / neutral information as text.</summary>
+        public const string InfoHex = "#8FB4D4";
+        /// <summary>Fastest lap as text.</summary>
+        public const string FastestHex = "#B266FF";
 
         /// <summary>Neutral informative tone (cool steel) for mid-range data.</summary>
         public static readonly Color Info = new Color32(150, 170, 195, 255);
+        /// <summary>Hairline between rows and sections (white 7%).</summary>
         public static readonly Color Divider = new Color(1, 1, 1, 0.07f);
+        /// <summary>1-unit edge of raised surfaces (tiles, cards, sheets): white 8%.</summary>
+        public static readonly Color Edge = new Color(1, 1, 1, 0.08f);
+        /// <summary>Thin outline of secondary (outline) buttons: white 38%, 3:1 against the surfaces.</summary>
+        public static readonly Color Stroke = new Color(1, 1, 1, 0.38f);
         /// <summary>Neutral steel grey for details that must not compete with the accent.</summary>
-        public static readonly Color Steel = new Color32(118, 124, 136, 255);
-        /// <summary>Timing-screen yellow: the one secondary highlight (leader, key numbers).</summary>
+        public static readonly Color Steel = new Color32(122, 128, 139, 255);
+        /// <summary>Timing-screen yellow: the key-number highlight (leader, key numbers).</summary>
         public static readonly Color Timing = new Color32(255, 210, 0, 255);
         public const string TimingHex = "#FFD200";
 
@@ -113,7 +186,7 @@ namespace MotoManager.App.UI
         /// <summary>Neutral tones for key-figure tiles: no rainbow, the accent does the highlighting.</summary>
         public static readonly Color[] Palette =
         {
-            new Color32(118, 124, 136, 255), new Color32(96, 102, 114, 255), new Color32(136, 142, 154, 255),
+            new Color32(122, 128, 139, 255), new Color32(98, 104, 115, 255), new Color32(140, 146, 157, 255),
         };
 
         /// <summary>Accent used by cards, chips and tables (the team colour; brand red outside a career).</summary>
@@ -128,7 +201,7 @@ namespace MotoManager.App.UI
 
         /// <summary>
         /// The interface takes the player's team colours: the primary (or the secondary when the primary is too grey)
-        /// brought into a readable range becomes the main accent. Null colours restore the brand red.
+        /// brought into a readable range becomes the identity accent. Null colours restore the brand red.
         /// </summary>
         public static void SetTeamColors(string primary, string secondary)
         {
@@ -158,10 +231,10 @@ namespace MotoManager.App.UI
             OnAccent = OnColor(c);
         }
 
-        /// <summary>Text in the current section accent, lightened so it reads on the dark panels.</summary>
+        /// <summary>Text in the current accent, lightened until it reads on the dark cards (≥ 4.5:1).</summary>
         public static string AccentText(string s)
         {
-            return "<color=#" + ColorUtility.ToHtmlStringRGB(Color.Lerp(CurrentAccent, Color.white, 0.25f)) + ">" + s + "</color>";
+            return "<color=#" + ColorUtility.ToHtmlStringRGB(AccentInk) + ">" + s + "</color>";
         }
 
         /// <summary>Colour <paramref name="c"/> with another alpha.</summary>
@@ -178,7 +251,7 @@ namespace MotoManager.App.UI
         public static string Bold(string s) { return "<b>" + s + "</b>"; }
         public static string TimingText(string s) { return "<color=" + TimingHex + ">" + s + "</color>"; }
 
-        /// <summary>Upper-cases the visible text of a label (racing-graphics titles), leaving rich-text tags untouched.</summary>
+        /// <summary>Upper-cases the visible text of a label (titles, buttons, tags), leaving rich-text tags untouched.</summary>
         public static string Caps(string s)
         {
             if (string.IsNullOrEmpty(s)) return s;
@@ -209,8 +282,8 @@ namespace MotoManager.App.UI
         public bool Primary;
         public bool Selected;
 
-        /// <summary>Main actions and the selected option use the accent (team colour); the others stay graphite.</summary>
-        public Color Color { get { return Primary ? Theme.Accent : Selected ? Theme.CurrentAccent : Theme.PanelLight; } }
+        /// <summary>Main actions use the race-red action fill, the selected option the team colour; the others graphite.</summary>
+        public Color Color { get { return Primary ? Theme.Action : Selected ? Theme.CurrentAccent : Theme.PanelLight; } }
     }
 
     /// <summary>
@@ -219,21 +292,90 @@ namespace MotoManager.App.UI
     /// </summary>
     public static class UiFactory
     {
-        private static Font _font;
+        private static Font _font, _builtin, _display;
+        private static bool _displayLoaded;
+        private static Font[] _styles;
 
+        /// <summary>
+        /// The text face: Titillium Web (OFL, Resources/Fonts), a clean technical sans for body, labels and buttons.
+        /// Its Bold, Italic and Bold Italic files share the family name, so Unity picks them for the matching
+        /// FontStyle (it synthesises the style if a file is missing). Falls back to Unity's built-in font.
+        /// </summary>
         public static Font Font
         {
             get
             {
                 if (_font != null) return _font;
-                // Unity 2022.2+ ships LegacyRuntime.ttf; older versions Arial.ttf.
-                try { _font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"); } catch (Exception) { }
-                if (_font == null)
+                try
                 {
-                    try { _font = Resources.GetBuiltinResource<Font>("Arial.ttf"); } catch (Exception) { }
+                    _font = Resources.Load<Font>("Fonts/TitilliumWeb-Regular");
+                    // Keep the style files loaded alongside the regular one.
+                    _styles = new[]
+                    {
+                        Resources.Load<Font>("Fonts/TitilliumWeb-Bold"), Resources.Load<Font>("Fonts/TitilliumWeb-Italic"),
+                        Resources.Load<Font>("Fonts/TitilliumWeb-BoldItalic")
+                    };
                 }
+                catch (Exception) { }
+                if (_font == null) _font = BuiltinFont;
                 return _font;
             }
+        }
+
+        /// <summary>
+        /// The display face: Russo One (OFL), heavy, wide and upright, for titles, header strips and big numbers
+        /// (positions, points, key figures, rider numbers). Null when it is missing (callers then use bold text).
+        /// </summary>
+        public static Font DisplayFont
+        {
+            get
+            {
+                if (_displayLoaded) return _display;
+                _displayLoaded = true;
+                try { _display = Resources.Load<Font>("Fonts/RussoOne-Regular"); } catch (Exception) { }
+                return _display;
+            }
+        }
+
+        private static Font BuiltinFont
+        {
+            get
+            {
+                if (_builtin != null) return _builtin;
+                // Unity 2022.2+ ships LegacyRuntime.ttf; older versions Arial.ttf.
+                try { _builtin = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"); } catch (Exception) { }
+                if (_builtin == null)
+                {
+                    try { _builtin = Resources.GetBuiltinResource<Font>("Arial.ttf"); } catch (Exception) { }
+                }
+                return _builtin;
+            }
+        }
+
+        /// <summary>
+        /// Applies a type role. <see cref="FontStyle.BoldAndItalic"/> is the "display" role across the screens (titles,
+        /// hero names, key numbers): it is drawn in the upright display face. Every other style uses the text face.
+        /// </summary>
+        public static Text Style(Text t, FontStyle style)
+        {
+            if (t == null) return null;
+            if (style == FontStyle.BoldAndItalic && DisplayFont != null)
+            {
+                t.font = DisplayFont;
+                t.fontStyle = FontStyle.Normal;
+            }
+            else
+            {
+                t.font = Font;
+                t.fontStyle = style;
+            }
+            return t;
+        }
+
+        /// <summary>Sets <paramref name="t"/> in the display face (titles, big numbers).</summary>
+        public static Text Display(Text t)
+        {
+            return Style(t, FontStyle.BoldAndItalic);
         }
 
         public static Canvas CreateCanvas(string name, int sortOrder = 0)
@@ -348,6 +490,88 @@ namespace MotoManager.App.UI
             img.type = Image.Type.Sliced;
             img.pixelsPerUnitMultiplier = radiusScale;
             return img;
+        }
+
+        /// <summary>Radius of surfaces (tiles, cards, sheets, badges): about 6 units, soft but not bubbly.</summary>
+        public const float SurfaceRadius = 3.4f;
+
+        /// <summary>
+        /// Fully rounded ends (a capsule): buttons, segmented toggles and the top-bar pills. The corner radius is larger
+        /// than half of any control height, and uGUI scales sliced borders down to fit, so the ends are always round.
+        /// </summary>
+        public static Image Capsule(Image img)
+        {
+            return Round(img, 0.45f);
+        }
+
+        private static Sprite _ring;
+
+        /// <summary>
+        /// A rounded-rectangle outline (about 1.3 px stroke, 9-sliced, hollow): the thin border of outline pill buttons.
+        /// Same corner geometry as <see cref="RoundedSprite"/>, so it lines up with <see cref="Capsule"/> fills.
+        /// </summary>
+        public static Sprite RingSprite
+        {
+            get
+            {
+                if (_ring != null) return _ring;
+                const int size = 64, r = 20;
+                const float stroke = 1.3f;
+                var tex = NewTexture(size, size, false);
+                var px = new Color32[size * size];
+                for (int y = 0; y < size; y++)
+                    for (int x = 0; x < size; x++)
+                    {
+                        float cx = Mathf.Clamp(x + 0.5f, r, size - r), cy = Mathf.Clamp(y + 0.5f, r, size - r);
+                        float d = Mathf.Sqrt((x + 0.5f - cx) * (x + 0.5f - cx) + (y + 0.5f - cy) * (y + 0.5f - cy));
+                        // Distance to the outer edge of the rounded rect, then a band of `stroke` inside it.
+                        float edge = r - d;
+                        float a = Mathf.Clamp01(edge + 0.5f) * Mathf.Clamp01(stroke - edge + 0.5f);
+                        px[y * size + x] = new Color32(255, 255, 255, (byte)(255 * a));
+                    }
+                tex.SetPixels32(px);
+                tex.Apply();
+                _ring = Sprite.Create(tex, new UnityEngine.Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100, 0, SpriteMeshType.FullRect, new Vector4(r, r, r, r));
+                return _ring;
+            }
+        }
+
+        /// <summary>
+        /// A thin capsule outline stretched over <paramref name="parent"/> (outline pill buttons, pickers). Decorative:
+        /// the parent keeps the clicks and the press tint.
+        /// </summary>
+        public static Image Ring(Transform parent, Color color)
+        {
+            var img = Decor("Ring", parent, color);
+            img.sprite = RingSprite;
+            img.type = Image.Type.Sliced;
+            img.fillCenter = false;
+            img.pixelsPerUnitMultiplier = 0.45f;
+            Stretch(img.rectTransform);
+            return img;
+        }
+
+        /// <summary>The surface shape: a small even radius on every corner.</summary>
+        public static Image Surface(Image img)
+        {
+            return Round(img, SurfaceRadius);
+        }
+
+        /// <summary>
+        /// Press feedback that shows on any fill: dark and translucent fills light up (alpha raised too), light and
+        /// saturated fills darken. No hover tint (it sticks after a tap on touch screens).
+        /// </summary>
+        public static void PressFeedback(Selectable s, Color fill)
+        {
+            var colors = s.colors;
+            bool dark = fill.a < 0.6f || Theme.Luminance(fill) < 0.18f;
+            colors.normalColor = Color.white;
+            colors.highlightedColor = Color.white;
+            colors.selectedColor = Color.white;
+            colors.pressedColor = dark ? new Color(1.7f, 1.7f, 1.7f, 2.6f) : new Color(0.74f, 0.74f, 0.74f, 1f);
+            colors.disabledColor = new Color(0.55f, 0.55f, 0.55f, 0.6f);
+            colors.fadeDuration = 0.06f;
+            s.colors = colors;
         }
 
         private static Sprite _chamfer, _slant, _checker, _stripes, _carbon;
@@ -546,6 +770,74 @@ namespace MotoManager.App.UI
             return img;
         }
 
+        /// <summary>
+        /// The red slash that opens a title ("/ SECTION"): a thin forward-leaning bar. Caller positions it.
+        /// </summary>
+        public static Image Slash(Transform parent, Color color)
+        {
+            var img = Decor("Slash", parent, color);
+            Slant(img, 2.2f);
+            return img;
+        }
+
+        /// <summary>
+        /// A thin rule along the bottom edge of a card or tile (2 units, race red by default): the closing line of the
+        /// championship's content cards.
+        /// </summary>
+        public static Image BottomRule(Transform parent, Color? color = null, float height = 2)
+        {
+            var img = Decor("BottomRule", parent, color ?? Theme.Race);
+            var rt = img.rectTransform;
+            rt.anchorMin = new Vector2(0, 0);
+            rt.anchorMax = new Vector2(1, 0);
+            rt.pivot = new Vector2(0.5f, 0);
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = new Vector2(0, height);
+            return img;
+        }
+
+        private static Sprite _glow;
+
+        /// <summary>A soft radial glow (white centre fading to transparent), tinted by its Image.</summary>
+        public static Sprite GlowSprite
+        {
+            get
+            {
+                if (_glow != null) return _glow;
+                const int size = 128;
+                var tex = NewTexture(size, size, false);
+                var px = new Color32[size * size];
+                for (int y = 0; y < size; y++)
+                    for (int x = 0; x < size; x++)
+                    {
+                        float dx = (x + 0.5f) / size * 2 - 1, dy = (y + 0.5f) / size * 2 - 1;
+                        float d = Mathf.Clamp01(Mathf.Sqrt(dx * dx + dy * dy));
+                        float a = 1 - d;
+                        a = a * a * (3 - 2 * a); // smooth falloff, no visible edge
+                        px[y * size + x] = new Color32(255, 255, 255, (byte)(255 * a));
+                    }
+                tex.SetPixels32(px);
+                tex.Apply();
+                _glow = Sprite.Create(tex, new UnityEngine.Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100, 0, SpriteMeshType.FullRect);
+                return _glow;
+            }
+        }
+
+        /// <summary>
+        /// A faint dark-red radial glow behind hero and background areas, centred at (<paramref name="x"/>,
+        /// <paramref name="y"/>) of the parent and <paramref name="size"/> units wide. Decorative, ignores clicks.
+        /// </summary>
+        public static Image Glow(Transform parent, float x, float y, float size, float alpha = 0.14f)
+        {
+            var img = Decor("Glow", parent, Theme.Alpha(Theme.Race, alpha));
+            img.sprite = GlowSprite;
+            img.type = Image.Type.Simple;
+            img.rectTransform.anchorMin = img.rectTransform.anchorMax = new Vector2(x, y);
+            img.rectTransform.sizeDelta = new Vector2(size, size * 0.7f);
+            img.transform.SetAsFirstSibling();
+            return img;
+        }
+
         /// <summary>Thin accent bar on the left edge of a container (cards, list items, headings).</summary>
         public static Image SideStripe(Transform parent, Color color, float width = 5, float inset = 12)
         {
@@ -578,27 +870,22 @@ namespace MotoManager.App.UI
 
         public static Button Button(string name, Transform parent, string text, Action onClick, Color? color = null, int size = Theme.FontNormal)
         {
-            var img = Panel(name, parent, color ?? Theme.PanelLight);
-            // Flat surface with angled corners, a faint top-down shade and a short hard shadow (no gloss); runtime
-            // tints keep the shading.
-            Chamfer(img, 2.4f);
-            Gradient(img, 1.08f, 0.9f);
-            DropShadow(img, 0.3f, 2);
+            var fill = color ?? Theme.PanelLight;
+            var img = Panel(name, parent, fill);
+            // Flat capsule (no gloss, no shadow), bold sans label; the press state lights dark fills and darkens
+            // bright ones so the feedback shows on every fill.
+            Capsule(img);
             var button = img.gameObject.AddComponent<Button>();
-            var colors = button.colors;
-            colors.highlightedColor = new Color(1.1f, 1.1f, 1.1f, 1f);
-            colors.pressedColor = new Color(0.8f, 0.8f, 0.8f, 1f);
-            colors.disabledColor = new Color(0.5f, 0.5f, 0.5f, 0.6f);
-            button.colors = colors;
+            PressFeedback(button, fill);
             var label = Label("Label", img.transform, text, size, TextAnchor.MiddleCenter);
+            Style(label, FontStyle.Bold);
             Stretch(label.rectTransform);
-            label.rectTransform.offsetMin = new Vector2(6, 0);
-            label.rectTransform.offsetMax = new Vector2(-6, 0);
+            label.rectTransform.offsetMin = new Vector2(10, 0);
+            label.rectTransform.offsetMax = new Vector2(-10, 0);
             // On a narrow phone a long caption shrinks (and may take two lines) instead of being cut.
             label.resizeTextForBestFit = true;
             label.resizeTextMaxSize = Mathf.Max(size, Theme.TextMin);
             label.resizeTextMinSize = Mathf.Min(label.resizeTextMaxSize, Mathf.Max(Theme.TextMin, size - 12));
-            DropShadow(label, 0.35f, 1.5f);
             if (onClick != null) button.onClick.AddListener(() =>
             {
                 GameAudio.ClickSound();
@@ -664,23 +951,22 @@ namespace MotoManager.App.UI
             if (background.HasValue || header)
             {
                 var img = row.gameObject.AddComponent<Image>();
-                // Timing-screen header: a near-black band with a thin accent rule under it.
-                img.color = background ?? new Color(0, 0, 0, 0.45f);
+                // Table header: a faint darker band closed by a hairline (minimal borders, no coloured rule).
+                img.color = background ?? Theme.Alpha(Theme.Ink, 0.35f);
                 img.raycastTarget = false;
                 if (header)
                 {
-                    var line = Decor("Underline", row, Theme.CurrentAccent);
+                    var line = Decor("Underline", row, Theme.Alpha(Color.white, 0.14f));
                     line.rectTransform.anchorMin = new Vector2(0, 0);
                     line.rectTransform.anchorMax = new Vector2(1, 0);
                     line.rectTransform.offsetMin = new Vector2(0, 0);
-                    line.rectTransform.offsetMax = new Vector2(0, 2);
-                    Gradient(line, Color.white, new Color(1, 1, 1, 0.15f), true);
+                    line.rectTransform.offsetMax = new Vector2(0, 1);
                 }
             }
             else
             {
                 // Hairline between rows, like the lines of a timing monitor.
-                var hair = Decor("Rule", row, new Color(1, 1, 1, 0.045f));
+                var hair = Decor("Rule", row, Theme.Divider);
                 hair.rectTransform.anchorMin = new Vector2(0, 0);
                 hair.rectTransform.anchorMax = new Vector2(1, 0);
                 hair.rectTransform.offsetMin = Vector2.zero;
@@ -692,29 +978,29 @@ namespace MotoManager.App.UI
             for (int i = 0; i < cells.Length && i < widths.Length; i++)
             {
                 string cell = cells[i] ?? "";
-                // A position number in the first column sits in a white block with dark type (timing tower).
+                // A position number in the first column is set big in the display face (standings style).
                 int pos = !header && i == 0 ? PositionNumber(cell) : 0;
                 if (pos > 0)
                 {
-                    var block = Decor("PosBlock", row, new Color(0.9f, 0.91f, 0.93f, 1f));
-                    Slant(block, 3.2f);
+                    var block = Decor("PosBlock", row, Color.clear);
                     block.rectTransform.anchorMin = new Vector2(x / total, 0);
                     block.rectTransform.anchorMax = new Vector2(x / total, 1);
                     block.rectTransform.pivot = new Vector2(0, 0.5f);
                     block.rectTransform.offsetMin = new Vector2(4, 4);
                     block.rectTransform.offsetMax = new Vector2(52, -4);
-                    var n = Label("Cell" + i, block.transform, pos.ToString(), Theme.FontSmall, TextAnchor.MiddleCenter, new Color32(12, 13, 16, 255));
-                    n.fontStyle = FontStyle.BoldAndItalic;
+                    var n = Label("Cell" + i, block.transform, pos.ToString(), Theme.TextBody, TextAnchor.MiddleCenter, Theme.Text);
+                    Display(n);
                     Stretch(n.rectTransform);
                     x += widths[i];
                     continue;
                 }
-                var t = Label("Cell" + i, row, header ? Theme.Caps(cell) : cell, header ? Theme.TextCaption : Theme.FontSmall,
-                    i == 0 ? TextAnchor.MiddleLeft : TextAnchor.MiddleCenter, header ? new Color32(176, 181, 190, 255) : (textColor ?? Theme.Text));
+                // Column captions in sentence case, bold and dim (as in the championship's own tables).
+                var t = Label("Cell" + i, row, cell, header ? Theme.TextCaption : Theme.FontSmall,
+                    i == 0 ? TextAnchor.MiddleLeft : TextAnchor.MiddleCenter, header ? Theme.TextDim : (textColor ?? Theme.Text));
                 if (header)
                 {
-                    t.fontStyle = FontStyle.Bold;
-                    // Upper-case titles in narrow columns shrink instead of wrapping out of the band.
+                    Style(t, FontStyle.Bold);
+                    // Captions in narrow columns shrink instead of wrapping out of the band.
                     t.resizeTextForBestFit = true;
                     t.resizeTextMinSize = Theme.TextMin;
                     t.resizeTextMaxSize = Theme.TextCaption;
@@ -778,42 +1064,38 @@ namespace MotoManager.App.UI
         public static Text Heading(Transform list, string text)
         {
             var row = Row(list, 58);
-            // Racing-graphic section title: a slanted accent tag, upper-case bold italic type and a rule fading right.
-            var bar = Decor("Accent", row, Theme.CurrentAccent);
-            Slant(bar, 3f);
+            // Section title: the red slash, heavy upright display caps and a plain hairline.
+            var bar = Slash(row, Theme.Race);
             bar.rectTransform.anchorMin = bar.rectTransform.anchorMax = Vector2.zero;
             bar.rectTransform.pivot = Vector2.zero;
-            bar.rectTransform.anchoredPosition = new Vector2(2, 10);
-            bar.rectTransform.sizeDelta = new Vector2(18, 32);
-            var rule = Decor("Rule", row, new Color(1, 1, 1, 0.14f));
+            bar.rectTransform.anchoredPosition = new Vector2(2, 12);
+            bar.rectTransform.sizeDelta = new Vector2(14, 28);
+            var rule = Decor("Rule", row, Theme.Divider);
             rule.rectTransform.anchorMin = new Vector2(0, 0);
             rule.rectTransform.anchorMax = new Vector2(1, 0);
             rule.rectTransform.offsetMin = new Vector2(0, 4);
             rule.rectTransform.offsetMax = new Vector2(0, 5);
-            Gradient(rule, Color.white, new Color(1, 1, 1, 0), true);
             var t = Label("Heading", row, Theme.Caps(text), Theme.FontLarge - 6, TextAnchor.LowerLeft, Theme.Text);
             t.supportRichText = true;
-            t.fontStyle = FontStyle.BoldAndItalic;
+            Display(t);
             t.resizeTextForBestFit = true;
             t.resizeTextMinSize = Theme.FontNormal - 4;
             t.resizeTextMaxSize = Theme.FontLarge - 6;
-            DropShadow(t, 0.4f, 2);
             Stretch(t.rectTransform);
             t.rectTransform.offsetMin = new Vector2(30, 6);
             return t;
         }
 
         /// <summary>
-        /// Gives a screen title the racing-graphics treatment: upper case, bold italic, and a short slanted accent
-        /// bar under it. Call after setting the text.
+        /// Gives a screen title the racing-graphics treatment: upper case in the heavy display face, and a short
+        /// slanted red bar under it. Call after setting the text.
         /// </summary>
         public static Text RaceTitle(Text t)
         {
             t.supportRichText = true;
             t.text = Theme.Caps(t.text);
-            t.fontStyle = FontStyle.BoldAndItalic;
-            DropShadow(t, 0.45f, 2);
-            var bar = Decor("TitleBar", t.transform, Theme.Accent);
+            Display(t);
+            var bar = Decor("TitleBar", t.transform, Theme.Race);
             Slant(bar, 4f);
             float x = t.alignment == TextAnchor.MiddleCenter || t.alignment == TextAnchor.UpperCenter || t.alignment == TextAnchor.LowerCenter ? 0.5f : 0f;
             bar.rectTransform.anchorMin = bar.rectTransform.anchorMax = new Vector2(x, 0);
@@ -832,8 +1114,7 @@ namespace MotoManager.App.UI
                 var b = Button("Button", row, buttons[i].Key, buttons[i].Value, buttons[i].Color, Theme.FontSmall + 2);
                 var label = b.GetComponentInChildren<Text>();
                 if (buttons[i].Primary || buttons[i].Selected) label.color = Theme.OnColor(buttons[i].Color);
-                if (buttons[i].Primary) label.fontStyle = FontStyle.BoldAndItalic;
-                else if (buttons[i].Selected) label.fontStyle = FontStyle.Bold;
+                Style(label, FontStyle.Bold);
                 Place((RectTransform)b.transform, (float)i / buttons.Length, 0, (float)(i + 1) / buttons.Length, 1, 4);
             }
         }
@@ -862,8 +1143,10 @@ namespace MotoManager.App.UI
             var l = Label("Label", row, label, Theme.FontSmall, TextAnchor.MiddleLeft, Theme.TextDim);
             Place(l.rectTransform, 0, 0, 0.3f, 1);
             l.rectTransform.offsetMin = new Vector2(8, 0);
-            // Recessed field: darker than the card, with a thin accent rule at the bottom like a form on a pit-wall screen.
-            var box = Panel("Input", row, new Color(0, 0, 0, 0.45f), true);
+            // Recessed field: darker than the card, a 1-unit edge and a thin team-colour rule at the bottom.
+            var box = Panel("Input", row, Theme.Alpha(Theme.Ink, 0.55f));
+            Surface(box);
+            box.gameObject.AddComponent<Outline>().effectColor = Theme.Edge;
             var focus = Decor("Rule", box.transform, Theme.Alpha(Theme.CurrentAccent, 0.8f));
             focus.rectTransform.anchorMin = new Vector2(0, 0);
             focus.rectTransform.anchorMax = new Vector2(1, 0);

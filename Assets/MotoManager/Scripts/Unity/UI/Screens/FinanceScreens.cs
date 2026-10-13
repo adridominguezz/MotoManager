@@ -48,7 +48,6 @@ namespace MotoManager.App.UI.Screens
             var body = Ui.Tile(area, Loc.T("ux.fin.cash"), null, null, 0, null, ScreenKit.Info(Loc.T("ux.fin.cash"), Loc.T("ux.fin.cashInfo")));
             var v = ScreenKit.At(body, 0, 0.5f, 1, 1, MathX.FormatMoney(cash), Theme.TextDisplay, TextAnchor.MiddleCenter,
                 cash < 0 ? Theme.Bad : Theme.Text, FontStyle.BoldAndItalic);
-            UiFactory.DropShadow(v, 0.4f, 2);
             ScreenKit.At(body, 0, 0.36f, 1, 0.5f, Theme.Caps(Loc.T("ux.fin.cashCaption")), Theme.TextCaption, TextAnchor.MiddleCenter, Theme.TextDim, FontStyle.Bold);
 
             // One sentence on where the season is heading.

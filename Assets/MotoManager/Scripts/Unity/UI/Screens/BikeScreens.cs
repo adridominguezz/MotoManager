@@ -127,7 +127,6 @@ namespace MotoManager.App.UI.Screens
             float subH = string.IsNullOrEmpty(sub) ? 0 : 0.22f;
             At(area, 0, 0.74f, 1, 1, Theme.Caps(caption), Theme.TextCaption, TextAnchor.MiddleCenter, Color.Lerp(Theme.TextDim, Color.white, 0.2f), FontStyle.Bold);
             var v = At(area, 0, subH, 1, 0.74f, value, size, TextAnchor.MiddleCenter, color ?? Theme.Text, FontStyle.BoldAndItalic);
-            UiFactory.DropShadow(v, 0.4f, 2);
             if (subH > 0) At(area, 0, 0, 1, subH, Theme.Caps(sub), Theme.TextCaption, TextAnchor.MiddleCenter, Theme.TextDim, FontStyle.Bold);
         }
 
@@ -370,7 +369,6 @@ namespace MotoManager.App.UI.Screens
             double best = grid.Count > 0 ? grid[0].Value : level;
             ScreenKit.At(body, 0, 0.78f, 0.44f, 1, Theme.Caps(Loc.T("ux.dev.avgLevel")), Theme.TextCaption, TextAnchor.MiddleCenter, Theme.TextDim, FontStyle.Bold);
             var v = ScreenKit.At(body, 0, 0.2f, 0.44f, 0.8f, level.ToString("0"), Theme.TextDisplay, TextAnchor.MiddleCenter, Ui.RatingColor(level), FontStyle.BoldAndItalic);
-            UiFactory.DropShadow(v, 0.4f, 2);
             string gap = rank == 1 ? Theme.GoodText(Theme.Caps(Loc.T("ux.dev.best")))
                 : Theme.Caps(Loc.T("ux.dev.gap", (best - level).ToString("0.#", Loc.Culture)));
             ScreenKit.At(body, 0, 0, 0.44f, 0.2f, gap, Theme.TextCaption, TextAnchor.MiddleCenter, Theme.TextDim, FontStyle.Bold);
@@ -671,12 +669,11 @@ namespace MotoManager.App.UI.Screens
                 string label = Theme.Caps(TierName(templates[i]));
                 var b = UiFactory.Button("Tier", card.transform, busy ? Theme.GoodText(label) : label,
                     () => { _tier = idx; Shell.Refresh(); }, on ? Theme.CurrentAccent : Color.Lerp(Theme.Panel, Theme.PanelLight, 0.55f), Theme.TextCaption);
-                UiFactory.Slant(b.image, 2.6f);
                 UiFactory.Place((RectTransform)b.transform, (float)i / templates.Count, 0.7f, (float)(i + 1) / templates.Count, 1, 2);
                 var lbl = b.GetComponentInChildren<Text>();
                 lbl.supportRichText = true;
                 Ui.Fit(lbl, Theme.TextCaption);
-                lbl.fontStyle = on ? FontStyle.BoldAndItalic : FontStyle.Bold;
+                UiFactory.Style(lbl, FontStyle.Bold);
                 lbl.color = on ? Theme.OnAccent : Color.Lerp(Theme.TextDim, Color.white, 0.2f);
             }
             double reach = Math.Min(100, level + gain);

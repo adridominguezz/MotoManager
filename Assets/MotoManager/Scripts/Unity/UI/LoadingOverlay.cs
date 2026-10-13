@@ -64,7 +64,7 @@ namespace MotoManager.App.UI
                 ColorUtility.ToHtmlStringRGB(Theme.Accent) + "><b>MANAGER</b></color>",
                 Theme.FontLarge, TextAnchor.MiddleLeft, Theme.Text);
             title.supportRichText = true;
-            title.fontStyle = FontStyle.Italic;
+            UiFactory.Style(title, FontStyle.Italic);
             var lift = UiFactory.DropShadow(title, 0.6f, 4);
             lift.effectDistance = new Vector2(3, -4);
             UiFactory.Place(title.rectTransform, 0.06f, 0.35f, 0.66f, 0.85f);
@@ -83,11 +83,11 @@ namespace MotoManager.App.UI
             rim.rectTransform.offsetMin = new Vector2(0, -3);
             rim.rectTransform.offsetMax = Vector2.zero;
             _message = UiFactory.Label("Message", bar.transform, "", Theme.FontNormal, TextAnchor.MiddleCenter, Color.white);
-            _message.fontStyle = FontStyle.BoldAndItalic;
+            UiFactory.Style(_message, FontStyle.BoldAndItalic);
             UiFactory.Place(_message.rectTransform, 0.1f, 0.45f, 0.82f, 0.95f);
             // The percentage in timing-screen yellow.
             _percent = UiFactory.Label("Percent", bar.transform, "", Theme.FontNormal, TextAnchor.MiddleRight, Theme.Timing);
-            _percent.fontStyle = FontStyle.BoldAndItalic;
+            UiFactory.Style(_percent, FontStyle.BoldAndItalic);
             UiFactory.Place(_percent.rectTransform, 0.82f, 0.45f, 0.95f, 0.95f);
             var back = UiFactory.Panel("Track", bar.transform, new Color(1, 1, 1, 0.1f));
             UiFactory.Place(back.rectTransform, 0.05f, 0.28f, 0.95f, 0.36f);

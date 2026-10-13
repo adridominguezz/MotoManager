@@ -200,7 +200,6 @@ namespace MotoManager.App.UI
             first.rectTransform.offsetMin = new Vector2(120, 0);
             first.rectTransform.offsetMax = new Vector2(-150, 0);
             var last = RaceUi.Label(head, Theme.Caps(e.Rider.LastName), Theme.FontLarge, TextAnchor.UpperLeft, Theme.Text, FontStyle.BoldAndItalic);
-            UiFactory.DropShadow(last, 0.4f, 2);
             UiFactory.Stretch(last.rectTransform);
             last.rectTransform.anchorMax = new Vector2(1, 0.6f);
             last.rectTransform.offsetMin = new Vector2(120, 0);

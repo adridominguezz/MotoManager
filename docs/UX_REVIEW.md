@@ -62,6 +62,9 @@ Keep `FontSmall/Normal/Large/Title` as aliases (22/28/40/56) for compatibility, 
 
 ### 1.4 Colour roles (keep our palette)
 
+> **Superseded for visual values by [VISUAL_STYLE.md](VISUAL_STYLE.md)** (palette, fonts, shapes, button states). Main
+> change: the primary CTA fill is now race red (`Theme.Action`); the team colour stays the identity accent.
+
 | Role | Value | Rule |
 |---|---|---|
 | Background | `Theme.Background` #0A0B0E + carbon weave | unchanged |
