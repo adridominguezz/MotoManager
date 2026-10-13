@@ -9,10 +9,10 @@ using UnityEngine.UI;
 namespace MotoManager.App.UI.Screens
 {
     /// <summary>
-    /// Standings (UX spec §3.17, MM4 §1.7): the table segmented (underline in the championship colour), then a
-    /// timing-tower list at full width: a band in the championship's own colour with "‹ CATEGORY · TABLE ›" (the arrows
-    /// go over every simulated category, managed or not; the name opens the whole list) and the round on the right,
-    /// column captions (# | name | team | wins | points) and tall rows with big bold text. The player's row is lit in the accent and
+    /// Standings (UX spec §3.17, MM4 §1.7): first the championship navigator, a band in the championship's own colour
+    /// with "‹ CATEGORY ›" (the arrows go over every simulated category, managed or not; the name opens the whole list)
+    /// and the round on the right; then the table segmented (underline in the championship colour); then a timing-tower
+    /// list at full width under a thin strip of the same colour: column captions (# | name | team | wins | points) and tall rows with big bold text. The player's row is lit in the accent and
     /// pinned under the list whenever it is out of view. A rider or maker row opens a sheet with points, wins, podiums
     /// and poles (a rider's has VER EQUIPO); a team row opens the team sheet (<see cref="TeamSheet"/>). EVOLUCIÓN shows
     /// the points chart.
@@ -46,26 +46,30 @@ namespace MotoManager.App.UI.Screens
             var items = ChampNav.Wrap(cats);
             Action<int> pick = i => { _category = cats[i].Id; Shell.Refresh(); };
             Color champColor = ChampNav.ColorOf(cats[sel]);
-            var tabs = Wp4Ui.ListIn(Wp4Ui.TopStrip(content, Ui.Grid.Hit), 0);
-            Ui.Segmented(tabs, new[] { Loc.T("standings.riders"), Loc.T("standings.teams"), Loc.T("standings.makers"), Loc.T("standings.evolution") },
-                _table, i => { _table = i; Shell.Refresh(); });
-            ChampNav.TintTabs(tabs, champColor);
-            var area = Wp4Ui.Below(content, Ui.Grid.Hit + Ui.Grid.Gap);
-
             var category = cats[sel];
             string catName = category.ShortName;
             string tableName = _table == 0 ? Loc.T("standings.riders") : _table == 1 ? Loc.T("standings.teams") : _table == 2 ? Loc.T("standings.makers") : Loc.T("standings.evolution");
             ChampionshipState champ;
             world.Championships.TryGetValue(_category, out champ);
             string round = Loc.T("home.round", champ != null ? champ.Rounds.Count : 0, Game.RoundsInSeason(_category));
-            if (champ == null || _table == 3)
+
+            // First row: the championship navigator "‹ MOTOGP ›  Ronda 2/22" in the championship colour; then the tabs.
+            var band = Ui.Band(Wp4Ui.ListIn(Wp4Ui.TopStrip(content, 56), 0), catName, round, 56);
+            ChampNav.Navigate(band, champColor, items, sel, pick);
+            var rest = Wp4Ui.Below(content, 56 + Ui.Grid.Gap);
+            var tabs = Wp4Ui.ListIn(Wp4Ui.TopStrip(rest, Ui.Grid.Hit), 0);
+            Ui.Segmented(tabs, new[] { Loc.T("standings.riders"), Loc.T("standings.teams"), Loc.T("standings.makers"), Loc.T("standings.evolution") },
+                _table, i => { _table = i; Shell.Refresh(); });
+            ChampNav.TintTabs(tabs, champColor);
+            var area = Wp4Ui.Below(rest, Ui.Grid.Hit + Ui.Grid.Gap);
+            if (champ == null)
             {
-                // No table band here: a band of our own carries the navigator, the content goes under it.
-                var band = Ui.Band(Wp4Ui.ListIn(Wp4Ui.TopStrip(area, 56), 0), champ == null ? catName : catName + "  ·  " + tableName, round, 56);
-                ChampNav.Navigate(band, champColor, items, sel, pick);
-                var below = Wp4Ui.Below(area, 56 + Ui.Grid.Gap);
-                if (champ == null) Ui.Empty(Wp4Ui.ListIn(below), UiIcons.Trophy, Loc.T("ux.standings.none"));
-                else Evolution(below, world, champ);
+                Ui.Empty(Wp4Ui.ListIn(area), UiIcons.Trophy, Loc.T("ux.standings.none"));
+                return;
+            }
+            if (_table == 3)
+            {
+                Evolution(area, world, champ);
                 return;
             }
             var player = world.PlayerTeam;
@@ -76,7 +80,7 @@ namespace MotoManager.App.UI.Screens
                 var widths = new[] { 1f, 5f, 3.4f, 1.2f, 1.6f };
                 var table = Wp4Ui.Table(area, catName + "  ·  " + tableName, round, widths,
                     new[] { "#", Loc.T("col.rider"), Loc.T("col.team"), Loc.T("ux.standings.wins"), Loc.T("ux.standings.pts") }, RowHeight, true);
-                ChampNav.Navigate(ChampNav.BandOf(table), champColor, items, sel, pick);
+                ChampNav.Slim(table, champColor);
                 var rows = champ.SortedRiders();
                 string[] pinned = null;
                 Action pinTap = null;
@@ -106,7 +110,7 @@ namespace MotoManager.App.UI.Screens
                 var widths = new[] { 1f, 8.4f, 1.2f, 1.6f };
                 var table = Wp4Ui.Table(area, catName + "  ·  " + tableName, round, widths,
                     new[] { "#", _table == 1 ? Loc.T("col.team") : Loc.T("col.maker"), Loc.T("ux.standings.wins"), Loc.T("ux.standings.pts") }, RowHeight, true);
-                ChampNav.Navigate(ChampNav.BandOf(table), champColor, items, sel, pick);
+                ChampNav.Slim(table, champColor);
                 string[] pinned = null;
                 Action pinTap = null;
                 for (int i = 0; i < rows.Count; i++)
@@ -251,12 +255,18 @@ namespace MotoManager.App.UI.Screens
                 else if (nextRow < 0) nextRow = rounds.Count;
                 rounds.Add(i);
             }
+            // First row: the championship navigator (with the "i"); then the rounds under a slim strip of the same colour.
+            Color champColor = item.Cat != null ? ChampNav.ColorOf(item.Cat) : Theme.Steel;
+            string title = item.Cat != null ? item.Cat.ShortName : item.Name;
+            string roundText = Loc.T("home.round", Mathf.Min(done + 1, rounds.Count), rounds.Count);
+            var band = Ui.Band(Wp4Ui.ListIn(Wp4Ui.TopStrip(content, 56), 0), title, roundText, 56);
+            Ui.InfoButton(band, Loc.T("tab.calendar"), Loc.T("ux.mm4b.calendarInfo"));
+            ChampNav.Navigate(band, champColor, items, sel, i => { _entry = items[i].Id; Shell.Refresh(); });
+            area = Wp4Ui.Below(content, 56 + Ui.Grid.Gap);
             var widths = new[] { 1f, 1.6f, 6f, 4f };
-            var table = Wp4Ui.Table(area, item.Cat != null ? item.Cat.ShortName : item.Name, Loc.T("home.round", Mathf.Min(done + 1, rounds.Count), rounds.Count), widths,
-                new[] { "R", Loc.T("col.date"), Loc.T("ux.calendar.event"), Loc.T("ux.calendar.winner") }, RowHeight, false,
-                Loc.T("tab.calendar"), Loc.T("ux.mm4b.calendarInfo"));
-            ChampNav.Navigate(ChampNav.BandOf(table), item.Cat != null ? ChampNav.ColorOf(item.Cat) : Theme.Steel, items, sel,
-                i => { _entry = items[i].Id; Shell.Refresh(); });
+            var table = Wp4Ui.Table(area, title, roundText, widths,
+                new[] { "R", Loc.T("col.date"), Loc.T("ux.calendar.event"), Loc.T("ux.calendar.winner") }, RowHeight, false);
+            ChampNav.Slim(table, champColor);
             for (int k = 0; k < rounds.Count; k++)
             {
                 int i = rounds[k];
@@ -503,6 +513,26 @@ namespace MotoManager.App.UI.Screens
         {
             var top = table.Area.Find("Top");
             return top != null && top.childCount > 0 ? top.GetChild(0) as RectTransform : null;
+        }
+
+        /// <summary>
+        /// Shrinks a <see cref="Wp4Ui.Table"/>'s title band to a thin strip in <paramref name="color"/> (the navigator
+        /// above already names the championship and round), so the table opens with its column captions.
+        /// </summary>
+        public static void Slim(Wp4Table table, Color color, float strip = 6)
+        {
+            var band = BandOf(table);
+            if (band == null) return;
+            foreach (Transform child in band) child.gameObject.SetActive(false);
+            var bg = band.GetComponent<Image>();
+            if (bg != null) bg.color = color;
+            var le = band.GetComponent<LayoutElement>();
+            if (le != null) le.preferredHeight = le.minHeight = strip;
+            const float captions = 40;
+            var top = table.Area.Find("Top") as RectTransform;
+            if (top != null) top.offsetMin = new Vector2(top.offsetMin.x, -(strip + captions));
+            var rest = table.Area.Find("Rest") as RectTransform;
+            if (rest != null) rest.offsetMax = new Vector2(rest.offsetMax.x, -(strip + captions + 2));
         }
 
         /// <summary>The selected tab's underline in the championship colour (made readable on the dark page).</summary>
