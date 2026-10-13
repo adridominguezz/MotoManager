@@ -7,6 +7,7 @@ using MotoManager.Core.Race;
 using MotoManager.Core.Season;
 using MotoManager.Core.World;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace MotoManager.App.UI
 {
@@ -142,8 +143,9 @@ namespace MotoManager.App.UI
         private EventDigest _d;
         private Action _done;
         private RectTransform _area;
-        private RectTransform _tabList;
+        private RectTransform _tabs;
         private int _tab;
+        private readonly List<SessionResult> _sessions = new List<SessionResult>();
 
         public static void Show(EventDigest digest, Action done)
         {
@@ -151,28 +153,26 @@ namespace MotoManager.App.UI
             var p = canvas.gameObject.AddComponent<EventSummaryPanel>();
             p._d = digest;
             p._done = done;
-            p.Build(UiFactory.SafeRoot(canvas, Theme.Background));
+            var root = UiFactory.SafeRoot(canvas, Theme.Background);
+            RaceUi.HostSheets(canvas.gameObject, root);
+            p.Build(root);
         }
 
         private void Build(RectTransform root)
         {
-            var bg = UiFactory.Panel("Background", root, Theme.Background);
-            UiFactory.Stretch(bg.rectTransform);
-            var title = UiFactory.Label("Title", root, "<b>" + Loc.T("summary.title", _d.EventName) + "</b>", Theme.FontLarge, TextAnchor.MiddleLeft, Theme.Text);
-            title.supportRichText = true;
-            UiFactory.Place(title.rectTransform, 0.02f, 0.9f, 0.7f, 0.99f);
-            var sub = UiFactory.Label("Sub", root, _d.CategoryName + " · " + _d.CircuitName, Theme.FontSmall, TextAnchor.MiddleRight, Theme.TextDim);
-            UiFactory.Place(sub.rectTransform, 0.6f, 0.9f, 0.98f, 0.99f);
+            RaceUi.Backdrop(root);
+            RectTransform none;
+            RaceUi.TopBar(root, Loc.T("summary.title", _d.EventName), _d.CategoryName + " · " + _d.CircuitName, 0, out none);
+            foreach (var ss in _d.Sessions)
+                if (ss.Type != SessionType.Practice && ss.Type != SessionType.WarmUp) _sessions.Add(ss);
 
-            var tabs = UiFactory.Rect("Tabs", root);
-            UiFactory.Place(tabs, 0.02f, 0.8f, 0.98f, 0.89f);
-            _tabList = UiFactory.ScrollList("TabRow", tabs, 0);
-            UiFactory.Stretch((RectTransform)_tabList.parent.parent);
+            _tabs = RaceUi.Content(root, RaceUi.BarH + 8, 0);
+            _tabs.anchorMin = new Vector2(0, 1);
+            _tabs.offsetMin = new Vector2(RaceUi.Pad, -RaceUi.BarH - 8 - Ui.Grid.Hit);
 
-            _area = UiFactory.Rect("Area", root);
-            UiFactory.Place(_area, 0.02f, 0.1f, 0.98f, 0.79f);
-            var cont = UiFactory.Button("Continue", root, Loc.T("post.continue"), Close, Theme.Accent);
-            UiFactory.Place((RectTransform)cont.transform, 0.76f, 0.015f, 0.98f, 0.085f, 3);
+            _area = RaceUi.Content(root, RaceUi.BarH + 8 + Ui.Grid.Hit + 8, RaceUi.BarH + 16);
+            var bottom = RaceUi.BottomBar(root);
+            Ui.PrimaryCTA(RaceUi.RightSlot(bottom, 380, 0, 0), Loc.T("post.continue"), Close);
             Render();
         }
 
@@ -182,68 +182,113 @@ namespace MotoManager.App.UI
             if (_done != null) _done();
         }
 
+        /// <summary>Tab labels: the team, each session (not practice), the gaps chart.</summary>
+        private List<string> TabNames()
+        {
+            var names = new List<string> { Loc.T("summary.tab.team") };
+            foreach (var ss in _sessions) names.Add(Loc.Or("session." + ss.SessionName, ss.SessionName));
+            if (_d.Gaps != null) names.Add(Loc.T("post.tab.gaps"));
+            return names;
+        }
+
         private void Render()
         {
-            // Tabs are rebuilt too, so the selected one shows.
-            UiFactory.Clear(_tabList);
-            var names = new List<string> { Loc.T("summary.tab.team") };
-            foreach (var ss in _d.Sessions)
-                if (ss.Type != SessionType.Practice && ss.Type != SessionType.WarmUp) names.Add(Loc.Or("session." + ss.SessionName, ss.SessionName));
-            if (_d.Gaps != null) names.Add(Loc.T("post.tab.gaps"));
-            Ui.Chips(_tabList, names, _tab, i => { _tab = i; Render(); }, 56);
-            UiFactory.Clear(_area);
-            var list = UiFactory.ScrollList("Summary", _area);
-            UiFactory.Stretch((RectTransform)list.parent.parent);
-            int sessionTabs = 0;
-            foreach (var ss in _d.Sessions) if (ss.Type != SessionType.Practice && ss.Type != SessionType.WarmUp) sessionTabs++;
-            if (_tab == 0) TeamPage(list);
-            else if (_d.Gaps != null && _tab == sessionTabs + 1)
+            Ui.CloseSheet();
+            // Tabs are rebuilt too, so the selected one shows. More than five: the team segment plus a picker.
+            UiFactory.Clear(_tabs);
+            var names = TabNames();
+            if (names.Count <= 5)
             {
-                var card = Ui.Card(list, Loc.T("post.gaps"), Loc.T("post.gapsSub"));
-                Charts.LineChart(card, 330, _d.Gaps, true, v => "+" + v.ToString("0.0", Loc.Culture), Loc.T("post.gapStart"), Loc.T("post.gapLap", _d.GapLaps));
+                var holder = UiFactory.Rect("Tabs", _tabs);
+                UiFactory.Stretch(holder);
+                var v = holder.gameObject.AddComponent<VerticalLayoutGroup>();
+                v.childControlHeight = true;
+                v.childControlWidth = true;
+                v.childForceExpandWidth = true;
+                Ui.Segmented(holder, names, _tab, i => { _tab = i; Render(); });
             }
             else
             {
-                int k = 0;
-                foreach (var s in _d.Sessions)
-                {
-                    if (s.Type == SessionType.Practice || s.Type == SessionType.WarmUp) continue;
-                    if (++k == _tab) SessionPage(list, s);
-                }
+                var segArea = UiFactory.Rect("Team", _tabs);
+                UiFactory.Place(segArea, 0, 0, 0.3f, 1);
+                var v = segArea.gameObject.AddComponent<VerticalLayoutGroup>();
+                v.childControlHeight = true;
+                v.childControlWidth = true;
+                v.childForceExpandWidth = true;
+                Ui.Segmented(segArea, new[] { names[0] }, _tab == 0 ? 0 : -1, i => { _tab = 0; Render(); });
+                var pickArea = UiFactory.Rect("Sessions", _tabs);
+                UiFactory.Place(pickArea, 0.31f, 0, 0.62f, 1);
+                var rest = names.GetRange(1, names.Count - 1);
+                Ui.Picker(pickArea, Loc.T("ux.race.session"), rest, _tab - 1, i => { _tab = i + 1; Render(); });
             }
+
+            UiFactory.Clear(_area);
+            var list = UiFactory.ScrollList("Summary", _area);
+            UiFactory.Stretch((RectTransform)list.parent.parent);
+            if (_tab == 0) TeamPage(list);
+            else if (_d.Gaps != null && _tab == _sessions.Count + 1) PostRacePanel.GapCard(list, _d.Gaps, _d.GapLaps, 330);
+            else if (_tab - 1 < _sessions.Count) SessionPage(list, _sessions[_tab - 1]);
+        }
+
+        private static string Analysis(AnalysisItem it)
+        {
+            return Loc.T("analysis." + it.Code + (it.Strength ? "+" : "-"), Math.Abs(it.Value));
         }
 
         private void TeamPage(RectTransform list)
         {
             if (_d.Riders.Count == 0)
             {
-                Ui.Note(Ui.Card(list, _d.TeamName), Loc.T("summary.noRiders"));
+                Ui.Empty(Ui.Card(list, _d.TeamName), UiIcons.Team, Loc.T("summary.noRiders"));
                 return;
             }
             RectTransform left, right;
             Ui.Columns(list, out left, out right);
             foreach (var r in _d.Riders)
             {
-                var card = Ui.Card(left, r.Name);
+                var rd = r;
+                var rep = r.Report;
+                Action info = null;
+                if (rep != null && rep.Strengths.Count + rep.Weaknesses.Count > 0)
+                    info = () => Ui.Sheet(rd.Name, l =>
+                    {
+                        UiFactory.Paragraph(l, "<b>" + Theme.Caps(Loc.T("post.strengths")) + "</b>", Theme.TextCaption);
+                        foreach (var it in rep.Strengths) UiFactory.Paragraph(l, Theme.GoodText("<b>+</b>") + "  " + Analysis(it), Theme.TextBody);
+                        UiFactory.Paragraph(l, "<b>" + Theme.Caps(Loc.T("post.weaknesses")) + "</b>", Theme.TextCaption);
+                        foreach (var it in rep.Weaknesses) UiFactory.Paragraph(l, Theme.BadText("<b>-</b>") + "  " + Analysis(it), Theme.TextBody);
+                    });
+                var card = Ui.Card(left, r.Name, null, info);
+                // Qualifying, the races merged into one figure ("P5 / P3"), points.
                 var kpis = new List<string[]> { Ui.Kpi(r.Qualifying > 0 ? "P" + r.Qualifying : "-", Loc.T("summary.k.quali")) };
-                foreach (var res in r.Results) kpis.Add(Ui.Kpi(res.Value, res.Key));
+                if (r.Results.Count > 0)
+                {
+                    var values = new List<string>();
+                    var captions = new List<string>();
+                    foreach (var res in r.Results)
+                    {
+                        values.Add(res.Value);
+                        captions.Add(res.Key);
+                    }
+                    kpis.Add(Ui.Kpi(string.Join(" / ", values.ToArray()), string.Join(" / ", captions.ToArray())));
+                }
                 kpis.Add(Ui.Kpi(r.Points.ToString("0"), Loc.T("post.k.points")));
                 Ui.Kpis(card, kpis.ToArray());
                 Ui.Line(card, Loc.T("summary.championship"), Move(r.ChampBefore, r.ChampAfter));
-                if (r.Report != null)
+                if (rep != null)
                 {
-                    var rep = r.Report;
-                    string gained = rep.PositionsGained > 0 ? Theme.GoodText("+" + rep.PositionsGained) : rep.PositionsGained < 0 ? Theme.BadText(rep.PositionsGained.ToString()) : "=";
-                    Ui.Line(card, Loc.T("post.k.gained"), gained);
                     Ui.Line(card, Loc.T("post.k.bestLap"), rep.BestLap > 0 ? MathX.FormatLapTime(rep.BestLap) : "-");
                     Ui.Line(card, Loc.T("post.k.passes"), rep.Overtakes + " / " + rep.TimesPassed);
-                    foreach (var it in rep.Strengths)
-                        UiFactory.Paragraph(card, Theme.GoodText("<b>+</b>") + "  " + Loc.T("analysis." + it.Code + "+", Math.Abs(it.Value)), Theme.FontSmall - 2);
-                    foreach (var it in rep.Weaknesses)
-                        UiFactory.Paragraph(card, Theme.BadText("<b>–</b>") + "  " + Loc.T("analysis." + it.Code + "-", Math.Abs(it.Value)), Theme.FontSmall - 2);
+                    Ui.Line(card, Loc.T("post.k.gained"), Theme.Signed(rep.PositionsGained));
+                    // One strength and one weakness in view; the rest behind the card's info button.
+                    if (rep.Strengths.Count > 0) UiFactory.Paragraph(card, Theme.GoodText("<b>+</b>") + "  " + Analysis(rep.Strengths[0]), Theme.TextBody);
+                    if (rep.Weaknesses.Count > 0) UiFactory.Paragraph(card, Theme.BadText("<b>-</b>") + "  " + Analysis(rep.Weaknesses[0]), Theme.TextBody);
                 }
             }
-            var team = Ui.Card(right, _d.TeamName);
+            var team = Ui.Card(right, _d.TeamName, null, () => Ui.Sheet(_d.TeamName, l =>
+            {
+                UiFactory.Paragraph(l, Loc.T("summary.moneyNote"), Theme.TextBody);
+                UiFactory.Paragraph(l, Loc.T("summary.watchNext"), Theme.TextBody);
+            }));
             double pts = 0;
             foreach (var r in _d.Riders) pts += r.Points;
             Ui.Kpis(team,
@@ -251,42 +296,44 @@ namespace MotoManager.App.UI
                 Ui.Kpi(_d.TeamAfter > 0 ? "P" + _d.TeamAfter : "-", Loc.T("summary.teamChamp")),
                 Ui.Kpi(Theme.Money(_d.CashAfter - _d.CashBefore), Loc.T("summary.money")));
             Ui.Line(team, Loc.T("summary.teamChamp"), Move(_d.TeamBefore, _d.TeamAfter));
-            Ui.Note(team, Loc.T("summary.moneyNote"));
-            Ui.Note(team, Loc.T("summary.watchNext"));
         }
 
+        /// <summary>"P6  +2" (green when up, red when down), "P6" when unchanged, "-" without a position.</summary>
         private static string Move(int before, int after)
         {
             if (after <= 0) return "-";
             string now = "<b>P" + after + "</b>";
             if (before <= 0 || before == after) return now;
-            return now + "  " + (after < before ? Theme.GoodText("▲" + (before - after)) : Theme.BadText("▼" + (after - before)));
+            return Theme.Dim("P" + before + "  >  ") + now + "  " + Theme.Signed(before - after);
         }
 
+        /// <summary>A session as list rows: races P | rider | grid | gap | pts; others P | rider | best | gap.</summary>
         private void SessionPage(RectTransform list, SessionResult s)
         {
             var card = Ui.Card(list, Loc.Or("session." + s.SessionName, s.SessionName), s.WeatherSummary);
             bool race = s.Type == SessionType.Race || s.Type == SessionType.Sprint;
-            var w = race ? new[] { 0.8f, 3.4f, 3f, 1f, 2f, 1f } : new[] { 0.8f, 3.4f, 3f, 2f, 2f, 0.1f };
-            UiFactory.TableRow(card, 34, w, race
-                ? new[] { Loc.T("summary.col.pos"), Loc.T("col.rider"), Loc.T("col.team"), Loc.T("summary.col.grid"), Loc.T("summary.col.gap"), Loc.T("summary.col.pts") }
-                : new[] { Loc.T("summary.col.pos"), Loc.T("col.rider"), Loc.T("col.team"), Loc.T("post.k.bestLap"), Loc.T("summary.col.gap"), "" }, true);
+            var w = race ? new[] { 1f, 5f, 1.4f, 2.4f, 1.2f } : new[] { 1f, 5f, 2.4f, 2.4f };
+            Ui.ListCaptions(card, w, race
+                ? new[] { Loc.T("summary.col.pos"), Loc.T("col.rider"), Loc.T("summary.col.grid"), Loc.T("summary.col.gap"), Loc.T("summary.col.pts") }
+                : new[] { Loc.T("summary.col.pos"), Loc.T("col.rider"), Loc.T("post.k.bestLap"), Loc.T("summary.col.gap") });
             var world = GameSession.Instance != null && GameSession.Instance.Game != null ? GameSession.Instance.Game.World : null;
             double pole = 0;
             foreach (var e in s.Classification) if (e.BestLap > 0 && (pole == 0 || e.BestLap < pole)) pole = e.BestLap;
+            int index = 0;
             foreach (var e in s.Classification)
             {
                 bool mine = _d.Find(e.RiderId) != null;
                 var rider = world != null ? world.GetRider(e.RiderId) : null;
                 var team = world != null ? world.GetTeam(e.TeamId) : null;
-                string name = rider != null ? rider.FullName : e.RiderId;
+                string name = Theme.Caps(rider != null ? rider.FullName : e.RiderId);
                 string gap;
-                if (race) gap = e.Status != ResultStatus.Finished ? Theme.BadText(Loc.T("result." + e.Status)) : e.Position == 1 ? MathX.FormatLapTime(e.TotalTime) : "+" + MathX.FormatGap(e.GapToWinner);
+                if (race) gap = e.Status != ResultStatus.Finished ? Theme.BadText(Theme.Caps(Loc.T("result." + e.Status))) : e.Position == 1 ? MathX.FormatLapTime(e.TotalTime) : MathX.FormatGap(e.GapToWinner);
                 else gap = e.BestLap > 0 && pole > 0 && e.BestLap > pole ? "+" + (e.BestLap - pole).ToString("0.000", Loc.Culture) : "";
                 var cells = race
-                    ? new[] { e.Status == ResultStatus.Finished ? e.Position.ToString() : "-", name, team != null ? team.Name : "", e.GridPosition > 0 ? e.GridPosition.ToString() : "", gap, e.Points > 0 ? e.Points.ToString("0") : "" }
-                    : new[] { e.Position.ToString(), name, team != null ? team.Name : "", e.BestLap > 0 ? MathX.FormatLapTime(e.BestLap) : "-", gap, "" };
-                UiFactory.TableRow(card, 34, w, cells, false, mine ? Theme.Alpha(Theme.Timing, 0.16f) : (Color?)null);
+                    ? new[] { e.Status == ResultStatus.Finished ? e.Position.ToString() : "-", name, e.GridPosition > 0 ? e.GridPosition.ToString() : "", gap, e.Points > 0 ? "<b>" + e.Points.ToString("0") + "</b>" : "" }
+                    : new[] { e.Position.ToString(), name, e.BestLap > 0 ? MathX.FormatLapTime(e.BestLap) : "-", Theme.Dim(gap) };
+                var row = Ui.ListRow(card, w, cells, index++, mine, null, 56);
+                RaceUi.TeamBar(row, w, RaceUi.TeamColor(team != null ? team.Colors.Primary : null));
             }
         }
     }

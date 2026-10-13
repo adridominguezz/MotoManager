@@ -1,65 +1,99 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
 using MotoManager.Core.Common;
 using MotoManager.Core.Data;
 using MotoManager.Core.Race;
 using MotoManager.Core.World;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace MotoManager.App.UI
 {
     /// <summary>
-    /// Post-race screen: full classification (time, gap, best lap, positions gained, tyres, overtakes, points,
-    /// penalties, retirements) and, for the player's riders, "Why did we perform like this?" built from the
-    /// race analysis plus best sectors and the circuit profile.
+    /// Post-race screen: the podium, the full classification (time, gap, best lap, positions gained, points,
+    /// penalties, retirements), the gaps chart and, for the player's riders, "Why did we perform like this?" built
+    /// from the race analysis plus best sectors.
     /// </summary>
     public static class PostRacePanel
     {
         private static int _tab;
+        private static int _riderPick;
+        private const int MaxRiderTabs = 2;
 
         public static RectTransform Build(RaceSimulation sim, RectTransform root, Action onReplay, Action onContinue)
         {
-            var panel = UiFactory.Panel("PostRace", root, new Color(0.035f, 0.038f, 0.047f, 0.97f), true);
+            var panel = UiFactory.Panel("PostRace", root, Theme.Alpha(Theme.Background, 0.97f));
             var rt = panel.rectTransform;
-            UiFactory.Place(rt, 0.02f, 0.03f, 0.98f, 0.97f);
+            UiFactory.Stretch(rt);
             _tab = 0;
+            _riderPick = 0;
             Render(sim, rt, onReplay, onContinue);
             return rt;
         }
 
-        /// <summary>Tabs: the classification, then one page per player rider with the "why" of the result.</summary>
+        /// <summary>Tabs: podium, classification, gaps, then one page per player rider with the "why" of the result.</summary>
         private static void Render(RaceSimulation sim, RectTransform rt, Action onReplay, Action onContinue)
         {
+            Ui.CloseSheet();
             UiFactory.Clear(rt);
-            var title = UiFactory.Label("Title", rt, Loc.T("post.title", Txt(sim.Config.SessionName)), Theme.FontLarge - 4, TextAnchor.MiddleLeft);
-            UiFactory.RaceTitle(title);
-            UiFactory.Place(title.rectTransform, 0.02f, 0.9f, 0.45f, 0.99f);
+            RectTransform none;
+            RaceUi.TopBar(rt, Loc.T("post.title", Txt(sim.Config.SessionName)), null, 0, out none);
 
             var players = new List<RiderRaceState>();
             foreach (var r in sim.Riders) if (r.Entry.IsPlayer) players.Add(r);
-            var labels = new List<string> { Loc.T("post.tab.classification"), Loc.T("post.tab.gaps") };
-            foreach (var r in players) labels.Add(r.Entry.Rider.ShortName);
-            float tw = Math.Min(0.16f, 0.52f / labels.Count);
-            for (int i = 0; i < labels.Count; i++)
+            var labels = new List<string> { Loc.T("ux.race.podium"), Loc.T("post.tab.classification"), Loc.T("post.tab.gaps") };
+            bool riderPicker = players.Count > MaxRiderTabs;
+            if (riderPicker) labels.Add(Loc.T("ux.race.riders"));
+            else foreach (var r in players) labels.Add(r.Entry.Rider.ShortName);
+            if (_tab >= labels.Count) _tab = 0;
+
+            var tabs = RaceUi.Content(rt, RaceUi.BarH + 8, 0);
+            tabs.anchorMin = new Vector2(0, 1);
+            tabs.offsetMin = new Vector2(RaceUi.Pad, -RaceUi.BarH - 8 - Ui.Grid.Hit);
+            var tabList = tabs.gameObject.AddComponent<VerticalLayoutGroup>();
+            tabList.childControlHeight = true;
+            tabList.childControlWidth = true;
+            tabList.childForceExpandWidth = true;
+            Ui.Segmented(tabs, labels, _tab, i => { _tab = i; Render(sim, rt, onReplay, onContinue); });
+
+            var area = RaceUi.Content(rt, RaceUi.BarH + 8 + Ui.Grid.Hit + 8, RaceUi.BarH + 16);
+            var points = PointsTable(sim);
+            switch (_tab)
             {
-                int idx = i;
-                var b = UiFactory.Button("Tab", rt, labels[i], () => { _tab = idx; Render(sim, rt, onReplay, onContinue); },
-                    i == _tab ? Theme.Accent : Theme.PanelLight, Theme.FontSmall);
-                UiFactory.Place((RectTransform)b.transform, 0.46f + i * tw, 0.905f, 0.46f + (i + 1) * tw, 0.98f, 3);
+                case 0: Podium(sim, area, players, points); break;
+                case 1: BuildClassification(sim, area, points); break;
+                case 2: GapChart(sim, area); break;
+                default:
+                    int idx = riderPicker ? Mathf.Clamp(_riderPick, 0, players.Count - 1) : _tab - 3;
+                    if (idx >= 0 && idx < players.Count)
+                    {
+                        if (riderPicker)
+                        {
+                            var names = new List<string>();
+                            foreach (var p in players) names.Add(p.Entry.Rider.FullName);
+                            var pick = UiFactory.Rect("Pick", area);
+                            pick.anchorMin = new Vector2(0, 1);
+                            pick.anchorMax = new Vector2(0.4f, 1);
+                            pick.pivot = new Vector2(0, 1);
+                            pick.offsetMin = new Vector2(0, -Ui.Grid.Hit);
+                            pick.offsetMax = Vector2.zero;
+                            Ui.Picker(pick, Loc.T("ux.race.riders"), names, idx, i => { _riderPick = i; Render(sim, rt, onReplay, onContinue); });
+                            var below = UiFactory.Rect("Page", area);
+                            UiFactory.Stretch(below);
+                            below.offsetMax = new Vector2(0, -Ui.Grid.Hit - 8);
+                            area = below;
+                        }
+                        RiderPage(sim, area, players[idx], points);
+                    }
+                    break;
             }
 
-            var area = UiFactory.Rect("Area", rt);
-            UiFactory.Place(area, 0.01f, 0.1f, 0.99f, 0.895f);
-            var points = PointsTable(sim);
-            if (_tab == 1) GapChart(sim, area);
-            else if (_tab == 0 || _tab - 1 > players.Count) BuildClassification(sim, area, points);
-            else RiderPage(sim, area, players[_tab - 2], points);
-
-            var replay = UiFactory.Button("Replay", rt, Loc.T("post.replay"), () => onReplay(), Theme.PanelLight);
-            UiFactory.Place((RectTransform)replay.transform, 0.52f, 0.015f, 0.74f, 0.085f, 3);
-            var cont = UiFactory.Button("Continue", rt, Loc.T("post.continue"), () => onContinue(), Theme.Accent);
-            UiFactory.Place((RectTransform)cont.transform, 0.76f, 0.015f, 0.98f, 0.085f, 3);
+            // Bottom right: the replay (secondary) and the one way on.
+            var bottom = RaceUi.BottomBar(rt);
+            var replayArea = RaceUi.RightSlot(bottom, 300, 380 + Ui.Grid.Gap, 4);
+            Ui.Secondary(replayArea, Loc.T("post.replay"), () => onReplay());
+            var contArea = RaceUi.RightSlot(bottom, 380, 0, 0);
+            Ui.PrimaryCTA(contArea, Loc.T("post.continue"), () => onContinue());
         }
 
         /// <summary>Series of the gap to the leader lap by lap (podium and the player's riders); null with too few laps.</summary>
@@ -109,26 +143,118 @@ namespace MotoManager.App.UI
             return series;
         }
 
+        /// <summary>The gaps chart in a card (explanation behind the info button); shared with the event summary.</summary>
+        public static void GapCard(Transform list, List<ChartSeries> series, int laps, float height)
+        {
+            var card = Ui.Card(list, Loc.T("post.gaps"), Loc.T("post.gapsSub"),
+                () => Ui.Sheet(Loc.T("post.gaps"), l => UiFactory.Paragraph(l, Loc.T("post.gapsNote"), Theme.TextBody)));
+            if (series == null)
+            {
+                Ui.Empty(card, null, Loc.T("post.gapsNone"));
+                return;
+            }
+            Charts.LineChart(card, height, series, true, v => "+" + v.ToString("0.0", Loc.Culture), Loc.T("post.gapStart"), Loc.T("post.gapLap", laps));
+        }
+
         /// <summary>Gap to the leader lap by lap: the podium and the player's riders.</summary>
         private static void GapChart(RaceSimulation sim, RectTransform area)
         {
             var list = UiFactory.ScrollList("Gaps", area);
             UiFactory.Stretch((RectTransform)list.parent.parent);
-            var card = Ui.Card(list, Loc.T("post.gaps"), Loc.T("post.gapsSub"));
             int laps;
             var series = GapSeries(sim, out laps);
-            if (series == null)
-            {
-                UiFactory.Paragraph(card, Theme.Dim(Loc.T("post.gapsNone")), Theme.FontSmall - 2);
-                return;
-            }
-            Charts.LineChart(card, 360, series, true, v => "+" + v.ToString("0.0", Loc.Culture), Loc.T("post.gapStart"), Loc.T("post.gapLap", laps));
-            Ui.Note(card, Loc.T("post.gapsNote"));
+            GapCard(list, series, laps, 340);
         }
 
         private static string Txt(string session)
         {
             return Loc.Or("session." + session, session);
+        }
+
+        /// <summary>P2 | P1 | P3 cards (the winner's taller), then a line per player rider outside the podium.</summary>
+        private static void Podium(RaceSimulation sim, RectTransform area, List<RiderRaceState> players, List<int> points)
+        {
+            var cls = sim.GetClassification();
+            var podiumArea = UiFactory.Rect("Podium", area);
+            UiFactory.Stretch(podiumArea);
+            podiumArea.offsetMin = new Vector2(0, 84);
+            var cols = Ui.Columns12(podiumArea, 4, 4, 4);
+            int[] order = { 1, 0, 2 };
+            for (int k = 0; k < 3; k++)
+            {
+                int p = order[k];
+                var col = cols[k];
+                if (p >= cls.Count) continue;
+                var e = cls[p];
+                var r = Find(sim, e.RiderId);
+                if (r == null) continue;
+                float top = p == 0 ? 1 : p == 1 ? 0.9f : 0.82f;
+                var slot = UiFactory.Rect("Step", col);
+                UiFactory.Place(slot, 0, 0, 1, top);
+                PodiumCard(slot, sim, e, r, p == 0, points);
+            }
+
+            // The player's riders: where they finished (podium included, so the line is always there).
+            var mine = UiFactory.Rect("Mine", area);
+            mine.anchorMin = new Vector2(0, 0);
+            mine.anchorMax = new Vector2(1, 0);
+            mine.pivot = new Vector2(0.5f, 0);
+            mine.offsetMin = Vector2.zero;
+            mine.offsetMax = new Vector2(0, 72);
+            var bg = UiFactory.Decor("Bg", mine, Theme.Alpha(Theme.Tile, 0.9f));
+            UiFactory.Stretch(bg.rectTransform);
+            var cap = RaceUi.Label(mine, Theme.Caps(Loc.T("ux.race.yourRiders")), Theme.TextCaption, TextAnchor.MiddleLeft, Theme.TextDim, FontStyle.Bold);
+            UiFactory.Place(cap.rectTransform, 0, 0, 0.18f, 1);
+            cap.rectTransform.offsetMin = new Vector2(16, 0);
+            int n = Mathf.Max(1, players.Count);
+            for (int i = 0; i < players.Count; i++)
+            {
+                var r = players[i];
+                ResultEntry e = null;
+                foreach (var c in cls) if (c.RiderId == r.Entry.Rider.Id) e = c;
+                string res = e == null ? "-" : e.Status == ResultStatus.Finished ? Theme.TimingText("<b>P" + e.Position + "</b>") : Theme.BadText(Loc.Or("result." + e.Status, e.Status.ToString()));
+                int pts = e != null && e.Status == ResultStatus.Finished && e.Position - 1 < points.Count ? points[e.Position - 1] : 0;
+                string gained = e != null && e.Status == ResultStatus.Finished ? "  " + Theme.Signed(e.GridPosition - e.Position) : "";
+                var t = RaceUi.Label(mine, res + "  <b>" + Theme.Caps(r.Entry.Rider.ShortName) + "</b>" + gained + "   " + Theme.Dim(pts + " " + Theme.Caps(Loc.T("post.col.pts"))),
+                    Theme.TextBody, TextAnchor.MiddleLeft, Theme.Text);
+                float w = 0.82f / n;
+                UiFactory.Place(t.rectTransform, 0.18f + w * i, 0, 0.18f + w * (i + 1), 1);
+            }
+        }
+
+        private static void PodiumCard(RectTransform area, RaceSimulation sim, ResultEntry e, RiderRaceState r, bool winner, List<int> points)
+        {
+            var team = r.Entry.Team;
+            var teamColor = RaceUi.TeamColor(team != null ? team.Colors.Primary : null);
+            bool mine = r.Entry.IsPlayer;
+            var body = Ui.Tile(area, null, null, null, 0, null, null, false, mine ? Theme.Accent : teamColor);
+            var posArea = UiFactory.Rect("Pos", body);
+            posArea.anchorMin = new Vector2(0.5f, 1);
+            posArea.anchorMax = new Vector2(0.5f, 1);
+            posArea.pivot = new Vector2(0.5f, 1);
+            posArea.sizeDelta = new Vector2(winner ? 160 : 136, winner ? 84 : 72);
+            posArea.anchoredPosition = new Vector2(0, -4);
+            RaceUi.Block(posArea, "P" + e.Position, winner ? Theme.Timing : new Color(0.9f, 0.91f, 0.93f, 1f), winner ? Theme.TextDisplay : Theme.TextKey);
+
+            var plateArea = UiFactory.Rect("PlateArea", body);
+            plateArea.anchorMin = plateArea.anchorMax = new Vector2(0.5f, 0.5f);
+            plateArea.sizeDelta = new Vector2(84, 60);
+            plateArea.anchoredPosition = new Vector2(0, 18);
+            RaceUi.Plate(plateArea, r.Entry.Rider.Number, teamColor, Theme.TextTitle);
+
+            var first = RaceUi.Label(body, r.Entry.Rider.FirstName, Theme.TextCaption, TextAnchor.MiddleCenter, Theme.TextDim, FontStyle.Bold);
+            UiFactory.Place(first.rectTransform, 0, 0.3f, 1, 0.4f);
+            var last = RaceUi.Label(body, Theme.Caps(r.Entry.Rider.LastName), Theme.TextTitle, TextAnchor.MiddleCenter, Theme.Text, FontStyle.BoldAndItalic);
+            UiFactory.DropShadow(last, 0.4f, 2);
+            UiFactory.Place(last.rectTransform, 0, 0.18f, 1, 0.31f);
+            string teamName = team != null ? team.ShortName ?? team.Name : "";
+            var tn = RaceUi.Label(body, Theme.Caps(teamName), Theme.TextCaption, TextAnchor.MiddleCenter, Theme.TextDim, FontStyle.Bold);
+            UiFactory.Place(tn.rectTransform, 0, 0.1f, 1, 0.18f);
+            string time = e.Status != ResultStatus.Finished ? Loc.Or("result." + e.Status, e.Status.ToString()) :
+                e.Position == 1 ? MathX.FormatLapTime(e.TotalTime) : MathX.FormatGap(e.GapToWinner);
+            int pts = e.Status == ResultStatus.Finished && e.Position - 1 < points.Count ? points[e.Position - 1] : 0;
+            var tl = RaceUi.Label(body, "<b>" + time + "</b>   " + Theme.Dim(pts + " " + Theme.Caps(Loc.T("post.col.pts"))), Theme.TextBody, TextAnchor.MiddleCenter, Theme.Text);
+            UiFactory.Place(tl.rectTransform, 0, 0, 1, 0.1f);
         }
 
         private static void RiderPage(RaceSimulation sim, RectTransform area, RiderRaceState r, List<int> points)
@@ -141,17 +267,15 @@ namespace MotoManager.App.UI
 
             int pts = rep.Finish > 0 && rep.Finish - 1 < points.Count && r.Status == RaceStatus.Finished ? points[rep.Finish - 1] : 0;
             var card = Ui.Card(left, r.Entry.Rider.FullName, r.Entry.Team != null ? r.Entry.Team.Name : null);
-            string gained = rep.PositionsGained > 0 ? Theme.GoodText("+" + rep.PositionsGained) : rep.PositionsGained < 0 ? Theme.BadText(rep.PositionsGained.ToString()) : "=";
             Ui.Kpis(card,
                 Ui.Kpi("P" + rep.Grid, Loc.T("post.k.grid")),
                 Ui.Kpi(r.Status == RaceStatus.Finished ? "P" + rep.Finish : Theme.BadText(Loc.T("result.DNF")), Loc.T("post.k.finish")),
-                Ui.Kpi(gained, Loc.T("post.k.gained")),
-                Ui.Kpi(pts.ToString(), Loc.T("post.k.points")));
-            Ui.Kpis(card,
-                Ui.Kpi(rep.BestLap > 0 ? MathX.FormatLapTime(rep.BestLap) : "-", Loc.T("post.k.bestLap")),
-                Ui.Kpi(rep.TopSpeedKph.ToString("0"), Loc.T("post.k.topSpeed")),
-                Ui.Kpi(rep.Overtakes + " / " + rep.TimesPassed, Loc.T("post.k.passes")),
-                Ui.Kpi(rep.Errors.ToString(), Loc.T("post.k.errors")));
+                Ui.Kpi(pts.ToString(), Loc.T("post.k.points")),
+                Ui.Kpi(rep.BestLap > 0 ? MathX.FormatLapTime(rep.BestLap) : "-", Loc.T("post.k.bestLap")));
+            Ui.Line(card, Loc.T("post.k.gained"), Theme.Signed(rep.PositionsGained));
+            Ui.Line(card, Loc.T("post.k.topSpeed"), rep.TopSpeedKph.ToString("0"));
+            Ui.Line(card, Loc.T("post.k.passes"), rep.Overtakes + " / " + rep.TimesPassed);
+            Ui.Line(card, Loc.T("post.k.errors"), rep.Errors.ToString());
             if (rep.BestSectors != null)
             {
                 var fastest = FastestSectors(sim);
@@ -172,22 +296,31 @@ namespace MotoManager.App.UI
                     mine[i + 1] = top ? "<color=#B266FF>" + t + "</color>" : t;
                     best[i + 1] = i < fastest.Length && fastest[i] < double.MaxValue ? fastest[i].ToString("0.000", Loc.Culture) : "-";
                 }
-                UiFactory.TableRow(card, 32, w, head, true);
-                UiFactory.TableRow(card, 34, w, mine);
-                UiFactory.TableRow(card, 34, w, best);
+                UiFactory.TableRow(card, 40, w, head, true);
+                UiFactory.TableRow(card, 44, w, mine);
+                UiFactory.TableRow(card, 44, w, best);
             }
 
-            var why = Ui.Card(right, Loc.T("post.why"));
-            Items(why, Loc.T("post.strengths"), rep.Strengths, Theme.GoodHex, "+");
-            Items(why, Loc.T("post.weaknesses"), rep.Weaknesses, Theme.BadHex, "–");
+            // "Why?": three strengths and three weaknesses in view, the full analysis behind the info button.
+            var why = Ui.Card(right, Loc.T("post.why"), null, () => Ui.Sheet(Loc.T("post.why"), l =>
+            {
+                Items(l, Loc.T("post.strengths"), rep.Strengths, Theme.GoodHex, "+", int.MaxValue);
+                Items(l, Loc.T("post.weaknesses"), rep.Weaknesses, Theme.BadHex, "-", int.MaxValue);
+            }));
+            Items(why, Loc.T("post.strengths"), rep.Strengths, Theme.GoodHex, "+", 3);
+            Items(why, Loc.T("post.weaknesses"), rep.Weaknesses, Theme.BadHex, "-", 3);
         }
 
-        private static void Items(Transform list, string heading, List<AnalysisItem> items, string color, string sign)
+        private static void Items(Transform list, string heading, List<AnalysisItem> items, string color, string sign, int max)
         {
-            UiFactory.Paragraph(list, "<b>" + heading + "</b>", Theme.FontSmall);
-            if (items.Count == 0) Ui.Note(list, Loc.T("post.nothing"));
-            foreach (var it in items)
-                UiFactory.Paragraph(list, "<color=" + color + "><b>" + sign + "</b></color>  " + Loc.T("analysis." + it.Code + (it.Strength ? "+" : "-"), Math.Abs(it.Value)), Theme.FontSmall - 2);
+            UiFactory.Paragraph(list, "<b>" + Theme.Caps(heading) + "</b>", Theme.TextCaption);
+            if (items.Count == 0) UiFactory.Paragraph(list, Theme.Dim(Loc.T("post.nothing")), Theme.TextBody);
+            for (int i = 0; i < items.Count && i < max; i++)
+            {
+                var it = items[i];
+                UiFactory.Paragraph(list, "<color=" + color + "><b>" + sign + "</b></color>  " + Loc.T("analysis." + it.Code + (it.Strength ? "+" : "-"), Math.Abs(it.Value)), Theme.TextBody);
+            }
+            if (items.Count > max) UiFactory.Paragraph(list, Theme.Dim("+" + (items.Count - max) + "  " + Theme.Caps(Loc.T("ux.race.more"))), Theme.TextCaption);
         }
 
         private static List<int> PointsTable(RaceSimulation sim)
@@ -197,36 +330,58 @@ namespace MotoManager.App.UI
             return sim.Rules.GetPoints(sim.Config.SessionType == SessionType.Sprint ? "sprint" : "race");
         }
 
+        /// <summary>
+        /// The classification as list rows: P | rider (team bar, positions gained) | time or gap | best lap | points |
+        /// notes (fastest lap, penalties, technical issue). A finished player row is lit in the accent.
+        /// </summary>
         private static void BuildClassification(RaceSimulation sim, RectTransform rt, List<int> points)
         {
-            var list = UiFactory.ScrollList("Classification", rt, 2);
-            UiFactory.Stretch((RectTransform)list.parent.parent);
-            var w = new[] { 0.7f, 3.6f, 2.6f, 2f, 1.8f, 0.9f, 0.9f, 2.6f };
-            UiFactory.TableRow(list, 34, w, new[]
+            var w = new[] { 0.9f, 4.2f, 2.2f, 2f, 0.9f, 2.4f };
+            var head = UiFactory.Rect("Captions", rt);
+            head.anchorMin = new Vector2(0, 1);
+            head.anchorMax = new Vector2(1, 1);
+            head.pivot = new Vector2(0.5f, 1);
+            head.offsetMin = new Vector2(0, -40);
+            head.offsetMax = Vector2.zero;
+            var hl = head.gameObject.AddComponent<VerticalLayoutGroup>();
+            hl.childControlHeight = true;
+            hl.childControlWidth = true;
+            hl.childForceExpandWidth = true;
+            Ui.ListCaptions(head, w, new[]
             {
-                Loc.T("post.col.pos"), Loc.T("post.col.rider"), Loc.T("post.col.team"), Loc.T("post.col.time"), Loc.T("post.col.best"),
-                Loc.T("post.col.gained"), Loc.T("post.col.pts"), Loc.T("post.col.notes")
-            }, true);
+                Loc.T("post.col.pos"), Loc.T("post.col.rider"), Loc.T("post.col.time"), Loc.T("post.col.best"), Loc.T("post.col.pts"), Loc.T("post.col.notes")
+            });
+            var holder = UiFactory.Rect("Rows", rt);
+            UiFactory.Stretch(holder);
+            holder.offsetMax = new Vector2(0, -40);
+            var list = UiFactory.ScrollList("Classification", holder, 0);
+            UiFactory.Stretch((RectTransform)list.parent.parent);
+            var layout = list.GetComponent<VerticalLayoutGroup>();
+            layout.spacing = 0;
+            layout.padding = new RectOffset(0, 0, 0, 8);
+            int index = 0;
             foreach (var e in sim.GetClassification())
             {
                 var r = Find(sim, e.RiderId);
                 if (r == null) continue;
-                string time = e.Status == ResultStatus.Finished ? (e.Position == 1 ? MathX.FormatLapTime(e.TotalTime) : MathX.FormatGap(e.GapToWinner)) : Loc.Or("result." + e.Status, e.Status.ToString());
+                bool finished = e.Status == ResultStatus.Finished;
+                string time = finished ? (e.Position == 1 ? MathX.FormatLapTime(e.TotalTime) : MathX.FormatGap(e.GapToWinner)) : Theme.BadText(Theme.Caps(Loc.Or("result." + e.Status, e.Status.ToString())));
                 int gained = e.GridPosition - e.Position;
-                string gainedText = e.Status != ResultStatus.Finished ? "" : gained > 0 ? Theme.GoodText("+" + gained) : gained < 0 ? Theme.BadText(gained.ToString()) : "=";
-                int pts = e.Status == ResultStatus.Finished && e.Position - 1 < points.Count ? points[e.Position - 1] : 0;
+                string gainedText = finished && gained != 0 ? "  <size=" + Theme.TextCaption + ">" + Theme.Signed(gained) + "</size>" : "";
+                int pts = finished && e.Position - 1 < points.Count ? points[e.Position - 1] : 0;
                 var notes = new List<string>();
-                if (e.Note != null) notes.Add(e.Note);
-                if (r.Penalties.Count > 0 && e.Note == null) notes.Add(Loc.T("post.penalty", r.Penalties.Count));
-                if (r.HasIssue) notes.Add(Loc.T("post.issue"));
-                if (e.FastestLap) notes.Add("<color=#B266FF>" + Loc.T("post.fastestLap") + "</color>");
-                var team = r.Entry.Team;
-                string pos = e.Position <= 3 && e.Status == ResultStatus.Finished ? "<b>" + e.Position + "</b>" : e.Position.ToString();
-                UiFactory.TableRow(list, 36, w, new[]
+                if (e.FastestLap) notes.Add("<color=#B266FF>" + Theme.Caps(Loc.T("ux.race.fastestLap")) + "</color>");
+                if (e.Note != null) notes.Add(Theme.WarnText(e.Note));
+                if (r.Penalties.Count > 0 && e.Note == null) notes.Add(Theme.WarnText(Loc.T("post.penalty", r.Penalties.Count)));
+                if (r.HasIssue) notes.Add(Theme.WarnText(Loc.T("post.issue")));
+                var row = Ui.ListRow(list, w, new[]
                 {
-                    pos, (r.Entry.IsPlayer ? "<b>" : "") + r.Entry.Rider.FullName + (r.Entry.IsPlayer ? "</b>" : ""), team != null ? team.ShortName ?? team.Name : "", time,
-                    e.BestLap > 0 ? MathX.FormatLapTime(e.BestLap) : "-", gainedText, pts > 0 ? pts.ToString() : "", string.Join(", ", notes.ToArray())
-                }, false, r.Entry.IsPlayer ? new Color(0.94f, 0.7f, 0.16f, 0.16f) : (Color?)null);
+                    finished ? e.Position.ToString() : "-", Theme.Caps(r.Entry.Rider.ShortName) + gainedText, time,
+                    e.BestLap > 0 ? MathX.FormatLapTime(e.BestLap) : "-", pts > 0 ? "<b>" + pts + "</b>" : Theme.Dim("0"),
+                    "<size=" + Theme.TextCaption + ">" + string.Join(" · ", notes.ToArray()) + "</size>"
+                }, index++, r.Entry.IsPlayer, null, 56);
+                var team = r.Entry.Team;
+                RaceUi.TeamBar(row, w, RaceUi.TeamColor(team != null ? team.Colors.Primary : null));
             }
         }
 
@@ -241,19 +396,6 @@ namespace MotoManager.App.UI
                 for (int i = 0; i < best.Length && i < s.Length; i++) best[i] = Math.Min(best[i], s[i]);
             }
             return best;
-        }
-
-        private static string Sectors(double[] times, double[] reference)
-        {
-            var parts = new List<string>();
-            for (int i = 0; i < times.Length; i++)
-            {
-                if (times[i] >= double.MaxValue) { parts.Add("-"); continue; }
-                string t = times[i].ToString("0.000", Loc.Culture);
-                if (reference != null && i < reference.Length && Math.Abs(times[i] - reference[i]) < 0.0005) t = "<color=#B266FF>" + t + "</color>";
-                parts.Add("S" + (i + 1) + " " + t);
-            }
-            return string.Join("  ", parts.ToArray());
         }
 
         private static RiderRaceState Find(RaceSimulation sim, string riderId)

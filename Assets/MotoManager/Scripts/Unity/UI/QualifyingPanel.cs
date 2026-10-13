@@ -5,11 +5,12 @@ using MotoManager.Core.Data;
 using MotoManager.Core.Race;
 using MotoManager.Core.Season;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace MotoManager.App.UI
 {
     /// <summary>
-    /// Qualifying result before the race: where the player's riders start (big, on the left) and the full grid with
+    /// Qualifying result before the race: where the player's riders start (big cards, left) and the full grid with
     /// best times and gaps to pole (right). Qualifying itself is simulated in the background by the weekend.
     /// </summary>
     public class QualifyingPanel : MonoBehaviour
@@ -21,19 +22,17 @@ namespace MotoManager.App.UI
             var canvas = UiFactory.CreateCanvas("Qualifying", 20);
             var p = canvas.gameObject.AddComponent<QualifyingPanel>();
             p._onContinue = onContinue;
-            p.Build(UiFactory.SafeRoot(canvas, Theme.Background), weekend, eventName);
+            var root = UiFactory.SafeRoot(canvas, Theme.Background);
+            RaceUi.HostSheets(canvas.gameObject, root);
+            p.Build(root, weekend, eventName);
         }
 
         private void Build(RectTransform root, WeekendSimulation weekend, string eventName)
         {
-            var bg = UiFactory.Panel("Background", root, Theme.Background);
-            UiFactory.Stretch(bg.rectTransform);
-            var title = UiFactory.Label("Title", root, "<b>" + Loc.T("quali.title") + "</b>  " + Theme.Dim(eventName), Theme.FontLarge - 4, TextAnchor.MiddleLeft);
-            UiFactory.RaceTitle(title);
-            title.resizeTextForBestFit = true;
-            title.resizeTextMinSize = Theme.FontSmall;
-            title.resizeTextMaxSize = Theme.FontLarge - 4;
-            UiFactory.Place(title.rectTransform, 0.03f, 0.88f, 0.62f, 0.99f);
+            RaceUi.Backdrop(root);
+            RectTransform cta;
+            RaceUi.TopBar(root, Loc.T("quali.title"), eventName, 400, out cta);
+            Ui.PrimaryCTA(cta, Loc.T("ux.race.toRace"), Continue);
 
             // Best qualifying lap of every rider (all qualifying sessions: Q1/Q2, Superpole...).
             var best = new Dictionary<string, double>();
@@ -52,29 +51,56 @@ namespace MotoManager.App.UI
             var order = weekend.QualifyingOrder;
             double pole = order.Count > 0 && best.ContainsKey(order[0]) ? best[order[0]] : 0;
 
-            // Left: the player's riders.
-            var left = UiFactory.Rect("Mine", root);
-            UiFactory.Place(left, 0.02f, 0.02f, 0.36f, 0.86f);
-            var layout = left.gameObject.AddComponent<UnityEngine.UI.VerticalLayoutGroup>();
-            layout.spacing = 14;
-            layout.childControlHeight = true;
-            layout.childControlWidth = true;
-            layout.childForceExpandHeight = false;
+            var content = RaceUi.Content(root, RaceUi.BarH + 12, RaceUi.Pad);
+            var cols = Ui.Columns12(content, 5, 7);
+
+            // Left: the player's riders, one big card each.
+            var mine = new List<int>();
             for (int i = 0; i < order.Count; i++)
             {
                 RaceEntry e;
-                if (!entries.TryGetValue(order[i], out e) || !e.IsPlayer) continue;
-                double t;
-                best.TryGetValue(e.Rider.Id, out t);
-                BigCard(left, e, i + 1, t > 0 ? MathX.FormatLapTime(t) : "-",
-                    i == 0 ? Theme.GoodText(Loc.T("quali.pole")) : t > 0 && pole > 0 ? "+" + (t - pole).ToString("0.000", Loc.Culture) : "-");
+                if (entries.TryGetValue(order[i], out e) && e.IsPlayer) mine.Add(i);
+            }
+            if (mine.Count > 0)
+            {
+                var shares = new float[Mathf.Max(2, mine.Count)];
+                for (int k = 0; k < shares.Length; k++) shares[k] = 1;
+                var slots = Ui.Rows(cols[0], shares);
+                for (int k = 0; k < mine.Count; k++)
+                {
+                    int i = mine[k];
+                    var e = entries[order[i]];
+                    double t;
+                    best.TryGetValue(e.Rider.Id, out t);
+                    string gap = i == 0 ? Theme.GoodText(Loc.T("quali.pole")) : t > 0 && pole > 0 ? "+" + (t - pole).ToString("0.000", Loc.Culture) : "-";
+                    BigCard(slots[k], e, i + 1, t > 0 ? MathX.FormatLapTime(t) : "-", gap, order.Count);
+                }
             }
 
-            // Right: the grid.
-            var list = UiFactory.ScrollList("Grid", root, 2);
-            UiFactory.Place((RectTransform)list.parent.parent, 0.38f, 0.02f, 0.99f, 0.86f);
-            var w = new[] { 0.8f, 4f, 3f, 2f, 1.6f };
-            UiFactory.TableRow(list, 34, w, new[] { Loc.T("post.col.pos"), Loc.T("col.rider"), Loc.T("col.team"), Loc.T("quali.best"), Loc.T("quali.gap") }, true);
+            // Right: the grid (P | rider | best lap | gap to pole).
+            var gridBody = Ui.Tile(cols[1], Loc.T("ux.race.grid"), null, order.Count + " " + Theme.Caps(Loc.T("ux.race.riders")));
+            gridBody.offsetMin = new Vector2(0, 0);
+            gridBody.offsetMax = new Vector2(0, -Ui.Grid.Header);
+            var w = new[] { 1f, 5f, 2.6f, 2f };
+            var captions = UiFactory.Rect("Captions", gridBody);
+            captions.anchorMin = new Vector2(0, 1);
+            captions.anchorMax = new Vector2(1, 1);
+            captions.pivot = new Vector2(0.5f, 1);
+            captions.offsetMin = new Vector2(0, -40);
+            captions.offsetMax = Vector2.zero;
+            var capList = captions.gameObject.AddComponent<VerticalLayoutGroup>();
+            capList.childControlHeight = true;
+            capList.childControlWidth = true;
+            capList.childForceExpandWidth = true;
+            Ui.ListCaptions(captions, w, new[] { Loc.T("post.col.pos"), Loc.T("col.rider"), Loc.T("quali.best"), Loc.T("quali.gap") });
+            var listHolder = UiFactory.Rect("Rows", gridBody);
+            UiFactory.Stretch(listHolder);
+            listHolder.offsetMax = new Vector2(0, -40);
+            var list = UiFactory.ScrollList("Grid", listHolder, 0);
+            UiFactory.Stretch((RectTransform)list.parent.parent);
+            var layout = list.GetComponent<VerticalLayoutGroup>();
+            layout.spacing = 0;
+            layout.padding = new RectOffset(0, 0, 0, 8);
             for (int i = 0; i < order.Count; i++)
             {
                 RaceEntry e;
@@ -82,51 +108,51 @@ namespace MotoManager.App.UI
                 double t;
                 best.TryGetValue(e.Rider.Id, out t);
                 string gap = i == 0 ? "" : t > 0 && pole > 0 ? "+" + (t - pole).ToString("0.000", Loc.Culture) : "";
-                UiFactory.TableRow(list, 46, w, new[]
+                var row = Ui.ListRow(list, w, new[]
                 {
-                    (i + 1).ToString(), (e.IsPlayer ? "<b>" : "") + e.Rider.FullName + (e.IsPlayer ? "</b>" : ""),
-                    e.Team != null ? e.Team.ShortName ?? e.Team.Name : "", t > 0 ? MathX.FormatLapTime(t) : "-", gap
-                }, false, e.IsPlayer ? new Color(0.94f, 0.7f, 0.16f, 0.16f) : (i % 3 == 0 ? new Color(1, 1, 1, 0.03f) : (Color?)null));
+                    (i + 1).ToString(), Theme.Caps(e.Rider.FullName), t > 0 ? MathX.FormatLapTime(t) : "-", Theme.Dim(gap)
+                }, i, e.IsPlayer, null, 56);
+                RaceUi.TeamBar(row, w, RaceUi.TeamColor(e.Team != null ? e.Team.Colors.Primary : null));
             }
-
-            var go = UiFactory.Button("Continue", root, Theme.Caps(Loc.T("quali.continue")) + "  ›", Continue, Theme.Accent, Theme.FontLarge - 4);
-            UiFactory.Slant(go.image, 2.4f);
-            go.GetComponentInChildren<UnityEngine.UI.Text>().fontStyle = FontStyle.BoldAndItalic;
-            UiFactory.Place((RectTransform)go.transform, 0.64f, 0.885f, 0.99f, 0.99f, 2);
         }
 
-        /// <summary>A rider's qualifying in one big card: grid slot in a timing-yellow block, name, best lap and gap.</summary>
-        private static void BigCard(RectTransform parent, RaceEntry e, int grid, string time, string gap)
+        /// <summary>A rider's qualifying in one big card: grid slot in a timing-yellow block, name, row, best lap and gap.</summary>
+        private static void BigCard(RectTransform area, RaceEntry e, int grid, string time, string gap, int field)
         {
-            var card = UiFactory.Panel("Rider", parent, Theme.Panel);
-            UiFactory.Chamfer(card, 1.4f);
-            card.gameObject.AddComponent<UnityEngine.UI.LayoutElement>().preferredHeight = 190;
-            var teamColor = UiFactory.ParseColor(e.Team != null ? e.Team.Colors.Primary : null, Theme.Accent);
-            var stripe = UiFactory.Panel("Team", card.transform, teamColor);
-            UiFactory.Place(stripe.rectTransform, 0, 0, 0.02f, 1);
-            var pos = UiFactory.Panel("Grid", card.transform, Theme.Timing);
-            UiFactory.Slant(pos, 2.4f);
-            UiFactory.Place(pos.rectTransform, 0.05f, 0.3f, 0.36f, 0.9f);
-            var posText = UiFactory.Label("P", pos.transform, grid + "º", Theme.FontTitle, TextAnchor.MiddleCenter, new Color32(12, 13, 16, 255));
-            posText.fontStyle = FontStyle.BoldAndItalic;
-            posText.resizeTextForBestFit = true;
-            posText.resizeTextMinSize = Theme.FontNormal;
-            posText.resizeTextMaxSize = Theme.FontTitle;
-            UiFactory.Stretch(posText.rectTransform);
-            var first = UiFactory.Label("First", card.transform, e.Rider.FirstName, Theme.FontSmall - 4, TextAnchor.LowerLeft, Theme.TextDim);
-            UiFactory.Place(first.rectTransform, 0.4f, 0.62f, 0.98f, 0.92f);
-            var last = UiFactory.Label("Last", card.transform, Theme.Caps(e.Rider.LastName), Theme.FontLarge, TextAnchor.UpperLeft);
-            last.fontStyle = FontStyle.BoldAndItalic;
-            last.resizeTextForBestFit = true;
-            last.resizeTextMinSize = Theme.FontSmall;
-            last.resizeTextMaxSize = Theme.FontLarge;
-            UiFactory.Place(last.rectTransform, 0.4f, 0.3f, 0.98f, 0.62f);
-            var line = UiFactory.Label("Time", card.transform, "<b>" + time + "</b>   " + gap, Theme.FontSmall, TextAnchor.MiddleLeft);
-            line.supportRichText = true;
-            line.resizeTextForBestFit = true;
-            line.resizeTextMinSize = Theme.FontSmall - 8;
-            line.resizeTextMaxSize = Theme.FontSmall;
-            UiFactory.Place(line.rectTransform, 0.05f, 0.04f, 0.98f, 0.28f);
+            var teamColor = RaceUi.TeamColor(e.Team != null ? e.Team.Colors.Primary : null);
+            var body = Ui.Tile(area, null, null, null, 0, null, null, false, teamColor);
+            var slot = UiFactory.Rect("Slot", body);
+            slot.anchorMin = new Vector2(0, 0.12f);
+            slot.anchorMax = new Vector2(0, 0.88f);
+            slot.pivot = new Vector2(0, 0.5f);
+            slot.offsetMin = new Vector2(0, 0);
+            slot.offsetMax = new Vector2(176, 0);
+            RaceUi.Block(slot, Theme.Pos(grid), Theme.Timing, Theme.TextDisplay);
+
+            var plateArea = UiFactory.Rect("PlateArea", body);
+            plateArea.anchorMin = new Vector2(1, 1);
+            plateArea.anchorMax = new Vector2(1, 1);
+            plateArea.pivot = new Vector2(1, 1);
+            plateArea.sizeDelta = new Vector2(76, 56);
+            plateArea.anchoredPosition = Vector2.zero;
+            RaceUi.Plate(plateArea, e.Rider.Number, teamColor, Theme.TextTitle);
+
+            var first = RaceUi.Label(body, e.Rider.FirstName, Theme.TextCaption, TextAnchor.LowerLeft, Theme.TextDim, FontStyle.Bold);
+            UiFactory.Place(first.rectTransform, 0, 0.72f, 1, 1);
+            first.rectTransform.offsetMin = new Vector2(196, 0);
+            first.rectTransform.offsetMax = new Vector2(-88, 0);
+            var last = RaceUi.Label(body, Theme.Caps(e.Rider.LastName), Theme.FontLarge, TextAnchor.MiddleLeft, Theme.Text, FontStyle.BoldAndItalic);
+            UiFactory.DropShadow(last, 0.4f, 2);
+            UiFactory.Place(last.rectTransform, 0, 0.42f, 1, 0.74f);
+            last.rectTransform.offsetMin = new Vector2(196, 0);
+            last.rectTransform.offsetMax = new Vector2(-8, 0);
+            var line = RaceUi.Label(body, "<b>" + time + "</b>   " + gap, Theme.TextBody, TextAnchor.MiddleLeft, Theme.Text);
+            UiFactory.Place(line.rectTransform, 0, 0.18f, 1, 0.42f);
+            line.rectTransform.offsetMin = new Vector2(196, 0);
+            int row = (grid - 1) / 3 + 1;
+            var rowText = RaceUi.Label(body, Theme.Caps(Loc.T("quali.row", row)), Theme.TextCaption, TextAnchor.MiddleLeft, Theme.TextDim, FontStyle.Bold);
+            UiFactory.Place(rowText.rectTransform, 0, 0, 1, 0.18f);
+            rowText.rectTransform.offsetMin = new Vector2(196, 0);
         }
 
         private void Continue()
