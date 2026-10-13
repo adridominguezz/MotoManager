@@ -65,17 +65,193 @@ namespace MotoManager.App.UI.Screens
 
 
     /// <summary>
-    /// The team's riders. The overview fills one screen with no scrolling: a big card per rider on each side (team
-    /// colour hero with the rating square, a key line, the rider's standout trait and the contract seasons left) and
-    /// the key attributes compared in the middle, with the way to the market under them. A tap on a rider opens the
-    /// detail (actions, every attribute tile, traits and contract terms); the season statistics, the bids received
-    /// and a negotiation each take the whole page with a way back.
+    /// Small layout helpers of the hub, team, market and negotiation pages (UX WP2) on top of the design system.
+    /// Kept here (not in Components.cs) because they are only used by these pages.
+    /// </summary>
+    internal static class Wp2Ui
+    {
+        /// <summary>An action that opens a sheet with a title and one paragraph per string (for onInfo arguments).</summary>
+        public static Action Info(string title, params string[] paragraphs)
+        {
+            return () => Ui.Sheet(title, list =>
+            {
+                foreach (var p in paragraphs)
+                    if (!string.IsNullOrEmpty(p)) UiFactory.Paragraph(list, p, Theme.TextBody);
+            });
+        }
+
+        /// <summary>Turns an anchor-layout rect into a vertical list (rows added top to bottom, 8 apart).</summary>
+        public static RectTransform ListIn(RectTransform area, float spacing = 8)
+        {
+            var v = area.gameObject.AddComponent<VerticalLayoutGroup>();
+            v.spacing = spacing;
+            v.childControlHeight = true;
+            v.childControlWidth = true;
+            v.childForceExpandHeight = false;
+            v.childForceExpandWidth = true;
+            return area;
+        }
+
+        /// <summary>A strip of fixed height along the bottom of <paramref name="area"/>, <paramref name="lift"/> units up.</summary>
+        public static RectTransform BottomStrip(RectTransform area, float height, float lift = 0)
+        {
+            var rt = UiFactory.Rect("Bottom", area);
+            rt.anchorMin = new Vector2(0, 0);
+            rt.anchorMax = new Vector2(1, 0);
+            rt.pivot = new Vector2(0.5f, 0);
+            rt.offsetMin = new Vector2(0, lift);
+            rt.offsetMax = new Vector2(0, lift + height);
+            return rt;
+        }
+
+        /// <summary>The rest of <paramref name="area"/> above <paramref name="bottom"/> units (and below <paramref name="top"/>).</summary>
+        public static RectTransform Above(RectTransform area, float bottom, float top = 0)
+        {
+            var rt = UiFactory.Rect("Upper", area);
+            UiFactory.Stretch(rt);
+            rt.offsetMin = new Vector2(0, bottom);
+            rt.offsetMax = new Vector2(0, -top);
+            return rt;
+        }
+
+        /// <summary>A right-pointing chevron at the end of a button (its label makes room).</summary>
+        public static void Chevron(Button b)
+        {
+            var t = b.GetComponentInChildren<Text>();
+            if (t == null) return;
+            t.rectTransform.offsetMax = new Vector2(-44, t.rectTransform.offsetMax.y);
+            var ch = UiIcons.Chevron(b.transform, t.color);
+            ch.rectTransform.anchorMin = ch.rectTransform.anchorMax = new Vector2(1, 0.5f);
+            ch.rectTransform.sizeDelta = new Vector2(22, 22);
+            ch.rectTransform.anchoredPosition = new Vector2(-26, 0);
+        }
+
+        /// <summary>
+        /// A tile whose header strip carries a back chevron (detail views): the tile surface, the strip (title, right
+        /// text, info) and the padded body, which is returned.
+        /// </summary>
+        public static RectTransform BackTile(RectTransform area, string title, Action onBack, Action onInfo = null, string right = null)
+        {
+            var body = Ui.Tile(area, null);
+            Ui.HeaderStrip(body.parent, title, right, onInfo, onBack);
+            body.offsetMax = new Vector2(-16, -Ui.Grid.Header - 12);
+            return body;
+        }
+
+        /// <summary>A "..." button at the right end of a tile's header strip (the right text moves left).</summary>
+        public static Button HeaderMore(RectTransform tileBody, Action onTap)
+        {
+            var head = tileBody.parent.Find("Head");
+            if (head == null) return null;
+            var right = head.Find("Right") as RectTransform;
+            if (right != null) right.offsetMax -= new Vector2(Ui.Grid.Hit, 0);
+            else
+            {
+                var title = head.Find("Title") as RectTransform;
+                if (title != null) title.offsetMax -= new Vector2(Ui.Grid.Hit, 0);
+            }
+            var b = Ui.IconButton(head, Glyph.More, onTap);
+            var rt = (RectTransform)b.transform;
+            rt.anchorMin = rt.anchorMax = new Vector2(1, 0.5f);
+            rt.pivot = new Vector2(1, 0.5f);
+            rt.anchoredPosition = new Vector2(-2, 0);
+            return b;
+        }
+
+        /// <summary>A pill (32 high) centred in a 56-high transparent touch area that fills <paramref name="area"/>.</summary>
+        public static Button TapPill(RectTransform area, string text, Color fill, Action onTap)
+        {
+            var hit = UiFactory.Panel("PillButton", area, new Color(1, 1, 1, 0));
+            UiFactory.Stretch(hit.rectTransform);
+            var b = hit.gameObject.AddComponent<Button>();
+            var pill = Ui.Pill(hit.transform, text, fill);
+            pill.rectTransform.anchorMin = pill.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            pill.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+            b.targetGraphic = pill;
+            b.onClick.AddListener(() =>
+            {
+                GameAudio.ClickSound();
+                onTap();
+            });
+            return b;
+        }
+
+        /// <summary>A caption on the left and a segmented control on the rest of a 56-unit row.</summary>
+        public static void CaptionedSegmented(Transform list, string caption, IList<string> labels, int selected, Action<int> onSelect)
+        {
+            var row = UiFactory.Row(list, Ui.Grid.Hit);
+            var c = Ui.Label(row, Theme.Caps(caption), Theme.TextCaption, TextAnchor.MiddleLeft, Theme.TextDim, FontStyle.Bold);
+            UiFactory.Place(c.rectTransform, 0, 0, 0.38f, 1);
+            c.rectTransform.offsetMin = new Vector2(4, 0);
+            var holder = UiFactory.Rect("Segments", row);
+            UiFactory.Place(holder, 0.38f, 0, 1, 1);
+            ListIn(holder, 0);
+            Ui.Segmented(holder, labels, selected, onSelect);
+        }
+
+        /// <summary>A 56-unit page arrow: the back pictogram, turned to point right for "next".</summary>
+        public static Button Arrow(Transform parent, bool next, Action onTap, bool enabled)
+        {
+            var b = Ui.IconButton(parent, UiIcons.Back, enabled ? onTap : null);
+            if (next)
+            {
+                var plate = b.transform.Find("Plate");
+                if (plate != null && plate.childCount > 0) plate.GetChild(0).localEulerAngles = new Vector3(0, 0, 180);
+            }
+            return b;
+        }
+
+        /// <summary>Two columns in a layout list with relative widths (e.g. 7 and 5); returns both as lists.</summary>
+        public static void Split(Transform list, float leftShare, float rightShare, out RectTransform left, out RectTransform right)
+        {
+            var row = UiFactory.Rect("Split", list);
+            var h = row.gameObject.AddComponent<HorizontalLayoutGroup>();
+            h.spacing = Ui.Grid.Gap;
+            h.childControlHeight = true;
+            h.childControlWidth = true;
+            h.childForceExpandHeight = false;
+            h.childForceExpandWidth = true;
+            h.childAlignment = TextAnchor.UpperLeft;
+            left = Column(row, leftShare);
+            right = Column(row, rightShare);
+        }
+
+        private static RectTransform Column(Transform parent, float share)
+        {
+            var c = UiFactory.Rect("Column", parent);
+            ListIn(c, Ui.Grid.Gap);
+            var le = c.gameObject.AddComponent<LayoutElement>();
+            le.flexibleWidth = share;
+            le.preferredWidth = 0;
+            le.minWidth = 0;
+            return c;
+        }
+
+        /// <summary>The rider's attribute sheet: every attribute (as the team perceives it) and what the key ones do.</summary>
+        public static void AttributesSheet(WorldState world, string teamId, Rider r, string extra = null)
+        {
+            Ui.Sheet(r.FullName, list =>
+            {
+                MobileParts.AttributeTable(list, world, teamId, r);
+                Ui.Section(list, Loc.T("rider.attributesCap"));
+                foreach (var a in MobileParts.KeyAttributes)
+                    UiFactory.Paragraph(list, "<b>" + Loc.T("attr." + a) + "</b>   " + Loc.T("attrinfo." + a), Theme.TextBody);
+                if (!string.IsNullOrEmpty(extra)) UiFactory.Paragraph(list, Theme.Dim(extra), Theme.TextBody);
+            }, null, null, 0.7f);
+        }
+    }
+
+    /// <summary>
+    /// The team's riders (UX spec §3.3–§3.5). The overview fills one screen: a card per rider on each side (hero with
+    /// the rating, the standout trait and the contract seasons left) and the key attributes compared in the middle,
+    /// with the bids, the pager and the way to the market under them. A tap on a rider opens the detail (profile with
+    /// the contract actions, attribute tiles and traits; the contract terms and every attribute in sheets); the season
+    /// statistics, the bids and a negotiation each take the whole page with a back chevron.
     /// </summary>
     public class RidersPage : ScreenBase
     {
         public override string Title { get { return Loc.T("tab.riders"); } }
         private NegotiationState _neg;
-        private string _confirmRelease;
         private string _detail;
         private bool _stats;
         private bool _bids;
@@ -98,9 +274,7 @@ namespace MotoManager.App.UI.Screens
             if (_bids && bids == 0) _bids = false;
             if (_bids)
             {
-                var list = Page(content);
-                MobileParts.BackRow(list, Loc.T("career.back"), () => { _bids = false; Shell.Refresh(); });
-                NegotiationPanel.Bids(list, Game, Shell.Refresh);
+                NegotiationPanel.Bids(Page(content), Game, Shell.Refresh, () => { _bids = false; Shell.Refresh(); });
                 return;
             }
 
@@ -114,10 +288,7 @@ namespace MotoManager.App.UI.Screens
             }
             if (_stats)
             {
-                // Season statistics: a full page with a way back to the rider.
-                var list = Page(content);
-                MobileParts.BackRow(list, Loc.T("career.back"), () => { _stats = false; Shell.Refresh(); });
-                StatsView(list, world, team, open);
+                StatsView(Page(content), world, team, open);
                 return;
             }
             Detail(content, world, team, open);
@@ -126,8 +297,16 @@ namespace MotoManager.App.UI.Screens
         private void Open(Rider r)
         {
             _detail = r.Id;
-            _confirmRelease = null;
             _stats = false;
+            Ui.Disarm();
+            Shell.Refresh();
+        }
+
+        private void CloseDetail()
+        {
+            _detail = null;
+            _stats = false;
+            Ui.Disarm();
             Shell.Refresh();
         }
 
@@ -145,46 +324,33 @@ namespace MotoManager.App.UI.Screens
             bool hasB = seats.Count > _pair + 1;
             var b = hasB ? seats[_pair + 1] : null;
 
-            const float l = 0.355f, r = 0.645f;
-            var left = UiFactory.Rect("Left", content);
-            UiFactory.Place(left, 0, 0, l, 1);
-            var mid = UiFactory.Rect("Middle", content);
-            UiFactory.Place(mid, l, 0, r, 1);
-            var right = UiFactory.Rect("Right", content);
-            UiFactory.Place(right, r, 0, 1, 1);
+            var cols = Ui.Columns12(content, 4, 4, 4);
+            // A free seat carries the page's only primary (the first one when both sides are free).
+            bool primary = true;
+            if (a != null) RiderCard(cols[0], world, team, a);
+            else { FreeSeatCard(cols[0], primary); primary = false; }
+            if (b != null) RiderCard(cols[2], world, team, b);
+            else if (hasB) FreeSeatCard(cols[2], primary);
 
-            if (a != null) RiderCard(left, world, team, a);
-            else FreeSeatCard(left);
-            if (b != null) RiderCard(right, world, team, b);
-            else if (hasB) FreeSeatCard(right);
-
-            Compare(mid, world, team, a, b, bids, seats.Count);
+            Compare(cols[1], world, team, a, b, bids, seats.Count);
         }
 
-        /// <summary>One rider: hero, key line, standout trait and contract; the whole card opens the detail.</summary>
+        /// <summary>One rider: hero, standout trait and contract seasons; the whole card opens the detail.</summary>
         private void RiderCard(RectTransform area, WorldState world, Team team, Rider r)
         {
             var rider = r;
-            var body = TeamCards.Tile(area, 0, 0, 1, 1, Loc.T("rider.details"), () => Open(rider), Theme.Accent);
-            TeamCards.Hero(body, 0.6f, 1, r.Number > 0 ? "#" + r.Number : null, r.FirstName, r.LastName, Nation(r), r.Attributes.Overall, Loc.T("rider.ratingTag"));
-            TeamCards.KeyLine(body, 0.5f, 0.6f, KeyLine(world, team, r));
+            var body = Ui.Tile(area, Loc.T("rider.details"), () => Open(rider));
+            TeamCards.Hero(body, 0.56f, 1, r.Number > 0 ? "#" + r.Number : null, r.FirstName, r.LastName, Nation(r), r.Attributes.Overall, Loc.T("rider.ratingTag"));
             string icon, title, line;
             Color color;
             Trait(world, team, r, out icon, out title, out line, out color);
-            TeamCards.Highlight(body, 0.26f, 0.5f, icon, title, line, color);
+            TeamCards.Highlight(body, 0.29f, 0.53f, icon, title, line, color);
             ContractBlock(body, 0, 0.26f, world, r);
         }
 
         private static string Nation(Rider r)
         {
             return string.IsNullOrEmpty(r.Nationality) ? "" : r.Nationality.ToUpperInvariant();
-        }
-
-        private string KeyLine(WorldState world, Team team, Rider r)
-        {
-            return TeamCards.Key(Loc.T("rider.ageCap"), r.AgeOn(world.CurrentDate).ToString()) + "     " +
-                   TeamCards.Key(Loc.T("rider.morale"), Fmt.Rating(r.Morale)) + "     " +
-                   TeamCards.Key(Loc.T("rider.potentialShort"), Fmt.Attr(world, team.Id, r, "Potential"));
         }
 
         /// <summary>
@@ -223,52 +389,50 @@ namespace MotoManager.App.UI.Screens
             color = Theme.Timing;
         }
 
-        /// <summary>"CONTRACT — N seasons left", the segmented bar and the end and salary under it.</summary>
-        private static void ContractBlock(RectTransform body, float y0, float y1, WorldState world, Rider r)
+        /// <summary>"CONTRACT — N seasons left" and the segmented bar (warning colour when it ends this season).</summary>
+        private static RectTransform ContractBlock(RectTransform body, float y0, float y1, WorldState world, Rider r)
         {
             var area = UiFactory.Rect("Contract", body);
             UiFactory.Place(area, 0, y0, 1, y1);
             int left = r.Contract != null ? Math.Max(0, r.Contract.EndSeason - world.Season + 1) : 0;
             int total = r.Contract != null ? Math.Max(left, r.Contract.EndSeason - r.Contract.StartSeason + 1) : 1;
             total = Mathf.Clamp(total, 1, 6);
-            var cap = TeamCards.Text(area, "Caption", Theme.Caps(Loc.T("rider.contractCap")), Theme.FontSmall, 11, TextAnchor.MiddleLeft, Theme.TextDim);
-            TeamCards.Place(cap.rectTransform, 0, 0.64f, 0.42f, 0.96f, 16, 4);
-            string seasons = left == 1 ? Loc.T("rider.seasonLeft") : Loc.T("rider.seasonsLeft", left);
-            var val = TeamCards.Text(area, "Left", "<b>" + seasons + "</b>", Theme.FontSmall + 2, 11, TextAnchor.MiddleRight);
-            TeamCards.Place(val.rectTransform, 0.42f, 0.64f, 1, 0.96f, 4, 16);
             bool ending = left <= 1 && r.FutureContract == null;
-            var bar = TeamCards.Segments(area, total, Math.Min(left, total), ending ? Theme.Warning : Theme.Timing);
-            UiFactory.Place(bar, 0, 0.4f, 1, 0.6f);
-            bar.offsetMin = new Vector2(16, 0);
-            bar.offsetMax = new Vector2(-16, 0);
-            string under = r.Contract != null ? Loc.T("rider.untilLine", r.Contract.EndSeason, MathX.FormatMoney(r.Contract.SalaryPerSeason)) : "-";
-            if (r.FutureContract != null) under += "   " + Theme.GoodText(Loc.T("terms.next", r.FutureContract.EndSeason));
-            else if (ending) under += "   " + Theme.WarnText(Loc.T("rider.expiring"));
-            var u = TeamCards.Text(area, "Under", under, Theme.FontSmall - 2, 11, TextAnchor.MiddleLeft, Theme.TextDim, FontStyle.Normal);
-            TeamCards.Place(u.rectTransform, 0, 0.04f, 1, 0.38f, 16, 16);
+            var cap = Ui.Label(area, Theme.Caps(Loc.T("rider.contractCap")), Theme.TextCaption, TextAnchor.MiddleLeft, Theme.TextDim, FontStyle.Bold);
+            UiFactory.Place(cap.rectTransform, 0, 0.5f, 0.4f, 1);
+            string seasons = r.FutureContract != null ? Theme.GoodText(Loc.T("terms.next", r.FutureContract.EndSeason))
+                : left == 1 ? Loc.T("rider.seasonLeft") : Loc.T("rider.seasonsLeft", left);
+            var val = Ui.Label(area, Theme.Caps(seasons), Theme.TextBody, TextAnchor.MiddleRight, ending ? Theme.Warning : Theme.Text, FontStyle.Bold);
+            UiFactory.Place(val.rectTransform, 0.4f, 0.5f, 1, 1);
+            var bar = Ui.Segments(area, total, Math.Min(left, total), ending ? Theme.Warning : Theme.Timing);
+            UiFactory.Place(bar, 0, 0.12f, 1, 0.36f);
+            return area;
         }
 
-        /// <summary>An empty seat: the warning and the big button to the market.</summary>
-        private void FreeSeatCard(RectTransform area)
+        /// <summary>An empty seat: the warning and the way to the market (the primary of the page).</summary>
+        private void FreeSeatCard(RectTransform area, bool primary)
         {
-            var body = TeamCards.Tile(area, 0, 0, 1, 1, Loc.T("rider.freeSeatShort"), null, Theme.Warning);
+            var body = Ui.Tile(area, Loc.T("rider.freeSeatShort"), null, null, 0, null, null, false, Theme.Warning);
             var img = UiIcons.Icon(body, UiIcons.Person, Theme.Alpha(Theme.TextDim, 0.35f));
-            UiFactory.Place(img.rectTransform, 0.25f, 0.5f, 0.75f, 0.92f);
-            var t = TeamCards.Text(body, "Free", Theme.Caps(Loc.T("rider.freeSeatShort")), Theme.FontLarge, 16, TextAnchor.MiddleCenter, Theme.Warning,
-                FontStyle.BoldAndItalic);
-            TeamCards.Place(t.rectTransform, 0, 0.38f, 1, 0.5f, 16, 16);
-            var n = TeamCards.Text(body, "Info", Loc.T("rider.freeSeatInfo"), Theme.FontSmall - 2, 11, TextAnchor.MiddleCenter, Theme.TextDim, FontStyle.Normal);
-            TeamCards.Place(n.rectTransform, 0, 0.24f, 1, 0.38f, 20, 20);
-            TeamCards.BigButton(body, Loc.T("rider.toMarket") + "  ›", () => Shell.Show<MarketScreen>(), Theme.Accent, 0.04f, 0.03f, 0.96f, 0.22f);
+            img.rectTransform.anchorMin = img.rectTransform.anchorMax = new Vector2(0.5f, 0.7f);
+            img.rectTransform.sizeDelta = new Vector2(140, 140);
+            var t = Ui.Label(body, Theme.Caps(Loc.T("rider.freeSeatShort")), Theme.TextTitle, TextAnchor.MiddleCenter, Theme.Warning, FontStyle.BoldAndItalic);
+            UiFactory.Place(t.rectTransform, 0, 0.36f, 1, 0.48f);
+            var n = Ui.Label(body, Loc.T("rider.freeSeatInfo"), Theme.TextCaption, TextAnchor.MiddleCenter, Theme.TextDim);
+            UiFactory.Place(n.rectTransform, 0, 0.2f, 1, 0.36f);
+            var cta = Wp2Ui.BottomStrip(body, Ui.Grid.Cta);
+            Action go = () => Shell.Show<MarketScreen>();
+            Wp2Ui.Chevron(primary ? Ui.PrimaryCTA(cta, Loc.T("ux.riders.toMarket"), go) : Ui.SecondaryAccent(cta, Loc.T("ux.riders.toMarket"), go));
         }
 
         /// <summary>
         /// The middle column: the key attributes of the two riders face to face (a yellow edge on the better side),
-        /// then the bids and the pager when there are any, the big way to the market and the championship average.
+        /// then the bids and the pager as pills when there are any, the way to the market and the championship
+        /// average.
         /// </summary>
         private void Compare(RectTransform mid, WorldState world, Team team, Rider a, Rider b, int bids, int seats)
         {
-            var body = TeamCards.Tile(mid, 0, 0, 1, 1, Loc.T("rider.attributesCap"), null);
+            var body = Ui.Tile(mid, Loc.T("rider.attributesCap"));
             var head = body.parent.Find("Head");
             if (head != null)
             {
@@ -276,27 +440,30 @@ namespace MotoManager.App.UI.Screens
                 var title = head.Find("Title") as RectTransform;
                 if (title != null)
                 {
-                    var tt = title.GetComponent<Text>();
-                    tt.alignment = TextAnchor.MiddleCenter;
+                    title.GetComponent<Text>().alignment = TextAnchor.MiddleCenter;
                     title.offsetMin = new Vector2(90, 0);
                     title.offsetMax = new Vector2(-90, 0);
                 }
                 var tag = head.Find("Tag");
                 if (tag != null) tag.gameObject.SetActive(false);
-                var ca = TeamCards.Text(head, "CodeA", a != null ? a.Code : "-", Theme.FontNormal, 12, TextAnchor.MiddleLeft, Theme.Accent, FontStyle.BoldAndItalic);
-                TeamCards.Place(ca.rectTransform, 0, 0, 0.3f, 1, 14, 0);
-                var cb = TeamCards.Text(head, "CodeB", b != null ? b.Code : "-", Theme.FontNormal, 12, TextAnchor.MiddleRight, Theme.Accent, FontStyle.BoldAndItalic);
-                TeamCards.Place(cb.rectTransform, 0.7f, 0, 1, 1, 0, 14);
+                var ca = Ui.Label(head, a != null ? a.Code : "-", Theme.TextHeader, TextAnchor.MiddleLeft, Color.white, FontStyle.BoldAndItalic);
+                UiFactory.Place(ca.rectTransform, 0, 0, 0.3f, 1);
+                ca.rectTransform.offsetMin = new Vector2(16, 0);
+                var cb = Ui.Label(head, b != null ? b.Code : "-", Theme.TextHeader, TextAnchor.MiddleRight, Color.white, FontStyle.BoldAndItalic);
+                UiFactory.Place(cb.rectTransform, 0.7f, 0, 1, 1);
+                cb.rectTransform.offsetMax = new Vector2(-16, 0);
             }
 
+            // From the bottom: the average (48), the market button (64) and, when needed, the pills row (56).
             bool extras = bids > 0 || seats > 2;
-            float bottom = extras ? 0.41f : 0.28f;
+            float used = 48 + 8 + Ui.Grid.Button + 8 + (extras ? Ui.Grid.Hit + 4 : 0);
+
+            var attrs = Wp2Ui.Above(body, used);
             var keys = MobileParts.KeyAttributes;
             for (int i = 0; i < keys.Length; i++)
             {
-                var row = UiFactory.Rect("Attr", body);
-                float y1 = 1 - (1 - bottom) * i / keys.Length, y0 = 1 - (1 - bottom) * (i + 1) / keys.Length;
-                UiFactory.Place(row, 0, y0, 1, y1);
+                var row = UiFactory.Rect("Attr", attrs);
+                UiFactory.Place(row, 0, 1 - (i + 1f) / keys.Length, 1, 1 - (float)i / keys.Length);
                 if (i % 2 == 0)
                 {
                     var shade = UiFactory.Decor("Shade", row, new Color(1, 1, 1, 0.035f));
@@ -305,197 +472,210 @@ namespace MotoManager.App.UI.Screens
                 double va = a != null ? Fmt.Estimate(world, team.Id, a, keys[i]) : -1;
                 double vb = b != null ? Fmt.Estimate(world, team.Id, b, keys[i]) : -1;
                 bool aBetter = va >= 0 && va > vb + 0.5, bBetter = vb >= 0 && vb > va + 0.5;
-                var la = TeamCards.Text(row, "A", a != null ? Fmt.Attr(world, team.Id, a, keys[i]) : "-", Theme.FontLarge, 14, TextAnchor.MiddleLeft,
+                var la = Ui.Label(row, a != null ? Fmt.Attr(world, team.Id, a, keys[i]) : "-", Theme.TextTitle, TextAnchor.MiddleLeft,
                     aBetter ? Color.white : Theme.Alpha(Theme.TextDim, 0.9f), FontStyle.BoldAndItalic);
-                TeamCards.Place(la.rectTransform, 0, 0.04f, 0.27f, 0.96f, 18, 0);
-                var cap = TeamCards.Text(row, "Caption", Theme.Caps(Loc.T("attr." + keys[i])), Theme.FontSmall - 4, 10, TextAnchor.MiddleCenter,
-                    Color.Lerp(Theme.TextDim, Color.white, 0.25f));
-                TeamCards.Place(cap.rectTransform, 0.27f, 0.04f, 0.73f, 0.96f, 2, 2);
-                var lb = TeamCards.Text(row, "B", b != null ? Fmt.Attr(world, team.Id, b, keys[i]) : "-", Theme.FontLarge, 14, TextAnchor.MiddleRight,
+                UiFactory.Place(la.rectTransform, 0, 0, 0.27f, 1);
+                la.rectTransform.offsetMin = new Vector2(16, 0);
+                var cap = Ui.Label(row, Theme.Caps(Loc.T("attr." + keys[i])), Theme.TextCaption, TextAnchor.MiddleCenter,
+                    Color.Lerp(Theme.TextDim, Color.white, 0.25f), FontStyle.Bold);
+                UiFactory.Place(cap.rectTransform, 0.27f, 0, 0.73f, 1);
+                var lb = Ui.Label(row, b != null ? Fmt.Attr(world, team.Id, b, keys[i]) : "-", Theme.TextTitle, TextAnchor.MiddleRight,
                     bBetter ? Color.white : Theme.Alpha(Theme.TextDim, 0.9f), FontStyle.BoldAndItalic);
-                TeamCards.Place(lb.rectTransform, 0.73f, 0.04f, 1, 0.96f, 0, 18);
+                UiFactory.Place(lb.rectTransform, 0.73f, 0, 1, 1);
+                lb.rectTransform.offsetMax = new Vector2(-16, 0);
                 if (aBetter) TeamCards.Edge(row, Theme.Timing, true, 6);
                 if (bBetter) TeamCards.Edge(row, Theme.Timing, false, 6);
             }
 
             if (extras)
             {
+                var pills = Wp2Ui.BottomStrip(body, Ui.Grid.Hit, 48 + 8 + Ui.Grid.Button + 8);
                 bool both = bids > 0 && seats > 2;
-                float split = both ? 0.5f : 1;
+                var pc = both ? Ui.Columns12(pills, 6, 6) : Ui.Columns12(pills, 12);
+                int k = 0;
+                if (bids > 0)
+                    Wp2Ui.TapPill(pc[k++], Loc.T("rider.bids", bids), Theme.Warning, () => { _bids = true; Shell.Refresh(); });
                 if (seats > 2)
-                    TeamCards.BigButton(body, Loc.T("rider.otherPair", _pair + 1, _pair + 2, seats) + "  ›", () =>
+                    Wp2Ui.TapPill(pc[k], Loc.T("rider.otherPair", _pair + 1, _pair + 2, seats), Theme.PanelLight, () =>
                     {
                         _pair = _pair + 2 >= seats ? 0 : _pair + 1;
                         Shell.Refresh();
-                    }, Theme.PanelLight, 0.03f, 0.27f, 0.03f + 0.94f * split, 0.4f, Theme.FontSmall);
-                if (bids > 0)
-                    TeamCards.BigButton(body, Loc.T("rider.bids", bids) + "  ›", () => { _bids = true; Shell.Refresh(); },
-                        Color.Lerp(Theme.Warning, Theme.PanelLight, 0.35f), both ? 0.5f : 0.03f, 0.27f, 0.97f, 0.4f, Theme.FontSmall);
+                    });
             }
-            TeamCards.BigButton(body, Loc.T("rider.signRiders") + "  ›", () => Shell.Show<MarketScreen>(), Theme.Accent, 0.03f, 0.11f, 0.97f, extras ? 0.265f : 0.275f,
-                Theme.FontNormal + 2);
+
+            // Browse page: the way to the market is secondary (accent outline), never the filled primary.
+            var go = Wp2Ui.BottomStrip(body, Ui.Grid.Button, 48 + 8);
+            Wp2Ui.Chevron(Ui.SecondaryAccent(go, Loc.T("rider.signRiders"), () => Shell.Show<MarketScreen>()));
 
             // The championship average, to read the two ratings against.
             double sum = 0;
             int n = 0;
             foreach (var x in world.ActiveRidersInCategory(team.CategoryId)) { sum += x.Attributes.Overall; n++; }
-            var avg = UiFactory.Rect("Average", body);
-            UiFactory.Place(avg, 0, 0, 1, 0.11f);
-            var lbl = TeamCards.Text(avg, "Label", Theme.Caps(Loc.T("rider.categoryAverage")), Theme.FontSmall - 2, 10, TextAnchor.MiddleRight,
-                Color.Lerp(Theme.TextDim, Color.white, 0.2f));
-            TeamCards.Place(lbl.rectTransform, 0, 0.05f, 0.72f, 0.95f, 10, 8);
-            TeamCards.RatingSquare(avg, n > 0 ? sum / n : -1, null, new Vector2(0.72f, 0.5f), new Vector2(4, 0), 46);
-            var sq = avg.Find("Rating") as RectTransform;
-            if (sq != null) sq.pivot = new Vector2(0, 0.5f);
+            var avg = Wp2Ui.BottomStrip(body, 48);
+            var lbl = Ui.Label(avg, Theme.Caps(Loc.T("rider.categoryAverage")), Theme.TextCaption, TextAnchor.MiddleRight,
+                Color.Lerp(Theme.TextDim, Color.white, 0.2f), FontStyle.Bold);
+            UiFactory.Place(lbl.rectTransform, 0, 0, 0.74f, 1);
+            lbl.rectTransform.offsetMax = new Vector2(-8, 0);
+            var sq = Ui.RatingBadge(avg, n > 0 ? sum / n : -1, null, 44);
+            sq.rectTransform.anchorMin = sq.rectTransform.anchorMax = new Vector2(0.74f, 0.5f);
+            sq.rectTransform.pivot = new Vector2(0, 0.5f);
+            sq.rectTransform.anchoredPosition = new Vector2(4, 0);
         }
 
         // ------------------------------------------------------------------ detail
 
         /// <summary>
-        /// One rider: on the left the big card (hero, key line, contract seasons) with the contract actions as big
-        /// buttons; on the right, scrolling, the attribute tiles, the statistics and every attribute, the traits and
-        /// the contract terms.
+        /// One rider without scrolling: on the left the profile (hero, age · morale · potential, the contract — a tap
+        /// shows every term —, the statistics link and the contract actions); on the right the six key attributes
+        /// as tiles (every attribute behind the "i") and the traits.
         /// </summary>
         private void Detail(RectTransform content, WorldState world, Team team, Rider r)
         {
             var rider = r;
-            var left = UiFactory.Rect("Left", content);
-            UiFactory.Place(left, 0, 0, 0.4f, 1);
-            var back = TeamCards.BigButton(left, "‹  " + Loc.T("rider.backToRiders"), () => { _detail = null; _confirmRelease = null; Shell.Refresh(); },
-                Theme.PanelLight, 0, 1, 1, 1, Theme.FontSmall + 2);
-            var brt = (RectTransform)back.transform;
-            brt.offsetMin = new Vector2(5, -66);
-            brt.offsetMax = new Vector2(-5, -2);
-            back.GetComponentInChildren<Text>().alignment = TextAnchor.MiddleLeft;
-
-            var cardArea = UiFactory.Rect("Card", left);
-            UiFactory.Stretch(cardArea);
-            cardArea.offsetMax = new Vector2(0, -68);
-            var body = TeamCards.Tile(cardArea, 0, 0, 1, 1, Loc.T("rider.profileTitle"), null, Theme.Accent);
+            var cols = Ui.Columns12(content, 5, 7);
+            var body = Wp2Ui.BackTile(cols[0], Loc.T("rider.profileTitle"), CloseDetail);
             TeamCards.Hero(body, 0.62f, 1, r.Number > 0 ? "#" + r.Number : null, r.FirstName, r.LastName, Nation(r), r.Attributes.Overall, Loc.T("rider.ratingTag"));
-            TeamCards.KeyLine(body, 0.52f, 0.62f, KeyLine(world, team, r));
-            ContractBlock(body, 0.27f, 0.52f, world, r);
-            Actions(body, world, team, rider);
 
-            var right = UiFactory.Rect("Right", content);
-            UiFactory.Place(right, 0.4f, 0, 1, 1);
-            var list = UiFactory.ScrollList("Detail", right);
-            UiFactory.Stretch((RectTransform)list.parent.parent);
+            string key = Loc.T("rider.age", r.AgeOn(world.CurrentDate)) + "  ·  " + Loc.T("rider.morale") + " " + Fmt.Rating(r.Morale) + "  ·  " +
+                         Loc.T("rider.potentialShort") + " " + Fmt.Attr(world, team.Id, r, "Potential");
+            var kl = Ui.Label(body, Theme.Caps(key), Theme.TextCaption, TextAnchor.MiddleLeft, Color.Lerp(Theme.TextDim, Color.white, 0.25f), FontStyle.Bold);
+            UiFactory.Place(kl.rectTransform, 0, 0.53f, 1, 0.61f);
 
-            TeamCards.Section(list, Loc.T("rider.attributesTitle"));
+            // The contract block is a button: the sheet lists every term.
+            var hit = UiFactory.Panel("ContractButton", body, new Color(1, 1, 1, 0.04f));
+            UiFactory.Place(hit.rectTransform, 0, 0.29f, 1, 0.51f);
+            var hb = hit.gameObject.AddComponent<Button>();
+            hb.targetGraphic = hit;
+            hb.onClick.AddListener(() =>
+            {
+                GameAudio.ClickSound();
+                ContractSheet(world, rider);
+            });
+            var block = ContractBlock((RectTransform)hit.transform, 0, 1, world, r);
+            block.offsetMin = new Vector2(12, 4);
+            block.offsetMax = new Vector2(-40, -4);
+            var ch = UiIcons.Chevron(hit.transform, Theme.TextDim);
+            ch.rectTransform.anchorMin = ch.rectTransform.anchorMax = new Vector2(1, 0.5f);
+            ch.rectTransform.sizeDelta = new Vector2(22, 22);
+            ch.rectTransform.anchoredPosition = new Vector2(-18, 0);
+
+            var stats = UiFactory.Rect("Stats", body);
+            UiFactory.Place(stats, 0.3f, 0.15f, 1, 0.27f);
+            Ui.Ghost(stats, Loc.T("ux.riders.seeStats"), () => { _stats = true; Shell.Refresh(); });
+
+            Actions(Wp2Ui.BottomStrip(body, Ui.Grid.Button), world, team, rider);
+
+            // Right: the attribute tiles, then the traits.
+            var rows = Ui.Rows(cols[1], 0.6f, 0.4f);
+            var attrs = Ui.Tile(rows[0], Loc.T("rider.attributesTitle"), null, null, 0, null,
+                () => Wp2Ui.AttributesSheet(world, team.Id, rider));
             var keys = MobileParts.KeyAttributes;
+            var lines = Ui.Rows(attrs, 1, 1);
             for (int row = 0; row < 2; row++)
             {
-                var line = TeamCards.GridRow(list, UiScale.Touch(116));
+                var cells = Ui.Columns12(lines[row], 4, 4, 4);
                 for (int k = 0; k < 3; k++)
                 {
                     int idx = row * 3 + k;
                     if (idx >= keys.Length) break;
-                    string attr = keys[idx];
-                    double v = Fmt.Estimate(world, team.Id, r, attr);
-                    TeamCards.ValueTile(line, k / 3f, 0, (k + 1) / 3f, 1, Loc.T("attr." + attr), Fmt.Attr(world, team.Id, r, attr), v,
-                        () => Shell.Toast(Loc.T("attr." + attr) + ": " + Loc.T("attrinfo." + attr)));
+                    double v = Fmt.Estimate(world, team.Id, r, keys[idx]);
+                    Ui.StatTile(cells[k], Loc.T("attr." + keys[idx]), Fmt.Attr(world, team.Id, r, keys[idx]), null, null, Color.white, null, 0, null,
+                        Ui.RatingColor(v));
                 }
             }
-            UiFactory.ButtonRow(list, 60, UiFactory.Act(Theme.Caps(Loc.T("rider.tab.stats")) + "  ›", () => { _stats = true; Shell.Refresh(); }));
-            Ui.Expander(list, "rider.attrs", Loc.T("rider.allAttributes"), inner =>
-            {
-                var attrs = Ui.Card(inner, null);
-                MobileParts.AttributeTable(attrs, world, team.Id, rider);
-            }, Shell.Refresh);
+            TraitsTile(rows[1], world, team, r);
+        }
 
-            // Traits: the riding styles and what each does in a race.
-            var traits = TeamCards.Card(list, Loc.T("rider.traits"));
-            int styles = 0;
+        /// <summary>The traits: at most two rows (injury first, then the riding styles); all of them in the sheet.</summary>
+        private void TraitsTile(RectTransform area, WorldState world, Team team, Rider r)
+        {
+            var items = new List<KeyValuePair<string[], Color>>();
+            if (r.InjuryRoundsOut > 0)
+                items.Add(new KeyValuePair<string[], Color>(new[] { UiIcons.Person, Loc.T("rider.injuredTitle"), Loc.T("home.injured", r.InjuryRoundsOut) }, Theme.Bad));
             foreach (var s in r.Styles)
             {
                 if (s == RidingStyle.None) continue;
-                styles++;
-                TraitRow(traits, UiIcons.Star, Loc.T("style." + s), Loc.T("styleinfo." + s), Theme.Timing);
+                items.Add(new KeyValuePair<string[], Color>(new[] { UiIcons.Star, Loc.T("style." + s), Loc.T("styleinfo." + s) }, Theme.Timing));
             }
-            if (styles == 0)
+            if (items.Count == 0)
             {
                 string icon, title, text;
                 Color color;
                 Trait(world, team, r, out icon, out title, out text, out color);
-                TraitRow(traits, icon, title, text, color);
+                items.Add(new KeyValuePair<string[], Color>(new[] { icon, title, text }, color));
             }
-            else if (r.InjuryRoundsOut > 0) TraitRow(traits, UiIcons.Person, Loc.T("rider.injuredTitle"), Loc.T("home.injured", r.InjuryRoundsOut), Theme.Bad);
-
-            // Contract: the figures as label / value rows, the whole sentence folded.
-            var c = r.Contract;
-            var contract = TeamCards.Card(list, Loc.T("rider.contractCap"));
-            Ui.Line(contract, Loc.T("staff.salary"), c != null ? MathX.FormatMoney(c.SalaryPerSeason) : "-", true);
-            Ui.Line(contract, Loc.T("rider.until"), c != null ? c.EndSeason.ToString() : "-", true);
-            if (c != null)
+            var paragraphs = new List<string>();
+            foreach (var it in items) paragraphs.Add("<b>" + Theme.Caps(it.Key[1]) + "</b>\n" + it.Key[2]);
+            var body = Ui.Tile(area, Loc.T("rider.traits"), null, items.Count > 2 ? "+" + (items.Count - 2) : null, 0, null,
+                Wp2Ui.Info(Loc.T("rider.traits"), paragraphs.ToArray()));
+            int shown = Math.Min(2, items.Count);
+            for (int i = 0; i < shown; i++)
             {
-                double win = c.RaceBonusFor(1);
-                if (win > 0) Ui.Line(contract, Loc.T("rider.winBonus"), MathX.FormatMoney(win));
-                if (c.PointBonus > 0) Ui.Line(contract, Loc.T("rider.pointBonus"), MathX.FormatMoney(c.PointBonus));
-                var release = c.Clause(ClauseType.ReleaseClause);
-                Ui.Line(contract, Loc.T("rider.releaseClause"), release != null ? MathX.FormatMoney(release.Amount) : Theme.Dim(Loc.T("rider.none")));
-                var option = c.Clause(ClauseType.TeamOption);
-                if (option != null) Ui.Line(contract, Loc.T("terms.option"), option.Exercised ? Theme.GoodText(Loc.T("terms.optionExercised")) : Loc.T("rider.optionAvailable"));
-                if (c.RiderFunding > 0) Ui.Line(contract, Loc.T("rider.funding"), MathX.FormatMoney(c.RiderFunding));
-                Ui.Line(contract, Loc.T("rider.terminationCost"), MathX.FormatMoney(Contracts.TerminationCost(world, Game.Db, r)));
+                float y1 = 1 - (float)i / 2, y0 = 1 - (i + 1f) / 2;
+                TeamCards.Highlight(body, y0, y1, items[i].Key[0], items[i].Key[1], items[i].Key[2], items[i].Value);
             }
-            if (r.FutureContract != null)
-                Ui.Line(contract, Loc.T("rider.nextContract"), Theme.GoodText(Loc.T("rider.untilLine", r.FutureContract.EndSeason, MathX.FormatMoney(r.FutureContract.SalaryPerSeason))));
-            Ui.Note(contract, NegotiationPanel.Terms(c));
         }
 
-        private static void TraitRow(Transform card, string icon, string title, string text, Color color)
+        /// <summary>The contract sheet: every figure as label / value rows and the terms in one sentence.</summary>
+        private void ContractSheet(WorldState world, Rider r)
         {
-            var row = UiFactory.Row(card, 80);
-            var bg = row.gameObject.AddComponent<Image>();
-            bg.color = Theme.Alpha(color, 0.12f);
-            bg.raycastTarget = false;
-            TeamCards.Edge(row, color, true, 6);
-            var img = UiIcons.Icon(row, icon, color);
-            img.rectTransform.anchorMin = new Vector2(0, 0.12f);
-            img.rectTransform.anchorMax = new Vector2(0, 0.88f);
-            img.rectTransform.offsetMin = new Vector2(16, 0);
-            img.rectTransform.offsetMax = new Vector2(76, 0);
-            var t = TeamCards.Text(row, "Title", Theme.Caps(title), Theme.FontSmall + 2, 12, TextAnchor.LowerLeft, Color.white, FontStyle.BoldAndItalic);
-            TeamCards.Place(t.rectTransform, 0, 0.5f, 1, 0.94f, 90, 10);
-            var l = TeamCards.Text(row, "Line", text, Theme.FontSmall - 2, 11, TextAnchor.UpperLeft, Theme.TextDim, FontStyle.Normal);
-            TeamCards.Place(l.rectTransform, 0, 0.06f, 1, 0.5f, 90, 10);
+            var c = r.Contract;
+            Ui.Sheet(Loc.T("rider.contractCap") + " · " + r.FullName, list =>
+            {
+                Ui.Line(list, Loc.T("staff.salary"), c != null ? MathX.FormatMoney(c.SalaryPerSeason) : "-", true);
+                Ui.Line(list, Loc.T("rider.until"), c != null ? c.EndSeason.ToString() : "-", true);
+                if (c != null)
+                {
+                    double win = c.RaceBonusFor(1);
+                    if (win > 0) Ui.Line(list, Loc.T("rider.winBonus"), MathX.FormatMoney(win));
+                    if (c.PointBonus > 0) Ui.Line(list, Loc.T("rider.pointBonus"), MathX.FormatMoney(c.PointBonus));
+                    var release = c.Clause(ClauseType.ReleaseClause);
+                    Ui.Line(list, Loc.T("rider.releaseClause"), release != null ? MathX.FormatMoney(release.Amount) : Theme.Dim(Loc.T("rider.none")));
+                    var option = c.Clause(ClauseType.TeamOption);
+                    if (option != null) Ui.Line(list, Loc.T("terms.option"), option.Exercised ? Theme.GoodText(Loc.T("terms.optionExercised")) : Loc.T("rider.optionAvailable"));
+                    if (c.RiderFunding > 0) Ui.Line(list, Loc.T("rider.funding"), MathX.FormatMoney(c.RiderFunding));
+                    Ui.Line(list, Loc.T("rider.terminationCost"), MathX.FormatMoney(Contracts.TerminationCost(world, Game.Db, r)));
+                }
+                if (r.FutureContract != null)
+                    Ui.Line(list, Loc.T("rider.nextContract"), Theme.GoodText(Loc.T("rider.untilLine", r.FutureContract.EndSeason, MathX.FormatMoney(r.FutureContract.SalaryPerSeason))));
+                UiFactory.Paragraph(list, Theme.Dim(NegotiationPanel.Terms(c)), Theme.TextCaption);
+            });
         }
 
-        /// <summary>The contract actions as big buttons: negotiate, the team option and the (confirmed) release.</summary>
-        private void Actions(RectTransform body, WorldState world, Team team, Rider rider)
+        /// <summary>
+        /// The contract actions on one row: the team option (secondary, when it can be exercised), the release (two-tap
+        /// danger showing the cost) and the renewal (the page's primary, right).
+        /// </summary>
+        private void Actions(RectTransform row, WorldState world, Team team, Rider rider)
         {
-            var acts = new List<UiAct>();
-            if (rider.FutureContract == null) acts.Add(UiFactory.Primary(Loc.T("team.renew"), () => { _neg = new NegotiationState { RiderId = rider.Id }; Shell.Refresh(); }));
             var option = rider.Contract != null ? rider.Contract.Clause(ClauseType.TeamOption) : null;
-            if (option != null && !option.Exercised && rider.Contract.EndSeason == world.Season)
-                acts.Add(UiFactory.Act(Loc.T("team.option"), () =>
+            bool canOption = option != null && !option.Exercised && rider.Contract.EndSeason == world.Season;
+            bool canRenew = rider.FutureContract == null;
+            var spans = new List<int>();
+            if (canOption) spans.Add(4);
+            spans.Add(canOption ? 4 : 6);
+            if (canRenew) spans.Add(canOption ? 4 : 6);
+            var cols = Ui.Columns12(row, spans.ToArray());
+            int k = 0;
+            if (canOption)
+                Ui.Secondary(cols[k++], Loc.T("team.option"), () =>
                 {
                     bool ok = ContractService.ExerciseOption(world, Game.Db, team, rider);
                     Shell.Toast(ok ? Loc.T("team.optionDone", rider.FullName) : Loc.T("team.optionNoSeat"), ok);
                     Shell.Refresh();
-                }));
-            double cost = Contracts.TerminationCost(world, Game.Db, rider);
-            bool confirm = _confirmRelease == rider.Id;
-            acts.Add(UiFactory.Option(Loc.T(confirm ? "team.releaseConfirm" : "team.release", MathX.FormatMoney(cost)), confirm, () =>
+                });
+            string cost = MathX.FormatMoney(Contracts.TerminationCost(world, Game.Db, rider));
+            Ui.Danger(cols[k++], Loc.T("team.release", cost), Loc.T("team.releaseConfirm", cost), "rider.release." + rider.Id, () =>
             {
-                if (_confirmRelease == rider.Id)
-                {
-                    Contracts.Terminate(world, Game.Db, team, rider);
-                    _confirmRelease = null;
-                    _detail = null;
-                }
-                else _confirmRelease = rider.Id;
+                Contracts.Terminate(world, Game.Db, team, rider);
+                _detail = null;
                 Shell.Refresh();
-            }));
-            for (int i = 0; i < acts.Count; i++)
-            {
-                var act = acts[i];
-                bool release = i == acts.Count - 1;
-                Color color = act.Primary ? Theme.Accent : release ? (confirm ? Theme.Bad : Color.Lerp(Theme.Bad, Theme.PanelLight, 0.55f)) : Theme.PanelLight;
-                TeamCards.BigButton(body, act.Key, act.Value, color, (float)i / acts.Count, 0.02f, (float)(i + 1) / acts.Count, 0.25f, Theme.FontSmall + 2);
-            }
+            }, null);
+            if (canRenew)
+                Ui.PrimaryCTA(cols[k], Loc.T("team.renew"), () => { _neg = new NegotiationState { RiderId = rider.Id }; Shell.Refresh(); });
         }
+
+        // ------------------------------------------------------------------ statistics
 
         /// <summary>Results of one race session for the rider (position, or 0 when out / not started).</summary>
         private struct RaceDot
@@ -531,70 +711,75 @@ namespace MotoManager.App.UI.Screens
                     }
             var last = races.Count > 0 ? races[races.Count - 1] : (RaceDot?)null;
 
-            // Four big numbers, the chart on the left, the rest of the season and the career on the right.
-            var top = Ui.Card(list, r.FullName, Loc.T("rider.stats.season", world.Season));
+            // Four big numbers, the chart on the left, the season and the career on the right.
+            var top = Ui.Card(list, r.FullName, Theme.Caps(Loc.T("rider.stats.season", world.Season)), null, () => { _stats = false; Shell.Refresh(); });
             Ui.Kpis(top,
-                Ui.Kpi(pos > 0 ? "P" + pos : "-", Loc.T("rider.stats.position")),
+                Ui.Kpi(Theme.Pos(pos), Loc.T("rider.stats.position")),
                 Ui.Kpi(st != null ? st.Points.ToString("0") : "0", Loc.T("rider.stats.points")),
                 Ui.Kpi(st != null ? st.Wins.ToString() : "0", Loc.T("rider.stats.wins")),
                 Ui.Kpi(st != null ? st.Podiums.ToString() : "0", Loc.T("rider.stats.podiums")));
 
             RectTransform leftCol, rightCol;
-            Ui.Columns(list, out leftCol, out rightCol);
+            Wp2Ui.Split(list, 7, 5, out leftCol, out rightCol);
             var chart = Ui.Card(leftCol, Loc.T("rider.stats.chart"));
-            if (races.Count == 0) Ui.Note(chart, Loc.T("rider.stats.noRaces"));
+            if (races.Count == 0) Ui.Empty(chart, null, Loc.T("rider.stats.noRaces"));
             else PositionChart(chart, races);
 
-            var season = Ui.Card(rightCol, null);
-            Ui.Line(season, Loc.T("rider.stats.lastRace"), last.HasValue ? (last.Value.Out ? Theme.BadText(Loc.T("result.DNF")) : "P" + last.Value.Position) : "-");
+            var season = Ui.Card(rightCol, Loc.T("rider.stats.season", world.Season));
+            Ui.Line(season, Loc.T("rider.stats.lastRace"), last.HasValue ? (last.Value.Out ? Theme.BadText(Loc.T("result.DNF")) : Theme.Pos(last.Value.Position)) : "-");
             Ui.Line(season, Loc.T("rider.stats.average"), finished > 0 ? ((double)sum / finished).ToString("0.0", Loc.Culture) : "-");
             Ui.Line(season, Loc.T("rider.stats.dnfs"), dnfs.ToString());
 
-            // Career: the category under the season, wins and podiums together.
-            var hist = Ui.Card(rightCol, Loc.T("rider.stats.career"));
-            var w = new[] { 1.6f, 3f, 0.9f, 1.5f, 1.1f };
-            UiFactory.TableRow(hist, 32, w, new[] { Loc.T("col.season"), Loc.T("col.team"), "Pos", Loc.T("col.wins") + " / " + Loc.T("col.podiums"), Loc.T("col.points") }, true);
+            // Career: season (and category), team, position with wins and podiums, points.
+            var hist = Ui.Card(rightCol, Loc.T("rider.stats.career"), null,
+                string.IsNullOrEmpty(r.RealHistory) ? null : Wp2Ui.Info(Loc.T("rider.stats.career"), r.RealHistory));
+            var w = new[] { 1.5f, 2.6f, 2f, 1f };
+            Ui.ListCaptions(hist, w, new[] { Loc.T("col.season"), Loc.T("col.team"), "Pos", Loc.T("col.points") });
             int rows = 0;
             for (int i = r.CareerHistory.Count - 1; i >= 0 && rows < 9; i--, rows++)
             {
                 var h = r.CareerHistory[i];
                 var cat = Game.Db.GetCategory(h.CategoryId);
-                UiFactory.TableRow(hist, 40, w, new[]
+                UiFactory.TableRow(hist, 48, w, new[]
                 {
-                    h.Season + "\n" + Theme.Dim(cat != null ? cat.ShortName : h.CategoryId ?? ""), h.TeamName ?? "",
-                    h.ChampionshipPosition > 0 ? h.ChampionshipPosition.ToString() : "-", h.Wins + " / " + h.Podiums, h.Points.ToString("0")
+                    h.Season + "\n" + Theme.Dim("<size=" + Theme.TextMin + ">" + (cat != null ? cat.ShortName : h.CategoryId ?? "") + "</size>"),
+                    h.TeamName ?? "",
+                    (h.ChampionshipPosition > 0 ? Theme.Pos(h.ChampionshipPosition) : "-") + "\n" +
+                    Theme.Dim("<size=" + Theme.TextMin + ">" + Loc.T("ux.stats.winsPodiums", h.Wins, h.Podiums) + "</size>"),
+                    h.Points.ToString("0")
                 });
             }
-            if (r.CareerHistory.Count == 0) UiFactory.Paragraph(hist, Theme.Dim(Loc.T("rider.stats.noHistory")), Theme.FontSmall - 2);
-            if (!string.IsNullOrEmpty(r.RealHistory)) Ui.Note(hist, r.RealHistory);
+            if (r.CareerHistory.Count == 0) Ui.Empty(hist, null, Loc.T("rider.stats.noHistory"));
         }
 
         /// <summary>
         /// Line chart of race positions: higher is better, the points joined by a line. Podiums in gold, silver and
-        /// bronze, points finishes in green, the rest in blue; retirements are grey crosses at the bottom.
+        /// bronze, points finishes in green, the rest in grey; retirements are crosses at the bottom.
         /// </summary>
         private static void PositionChart(Transform card, List<RaceDot> races)
         {
-            var area = UiFactory.Row(card, 220);
+            var area = UiFactory.Row(card, 260);
             int field = 1;
             foreach (var d in races) field = Math.Max(field, d.Field);
-            const float bottom = 0.14f, top = 0.9f;
+            const float bottom = 0.14f, top = 0.88f;
             // Guide lines: P1, P5, P10, P15 (points), last.
             foreach (int guide in new[] { 1, 5, 10, 15 })
             {
                 if (guide > field) continue;
                 float gy = bottom + (top - bottom) * (field - guide) / Math.Max(1f, field - 1);
                 var g = UiFactory.Panel("Guide", area, new Color(1, 1, 1, guide == 15 ? 0.14f : 0.06f));
-                g.rectTransform.anchorMin = new Vector2(0.06f, gy);
+                g.raycastTarget = false;
+                g.rectTransform.anchorMin = new Vector2(0.07f, gy);
                 g.rectTransform.anchorMax = new Vector2(1f, gy);
                 g.rectTransform.offsetMin = new Vector2(0, -1);
                 g.rectTransform.offsetMax = new Vector2(0, 1);
-                var gl = UiFactory.Label("GuideLabel", area, "P" + guide, Theme.FontSmall - 8, TextAnchor.MiddleLeft, Theme.TextDim);
-                gl.rectTransform.anchorMin = new Vector2(0, gy - 0.05f);
-                gl.rectTransform.anchorMax = new Vector2(0.06f, gy + 0.05f);
+                var gl = UiFactory.Label("GuideLabel", area, "P" + guide, Theme.TextMin, TextAnchor.MiddleLeft, Theme.TextDim);
+                gl.rectTransform.anchorMin = new Vector2(0, gy - 0.06f);
+                gl.rectTransform.anchorMax = new Vector2(0.07f, gy + 0.06f);
                 gl.rectTransform.offsetMin = gl.rectTransform.offsetMax = Vector2.zero;
+                gl.horizontalOverflow = HorizontalWrapMode.Overflow;
             }
-            float wEach = 0.94f / Math.Max(races.Count, 8);
+            float wEach = 0.93f / Math.Max(races.Count, 8);
             var line = UiFactory.Rect("Line", area).gameObject.AddComponent<LineGraphic>();
             UiFactory.Stretch(line.rectTransform);
             line.color = new Color(1, 1, 1, 0.45f);
@@ -602,20 +787,23 @@ namespace MotoManager.App.UI.Screens
             for (int i = 0; i < races.Count; i++)
             {
                 var d = races[i];
-                float x = 0.06f + wEach * (i + 0.5f);
+                float x = 0.07f + wEach * (i + 0.5f);
                 float y = d.Out ? bottom : bottom + (top - bottom) * (field - d.Position) / Math.Max(1f, field - 1);
                 if (!d.Out) line.Points.Add(new Vector2(x, y));
                 Color c = d.Out ? new Color(0.45f, 0.48f, 0.55f) : d.Position == 1 ? new Color32(240, 190, 40, 255) : d.Position == 2 ? new Color32(200, 205, 215, 255) :
                     d.Position == 3 ? new Color32(205, 125, 60, 255) : d.Position <= 15 ? Theme.Good : (Color)Theme.Steel;
                 var dot = UiFactory.Panel("Dot", area, c, true);
+                dot.raycastTarget = false;
                 UiFactory.Round(dot, 4f);
                 dot.rectTransform.anchorMin = dot.rectTransform.anchorMax = new Vector2(x, y);
                 dot.rectTransform.sizeDelta = new Vector2(18, 18);
-                var label = UiFactory.Label("Pos", area, d.Out ? "X" : d.Position.ToString(), Theme.FontSmall - 6, TextAnchor.LowerCenter, d.Out ? Theme.TextDim : Theme.Text);
+                var label = UiFactory.Label("Pos", area, d.Out ? "X" : d.Position.ToString(), Theme.TextMin, TextAnchor.LowerCenter, d.Out ? Theme.TextDim : Theme.Text);
+                label.horizontalOverflow = HorizontalWrapMode.Overflow;
                 label.rectTransform.anchorMin = label.rectTransform.anchorMax = new Vector2(x, y);
-                label.rectTransform.sizeDelta = new Vector2(40, 24);
-                label.rectTransform.anchoredPosition = new Vector2(0, 20);
-                var round = UiFactory.Label("Round", area, d.Label, Theme.FontSmall - 8, TextAnchor.UpperCenter, Theme.TextDim);
+                label.rectTransform.sizeDelta = new Vector2(44, 26);
+                label.rectTransform.anchoredPosition = new Vector2(0, 22);
+                var round = UiFactory.Label("Round", area, d.Label, Theme.TextMin, TextAnchor.UpperCenter, Theme.TextDim);
+                round.horizontalOverflow = HorizontalWrapMode.Overflow;
                 round.rectTransform.anchorMin = new Vector2(x - wEach * 0.5f, 0);
                 round.rectTransform.anchorMax = new Vector2(x + wEach * 0.5f, 0.1f);
                 round.rectTransform.offsetMin = round.rectTransform.offsetMax = Vector2.zero;
@@ -625,20 +813,15 @@ namespace MotoManager.App.UI.Screens
     }
 
     /// <summary>
-    /// Staff: one tile per role filling the screen (the role, the holder's surname and the level in big timing-yellow
-    /// type; how well the role is covered is only the colour of the left edge). A tap opens the role: the holders as
-    /// compact rows whose actions (other rider, renew, release) fold behind one "Options" button, and the candidates
-    /// as rows with the level, salary, the gain over the current holder and one hire button each.
+    /// Staff (UX spec §3.7–§3.8): one tile per role filling the screen (the holder's surname and the level in big
+    /// timing-yellow type; how well the role is covered is the colour of the left edge), under a strip with the
+    /// headcount, the payroll and the hiring ceiling. A tap opens the role: the holders as rows (a tap opens their
+    /// actions in a sheet) and the candidates with one secondary hire button each.
     /// </summary>
     public class StaffPage : ScreenBase
     {
         public override string Title { get { return Loc.T("tab.staff"); } }
         private StaffRole? _role;
-        private string _confirmFire;
-        private string _confirmHire;
-        private string _options;
-
-        private const float StripHeight = 64;
 
         public override void Build(RectTransform content)
         {
@@ -655,7 +838,7 @@ namespace MotoManager.App.UI.Screens
             staff.Sort((a, b) => a.Role.CompareTo(b.Role));
             if (_role.HasValue)
             {
-                RoleDetail(Page(content), world, team, staff, _role.Value);
+                RoleDetail(content, world, team, staff, _role.Value);
                 return;
             }
             Overview(content, world, team, staff);
@@ -682,9 +865,7 @@ namespace MotoManager.App.UI.Screens
         private void Close()
         {
             _role = null;
-            _confirmFire = null;
-            _confirmHire = null;
-            _options = null;
+            Ui.Disarm();
             Shell.Refresh();
         }
 
@@ -692,51 +873,44 @@ namespace MotoManager.App.UI.Screens
 
         private void Overview(RectTransform content, WorldState world, Team team, List<StaffMember> staff)
         {
-            // Top strip, one line: headcount and payroll on the left, the skill ceiling on the right (a tap explains it).
+            // Top strip: headcount and payroll on the left, the hiring ceiling (explained behind "i") on the right.
             double payroll = 0;
             foreach (var s in staff) payroll += s.Salary;
-            var strip = UiFactory.Rect("Strip", content);
-            strip.anchorMin = new Vector2(0, 1);
-            strip.anchorMax = new Vector2(1, 1);
-            strip.pivot = new Vector2(0.5f, 1);
-            strip.offsetMin = new Vector2(0, -StripHeight);
-            strip.offsetMax = Vector2.zero;
-            var sum = UiFactory.Decor("Summary", strip, new Color(1, 1, 1, 0.05f));
-            UiFactory.Place(sum.rectTransform, 0, 0, 0.6f, 1, 5);
-            TeamCards.Edge(sum.transform, Theme.Accent, true, 6);
-            var st = TeamCards.Text(sum.transform, "Text", Loc.T("staff.summaryShort", staff.Count, MathX.FormatMoney(payroll)),
-                Theme.FontNormal, 14, TextAnchor.MiddleLeft);
-            TeamCards.Place(st.rectTransform, 0, 0, 1, 1, 22, 10);
+            var band = UiFactory.Rect("Band", content);
+            band.anchorMin = new Vector2(0, 1);
+            band.anchorMax = new Vector2(1, 1);
+            band.pivot = new Vector2(0.5f, 1);
+            band.offsetMin = new Vector2(0, -Ui.Grid.Header);
+            band.offsetMax = Vector2.zero;
+            var bc = Ui.Columns12(band, 8, 4);
+            Ui.HeaderStrip(bc[0], Loc.T("staff.summaryShort", staff.Count, MathX.FormatMoney(payroll)));
             double ceiling = StaffMarket.SkillCeiling(world, Game.Db, team);
-            var ceil = UiFactory.Button("Ceiling", strip, "", () => Shell.Toast(Loc.T("staff.ceiling", ceiling.ToString("0"))), new Color(1, 1, 1, 0.05f), Theme.FontNormal);
-            ceil.image.sprite = null;
-            UiFactory.Place((RectTransform)ceil.transform, 0.6f, 0, 1, 1, 5);
-            var cl = ceil.GetComponentInChildren<Text>();
-            cl.supportRichText = true;
-            cl.fontStyle = FontStyle.BoldAndItalic;
-            cl.alignment = TextAnchor.MiddleRight;
-            cl.resizeTextMinSize = 14;
-            cl.resizeTextMaxSize = Theme.FontNormal;
-            cl.text = Theme.TimingText(Theme.Caps(Loc.T("staff.ceilingTag", ceiling.ToString("0")))) + "  " + Theme.Dim("ⓘ");
-            cl.rectTransform.offsetMax = new Vector2(-14, 0);
+            var ceil = Ui.HeaderStrip(bc[1], Loc.T("ux.staff.ceiling"), Theme.TimingText("<size=" + Theme.TextHeader + ">" + ceiling.ToString("0") + "</size>"));
+            Ui.InfoButton(ceil, Loc.T("ux.staff.ceiling"), Loc.T("staff.ceiling", ceiling.ToString("0")));
 
-            var grid = UiFactory.Rect("Grid", content);
-            UiFactory.Stretch(grid);
-            grid.offsetMax = new Vector2(0, -StripHeight);
+            var grid = Wp2Ui.Above(content, 0, Ui.Grid.Header + Ui.Grid.Gap);
             var roles = Roles();
-            int cols = 4, rows = (roles.Count + cols - 1) / cols;
-            for (int i = 0; i < roles.Count; i++)
+            const int cols = 4;
+            int rows = (roles.Count + cols - 1) / cols;
+            var shares = new float[rows];
+            for (int i = 0; i < rows; i++) shares[i] = 1;
+            var lines = Ui.Rows(grid, shares);
+            for (int y = 0; y < rows; y++)
             {
-                int cx = i % cols, cy = i / cols;
-                RoleTile(grid, world, team, staff, roles[i], (float)cx / cols, 1 - (float)(cy + 1) / rows, (float)(cx + 1) / cols, 1 - (float)cy / rows);
+                var cells = Ui.Columns12(lines[y], 3, 3, 3, 3);
+                for (int x = 0; x < cols; x++)
+                {
+                    int i = y * cols + x;
+                    if (i < roles.Count) RoleTile(cells[x], world, team, staff, roles[i]);
+                }
             }
         }
 
         /// <summary>
-        /// One role: the header, the holder's surname and the level in big type; the left edge says how it is covered.
-        /// An empty role shows only the way to hire (dimmed when the role is optional).
+        /// One role: the holder's surname and the level in big type; the left edge says how it is covered, the badge
+        /// how many contracts end this season. An empty role shows only the way to hire (dimmed when optional).
         /// </summary>
-        private void RoleTile(RectTransform grid, WorldState world, Team team, List<StaffMember> staff, StaffRole role, float x0, float y0, float x1, float y1)
+        private void RoleTile(RectTransform area, WorldState world, Team team, List<StaffMember> staff, StaffRole role)
         {
             double best;
             int count;
@@ -744,171 +918,157 @@ namespace MotoManager.App.UI.Screens
             var holders = staff.FindAll(s => s.Role == role);
             int ending = holders.FindAll(s => s.ContractEndSeason <= world.Season).Count;
             var r = role;
-            var body = TeamCards.Tile(grid, x0, y0, x1, y1, Loc.T("role." + role), () =>
+            bool optionalEmpty = holders.Count == 0 && cov == RoleCoverage.Optional;
+            var body = Ui.Tile(area, Loc.T("role." + role), () =>
             {
                 _role = r;
-                _confirmFire = null;
-                _confirmHire = null;
-                _options = null;
+                Ui.Disarm();
                 Shell.Refresh();
-            }, null, ending, Theme.Warning, 4);
-            var tile = body.parent;
-            var edge = TeamCards.Edge(tile, CoverageColor(cov), true, 7);
-            edge.transform.SetAsLastSibling();
+            }, null, ending, Theme.Warning, null, optionalEmpty, CoverageColor(cov));
 
             if (holders.Count == 0)
             {
-                bool optional = cov == RoleCoverage.Optional;
-                if (optional) tile.gameObject.AddComponent<CanvasGroup>().alpha = 0.5f;
-                var hint = TeamCards.Text(body, "Hire", Theme.Caps(Loc.T("staff.hireHint")), Theme.FontNormal, 14, TextAnchor.MiddleCenter,
-                    optional ? Theme.TextDim : Theme.Bad, FontStyle.BoldAndItalic);
-                TeamCards.Place(hint.rectTransform, 0, 0.1f, 1, 0.9f, 16, 12);
+                var hint = Ui.Label(body, Theme.Caps(Loc.T("staff.hireHint")), Theme.TextHeader, TextAnchor.MiddleCenter,
+                    optionalEmpty ? Theme.TextDim : Theme.Bad, FontStyle.BoldAndItalic);
+                UiFactory.Stretch(hint.rectTransform);
                 return;
             }
 
             var names = new List<string>();
             foreach (var h in holders) names.Add(h.LastName);
-            var name = TeamCards.Text(body, "Who", Theme.Caps(string.Join(" / ", names.ToArray())), Theme.FontNormal, 14, TextAnchor.MiddleLeft, Theme.Text,
-                FontStyle.BoldAndItalic);
-            TeamCards.Place(name.rectTransform, 0, 0.08f, 0.62f, 0.92f, 18, 4);
-            var lv = TeamCards.Text(body, "Level", best.ToString("0"), Theme.FontTitle, 24, TextAnchor.MiddleRight, Theme.Timing, FontStyle.BoldAndItalic);
+            var name = Ui.Label(body, Theme.Caps(string.Join(" / ", names.ToArray())), Theme.TextHeader, TextAnchor.MiddleLeft, Theme.Text, FontStyle.BoldAndItalic);
+            UiFactory.Place(name.rectTransform, 0, 0, 0.64f, 1);
+            var lv = Ui.Label(body, best.ToString("0"), Theme.TextKey, TextAnchor.MiddleRight, Theme.Timing, FontStyle.BoldAndItalic);
             UiFactory.DropShadow(lv, 0.4f, 2);
-            TeamCards.Place(lv.rectTransform, 0.62f, 0.04f, 1, 0.96f, 0, 14);
+            UiFactory.Place(lv.rectTransform, 0.64f, 0, 1, 1);
         }
 
         // ------------------------------------------------------------------ role detail
 
-        private void RoleDetail(RectTransform list, WorldState world, Team team, List<StaffMember> staff, StaffRole role)
+        private void RoleDetail(RectTransform content, WorldState world, Team team, List<StaffMember> staff, StaffRole role)
         {
             double current;
             int count;
             var cov = StaffService.Coverage(world, Game.Db, team, role, out current, out count);
-            RectTransform leftCol, rightCol;
-            Ui.Columns(list, out leftCol, out rightCol);
+            var cols = Ui.Columns12(content, 5, 7);
 
-            // Left: the role (with the way back in its header) and who holds it now; what the role does folded.
-            var card = TeamCards.Card(leftCol, Loc.T("role." + role), TeamCards.Colored(Theme.Caps(Loc.T("staff.cov." + cov)), CoverageColor(cov)), null, Close);
+            // Left: the role (back chevron, coverage, what it does behind "i") and who holds it now.
+            var left = Wp2Ui.BackTile(cols[0], Loc.T("role." + role), Close,
+                Wp2Ui.Info(Loc.T("role." + role),
+                    "<b>" + Loc.T("staff.whatFor") + "</b>  " + Loc.T("roleinfo." + role),
+                    "<b>" + Loc.T("staff.impact") + "</b>  " + Loc.T("roleimpact." + role),
+                    Loc.T("staff.advice." + cov)),
+                TeamCards.Colored(Theme.Caps(Loc.T("staff.cov." + cov)), CoverageColor(cov)));
+            Wp2Ui.ListIn(left);
             var holders = staff.FindAll(s => s.Role == role);
-            if (holders.Count == 0)
-            {
-                var none = TeamCards.Text(UiFactory.Row(card, 64), "None", Theme.Caps(Loc.T("staff.nobody")), Theme.FontNormal, 14, TextAnchor.MiddleLeft,
-                    cov == RoleCoverage.Missing ? Theme.Bad : Theme.TextDim, FontStyle.BoldAndItalic);
-                TeamCards.Place(none.rectTransform, 0, 0, 1, 1, 8, 8);
-            }
-            foreach (var s in holders) Holder(card, world, team, s);
-            Ui.Note(card, "<b>" + Loc.T("staff.whatFor") + "</b>  " + Loc.T("roleinfo." + role) + "\n<b>" + Loc.T("staff.impact") + "</b>  " +
-                          Loc.T("roleimpact." + role) + "\n" + Loc.T("staff.advice." + cov));
+            if (holders.Count == 0) Ui.Empty(left, UiIcons.Person, Loc.T("staff.nobody"));
+            foreach (var s in holders) Holder(left, world, team, s);
 
             // Right: the candidates, under the skill ceiling.
             double ceiling = StaffMarket.SkillCeiling(world, Game.Db, team);
-            var cands = TeamCards.Card(rightCol, Loc.T("staff.candidates"), Theme.TimingText(Theme.Caps(Loc.T("staff.ceilingTag", ceiling.ToString("0")))));
+            var cands = Ui.Tile(cols[1], Loc.T("staff.candidates"), null,
+                Theme.TimingText(Theme.Caps(Loc.T("staff.ceilingTag", ceiling.ToString("0")))));
+            Wp2Ui.ListIn(cands);
             var replaces = StaffMarket.WouldReplace(world, team, role);
             if (replaces != null)
-            {
-                var warn = TeamCards.Text(UiFactory.Row(cands, 44), "Replaces",
-                    Loc.T("staff.replaceShort", replaces.FullName, MathX.FormatMoney(StaffMarket.SeveranceCost(world, replaces))), Theme.FontSmall, 12,
-                    TextAnchor.MiddleLeft, Theme.Warning, FontStyle.Normal);
-                TeamCards.Place(warn.rectTransform, 0, 0, 1, 1, 4, 4);
-            }
+                Ui.Alert(cands, Loc.T("staff.replaceShort", replaces.FullName, MathX.FormatMoney(StaffMarket.SeveranceCost(world, replaces))));
             int shown = 0;
             foreach (var c in StaffMarket.Candidates(world, Game.Db, team, role))
             {
-                if (shown++ >= 4) break;
+                if (shown >= (replaces != null ? 5 : 6)) break;
+                shown++;
                 var cand = c;
-                string gain = current >= 0 && c.Skill >= current + 0.5 ? TeamCards.Colored("<b>+" + (c.Skill - current).ToString("0") + "</b>", Theme.Good) : null;
-                var row = TeamCards.PersonRow(cands, c.Skill, Loc.T("staff.skill"), c.FullName, MathX.FormatMoney(c.Salary) + " / " + Loc.T("staff.season"),
-                    gain, 0.3f);
-                bool confirming = _confirmHire == cand.Id && replaces != null;
-                var b = TeamCards.BigButton(row, confirming
-                    ? Loc.T("staff.fireConfirm", MathX.FormatMoney(StaffMarket.SeveranceCost(world, replaces)))
-                    : Loc.T("staff.hireButton"), () =>
-                {
-                    // Replacing someone needs a second tap that shows the severance on the button.
-                    var who = StaffMarket.WouldReplace(world, team, cand.Role);
-                    if (who != null && _confirmHire != cand.Id)
-                    {
-                        _confirmHire = cand.Id;
-                        Shell.Refresh();
-                        return;
-                    }
-                    _confirmHire = null;
-                    StaffMarket.Hire(world, team, cand);
-                    Shell.Toast(who != null ? Loc.T("staff.hiredReplacing", cand.FullName, who.FullName) : Loc.T("staff.hired", cand.FullName, Loc.T("role." + cand.Role)));
-                    Shell.Refresh();
-                }, confirming ? Theme.Bad : Theme.Accent, 0.7f, 0.08f, 1, 0.92f, Theme.FontSmall + 2);
-                ((RectTransform)b.transform).offsetMax = new Vector2(-8, -4);
+                string detail = (string.IsNullOrEmpty(c.Nationality) ? "" : c.Nationality.ToUpperInvariant() + " · ") + Loc.T("staff.exp") + " " + c.Experience;
+                if (current >= 0 && c.Skill >= current + 0.5)
+                    detail += "  " + Theme.GoodText("+" + (c.Skill - current).ToString("0") + " " + Loc.T("staff.vsCurrent"));
+                else if (current >= 0) detail += "  " + Loc.T("staff.noBetter");
+                Ui.PersonRow(cands, c.Skill, c.FullName, detail, MathX.FormatMoney(c.Salary) + "/" + Loc.T("staff.season"), null,
+                    UiFactory.Primary(Loc.T("staff.hireButton"), () => Hire(world, team, cand)));
             }
-            if (shown == 0) Ui.Note(cands, Loc.T("staff.noCandidates"));
+            if (shown == 0) Ui.Empty(cands, UiIcons.Person, Loc.T("staff.noCandidates"));
         }
 
-        /// <summary>
-        /// One holder: level square, name and one small line (rider, contract end), with a single "Options" button
-        /// that unfolds the actions (other rider, renew, release with confirmation) in a row under it.
-        /// </summary>
-        private void Holder(Transform card, WorldState world, Team team, StaffMember s)
+        /// <summary>Hires a candidate; when that replaces someone, a sheet confirms it first (with the severance).</summary>
+        private void Hire(WorldState world, Team team, StaffMember cand)
+        {
+            var who = StaffMarket.WouldReplace(world, team, cand.Role);
+            Action hire = () =>
+            {
+                StaffMarket.Hire(world, team, cand);
+                Shell.Toast(who != null ? Loc.T("staff.hiredReplacing", cand.FullName, who.FullName) : Loc.T("staff.hired", cand.FullName, Loc.T("role." + cand.Role)));
+                Shell.Refresh();
+            };
+            if (who == null)
+            {
+                hire();
+                return;
+            }
+            Ui.Sheet(cand.FullName, list =>
+            {
+                Ui.Alert(list, Loc.T("staff.replaceShort", who.FullName, MathX.FormatMoney(StaffMarket.SeveranceCost(world, who))));
+                Ui.Line(list, Loc.T("staff.skill"), cand.Skill.ToString("0") + "  " + Theme.Dim("(" + who.LastName + " " + who.Skill.ToString("0") + ")"));
+                Ui.Line(list, Loc.T("staff.salary"), MathX.FormatMoney(cand.Salary) + "/" + Loc.T("staff.season"));
+            }, UiFactory.Primary(Loc.T("staff.hireButton"), hire), UiFactory.Act(Loc.T("ux.common.close"), () => { }), 0.5f);
+        }
+
+        /// <summary>One holder: level, name and one line (rider, contract end, salary); a tap opens the actions.</summary>
+        private void Holder(Transform list, WorldState world, Team team, StaffMember s)
         {
             var member = s;
             var rider = s.AssignedRiderId != null ? world.GetRider(s.AssignedRiderId) : null;
             bool expiring = s.ContractEndSeason <= world.Season;
             string until = Loc.T("staff.until", s.ContractEndSeason);
             string detail = (rider != null ? Loc.T("staff.with", rider.LastName) + " · " : "") + (expiring ? Theme.WarnText(until) : until);
-            bool open = _options == s.Id;
-            var head = TeamCards.PersonRow(card, s.Skill, Loc.T("staff.skill"), s.FullName, detail, null, 0.3f);
-            TeamCards.BigButton(head, open ? Loc.T("staff.closeOptions") : "···  " + Loc.T("staff.options"), () =>
-            {
-                _options = _options == member.Id ? null : member.Id;
-                _confirmFire = null;
-                Shell.Refresh();
-            }, open ? Theme.PanelLight : Color.Lerp(Theme.PanelLight, Theme.Card, 0.4f), 0.7f, 0.08f, 1, 0.92f, Theme.FontSmall + 2);
-            if (!open) return;
+            Ui.PersonRow(list, s.Skill, s.FullName, detail, MathX.FormatMoney(s.Salary) + "/" + Loc.T("staff.season"), () => HolderSheet(world, team, member));
+        }
 
-            var acts = new List<UiAct>();
-            if (StaffService.PerRider(s.Role) && team.RiderIds.Count > 1)
-                acts.Add(UiFactory.Act(Loc.T("staff.otherRider"), () =>
-                {
-                    int idx = team.RiderIds.IndexOf(member.AssignedRiderId);
-                    string next = team.RiderIds[(idx + 1) % team.RiderIds.Count];
-                    if (StaffService.Assign(world, team, member, next))
+        /// <summary>A holder's actions: other rider (when it applies), release (two taps) and renew (primary).</summary>
+        private void HolderSheet(WorldState world, Team team, StaffMember s)
+        {
+            var member = s;
+            var rider = s.AssignedRiderId != null ? world.GetRider(s.AssignedRiderId) : null;
+            double severance = StaffMarket.SeveranceCost(world, s);
+            Ui.Sheet(s.FullName, list =>
+            {
+                var l = (RectTransform)list;
+                Ui.Line(list, Loc.T("staff.skill"), s.Skill.ToString("0"), true);
+                Ui.Line(list, Loc.T("staff.salary"), MathX.FormatMoney(s.Salary) + "/" + Loc.T("staff.season"));
+                Ui.Line(list, Loc.T("rider.until"), s.ContractEndSeason <= world.Season ? Theme.WarnText(s.ContractEndSeason.ToString()) : s.ContractEndSeason.ToString());
+                Ui.Line(list, Loc.T("staff.exp"), s.Experience.ToString());
+                if (rider != null) Ui.Line(list, Loc.T("tab.riders"), rider.FullName);
+                if (StaffService.PerRider(s.Role) && team.RiderIds.Count > 1)
+                    Ui.Secondary(l, Loc.T("staff.otherRider"), () =>
                     {
-                        var r = world.GetRider(next);
-                        Shell.Toast(Loc.T("staff.assigned", member.FullName, r != null ? r.FullName : ""));
-                    }
+                        Ui.CloseSheet();
+                        int idx = team.RiderIds.IndexOf(member.AssignedRiderId);
+                        string next = team.RiderIds[(idx + 1) % team.RiderIds.Count];
+                        if (StaffService.Assign(world, team, member, next))
+                        {
+                            var r = world.GetRider(next);
+                            Shell.Toast(Loc.T("staff.assigned", member.FullName, r != null ? r.FullName : ""));
+                        }
+                        Shell.Refresh();
+                    });
+                Ui.Danger(l, Loc.T("staff.release", MathX.FormatMoney(severance)), Loc.T("staff.fireConfirm", MathX.FormatMoney(severance)), "staff.fire." + member.Id, () =>
+                {
+                    Ui.CloseSheet();
+                    StaffMarket.Fire(world, team, member.Id);
+                    Shell.Toast(Loc.T("staff.released", member.FullName, MathX.FormatMoney(severance)));
                     Shell.Refresh();
-                }));
-            acts.Add(UiFactory.Primary(Loc.T("staff.renew"), () =>
+                }, null);
+            }, UiFactory.Primary(Loc.T("staff.renew"), () =>
             {
                 StaffMarket.Extend(world, Game.Db, team, member, 2);
                 Shell.Toast(Loc.T("staff.renewed", member.FullName, member.ContractEndSeason, MathX.FormatMoney(member.Salary)));
                 Shell.Refresh();
-            }));
-            double severance = StaffMarket.SeveranceCost(world, s);
-            bool confirm = _confirmFire == s.Id;
-            acts.Add(UiFactory.Option(confirm ? Loc.T("staff.fireConfirm", MathX.FormatMoney(severance)) : Loc.T("staff.fire"), confirm, () =>
-            {
-                if (_confirmFire == member.Id)
-                {
-                    StaffMarket.Fire(world, team, member.Id);
-                    _confirmFire = null;
-                    _options = null;
-                    Shell.Toast(Loc.T("staff.released", member.FullName, MathX.FormatMoney(severance)));
-                }
-                else _confirmFire = member.Id;
-                Shell.Refresh();
-            }));
-            var row = UiFactory.Row(card, UiScale.Touch(64));
-            for (int i = 0; i < acts.Count; i++)
-            {
-                var act = acts[i];
-                bool fire = i == acts.Count - 1;
-                Color color = act.Primary ? Theme.Accent : fire ? (confirm ? Theme.Bad : Color.Lerp(Theme.Bad, Theme.PanelLight, 0.55f)) : Theme.PanelLight;
-                TeamCards.BigButton(row, act.Key, act.Value, color, (float)i / acts.Count, 0, (float)(i + 1) / acts.Count, 1, Theme.FontSmall);
-            }
+            }), null, 0.5f);
         }
     }
 
     /// <summary>
-    /// The manager in the same tile language: the hero card (name, reputation square, wealth and contract), the
-    /// skills as tiles, the season objective and the team's structure.
+    /// The manager (UX spec §3.9), without scrolling: on the left the manager (reputation, wealth, salary or owner,
+    /// contract end; the role sentence behind "i") and the five skills as bars; on the right the season objective
+    /// and the team's structure (with the team's reputation).
     /// </summary>
     public class ManagerPage : ScreenBase
     {
@@ -916,83 +1076,75 @@ namespace MotoManager.App.UI.Screens
 
         public override void Build(RectTransform content)
         {
-            var page = Page(content);
             var world = Game.World;
             var team = world.PlayerTeam;
             var me = world.PlayerManager;
-            RectTransform list, rightCol;
-            Ui.Columns(page, out list, out rightCol);
-            if (me != null)
-            {
-                var card = TeamCards.Card(list, Loc.T("manager.subtitle"));
-                var hero = UiFactory.Row(card, 150);
-                bool owner = me.Job != null && me.Job.Role == ManagerRole.OwnerManager;
-                TeamCards.Hero(hero, 0, 1, null, me.FirstName, me.LastName, string.IsNullOrEmpty(me.Nationality) ? "" : me.Nationality.ToUpperInvariant(),
-                    me.Reputation, Loc.T("manager.repTag"));
-                var keys = UiFactory.Row(card, 52);
-                var bg = keys.gameObject.AddComponent<Image>();
-                bg.color = new Color(0, 0, 0, 0.45f);
-                bg.raycastTarget = false;
-                string status = owner ? TeamCards.Key(Loc.T("manager.status"), Loc.T("manager.ownerKpi"))
-                    : TeamCards.Key(Loc.T("manager.until"), me.Job != null ? me.Job.EndSeason.ToString() : "-");
-                var kt = TeamCards.Text(keys, "Keys", TeamCards.Key(Loc.T("manager.wealthShort"), MathX.FormatMoney(me.PersonalWealth)) + "     " + status,
-                    Theme.FontSmall + 2, 11, TextAnchor.MiddleCenter);
-                TeamCards.Place(kt.rectTransform, 0, 0, 1, 1, 12, 12);
-                if (me.Job != null)
-                {
-                    // The salary in plain sight when employed; the full sentence (employer, autonomy) folded.
-                    var org = world.GetOrganisation(me.Job.OrganisationId);
-                    if (!owner) Ui.Line(card, Loc.T("staff.salary"), MathX.FormatMoney(me.Job.SalaryPerSeason), true);
-                    string role = owner ? Loc.T("manager.owner", org != null ? org.Name : "") :
-                        Loc.T("manager.employed", org != null ? org.Name : "", me.Job.EndSeason, MathX.FormatMoney(me.Job.SalaryPerSeason), Loc.T("autonomy." + me.Job.Autonomy));
-                    Ui.Note(card, role);
-                }
-
-                // Skills: one tile each, three to a row.
-                TeamCards.Section(list, Loc.T("mycareer.skills"));
-                var skills = new[]
-                {
-                    new KeyValuePair<string, double>("mycareer.skill.negotiation", me.Negotiation),
-                    new KeyValuePair<string, double>("mycareer.skill.sporting", me.SportingManagement),
-                    new KeyValuePair<string, double>("mycareer.skill.finance", me.Finance),
-                    new KeyValuePair<string, double>("mycareer.skill.relations", me.Relations),
-                    new KeyValuePair<string, double>("mycareer.skill.commercial", me.Commercial)
-                };
-                for (int i = 0; i < skills.Length; i += 3)
-                {
-                    var row = TeamCards.GridRow(list, UiScale.Touch(110));
-                    for (int k = 0; k < 3 && i + k < skills.Length; k++)
-                    {
-                        var sk = skills[i + k];
-                        TeamCards.ValueTile(row, k / 3f, 0, (k + 1) / 3f, 1, Loc.T(sk.Key), sk.Value.ToString("0"), sk.Value, null);
-                    }
-                }
-            }
+            var cols = Ui.Columns12(content, 6, 6);
+            if (me != null) ManagerColumn(cols[0], world, me);
+            else Ui.Empty(Wp2Ui.ListIn(cols[0]), UiIcons.Person, Loc.T("shell.noTeam"));
             if (team == null) return;
+
+            var rows = Ui.Rows(cols[1], 0.42f, 0.58f);
             var pers = team.Personality;
             if (pers != null)
             {
                 int teams = world.TeamsInCategory(team.CategoryId).Count;
-                var card = TeamCards.Card(rightCol, Loc.T("objective.title"));
-                var big = TeamCards.Text(UiFactory.Row(card, 64), "Objective", Theme.Caps(Loc.T("objective." + pers.Objective)), Theme.FontLarge, 14,
-                    TextAnchor.MiddleLeft, Theme.Timing, FontStyle.BoldAndItalic);
-                TeamCards.Place(big.rectTransform, 0, 0, 1, 1, 6, 6);
-                Ui.Line(card, Loc.T("objective.current"), Loc.T("objective.target", TeamAI.TargetPosition(pers.Objective, teams)));
+                var obj = Ui.Tile(rows[0], Loc.T("objective.title"), null,
+                    Theme.Caps(Loc.T("ux.manager.target", TeamAI.TargetPosition(pers.Objective, teams))));
+                var big = Ui.Label(obj, Theme.Caps(Loc.T("objective." + pers.Objective)), Theme.TextTitle, TextAnchor.MiddleLeft, Theme.Timing, FontStyle.BoldAndItalic);
+                UiFactory.Place(big.rectTransform, 0, 0.5f, 1, 1);
                 if (pers.LastPosition > 0)
-                    Ui.Line(card, Loc.T("objective.last", Loc.T("objective." + pers.LastObjective), pers.LastPosition),
-                        pers.LastObjectiveMet ? Theme.GoodText(Loc.T("objective.met")) : Theme.BadText(Loc.T("objective.missed")));
+                {
+                    var last = Ui.Label(obj, Theme.Caps(Loc.T("objective.last", Loc.T("objective." + pers.LastObjective), pers.LastPosition)) + "   " +
+                                             (pers.LastObjectiveMet ? Theme.GoodText(Theme.Caps(Loc.T("objective.met"))) : Theme.BadText(Theme.Caps(Loc.T("objective.missed")))),
+                        Theme.TextCaption, TextAnchor.MiddleLeft, Theme.TextDim, FontStyle.Bold);
+                    UiFactory.Place(last.rectTransform, 0, 0, 1, 0.45f);
+                }
             }
-            var orgCard = TeamCards.Card(rightCol, Loc.T("manager.structure"));
+            var org = Wp2Ui.ListIn(Ui.Tile(pers != null ? rows[1] : cols[1], Loc.T("manager.structure")), 4);
             var o = world.OrganisationOf(team);
-            Ui.Line(orgCard, Loc.T("manager.team"), team.Name, true);
+            Ui.Line(org, Loc.T("manager.team"), team.Name, true);
             if (o != null)
             {
-                Ui.Line(orgCard, Loc.T("manager.organisation"), o.Name);
-                Ui.Line(orgCard, Loc.T("finance.owner"), Loc.T("owner." + o.Owner));
+                Ui.Line(org, Loc.T("manager.organisation"), o.Name);
+                Ui.Line(org, Loc.T("finance.owner"), Loc.T("owner." + o.Owner));
             }
             var cat = Game.Db.GetCategory(team.CategoryId);
-            Ui.Line(orgCard, Loc.T("manager.category"), cat != null ? cat.Name : team.CategoryId);
-            Ui.Line(orgCard, Loc.T("manager.teamReputation"), Fmt.Rating(team.Reputation));
+            Ui.Line(org, Loc.T("manager.category"), cat != null ? cat.Name : team.CategoryId);
+            Ui.Line(org, Loc.T("manager.teamReputation"), Fmt.Rating(team.Reputation));
+        }
+
+        private void ManagerColumn(RectTransform area, WorldState world, ManagerProfile me)
+        {
+            var rows = Ui.Rows(area, 0.36f, 0.64f);
+            bool owner = me.Job != null && me.Job.Role == ManagerRole.OwnerManager;
+            string role = null;
+            if (me.Job != null)
+            {
+                var org = world.GetOrganisation(me.Job.OrganisationId);
+                role = owner ? Loc.T("manager.owner", org != null ? org.Name : "") :
+                    Loc.T("manager.employed", org != null ? org.Name : "", me.Job.EndSeason, MathX.FormatMoney(me.Job.SalaryPerSeason), Loc.T("autonomy." + me.Job.Autonomy));
+            }
+            var card = Wp2Ui.ListIn(Ui.Tile(rows[0], me.FirstName + " " + me.LastName,
+                null, Theme.Caps(Loc.T("manager.subtitle")), 0, null, role != null ? Wp2Ui.Info(Loc.T("manager.subtitle"), role) : null));
+            Ui.Kpis(card,
+                Ui.Kpi(me.Reputation.ToString("0"), Loc.T("manager.reputation")),
+                Ui.Kpi(MathX.FormatMoney(me.PersonalWealth), Loc.T("manager.wealthShort")),
+                owner ? Ui.Kpi(Loc.T("manager.ownerKpi"), Loc.T("manager.status"))
+                      : Ui.Kpi(me.Job != null ? MathX.FormatMoney(me.Job.SalaryPerSeason) : "-", Loc.T("staff.salary")),
+                Ui.Kpi(me.Job != null ? me.Job.EndSeason.ToString() : "-", Loc.T("manager.until")));
+
+            var skills = Wp2Ui.ListIn(Ui.Tile(rows[1], Loc.T("mycareer.skills")), 6);
+            var list = new[]
+            {
+                new KeyValuePair<string, double>("mycareer.skill.negotiation", me.Negotiation),
+                new KeyValuePair<string, double>("mycareer.skill.sporting", me.SportingManagement),
+                new KeyValuePair<string, double>("mycareer.skill.finance", me.Finance),
+                new KeyValuePair<string, double>("mycareer.skill.relations", me.Relations),
+                new KeyValuePair<string, double>("mycareer.skill.commercial", me.Commercial)
+            };
+            foreach (var sk in list)
+                Ui.Bar(skills, Loc.T(sk.Key), sk.Value / 100.0, "<b>" + sk.Value.ToString("0") + "</b>", Ui.RatingColor(sk.Value), 42);
         }
     }
 }
