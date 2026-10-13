@@ -9,126 +9,148 @@ using UnityEngine;
 namespace MotoManager.App.UI.Screens
 {
     /// <summary>
-    /// "My career": the manager's money, salary, fame and skills, the current job and what the owners think, the
-    /// renewal in the last season of a contract, and the career so far.
+    /// "My career" summary (UX spec §3.20), one screen: on the left the manager (money, salary, fame; the career so far
+    /// behind a link) over the five skills; on the right the job (at most five lines and the owners' confidence, the
+    /// advice behind "i", resigning behind "...") and, in the last season of a contract, the renewal with the screen's
+    /// primary. Without a job: see offers (primary) or found a team.
     /// </summary>
     public class CareerSummaryPage : ScreenBase
     {
         public override string Title { get { return Loc.T("tab.career.summary"); } }
-        private bool _confirmResign;
 
         public override void Build(RectTransform content)
         {
-            var list = Page(content);
             var world = Game.World;
             var m = world.PlayerManager;
             if (m == null) return;
             var job = m.Job;
-            RectTransform leftCol, rightCol;
-            Ui.Columns(list, out leftCol, out rightCol);
+            var cols = Ui.Columns12(content, 6, 6);
+            var left = Ui.Rows(cols[0], 0.46f, 0.54f);
 
-            var me = Ui.Card(leftCol, m.FullName, Loc.T("background." + m.BackgroundId));
+            var me = Wp4Ui.ListIn(Ui.Tile(left[0], m.FullName, null, Theme.Caps(Loc.T("background." + m.BackgroundId))), 8);
             Ui.Kpis(me,
                 Ui.Kpi(MathX.FormatMoney(m.PersonalWealth), Loc.T("mycareer.wealth")),
                 Ui.Kpi(job != null && job.Role == ManagerRole.TeamManager ? MathX.FormatMoney(job.SalaryPerSeason) : "-", Loc.T("mycareer.salary")),
                 Ui.Kpi(Fmt.Rating(m.Reputation), Loc.T("mycareer.fame")));
-            // Skills one tap away.
-            Ui.Expander(me, "career.skills", Loc.T("mycareer.skills"), inner =>
-            {
-                Ui.Bar(inner, Loc.T("mycareer.skill.negotiation"), m.Negotiation / 100.0, m.Negotiation.ToString("0"), Ui.RatingColor(m.Negotiation), 32);
-                Ui.Bar(inner, Loc.T("mycareer.skill.sporting"), m.SportingManagement / 100.0, m.SportingManagement.ToString("0"), Ui.RatingColor(m.SportingManagement), 32);
-                Ui.Bar(inner, Loc.T("mycareer.skill.finance"), m.Finance / 100.0, m.Finance.ToString("0"), Ui.RatingColor(m.Finance), 32);
-                Ui.Bar(inner, Loc.T("mycareer.skill.relations"), m.Relations / 100.0, m.Relations.ToString("0"), Ui.RatingColor(m.Relations), 32);
-                Ui.Bar(inner, Loc.T("mycareer.skill.commercial"), m.Commercial / 100.0, m.Commercial.ToString("0"), Ui.RatingColor(m.Commercial), 32);
-            }, Shell.Refresh);
+            Ui.Ghost(me, Loc.T("mycareer.history"), () => HistorySheet(m));
 
-            // The job.
-            var jobCard = Ui.Card(rightCol, Loc.T("mycareer.job"));
+            var skills = Wp4Ui.ListIn(Ui.Tile(left[1], Loc.T("mycareer.skills")), 4);
+            Skill(skills, "mycareer.skill.negotiation", m.Negotiation);
+            Skill(skills, "mycareer.skill.sporting", m.SportingManagement);
+            Skill(skills, "mycareer.skill.finance", m.Finance);
+            Skill(skills, "mycareer.skill.relations", m.Relations);
+            Skill(skills, "mycareer.skill.commercial", m.Commercial);
+
             if (job == null)
             {
-                UiFactory.Paragraph(jobCard, "<b>" + Loc.T("mycareer.noJob") + "</b>", Theme.FontNormal);
-                Ui.Note(jobCard, Loc.T("mycareer.noJobInfo"));
-                UiFactory.ButtonRow(jobCard, 60,
-                    UiFactory.Primary(Loc.T("mycareer.seeOffers"), () => Shell.Show<CareerOffersPage>()),
-                    UiFactory.Act(Loc.T("mycareer.found"), () => Shell.Show<CareerFoundPage>()));
+                NoJob(cols[1]);
+                return;
             }
-            else
+            bool renewalDue = job.Role == ManagerRole.TeamManager && job.EndSeason <= world.Season;
+            var right = renewalDue ? Ui.Rows(cols[1], 0.62f, 0.38f) : new[] { cols[1] };
+            JobTile(right[0], world, m, job);
+            if (renewalDue) RenewalTile(right[1], world, m);
+        }
+
+        private static void Skill(Transform list, string key, double v)
+        {
+            Ui.Bar(list, Loc.T(key), v / 100.0, "<b>" + v.ToString("0") + "</b>", Ui.RatingColor(v), 44);
+        }
+
+        private void NoJob(RectTransform area)
+        {
+            var body = Ui.Tile(area, Loc.T("mycareer.job"), null, null, 0, null, Wp4Ui.Info(Loc.T("mycareer.job"), Loc.T("mycareer.noJob"), Loc.T("mycareer.noJobInfo")));
+            Ui.Empty(Wp4Ui.ListIn(Wp4Ui.Below(body, 0, Ui.Grid.Cta + 8)), UiIcons.Career, Loc.T("ux.career.noJob"));
+            var bc = Ui.Columns12(Wp4Ui.BottomStrip(body, Ui.Grid.Cta), 5, 7);
+            Ui.Secondary(bc[0], Loc.T("mycareer.found"), () => Shell.Show<CareerFoundPage>());
+            Wp4Ui.Chevron(Ui.PrimaryCTA(bc[1], Loc.T("mycareer.seeOffers"), () => Shell.Show<CareerOffersPage>()));
+        }
+
+        private void JobTile(RectTransform area, WorldState world, ManagerProfile m, ManagerContract job)
+        {
+            var team = world.GetTeam(job.TeamId);
+            var org = world.GetOrganisation(job.OrganisationId);
+            bool hired = job.Role == ManagerRole.TeamManager;
+            double conf = hired ? ManagerCareer.CurrentConfidence(world, Game.Db) : 0;
+            string advice = hired ? Loc.T(conf >= 55 ? "mycareer.conf.good" : conf >= ManagerCareer.SackBelow + 5 ? "mycareer.conf.mid" : "mycareer.conf.bad") : null;
+            var body = Ui.Tile(area, Loc.T("mycareer.job"), null, null, 0, null,
+                Wp4Ui.Info(Loc.T("mycareer.job"), advice, Loc.T("mycareer.role." + job.Role)));
+            Wp4Ui.HeaderMore(body, () => Ui.Sheet(Loc.T("mycareer.job"), list =>
             {
-                var team = world.GetTeam(job.TeamId);
-                var org = world.GetOrganisation(job.OrganisationId);
-                Ui.Line(jobCard, Loc.T("manager.team"), team != null ? "<b>" + team.Name + "</b>" : "-");
-                Ui.Line(jobCard, Loc.T("mycareer.role"), Loc.T("mycareer.role." + job.Role));
-                if (job.Role == ManagerRole.TeamManager)
+                UiFactory.Paragraph(list, Theme.Dim(Loc.T("ux.career.resignInfo")), Theme.TextBody);
+                Ui.Danger((RectTransform)list, Loc.T("mycareer.resign"), Loc.T("mycareer.resignConfirm"), "career.resign", () =>
                 {
-                    Ui.Line(jobCard, Loc.T("manager.until"), job.EndSeason.ToString());
-                    Ui.Line(jobCard, Loc.T("mycareer.autonomy"), Loc.T("autonomy." + job.Autonomy));
-                    double rel = m.RelationWith(job.OrganisationId);
-                    Ui.Line(jobCard, Loc.T("mycareer.relation"), rel >= 10 ? Theme.GoodText(Loc.T("mycareer.relation.good")) : rel <= -10 ? Theme.BadText(Loc.T("mycareer.relation.bad")) : Loc.T("mycareer.relation.neutral"));
-                    double conf = ManagerCareer.CurrentConfidence(world, Game.Db);
-                    Ui.Bar(jobCard, Loc.T("review.confidence"), conf / 100.0, conf.ToString("0") + "%",
-                        conf >= 55 ? Theme.Good : conf >= ManagerCareer.SackBelow + 5 ? Theme.Warning : Theme.Bad, 36);
-                    Ui.Note(jobCard, Loc.T(conf >= 55 ? "mycareer.conf.good" : conf >= ManagerCareer.SackBelow + 5 ? "mycareer.conf.mid" : "mycareer.conf.bad"));
-                }
-                else
-                {
-                    Ui.Line(jobCard, Loc.T("manager.organisation"), org != null ? org.Name : "-");
-                    if (org != null) Ui.Line(jobCard, Loc.T("finance.cash"), Theme.Money(org.Cash));
-                }
-
-                // Renewal in the last season.
-                if (job.Role == ManagerRole.TeamManager && job.EndSeason <= world.Season)
-                {
-                    var renewal = ManagerCareer.RenewalOffer(world, Game.Db);
-                    var rc = Ui.Card(rightCol, Loc.T("mycareer.renewal"));
-                    if (renewal == null) Ui.Note(rc, Theme.WarnText(Loc.T("mycareer.noRenewal")));
-                    else
-                    {
-                        UiFactory.Paragraph(rc, Loc.T("mycareer.renewalOffer", MathX.FormatMoney(renewal.SalaryPerSeason), renewal.Seasons, Loc.T("autonomy." + renewal.Autonomy)), Theme.FontSmall);
-                        UiFactory.ButtonRow(rc, 60, UiFactory.Primary(Loc.T("mycareer.acceptRenewal"), () =>
-                        {
-                            if (ManagerCareer.AcceptRenewal(world, Game.Db)) Shell.Toast(Loc.T("mycareer.renewed", m.Job.EndSeason));
-                            Shell.Refresh();
-                        }));
-                    }
-                    Ui.Note(rc, Loc.T("mycareer.renewalNote"));
-                }
-
-                UiFactory.ButtonRow(jobCard, 54, UiFactory.Option(_confirmResign ? Loc.T("mycareer.resignConfirm") : Loc.T("mycareer.resign"), _confirmResign, () =>
-                {
-                    if (!_confirmResign)
-                    {
-                        _confirmResign = true;
-                        Shell.Refresh();
-                        return;
-                    }
-                    _confirmResign = false;
+                    Ui.CloseSheet();
                     ManagerCareer.Resign(world, Game.Db);
                     Shell.Toast(Loc.T("mycareer.resigned"));
                     Shell.Refresh();
-                }));
-            }
-
-            // Career so far, one tap away.
-            Ui.Expander(leftCol, "career.history", Loc.T("mycareer.history"), hist =>
+                }, null);
+            }, null, null, 0.46f));
+            var list2 = Wp4Ui.ListIn(body, 2);
+            Ui.Line(list2, Loc.T("manager.team"), team != null ? "<b>" + team.Name + "</b>" : "-");
+            Ui.Line(list2, Loc.T("mycareer.role"), Loc.T("mycareer.role." + job.Role));
+            if (hired)
             {
-                var w = new[] { 1.6f, 3.6f, 1.4f, 2.4f };
-                UiFactory.TableRow(hist, 32, w, new[] { Loc.T("col.season"), Loc.T("col.team"), Loc.T("manager.category"), Loc.T("mycareer.end") }, true);
-                for (int i = m.History.Count - 1; i >= 0 && i >= m.History.Count - 6; i--)
+                Ui.Line(list2, Loc.T("manager.until"), job.EndSeason.ToString());
+                Ui.Line(list2, Loc.T("mycareer.autonomy"), Loc.T("autonomy." + job.Autonomy));
+                double rel = m.RelationWith(job.OrganisationId);
+                Ui.Line(list2, Loc.T("mycareer.relation"), rel >= 10 ? Theme.GoodText(Loc.T("mycareer.relation.good")) : rel <= -10 ? Theme.BadText(Loc.T("mycareer.relation.bad")) : Loc.T("mycareer.relation.neutral"));
+                Ui.Bar(list2, Loc.T("review.confidence"), conf / 100.0, "<b>" + conf.ToString("0") + "%</b>",
+                    conf >= 55 ? Theme.Good : conf >= ManagerCareer.SackBelow + 5 ? Theme.Warning : Theme.Bad, 44);
+            }
+            else
+            {
+                Ui.Line(list2, Loc.T("manager.organisation"), org != null ? org.Name : "-");
+                if (org != null) Ui.Line(list2, Loc.T("finance.cash"), Theme.Money(org.Cash));
+            }
+        }
+
+        private void RenewalTile(RectTransform area, WorldState world, ManagerProfile m)
+        {
+            var renewal = ManagerCareer.RenewalOffer(world, Game.Db);
+            var body = Ui.Tile(area, Loc.T("mycareer.renewal"), null, null, 0, null, Wp4Ui.Info(Loc.T("mycareer.renewal"),
+                renewal != null ? Loc.T("mycareer.renewalOffer", MathX.FormatMoney(renewal.SalaryPerSeason), renewal.Seasons, Loc.T("autonomy." + renewal.Autonomy)) : Loc.T("mycareer.noRenewal"),
+                Loc.T("mycareer.renewalNote")));
+            var list = Wp4Ui.ListIn(Wp4Ui.Below(body, 0, renewal != null ? Ui.Grid.Cta + 8 : 0), 4);
+            if (renewal == null)
+            {
+                Ui.Alert(list, Loc.T("ux.career.noRenewal"));
+                return;
+            }
+            Ui.Line(list, Loc.T("mycareer.salary"), "<b>" + MathX.FormatMoney(renewal.SalaryPerSeason) + "</b>  " +
+                Theme.Dim(Loc.T("ux.career.renewalTerms", renewal.Seasons, Loc.T("autonomy." + renewal.Autonomy))));
+            var bc = Ui.Columns12(Wp4Ui.BottomStrip(body, Ui.Grid.Cta), 4, 8);
+            Ui.PrimaryCTA(bc[1], Loc.T("mycareer.acceptRenewal"), () =>
+            {
+                if (ManagerCareer.AcceptRenewal(world, Game.Db)) Shell.Toast(Loc.T("mycareer.renewed", m.Job.EndSeason));
+                Shell.Refresh();
+            });
+        }
+
+        private void HistorySheet(ManagerProfile m)
+        {
+            Ui.Sheet(Loc.T("mycareer.history"), list =>
+            {
+                if (m.History.Count == 0) Ui.Empty(list, UiIcons.Career, Loc.T("ux.career.noHistory"));
+                for (int i = m.History.Count - 1; i >= 0; i--)
                 {
                     var h = m.History[i];
                     var cat = Game.Db.GetCategory(h.CategoryId);
                     string seasons = h.FromSeason == h.ToSeason ? h.FromSeason.ToString() : h.FromSeason + "–" + h.ToSeason;
-                    UiFactory.TableRow(hist, 34, w, new[] { seasons, h.TeamName ?? "", cat != null ? cat.ShortName : "", string.IsNullOrEmpty(h.EndReason) ? Theme.GoodText(Loc.T("mycareer.current")) : Loc.Or("mycareer.reason." + h.EndReason, h.EndReason) });
+                    string end = string.IsNullOrEmpty(h.EndReason) ? Theme.GoodText(Loc.T("mycareer.current")) : Loc.Or("mycareer.reason." + h.EndReason, h.EndReason);
+                    Ui.Item(list, seasons + "   " + (h.TeamName ?? ""), (cat != null ? cat.ShortName + " · " : "") + end);
                 }
-            }, Shell.Refresh);
+            }, null, null, 0.56f);
         }
     }
 
-    /// <summary>Teams that would hire the manager now; taking one moves the player there straight away.</summary>
+    /// <summary>
+    /// Job offers (UX spec §3.20): a tile per team that would hire the manager now (team, category, salary as the key
+    /// number, objective). A tile opens the full terms with ACEPTAR (two taps when it breaks a running contract).
+    /// </summary>
     public class CareerOffersPage : ScreenBase
     {
         public override string Title { get { return Loc.T("tab.career.offers"); } }
-        private string _confirm;
 
         public override void Build(RectTransform content)
         {
@@ -137,50 +159,76 @@ namespace MotoManager.App.UI.Screens
             var m = world.PlayerManager;
             if (m == null) return;
             var offers = ManagerCareer.Offers(world, Game.Db);
-            var card = Ui.Card(list, Loc.T("mycareer.offersTitle", offers.Count), Loc.T("mycareer.offersInfo"));
             bool breaking = m.Job != null && m.Job.Role == ManagerRole.TeamManager && m.Job.EndSeason > world.Season;
-            if (breaking) Ui.Note(card, Theme.WarnText(Loc.T("mycareer.breakNote")));
-            if (m.Job != null && m.Job.Role == ManagerRole.OwnerManager) Ui.Note(card, Loc.T("mycareer.ownerNote"));
+            bool owner = m.Job != null && m.Job.Role == ManagerRole.OwnerManager;
+            Ui.Section(list, Loc.T("mycareer.offersTitle", offers.Count), null,
+                Wp4Ui.Info(Loc.T("mycareer.offersTitle", offers.Count), Loc.T("mycareer.offersInfo"), owner ? Loc.T("mycareer.ownerNote") : null,
+                    breaking ? Loc.T("mycareer.breakNote") : null, offers.Count == 0 ? Loc.T("mycareer.noOffers") : null));
+            if (breaking) Ui.Alert(list, Loc.T("ux.career.breakAlert"));
+            if (offers.Count == 0)
+            {
+                Ui.Empty(list, UiIcons.Career, Loc.T("ux.career.noOffers"));
+                return;
+            }
+            RectTransform[] cols = null;
+            int k = 0;
             foreach (var o in offers)
             {
                 var offer = o;
                 var t = world.GetTeam(o.TeamId);
-                var cat = Game.Db.GetCategory(o.CategoryId);
                 if (t == null) continue;
-                string detail = (cat != null ? cat.Name : "") + " · " + Loc.T("objective." + o.Objective) + " · " + Loc.T("mycareer.offerTerms", o.Seasons, Loc.T("autonomy." + o.Autonomy), MathX.FormatMoney(o.AssignedBudget));
-                bool confirm = _confirm == o.TeamId;
-                Ui.Item(card, t.Name + "  " + Theme.Dim(Loc.T("mycareer.teamRep", t.Reputation.ToString("0"))), detail,
-                    MathX.FormatMoney(o.SalaryPerSeason) + Theme.Dim("/" + Loc.T("unit.season")),
-                    UiFactory.Primary(confirm ? Loc.T("mycareer.acceptConfirm") : Loc.T("mycareer.accept"), () =>
-                    {
-                        if (_confirm != offer.TeamId)
-                        {
-                            _confirm = offer.TeamId;
-                            Shell.Refresh();
-                            return;
-                        }
-                        _confirm = null;
-                        var res = ManagerCareer.ChangeJob(world, Game.Db, offer);
-                        Shell.Toast(res.Message, res.Ok);
-                        if (res.Ok) Shell.Show<HubScreen>();
-                        else Shell.Refresh();
-                    }));
+                var cat = Game.Db.GetCategory(o.CategoryId);
+                if (k % 3 == 0) cols = Ui.Columns12(UiFactory.Row(list, 200), 4, 4, 4);
+                var body = Ui.Tile(cols[k % 3], t.Name, () => OfferSheet(world, t, cat, offer, breaking), cat != null ? cat.ShortName : null);
+                var v = Ui.Label(body, MathX.FormatMoney(o.SalaryPerSeason), Theme.TextKey, TextAnchor.MiddleCenter, Theme.Timing, FontStyle.BoldAndItalic);
+                UiFactory.Place(v.rectTransform, 0, 0.36f, 1, 1);
+                var s = Ui.Label(body, Theme.Caps(Loc.T("objective." + o.Objective) + " · " + Loc.T("ux.career.perSeason")), Theme.TextCaption, TextAnchor.MiddleCenter, Theme.TextDim, FontStyle.Bold);
+                UiFactory.Place(s.rectTransform, 0, 0, 1, 0.34f);
+                k++;
             }
-            if (offers.Count == 0) Ui.Note(card, Loc.T("mycareer.noOffers"));
+        }
+
+        private void OfferSheet(WorldState world, Team t, Core.Data.ChampionshipCategory cat, JobOffer offer, bool breaking)
+        {
+            Ui.Sheet(t.Name, list =>
+            {
+                Ui.Line(list, Loc.T("manager.category"), cat != null ? cat.Name : offer.CategoryId);
+                Ui.Line(list, Loc.T("career.col.objective"), Loc.T("objective." + offer.Objective));
+                Ui.Line(list, Loc.T("mycareer.salary"), "<b>" + MathX.FormatMoney(offer.SalaryPerSeason) + "</b>", true);
+                Ui.Line(list, Loc.T("ux.career.seasons"), offer.Seasons.ToString());
+                Ui.Line(list, Loc.T("mycareer.autonomy"), Loc.T("autonomy." + offer.Autonomy));
+                Ui.Line(list, Loc.T("career.col.budget"), MathX.FormatMoney(offer.AssignedBudget));
+                Ui.Line(list, Loc.T("ux.career.teamRep"), t.Reputation.ToString("0"));
+                var org = world.GetOrganisation(offer.OrganisationId);
+                if (org != null) Ui.Line(list, Loc.T("finance.owner"), Loc.T("owner." + org.Owner));
+                Action accept = () =>
+                {
+                    Ui.CloseSheet();
+                    var res = ManagerCareer.ChangeJob(world, Game.Db, offer);
+                    Shell.Toast(res.Message, res.Ok);
+                    if (res.Ok) Shell.Show<HubScreen>();
+                    else Shell.Refresh();
+                };
+                if (breaking)
+                {
+                    UiFactory.Paragraph(list, Theme.WarnText(Loc.T("mycareer.breakNote")), Theme.TextBody);
+                    Wp4Ui.TwoTapPrimary(UiFactory.Row(list, Ui.Grid.Cta), Loc.T("mycareer.accept"), Loc.T("mycareer.acceptConfirm"), accept);
+                }
+                else Ui.PrimaryCTA(list, Loc.T("mycareer.accept"), accept);
+            }, null, null, 0.5f);
         }
     }
 
     /// <summary>
-    /// The organisation the player owns: its money (and what to do in a cash crisis), its teams and who runs each,
-    /// hiring a manager for a team the player does not run, taking charge again, moving a team to another category,
-    /// selling or closing it.
+    /// The organisation the player owns (UX spec §3.20): on the left its money (cash, debt, the manager's wealth), the
+    /// team picker, the cash-crisis alert and its ways out, and behind "..." the team setup and founding another team;
+    /// on the right one view at a time: who runs the team, hiring a manager, moving category, selling, closing.
     /// </summary>
     public class CareerOrgPage : ScreenBase
     {
         public override string Title { get { return Loc.T("tab.career.org"); } }
         private string _confirm;
         private string _teamId;
-        private string _moveCategory;
         private int _view;
 
         private bool Confirm(string key)
@@ -193,7 +241,6 @@ namespace MotoManager.App.UI.Screens
 
         public override void Build(RectTransform content)
         {
-            var list = Page(content);
             var world = Game.World;
             var db = Game.Db;
             var m = world.PlayerManager;
@@ -201,9 +248,9 @@ namespace MotoManager.App.UI.Screens
             var org = ManagerCareer.OwnedOrganisation(world);
             if (org == null)
             {
-                var none = Ui.Card(list, Loc.T("tab.career.org"));
-                UiFactory.Paragraph(none, Loc.T("mycareer.org.none"), Theme.FontSmall);
-                UiFactory.ButtonRow(none, 60, UiFactory.Primary(Loc.T("mycareer.found"), () => Shell.Show<CareerFoundPage>()));
+                var c = Ui.Columns12(content, 3, 6);
+                var body = Ui.Tile(c[1], Loc.T("tab.career.org"), null, null, 0, null, Wp4Ui.Info(Loc.T("tab.career.org"), Loc.T("mycareer.org.none")));
+                Ui.Empty(Wp4Ui.ListIn(body), UiIcons.Career, Loc.T("ux.org.none"), UiFactory.Primary(Loc.T("mycareer.found"), () => Shell.Show<CareerFoundPage>()));
                 return;
             }
             var teams = OrganisationService.Teams(world, org);
@@ -212,124 +259,134 @@ namespace MotoManager.App.UI.Screens
             if (selected == null && teams.Count > 0) selected = teams[0];
             if (selected != null) _teamId = selected.Id;
 
-            RectTransform leftCol, rightCol;
-            Ui.Columns(list, out leftCol, out rightCol);
-            OrgCard(leftCol, world, db, m, org, teams);
+            var cols = Ui.Columns12(content, 5, 7);
+            OrgTile(cols[0], world, db, m, org, teams);
             if (selected == null) return;
-            TeamCard(leftCol, world, db, m, org, selected);
-
-            var views = new[] { Loc.T("mycareer.org.view.manager"), Loc.T("mycareer.org.view.category"), Loc.T("mycareer.org.view.sell") };
-            Ui.Chips(rightCol, views, _view, i => { _view = i; _confirm = null; Shell.Refresh(); });
-            if (_view == 1) CategoryCard(rightCol, world, db, selected);
-            else if (_view == 2) SellCard(rightCol, world, db, org, selected);
-            else HireCard(rightCol, world, db, m, selected);
+            var views = new[] { Loc.T("ux.org.view.run"), Loc.T("ux.org.view.hire"), Loc.T("ux.org.view.move"), Loc.T("ux.org.view.sell"), Loc.T("ux.org.view.close") };
+            Ui.Segmented(Wp4Ui.ListIn(Wp4Ui.TopStrip(cols[1], Ui.Grid.Hit), 0), views, _view, i => { _view = i; _confirm = null; Shell.Refresh(); });
+            var area = Wp4Ui.Below(cols[1], Ui.Grid.Hit + Ui.Grid.Gap);
+            switch (_view)
+            {
+                case 1: HireView(area, world, db, m, selected); break;
+                case 2: MoveView(area, world, db, selected); break;
+                case 3: SellView(area, world, db, org, selected); break;
+                case 4: CloseView(area, world, db, selected); break;
+                default: RunView(area, world, db, m, selected); break;
+            }
         }
 
-        private void OrgCard(RectTransform col, WorldState world, Core.Data.GameDatabase db, ManagerProfile m, Organisation org, List<Team> teams)
+        private void OrgTile(RectTransform area, WorldState world, Core.Data.GameDatabase db, ManagerProfile m, Organisation org, List<Team> teams)
         {
             double debt = 0;
             foreach (var l in org.Loans) debt += l.Outstanding;
-            var oc = Ui.Card(col, org.Name, Loc.T("mycareer.org.owner"));
-            Ui.Kpis(oc,
+            var alert = OrganisationService.Alert(world, db, org);
+            var body = Ui.Tile(area, org.Name, null, Theme.Caps(Loc.T("mycareer.org.owner")), 0, null, Wp4Ui.Info(org.Name, Loc.T("mycareer.org.info"),
+                alert == CashAlert.Insolvent ? Loc.T("org.crisis.insolvent") : alert == CashAlert.Low ? Loc.T("org.crisis.low") : null,
+                alert == CashAlert.Insolvent ? Loc.T("org.crisis.forced") : null));
+            Wp4Ui.HeaderMore(body, () => Ui.Sheet(org.Name, list =>
+            {
+                var l = (RectTransform)list;
+                Wp4Ui.Chevron(Ui.Secondary(l, Loc.T("ux.org.setup"), () => { Ui.CloseSheet(); Shell.Show<TeamSetupPage>(); }));
+                Wp4Ui.Chevron(Ui.Secondary(l, Loc.T("ux.org.foundAnother"), () => { Ui.CloseSheet(); Shell.Show<CareerFoundPage>(); }));
+            }, null, null, 0.46f));
+            var list2 = Wp4Ui.ListIn(body, 8);
+            Ui.Kpis(list2,
                 Ui.Kpi(Theme.Money(org.Cash), Loc.T("finance.cash")),
                 Ui.Kpi(debt > 0 ? MathX.FormatMoney(debt) : "-", Loc.T("mycareer.org.debt")),
                 Ui.Kpi(MathX.FormatMoney(m.PersonalWealth), Loc.T("mycareer.wealth")));
             if (teams.Count > 1)
             {
-                var names = new string[teams.Count];
+                var names = new List<string>();
                 int idx = 0;
                 for (int i = 0; i < teams.Count; i++)
                 {
-                    var cat = Game.Db.GetCategory(teams[i].CategoryId);
-                    names[i] = cat != null ? cat.ShortName : teams[i].ShortName;
+                    var cat = db.GetCategory(teams[i].CategoryId);
+                    names.Add(teams[i].Name + (cat != null ? " · " + cat.ShortName : ""));
                     if (teams[i].Id == _teamId) idx = i;
                 }
-                Ui.Chips(oc, names, idx, i => { _teamId = teams[i].Id; _confirm = null; Shell.Refresh(); });
+                Wp4Ui.CaptionedPicker(list2, Loc.T("manager.team"), names, idx, i => { _teamId = teams[i].Id; _confirm = null; Shell.Refresh(); });
             }
-            var alert = OrganisationService.Alert(world, db, org);
-            if (alert == CashAlert.None)
-            {
-                Ui.Note(oc, Loc.T("mycareer.org.info"));
-                return;
-            }
-            // Cash crisis: the ways out.
-            Ui.Note(oc, alert == CashAlert.Insolvent ? Theme.BadText(Loc.T("org.crisis.insolvent")) : Theme.WarnText(Loc.T("org.crisis.low")));
-            var acts = new List<UiAct>();
+            if (alert == CashAlert.None) return;
+            Ui.Alert(list2, Loc.T(alert == CashAlert.Insolvent ? "ux.org.insolvent" : "ux.org.low"), alert == CashAlert.Insolvent);
             double loan = OrganisationService.EmergencyLoanAmount(world, org);
-            if (loan > 0)
-                acts.Add(UiFactory.Act(_confirm == "loan" ? Loc.T("org.crisis.loanConfirm", (OrganisationService.EmergencyRate * 100).ToString("0")) : Loc.T("org.crisis.loan", MathX.FormatMoney(loan)), () =>
-                {
-                    if (!Confirm("loan")) return;
-                    Shell.Toast(OrganisationService.TakeEmergencyLoan(world, org) ? Loc.T("org.crisis.loanTaken") : Loc.T("org.crisis.noLoan"));
-                    Shell.Refresh();
-                }));
             double need = Math.Max(0, -org.Cash) + 500000;
             double inject = Math.Min(m.PersonalWealth, Math.Round(need / 10000) * 10000);
-            if (inject > 0)
-                acts.Add(UiFactory.Act(_confirm == "inject" ? Loc.T("org.crisis.injectConfirm") : Loc.T("org.crisis.inject", MathX.FormatMoney(inject)), () =>
+            if (loan <= 0 && inject <= 0) return;
+            var row = UiFactory.Row(list2, Ui.Grid.Button);
+            var bc = loan > 0 && inject > 0 ? Ui.Columns12(row, 6, 6) : new[] { row };
+            int k = 0;
+            if (loan > 0)
+                Wp4Ui.TwoTapSecondary(bc[k++], Loc.T("org.crisis.loan", MathX.FormatMoney(loan)), Loc.T("org.crisis.loanConfirm", (OrganisationService.EmergencyRate * 100).ToString("0")), () =>
                 {
-                    if (!Confirm("inject")) return;
+                    Shell.Toast(OrganisationService.TakeEmergencyLoan(world, org) ? Loc.T("org.crisis.loanTaken") : Loc.T("org.crisis.noLoan"));
+                    Shell.Refresh();
+                });
+            if (inject > 0)
+                Wp4Ui.TwoTapSecondary(bc[k], Loc.T("org.crisis.inject", MathX.FormatMoney(inject)), Loc.T("org.crisis.injectConfirm"), () =>
+                {
                     OrganisationService.Inject(world, org, inject);
                     Shell.Refresh();
-                }));
-            if (acts.Count > 0) UiFactory.ButtonRow(oc, 56, acts.ToArray());
-            if (alert == CashAlert.Insolvent) Ui.Note(oc, Loc.T("org.crisis.forced"));
+                });
         }
 
-        private void TeamCard(RectTransform col, WorldState world, Core.Data.GameDatabase db, ManagerProfile m, Organisation org, Team team)
+        /// <summary>Who runs the team, and taking charge of it again (the primary, two taps).</summary>
+        private void RunView(RectTransform area, WorldState world, Core.Data.GameDatabase db, ManagerProfile m, Team team)
         {
             var cat = db.GetCategory(team.CategoryId);
-            var tc = Ui.Card(col, team.Name, cat != null ? cat.Name : "");
             bool mine = m.Job != null && m.Job.TeamId == team.Id;
+            bool breaking = m.Job != null && m.Job.Role == ManagerRole.TeamManager && m.Job.EndSeason > world.Season;
+            var body = Ui.Tile(area, team.Name, null, cat != null ? Theme.Caps(cat.Name) : null, 0, null,
+                breaking && !mine ? Wp4Ui.Info(team.Name, Loc.T("mycareer.breakNote")) : null);
+            var list = Wp4Ui.ListIn(Wp4Ui.Below(body, 0, mine ? 0 : Ui.Grid.Cta + 8), 4);
             var boss = world.GetManager(team.ManagerId);
-            if (mine) Ui.Line(tc, Loc.T("mycareer.org.runBy"), "<b>" + Loc.T("mycareer.org.you") + "</b>");
+            if (mine) Ui.Line(list, Loc.T("mycareer.org.runBy"), "<b>" + Loc.T("mycareer.org.you") + "</b>");
             else if (boss != null && boss.Job != null)
             {
-                Ui.Line(tc, Loc.T("mycareer.org.runBy"), "<b>" + boss.FullName + "</b>  " + Theme.Dim(Loc.T("mycareer.fame") + " " + Fmt.Rating(boss.Reputation)));
-                Ui.Line(tc, Loc.T("mycareer.salary"), MathX.FormatMoney(boss.Job.SalaryPerSeason) + Theme.Dim("/" + Loc.T("unit.season")));
+                Ui.Line(list, Loc.T("mycareer.org.runBy"), "<b>" + boss.FullName + "</b>  " + Theme.Dim(Loc.T("mycareer.fame") + " " + Fmt.Rating(boss.Reputation)));
+                Ui.Line(list, Loc.T("mycareer.salary"), MathX.FormatMoney(boss.Job.SalaryPerSeason));
             }
-            else Ui.Line(tc, Loc.T("mycareer.org.runBy"), "-");
-            Ui.Line(tc, Loc.T("org.riders"), team.RiderIds.Count.ToString());
+            else Ui.Line(list, Loc.T("mycareer.org.runBy"), "-");
+            Ui.Line(list, Loc.T("org.riders"), team.RiderIds.Count.ToString());
             if (team.PendingCategoryId != null)
             {
                 var to = db.GetCategory(team.PendingCategoryId);
-                Ui.Line(tc, Loc.T("org.moving"), Theme.WarnText(to != null ? to.Name : team.PendingCategoryId));
+                Ui.Line(list, Loc.T("org.moving"), Theme.WarnText(to != null ? to.Name : team.PendingCategoryId));
             }
             if (mine) return;
-            bool breaking = m.Job != null && m.Job.Role == ManagerRole.TeamManager && m.Job.EndSeason > world.Season;
-            if (breaking) Ui.Note(tc, Theme.WarnText(Loc.T("mycareer.breakNote")));
-            string key = "run:" + team.Id;
+            if (breaking) Ui.Alert(list, Loc.T("ux.career.breakAlert"));
             var t = team;
-            UiFactory.ButtonRow(tc, 58, UiFactory.Primary(_confirm == key ? Loc.T("mycareer.org.runConfirm", MathX.FormatMoney(ManagerCareer.SeveranceFor(world, boss))) : Loc.T("mycareer.org.run"), () =>
+            var bc = Ui.Columns12(Wp4Ui.BottomStrip(body, Ui.Grid.Cta), 4, 8);
+            Wp4Ui.TwoTapPrimary(bc[1], Loc.T("mycareer.org.run"), Loc.T("mycareer.org.runConfirm", MathX.FormatMoney(ManagerCareer.SeveranceFor(world, boss))), () =>
             {
-                if (!Confirm(key)) return;
                 var res = ManagerCareer.RunOwnTeam(world, Game.Db, t);
                 Shell.Toast(res.Message, res.Ok);
                 if (res.Ok) Shell.Show<HubScreen>(); else Shell.Refresh();
-            }));
+            });
         }
 
-        private void HireCard(RectTransform col, WorldState world, Core.Data.GameDatabase db, ManagerProfile m, Team team)
+        private void HireView(RectTransform area, WorldState world, Core.Data.GameDatabase db, ManagerProfile m, Team team)
         {
-            var hire = Ui.Card(col, Loc.T("mycareer.org.hireTitle"), team.Name);
-            if (m.Job != null && m.Job.TeamId == team.Id)
-            {
-                Ui.Note(hire, Loc.T("mycareer.org.youRunIt"));
-                return;
-            }
             var current = world.GetManager(team.ManagerId);
             double severance = ManagerCareer.SeveranceFor(world, current);
-            if (severance > 0) Ui.Note(hire, Loc.T("mycareer.org.severance", current.FullName, MathX.FormatMoney(severance)));
+            bool mine = m.Job != null && m.Job.TeamId == team.Id;
+            var body = Ui.Tile(area, Loc.T("mycareer.org.hireTitle"), null, Theme.Caps(team.Name), 0, null,
+                Wp4Ui.Info(Loc.T("mycareer.org.hireTitle"), mine ? Loc.T("mycareer.org.youRunIt") : null,
+                    severance > 0 && current != null ? Loc.T("mycareer.org.severance", current.FullName, MathX.FormatMoney(severance)) : null));
+            if (mine)
+            {
+                Ui.Empty(Wp4Ui.ListIn(body), UiIcons.Person, Loc.T("ux.org.youRunIt"));
+                return;
+            }
+            var list = Wp4Ui.ScrollIn(body, 6);
+            if (severance > 0) Ui.Alert(list, Loc.T("ux.org.severance", MathX.FormatMoney(severance)));
             var rules = db.GetRules(team.CategoryId, world.Season);
             foreach (var c in ManagerMarket.Candidates(world, db, team, 5))
             {
                 var cand = c;
                 string key = "hire:" + c.Id;
-                string detail = Loc.T("mycareer.skill.sporting") + " " + c.SportingManagement.ToString("0") + " · " + Loc.T("mycareer.skill.negotiation") + " " + c.Negotiation.ToString("0")
-                    + " · " + Loc.T("mycareer.skill.finance") + " " + c.Finance.ToString("0") + " · " + Loc.T("mycareer.org.age", world.Season - c.BirthYear);
-                Ui.Item(hire, c.FullName + "  " + Theme.Dim(Loc.T("mycareer.fame") + " " + Fmt.Rating(c.Reputation)), detail,
-                    MathX.FormatMoney(CareerService.SalaryFor(rules, c, team)) + Theme.Dim("/" + Loc.T("unit.season")),
-                    UiFactory.Primary(_confirm == key ? Loc.T("mycareer.org.hireConfirm") : Loc.T("mycareer.org.hire"), () =>
+                string detail = Loc.T("ux.org.candidate", c.SportingManagement.ToString("0"), c.Negotiation.ToString("0"), c.Finance.ToString("0"), world.Season - c.BirthYear);
+                Ui.PersonRow(list, c.Reputation, c.FullName, detail, MathX.FormatMoney(CareerService.SalaryFor(rules, c, team)), null,
+                    UiFactory.Act(_confirm == key ? Loc.T("mycareer.org.hireConfirm") : Loc.T("mycareer.org.hire"), () =>
                     {
                         if (!Confirm(key)) return;
                         var res = ManagerCareer.HireForOwnTeam(world, Game.Db, team, cand);
@@ -339,107 +396,119 @@ namespace MotoManager.App.UI.Screens
             }
         }
 
-        private void CategoryCard(RectTransform col, WorldState world, Core.Data.GameDatabase db, Team team)
+        private void MoveView(RectTransform area, WorldState world, Core.Data.GameDatabase db, Team team)
         {
-            var card = Ui.Card(col, Loc.T("org.move.title"), Loc.T("org.move.info"));
+            var body = Ui.Tile(area, Loc.T("org.move.title"), null, null, 0, null, Wp4Ui.Info(Loc.T("org.move.title"), Loc.T("org.move.info"), Loc.T("org.move.note")));
             if (team.PendingCategoryId != null)
             {
                 var to = db.GetCategory(team.PendingCategoryId);
-                UiFactory.Paragraph(card, Loc.T("org.move.pending", to != null ? to.Name : ""), Theme.FontSmall);
-                UiFactory.ButtonRow(card, 54, UiFactory.Act(Loc.T("org.move.cancel"), () =>
+                var l = Wp4Ui.ListIn(body, 8);
+                Ui.Line(l, Loc.T("org.moving"), "<b>" + (to != null ? to.Name : team.PendingCategoryId) + "</b>");
+                Ui.Secondary(l, Loc.T("org.move.cancel"), () =>
                 {
                     var r = OrganisationService.RequestCategoryChange(world, db, team, null, null);
                     Shell.Toast(r.Message, r.Ok);
                     Shell.Refresh();
-                }));
+                });
                 return;
             }
             var org = world.OrganisationOf(team);
             var have = new HashSet<string>();
             foreach (var t in OrganisationService.Teams(world, org)) have.Add(t.CategoryId);
-            var w = new[] { 1.6f, 1.8f, 1.8f, 1.8f, 1.6f };
-            UiFactory.TableRow(card, 34, w, new[] { Loc.T("career.col.category"), Loc.T("org.move.cost"), Loc.T("org.move.refund"), Loc.T("career.col.verdict"), "" }, true);
+            var w = new[] { 2.4f, 2f, 2f, 2.6f };
+            Wp4Ui.Captions(Wp4Ui.TopStrip(body, 40), w, new[] { Loc.T("career.col.category"), Loc.T("org.move.cost"), Loc.T("org.move.refund"), Loc.T("career.col.verdict") }, true);
+            var list = Wp4Ui.ScrollIn(Wp4Ui.Below(body, 44), 4);
+            int i = 0;
             foreach (var cat in db.CategoriesOrdered())
             {
                 if (!cat.Simulated || cat.IsCup || have.Contains(cat.Id)) continue;
                 var q = OrganisationService.QuoteCategoryChange(world, db, team, cat.Id);
                 var v = q.Viability != null ? q.Viability.Verdict : Viability.NotAvailable;
-                string verdict = !q.PlaceAvailable ? Theme.BadText(Loc.T("org.move.noPlace")) : v == Viability.Viable ? Theme.GoodText(Loc.T("viability." + v)) : v == Viability.Risky ? Theme.WarnText(Loc.T("viability." + v)) : Theme.BadText(Loc.T("viability." + v));
+                bool selectable = q.PlaceAvailable && (v == Viability.Viable || v == Viability.Risky);
                 var c = cat;
-                var row = UiFactory.TableRow(card, 44, w, new[] { cat.ShortName, Theme.Money(-(q.EntryCost + q.Bikes)), Theme.Money(q.OldPlaceRefund), verdict, "" }, false,
-                    _moveCategory == cat.Id ? new Color(0.94f, 0.7f, 0.16f, 0.16f) : (Color?)null);
-                if (q.PlaceAvailable && (v == Viability.Viable || v == Viability.Risky))
-                {
-                    var b = UiFactory.Button("Pick", row, Loc.T("career.choose"), () => { _moveCategory = c.Id; Shell.Refresh(); },
-                        _moveCategory == cat.Id ? Theme.Accent : Theme.PanelLight, Theme.FontSmall - 6);
-                    UiFactory.InColumn(b, w, w.Length - 1);
-                }
+                var row = Wp4Ui.SelectRow(list, w, new[] { "<b>" + cat.ShortName + "</b>", Theme.Money(-(q.EntryCost + q.Bikes)), Theme.Money(q.OldPlaceRefund), "" }, i++, false, () =>
+                    Ui.Sheet(Loc.T("org.move.title") + " · " + c.ShortName, l =>
+                    {
+                        Ui.Line(l, Loc.T("org.move.cost"), Theme.Money(-(q.EntryCost + q.Bikes)));
+                        Ui.Line(l, Loc.T("org.move.refund"), Theme.Money(q.OldPlaceRefund));
+                        Ui.Line(l, Loc.T("career.col.verdict"), !q.PlaceAvailable ? Theme.BadText(Loc.T("org.move.noPlace")) : Loc.T("viability." + v));
+                        if (q.Viability != null) FoundingPanel.ReportLines(l, q.Viability);
+                        if (!selectable) return;
+                        Ui.Section(l, Loc.T("career.supplier", c.Name), null, Wp4Ui.Info(Loc.T("org.move.title"), Loc.T("org.move.note")));
+                        foreach (var maker in CareerService.Suppliers(world, c.Id))
+                        {
+                            var mk = maker;
+                            Ui.Secondary((RectTransform)l, mk.Name, () =>
+                            {
+                                Ui.CloseSheet();
+                                var r = OrganisationService.RequestCategoryChange(world, db, team, c.Id, mk.Id);
+                                Shell.Toast(r.Message, r.Ok);
+                                Shell.Refresh();
+                            });
+                        }
+                    }, null, null, 0.56f));
+                Wp4Ui.CellPill(row, w, 3, !q.PlaceAvailable ? Loc.T("org.move.noPlace") : Loc.T("viability." + v),
+                    !q.PlaceAvailable ? Theme.Bad : FoundingPanel.VerdictColor(v));
             }
-            if (_moveCategory == null) return;
-            var target = db.GetCategory(_moveCategory);
-            UiFactory.Paragraph(card, "<b>" + Loc.T("career.supplier", target != null ? target.Name : "") + "</b>", Theme.FontSmall);
-            var acts = new List<UiAct>();
-            foreach (var maker in CareerService.Suppliers(world, _moveCategory))
-            {
-                var mk = maker;
-                acts.Add(UiFactory.Act(mk.Name, () =>
-                {
-                    var r = OrganisationService.RequestCategoryChange(world, db, team, _moveCategory, mk.Id);
-                    Shell.Toast(r.Message, r.Ok);
-                    if (r.Ok) _moveCategory = null;
-                    Shell.Refresh();
-                }));
-            }
-            UiFactory.ButtonRow(card, 52, acts.ToArray());
-            Ui.Note(card, Loc.T("org.move.note"));
+            if (i == 0) Ui.Empty(list, null, Loc.T("ux.found.noCategories"));
         }
 
-        private void SellCard(RectTransform col, WorldState world, Core.Data.GameDatabase db, Organisation org, Team team)
+        private void SellView(RectTransform area, WorldState world, Core.Data.GameDatabase db, Organisation org, Team team)
         {
             bool between = OrganisationService.BetweenSeasons(Game);
             bool distress = org.Cash < 0;
             var v = OrganisationService.Value(world, db, team);
             double price = Math.Round(v.Total * (distress ? OrganisationService.DistressShare : 1) / 1000) * 1000;
-            var sell = Ui.Card(col, Loc.T("org.sell.title"), Loc.T("org.sell.info"));
-            Ui.Line(sell, Loc.T("org.sell.place"), MathX.FormatMoney(v.GridPlace));
-            Ui.Line(sell, Loc.T("org.sell.facilities"), MathX.FormatMoney(v.Facilities));
-            Ui.Line(sell, Loc.T("org.sell.equipment"), MathX.FormatMoney(v.Equipment + v.Inventory));
-            Ui.Line(sell, Loc.T("org.sell.brand"), MathX.FormatMoney(v.Brand));
-            Ui.Line(sell, Loc.T("org.sell.price") + (distress ? " " + Theme.WarnText(Loc.T("org.sell.distress")) : ""), "<b>" + MathX.FormatMoney(price) + "</b>", true);
-            if (org.TeamIds.Count == 1) Ui.Note(sell, Loc.T("org.sell.last"));
-            if (!between && !distress) Ui.Note(sell, Loc.T("org.e.season"));
-            else
+            var body = Ui.Tile(area, Loc.T("org.sell.title"), null, null, 0, null, Wp4Ui.Info(Loc.T("org.sell.title"), Loc.T("org.sell.info"),
+                org.TeamIds.Count == 1 ? Loc.T("org.sell.last") : null, !between && !distress ? Loc.T("org.e.season") : null));
+            bool can = between || distress;
+            var list = Wp4Ui.ListIn(Wp4Ui.Below(body, 0, can ? Ui.Grid.Button + 8 : 0), 2);
+            Ui.Line(list, Loc.T("org.sell.place"), MathX.FormatMoney(v.GridPlace));
+            Ui.Line(list, Loc.T("org.sell.facilities"), MathX.FormatMoney(v.Facilities));
+            Ui.Line(list, Loc.T("org.sell.equipment"), MathX.FormatMoney(v.Equipment + v.Inventory));
+            Ui.Line(list, Loc.T("org.sell.brand"), MathX.FormatMoney(v.Brand));
+            Ui.Line(list, Loc.T("org.sell.price") + (distress ? " " + Theme.WarnText(Loc.T("org.sell.distress")) : ""), "<b>" + MathX.FormatMoney(price) + "</b>", true);
+            if (org.TeamIds.Count == 1) Ui.Alert(list, Loc.T("ux.org.sellLast"));
+            if (!can)
             {
-                var t = team;
-                UiFactory.ButtonRow(sell, 56, UiFactory.Primary(_confirm == "sell" ? Loc.T("org.sell.confirm", MathX.FormatMoney(price)) : Loc.T("org.sell.button"), () =>
-                {
-                    if (!Confirm("sell")) return;
-                    var res = OrganisationService.SellTeam(Game, t);
-                    Shell.Toast(res.Message, res.Ok);
-                    Session.Save();
-                    Shell.Show<HubScreen>();
-                }));
+                Ui.Alert(list, Loc.T("org.e.season"));
+                return;
             }
+            var t = team;
+            var bc = Ui.Columns12(Wp4Ui.BottomStrip(body, Ui.Grid.Button), 6, 6);
+            Ui.Danger(bc[1], Loc.T("org.sell.button"), Loc.T("org.sell.confirm", MathX.FormatMoney(price)), "org.sell." + t.Id, () =>
+            {
+                var res = OrganisationService.SellTeam(Game, t);
+                Shell.Toast(res.Message, res.Ok);
+                Session.Save();
+                Shell.Show<HubScreen>();
+            }, null);
+        }
 
+        private void CloseView(RectTransform area, WorldState world, Core.Data.GameDatabase db, Team team)
+        {
+            bool between = OrganisationService.BetweenSeasons(Game);
             var q = OrganisationService.ClosureCost(world, db, team);
-            var close = Ui.Card(col, Loc.T("org.close.title"));
-            Ui.Line(close, Loc.T("org.close.riders"), Theme.Money(-q.RiderContracts));
-            Ui.Line(close, Loc.T("org.close.staff"), Theme.Money(-q.StaffContracts));
-            Ui.Line(close, Loc.T("org.close.refund"), Theme.Money(q.GridPlaceRefund));
-            Ui.Line(close, Loc.T("org.close.net"), Theme.Money(q.Net), true);
-            if (!between) Ui.Note(close, Loc.T("org.e.season"));
-            else
+            var body = Ui.Tile(area, Loc.T("org.close.title"));
+            var list = Wp4Ui.ListIn(Wp4Ui.Below(body, 0, between ? Ui.Grid.Button + 8 : 0), 2);
+            Ui.Line(list, Loc.T("org.close.riders"), Theme.Money(-q.RiderContracts));
+            Ui.Line(list, Loc.T("org.close.staff"), Theme.Money(-q.StaffContracts));
+            Ui.Line(list, Loc.T("org.close.refund"), Theme.Money(q.GridPlaceRefund));
+            Ui.Line(list, Loc.T("org.close.net"), Theme.Money(q.Net), true);
+            if (!between)
             {
-                var t = team;
-                UiFactory.ButtonRow(close, 56, UiFactory.Act(_confirm == "close" ? Loc.T("org.close.confirm") : Loc.T("org.close.button"), () =>
-                {
-                    if (!Confirm("close")) return;
-                    var res = OrganisationService.CloseTeam(Game, t);
-                    Shell.Toast(res.Message, res.Ok);
-                    Session.Save();
-                    Shell.Show<HubScreen>();
-                }));
+                Ui.Alert(list, Loc.T("org.e.season"));
+                return;
             }
+            var t = team;
+            var bc = Ui.Columns12(Wp4Ui.BottomStrip(body, Ui.Grid.Button), 6, 6);
+            Ui.Danger(bc[1], Loc.T("org.close.button"), Loc.T("org.close.confirm"), "org.close." + t.Id, () =>
+            {
+                var res = OrganisationService.CloseTeam(Game, t);
+                Shell.Toast(res.Message, res.Ok);
+                Session.Save();
+                Shell.Show<HubScreen>();
+            }, null);
         }
     }
 
@@ -451,114 +520,94 @@ namespace MotoManager.App.UI.Screens
         public string Primary, Secondary;
     }
 
-    /// <summary>Founding a team (between seasons): the team starts empty and in the colours chosen.</summary>
+    /// <summary>
+    /// Founding a team (between seasons; reached from the career summary, the hub and the organisation's "..."): the
+    /// founding panel, or for an owner the expansion of the organisation with the same layout.
+    /// </summary>
     public class CareerFoundPage : ScreenBase
     {
         public override string Title { get { return Loc.T("tab.career.found"); } }
+        public override bool HiddenTab { get { return true; } }
         private readonly FoundingState _state = new FoundingState();
         private readonly ExpansionState _exp = new ExpansionState();
 
-        private void BuildExpansion(RectTransform list, WorldState world, Organisation org)
+        private void BuildExpansion(RectTransform content, WorldState world, Organisation org)
         {
             var db = Game.Db;
             if (!OrganisationService.BetweenSeasons(Game))
             {
-                var wait = Ui.Card(list, Loc.T("org.expand.title"));
-                UiFactory.Paragraph(wait, Loc.T("org.expand.later"), Theme.FontSmall);
-                Ui.Line(wait, Loc.T("finance.cash"), Theme.Money(org.Cash));
+                var c = Ui.Columns12(content, 3, 6);
+                var wait = Ui.Tile(c[1], Loc.T("org.expand.title"), null, null, 0, null, Wp4Ui.Info(Loc.T("org.expand.title"), Loc.T("org.expand.later")));
+                var l = Wp4Ui.ListIn(wait);
+                Ui.Empty(l, UiIcons.Flag, Loc.T("ux.org.expandLater"));
+                Ui.Line(l, Loc.T("finance.cash"), Theme.Money(org.Cash));
                 return;
             }
             var terms = OrganisationService.BankTerms(world, org);
             double loan = Math.Round(terms.MaxAmount * _exp.LoanShare / 10000) * 10000;
-            RectTransform leftCol, rightCol;
-            Ui.Columns(list, out leftCol, out rightCol);
-            var money = Ui.Card(leftCol, Loc.T("org.expand.title"), Loc.T("org.expand.info"));
-            Ui.Line(money, Loc.T("finance.cash"), Theme.Money(org.Cash));
-            UiFactory.ButtonRow(money, 50,
-                UiFactory.Option(Loc.T("career.loanNone"), _exp.LoanShare == 0, () => { _exp.LoanShare = 0; Shell.Refresh(); }),
-                UiFactory.Option(Loc.T("career.loanHalf"), _exp.LoanShare == 0.5, () => { _exp.LoanShare = 0.5; Shell.Refresh(); }),
-                UiFactory.Option(Loc.T("career.loanMax"), _exp.LoanShare == 1, () => { _exp.LoanShare = 1; Shell.Refresh(); }));
-            Ui.Note(money, Loc.T("career.loanTerms", MathX.FormatMoney(terms.MaxAmount), (terms.Rate * 100).ToString("0.0"), terms.Seasons));
-            var w = new[] { 1.6f, 1.8f, 1.6f, 1.6f, 1.6f };
-            UiFactory.TableRow(money, 34, w, new[] { Loc.T("career.col.category"), Loc.T("career.col.verdict"), Loc.T("career.col.startup"), Loc.T("career.col.lowest"), "" }, true);
-            foreach (var r in OrganisationService.ExpansionOptions(world, db, org, loan))
+            var cols = Ui.Columns12(content, 6, 6);
+            const float capH = 216;
+            var money = Wp4Ui.ListIn(Ui.Tile(Wp4Ui.TopStrip(cols[0], capH), Loc.T("org.expand.title"), null, null, 0, null,
+                Wp4Ui.Info(Loc.T("org.expand.title"), Loc.T("org.expand.info"),
+                    Loc.T("career.loan") + ": <b>" + MathX.FormatMoney(loan) + "</b>  " + Loc.T("career.loanTerms", MathX.FormatMoney(terms.MaxAmount), (terms.Rate * 100).ToString("0.0"), terms.Seasons))), 8);
+            FoundingPanel.LoanSegmented(money, _exp.LoanShare, s => { _exp.LoanShare = s; Shell.Refresh(); });
+            Ui.Line(money, Theme.Caps(Loc.T("ux.found.total")), "<b>" + Theme.Money(org.Cash + loan) + "</b>  " +
+                Theme.Dim(Loc.T("ux.found.cashSplit", MathX.FormatMoney(org.Cash), MathX.FormatMoney(loan))), true);
+            var reports = OrganisationService.ExpansionOptions(world, db, org, loan);
+            FoundingPanel.CategoryTile(Wp4Ui.Below(cols[0], capH + Ui.Grid.Gap), db, reports, _exp.Category, id =>
             {
-                var rep = r;
-                var cat = db.GetCategory(r.CategoryId);
-                string verdict = r.Verdict == Viability.Viable ? Theme.GoodText(Loc.T("viability." + r.Verdict)) : r.Verdict == Viability.Risky ? Theme.WarnText(Loc.T("viability." + r.Verdict)) : Theme.BadText(Loc.T("viability." + r.Verdict));
-                var row = UiFactory.TableRow(money, 44, w, new[] { cat.ShortName, verdict, Theme.Money(-r.StartupTotal), Theme.Money(r.MinCashConfirmed), "" }, false,
-                    _exp.Category == r.CategoryId ? new Color(0.94f, 0.7f, 0.16f, 0.16f) : (Color?)null);
-                if (r.Verdict == Viability.Viable || r.Verdict == Viability.Risky)
-                {
-                    var b = UiFactory.Button("Pick", row, Loc.T("career.choose"), () => { _exp.Category = rep.CategoryId; _exp.Supplier = null; Shell.Refresh(); },
-                        _exp.Category == r.CategoryId ? Theme.Accent : Theme.PanelLight, Theme.FontSmall - 6);
-                    UiFactory.InColumn(b, w, w.Length - 1);
-                }
-            }
-
-            var id = Ui.Card(rightCol, Loc.T("found.identity"));
-            if (_exp.Category == null)
-            {
-                Ui.Note(id, Loc.T("found.pickCategory"));
-                return;
-            }
-            var chosen = db.GetCategory(_exp.Category);
-            UiFactory.Paragraph(id, "<b>" + Loc.T("career.supplier", chosen.Name) + "</b>", Theme.FontSmall);
-            var acts = new List<UiAct>();
-            foreach (var maker in CareerService.Suppliers(world, _exp.Category))
-            {
-                var mk = maker;
-                acts.Add(UiFactory.Option(mk.Name, _exp.Supplier == mk.Id, () => { _exp.Supplier = mk.Id; Shell.Refresh(); }));
-            }
-            UiFactory.ButtonRow(id, 50, acts.ToArray());
+                _exp.Category = id;
+                _exp.Supplier = null;
+                Shell.Refresh();
+            });
             if (_exp.Primary == null)
             {
                 var first = OrganisationService.Teams(world, org);
                 _exp.Primary = first.Count > 0 ? first[0].Colors.Primary : "#E10600";
                 _exp.Secondary = first.Count > 0 ? first[0].Colors.Secondary : "#FFFFFF";
             }
-            UiFactory.Input(id, Loc.T("career.teamName"), _exp.TeamName, v => _exp.TeamName = v);
-            FoundingPanel.Swatches(id, Loc.T("found.primary"), _exp.Primary, c => { _exp.Primary = c; Shell.Refresh(); });
-            FoundingPanel.Swatches(id, Loc.T("found.secondary"), _exp.Secondary, c => { _exp.Secondary = c; Shell.Refresh(); });
-            Ui.Note(id, Loc.T("org.expand.note"));
-            if (_exp.Supplier == null) return;
-            UiFactory.ButtonRow(id, 64, UiFactory.Primary(Loc.T("org.expand.confirm"), () =>
-            {
-                var res = OrganisationService.Expand(Game, new ExpansionPlan
+            ViabilityReport chosen = null;
+            foreach (var r in reports) if (r.CategoryId == _exp.Category) chosen = r;
+            FoundingPanel.IdentityTile(cols[1], world, db, _exp.Category, _exp.Supplier, s => { _exp.Supplier = s; Shell.Refresh(); },
+                _exp.TeamName, v => _exp.TeamName = v, org.Name, _exp.Primary, c => { _exp.Primary = c; Shell.Refresh(); }, _exp.Secondary, c => { _exp.Secondary = c; Shell.Refresh(); },
+                chosen, null, Loc.T("org.expand.confirm"), () =>
                 {
-                    CategoryId = _exp.Category, ManufacturerId = _exp.Supplier, TeamName = _exp.TeamName, Loan = loan, PrimaryColor = _exp.Primary, SecondaryColor = _exp.Secondary
-                });
-                Shell.Toast(res.Message, res.Ok);
-                if (res.Ok)
-                {
-                    _exp.Category = null;
-                    Session.Save();
-                    Shell.Show<CareerOrgPage>();
-                }
-                else Shell.Refresh();
-            }));
+                    var res = OrganisationService.Expand(Game, new ExpansionPlan
+                    {
+                        CategoryId = _exp.Category, ManufacturerId = _exp.Supplier, TeamName = _exp.TeamName, Loan = loan, PrimaryColor = _exp.Primary, SecondaryColor = _exp.Secondary
+                    });
+                    Shell.Toast(res.Message, res.Ok);
+                    if (res.Ok)
+                    {
+                        _exp.Category = null;
+                        Session.Save();
+                        Shell.Show<CareerOrgPage>();
+                    }
+                    else Shell.Refresh();
+                }, Loc.T("org.expand.note"));
         }
 
         public override void Build(RectTransform content)
         {
-            var list = Page(content);
             var world = Game.World;
             var m = world.PlayerManager;
             if (m == null) return;
             var owned = ManagerCareer.OwnedOrganisation(world);
             if (owned != null)
             {
-                BuildExpansion(list, world, owned);
+                BuildExpansion(content, world, owned);
                 return;
             }
             if (!ManagerCareer.CanFoundNow(world, Game))
             {
-                var wait = Ui.Card(list, Loc.T("tab.career.found"));
-                UiFactory.Paragraph(wait, Loc.T("mycareer.foundLater"), Theme.FontSmall);
-                Ui.Line(wait, Loc.T("mycareer.wealth"), MathX.FormatMoney(m.PersonalWealth));
+                var c = Ui.Columns12(content, 3, 6);
+                var wait = Ui.Tile(c[1], Loc.T("tab.career.found"), null, null, 0, null, Wp4Ui.Info(Loc.T("tab.career.found"), Loc.T("mycareer.foundLater")));
+                var l = Wp4Ui.ListIn(wait);
+                Ui.Empty(l, UiIcons.Flag, Loc.T("ux.career.foundLater"));
+                Ui.Line(l, Loc.T("mycareer.wealth"), MathX.FormatMoney(m.PersonalWealth));
                 return;
             }
-            FoundingPanel.Build(list, Game, m, _state, Shell.Refresh, res =>
+            FoundingPanel.Build(content, Game, m, _state, Shell.Refresh, res =>
             {
                 if (res.Ok)
                 {

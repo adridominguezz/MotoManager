@@ -10,12 +10,15 @@ using UnityEngine;
 namespace MotoManager.App.UI.Screens
 {
     /// <summary>
-    /// Getting a team ready to race (opens after founding a team): its identity, the riders, the staff and the
-    /// sponsors, one step at a time, each with the actions at hand. Also useful later as a checklist.
+    /// Getting a team ready to race (UX spec §3.20; opens after founding a team, and from the organisation's "..."):
+    /// a step segmented (identity, riders, staff, sponsors, each with its state), at most two cards per step with
+    /// secondary per-row actions, and a bottom bar with "‹ ANTERIOR" on the left and the primary SIGUIENTE / LISTO on
+    /// the right. Not a tab: a wizard reached by buttons.
     /// </summary>
     public class TeamSetupPage : ScreenBase
     {
         public override string Title { get { return Loc.T("tab.career.setup"); } }
+        public override bool HiddenTab { get { return true; } }
 
         /// <summary>Set by the new-career flow: the management shell opens this page first.</summary>
         public static bool OpenOnStart;
@@ -25,12 +28,12 @@ namespace MotoManager.App.UI.Screens
 
         public override void Build(RectTransform content)
         {
-            var list = Page(content);
             var world = Game.World;
             var team = world.PlayerTeam;
             if (team == null)
             {
-                Ui.Note(Ui.Card(list, Loc.T("tab.career.setup")), Loc.T("setup.noTeam"));
+                var c = Ui.Columns12(content, 3, 6);
+                Ui.Empty(Wp4Ui.ListIn(Ui.Tile(c[1], Loc.T("tab.career.setup"))), UiIcons.Team, Loc.T("setup.noTeam"));
                 return;
             }
             var db = Game.Db;
@@ -39,7 +42,6 @@ namespace MotoManager.App.UI.Screens
             int missingStaff = MissingRoles(world, db, team).Count;
             int offers = SponsorMarket.OffersFor(world, team).Count;
 
-            // Steps with their state: done (✓) or what is still missing.
             var steps = new[]
             {
                 Loc.T("setup.step.identity"),
@@ -47,33 +49,35 @@ namespace MotoManager.App.UI.Screens
                 Loc.T("setup.step.staff") + "  " + Mark(missingStaff == 0, missingStaff.ToString()),
                 Loc.T("setup.step.sponsors") + "  " + Mark(team.Sponsors.Count > 0, offers.ToString())
             };
-            Ui.Chips(list, steps, _step, i => { _step = i; _confirm = null; Shell.Refresh(); }, 56);
+            Ui.Segmented(Wp4Ui.ListIn(Wp4Ui.TopStrip(content, Ui.Grid.Hit), 0), steps, _step, i => { _step = i; _confirm = null; Shell.Refresh(); });
+            var area = Wp4Ui.Below(content, Ui.Grid.Hit + Ui.Grid.Gap, Ui.Grid.Cta + Ui.Grid.Gap);
 
             switch (_step)
             {
-                case 1: Riders(list, world, db, team, capacity); break;
-                case 2: Staff(list, world, db, team); break;
-                case 3: Sponsors(list, world, db, team); break;
-                default: Identity(list, world, team); break;
+                case 1: Riders(area, world, db, team, capacity); break;
+                case 2: Staff(area, world, db, team); break;
+                case 3: Sponsors(area, world, db, team); break;
+                default: Identity(area, world, team); break;
             }
 
-            var nav = new List<UiAct>();
-            if (_step > 0) nav.Add(UiFactory.Act("◄  " + Loc.T("setup.prev"), () => { _step--; Shell.Refresh(); }));
-            if (_step < steps.Length - 1) nav.Add(UiFactory.Primary(Loc.T("setup.next") + "  ►", () => { _step++; Shell.Refresh(); }));
-            else nav.Add(UiFactory.Primary(Loc.T("setup.done"), () => Shell.Show<HubScreen>()));
-            UiFactory.ButtonRow(list, 60, nav.ToArray());
+            var nav = Ui.Columns12(Wp4Ui.BottomStrip(content, Ui.Grid.Cta), 3, 5, 4);
+            if (_step > 0) Wp4Ui.BackLink(nav[0], Loc.T("setup.prev"), () => { _step--; _confirm = null; Shell.Refresh(); });
+            if (_step < steps.Length - 1)
+                Wp4Ui.Chevron(Ui.PrimaryCTA(nav[2], Loc.T("setup.next"), () => { _step++; _confirm = null; Shell.Refresh(); }));
+            else
+                Ui.PrimaryCTA(nav[2], Loc.T("setup.done"), () => Shell.Show<HubScreen>());
         }
 
         private static string Mark(bool done, string pending)
         {
-            return done ? Theme.GoodText("✓") : Theme.WarnText(pending);
+            return done ? Theme.GoodText(Glyph.Check) : Theme.WarnText(pending);
         }
 
-        private void Identity(RectTransform list, WorldState world, Team team)
+        private void Identity(RectTransform area, WorldState world, Team team)
         {
-            RectTransform left, right;
-            Ui.Columns(list, out left, out right);
-            var id = Ui.Card(left, Loc.T("setup.identity"), Loc.T("setup.identitySub"));
+            var cols = Ui.Columns12(area, 6, 6);
+            var id = Wp4Ui.ListIn(Ui.Tile(cols[0], Loc.T("setup.identity"), null, Theme.Caps(Loc.T("setup.identitySub")), 0, null,
+                Wp4Ui.Info(Loc.T("setup.identity"), Loc.T("setup.supplierNote"))), 8);
             UiFactory.Input(id, Loc.T("career.teamName"), team.Name, v =>
             {
                 string name = (v ?? "").Trim();
@@ -82,56 +86,52 @@ namespace MotoManager.App.UI.Screens
                 team.ShortName = name;
                 var org = world.OrganisationOf(team);
                 if (org != null && org.Owner == OwnerKind.Player && org.TeamIds.Count == 1) org.Name = name;
-            });
+            }, 56);
             var supplier = world.GetManufacturer(team.ManufacturerId);
-            Ui.Line(id, Loc.T("setup.supplier"), supplier != null ? supplier.Name : "-");
-            Ui.Note(id, Loc.T("setup.supplierNote"));
+            Ui.Line(id, Loc.T("setup.supplier"), "<b>" + (supplier != null ? supplier.Name : "-") + "</b>");
 
-            var colours = Ui.Card(right, Loc.T("setup.colours"));
+            var colours = Wp4Ui.ListIn(Ui.Tile(cols[1], Loc.T("setup.colours")), 8);
             FoundingPanel.Swatches(colours, Loc.T("found.primary"), team.Colors.Primary, c => { team.Colors.Primary = c; Shell.Refresh(); });
             FoundingPanel.Swatches(colours, Loc.T("found.secondary"), team.Colors.Secondary, c => { team.Colors.Secondary = c; Shell.Refresh(); });
-            var preview = UiFactory.Row(colours, 64);
-            var plate = UiFactory.Panel("Plate", preview, UiFactory.ParseColor(team.Colors.Primary, Color.red), true);
-            UiFactory.Place(plate.rectTransform, 0.25f, 0.05f, 0.75f, 0.95f);
-            var num = UiFactory.Label("Name", plate.transform, team.Name.ToUpperInvariant(), Theme.FontSmall, TextAnchor.MiddleCenter, UiFactory.ParseColor(team.Colors.Secondary, Color.white));
-            num.fontStyle = FontStyle.Bold;
-            UiFactory.Stretch(num.rectTransform);
+            var plate = UiFactory.Row(colours, Ui.Grid.Cta);
+            var pc = Ui.Columns12(plate, 2, 8);
+            FoundingPanel.Plate(pc[1], team.Name, team.Colors.Primary, team.Colors.Secondary);
         }
 
-        private void Riders(RectTransform list, WorldState world, GameDatabase db, Team team, int capacity)
+        private void Riders(RectTransform area, WorldState world, GameDatabase db, Team team, int capacity)
         {
-            RectTransform left, right;
-            Ui.Columns(list, out left, out right);
-            var mine = Ui.Card(left, Loc.T("setup.myRiders"), team.RiderIds.Count + "/" + capacity);
+            var cols = Ui.Columns12(area, 5, 7);
+            var mine = Wp4Ui.ScrollIn(Ui.Tile(cols[0], Loc.T("setup.myRiders"), null, team.RiderIds.Count + "/" + capacity), 6);
+            if (team.RiderIds.Count < capacity) Ui.Alert(mine, Loc.T("ux.setup.ridersMissing", capacity - team.RiderIds.Count));
             foreach (var id in team.RiderIds)
             {
                 var r = world.GetRider(id);
                 if (r == null) continue;
-                Ui.Item(mine, r.FullName, Loc.T("setup.riderLine", r.AgeOn(world.CurrentDate), r.Contract != null ? r.Contract.EndSeason.ToString() : "-"),
-                    Fmt.Rating(Fmt.Estimate(world, team.Id, r, "RaceSkill")));
+                Ui.PersonRow(mine, Fmt.Estimate(world, team.Id, r, "RaceSkill"), r.FullName,
+                    Loc.T("setup.riderLine", r.AgeOn(world.CurrentDate), r.Contract != null ? r.Contract.EndSeason.ToString() : "-"), null);
             }
-            if (team.RiderIds.Count < capacity) Ui.Note(mine, Theme.WarnText(Loc.T("setup.ridersMissing", capacity - team.RiderIds.Count)));
+            if (team.RiderIds.Count == 0) Ui.Empty(mine, UiIcons.Person, Loc.T("ux.setup.noRiders"));
 
-            // Riders who can join now: free ones of the category (and nearby pools), best first.
             var cand = new List<Rider>();
             foreach (var r in world.Riders.Values)
                 if (!r.IsRetired && r.TeamId == null && r.Contract == null && (r.CategoryId == team.CategoryId || r.Generated)) cand.Add(r);
             cand.Sort((a, b) => Fmt.Estimate(world, team.Id, b, "RaceSkill").CompareTo(Fmt.Estimate(world, team.Id, a, "RaceSkill")));
-            var free = Ui.Card(right, Loc.T("setup.freeRiders"), Loc.T("setup.freeRidersSub"));
+            var freeBody = Ui.Tile(cols[1], Loc.T("setup.freeRiders"), null, Theme.Caps(Loc.T("setup.freeRidersSub")), 0, null,
+                Wp4Ui.Info(Loc.T("setup.freeRiders"), Loc.T("setup.ridersMissing", Math.Max(0, capacity - team.RiderIds.Count))));
+            Ui.Ghost(Wp4Ui.BottomStrip(freeBody, Ui.Grid.Hit), Loc.T("setup.toMarket"), () => Shell.Show<MarketScreen>());
+            var free = Wp4Ui.ScrollIn(Wp4Ui.Below(freeBody, 0, Ui.Grid.Hit + 4), 6);
             var rules = db.GetRules(team.CategoryId, world.Season);
             for (int i = 0; i < cand.Count && i < 5; i++)
             {
                 var r = cand[i];
-                Ui.Item(free, r.FullName, Loc.T("setup.riderAsk", r.AgeOn(world.CurrentDate), MathX.FormatMoney(TransferMarket.SalaryDemand(r, rules))),
-                    Fmt.Rating(Fmt.Estimate(world, team.Id, r, "RaceSkill")),
-                    UiFactory.Primary(Loc.T("setup.negotiate"), () =>
+                Ui.PersonRow(free, Fmt.Estimate(world, team.Id, r, "RaceSkill"), r.FullName, Loc.T("ux.setup.riderAge", r.AgeOn(world.CurrentDate)),
+                    MathX.FormatMoney(TransferMarket.SalaryDemand(r, rules)), null, UiFactory.Act(Loc.T("setup.negotiate"), () =>
                     {
                         MarketScreen.PendingRiderId = r.Id;
                         Shell.Show<MarketScreen>();
                     }));
             }
-            if (cand.Count == 0) Ui.Note(free, Loc.T("setup.noFree"));
-            UiFactory.ButtonRow(free, 54, UiFactory.Act(Loc.T("setup.toMarket"), () => Shell.Show<MarketScreen>()));
+            if (cand.Count == 0) Ui.Empty(free, UiIcons.Market, Loc.T("ux.setup.noFree"));
         }
 
         private static List<StaffRole> MissingRoles(WorldState world, GameDatabase db, Team team)
@@ -149,65 +149,65 @@ namespace MotoManager.App.UI.Screens
             return missing;
         }
 
-        private void Staff(RectTransform list, WorldState world, GameDatabase db, Team team)
+        private void Staff(RectTransform area, WorldState world, GameDatabase db, Team team)
         {
             var missing = MissingRoles(world, db, team);
-            var card = Ui.Card(list, Loc.T("setup.staff"), missing.Count == 0 ? Loc.T("setup.staffDone") : Loc.T("setup.staffMissing", missing.Count));
+            double cash = Accounts.Cash(world, team);
+            var paras = new List<string> { Loc.T("setup.staffNote", MathX.FormatMoney(cash)), Loc.T("setup.staffOptional") };
+            foreach (var role in missing) paras.Add("<b>" + Loc.T("role." + role) + "</b>   " + Loc.T("roleimpact." + role));
+            var body = Ui.Tile(area, Loc.T("setup.staff"), null, Theme.Caps(missing.Count == 0 ? Loc.T("setup.staffDone") : Loc.T("setup.staffMissing", missing.Count)), 0, null,
+                Wp4Ui.Info(Loc.T("setup.staff"), paras.ToArray()));
+            Ui.Ghost(Wp4Ui.BottomStrip(body, Ui.Grid.Hit), Loc.T("setup.toStaff"), () => Shell.Show<StaffPage>());
+            var list = Wp4Ui.ScrollIn(Wp4Ui.Below(body, 0, Ui.Grid.Hit + 4), 6);
             if (missing.Count == 0)
             {
-                Ui.Note(card, Loc.T("setup.staffOptional"));
-                UiFactory.ButtonRow(card, 54, UiFactory.Act(Loc.T("setup.toStaff"), () => Shell.Show<StaffPage>()));
+                Ui.Empty(list, UiIcons.Team, Loc.T("setup.staffDone"));
                 return;
             }
-            double cash = Accounts.Cash(world, team);
             foreach (var role in missing)
             {
                 var options = StaffMarket.Candidates(world, db, team, role, 3);
-                // A sensible pick: the best one paid at most a little above the usual for the category.
                 StaffMember pick = options.Count > 1 ? options[1] : options.Count > 0 ? options[0] : null;
                 if (pick == null) continue;
                 var p = pick;
+                var rl = role;
                 string key = "staff:" + role;
-                Ui.Item(card, Loc.T("role." + role) + "  " + Theme.Dim(p.FullName),
-                    Loc.T("roleimpact." + role),
-                    Fmt.Rating(p.Skill) + "  " + Theme.Dim(MathX.FormatMoney(p.Salary) + "/" + Loc.T("unit.season")),
-                    UiFactory.Primary(_confirm == key ? Loc.T("setup.hireConfirm") : Loc.T("setup.hire"), () =>
+                Ui.PersonRow(list, p.Skill, Loc.T("role." + role), p.FullName, MathX.FormatMoney(p.Salary), null,
+                    UiFactory.Act(_confirm == key ? Loc.T("setup.hireConfirm") : Loc.T("setup.hire"), () =>
                     {
                         if (_confirm != key) { _confirm = key; Shell.Refresh(); return; }
                         _confirm = null;
                         StaffMarket.Hire(world, team, p, db);
-                        Shell.Toast(Loc.T("setup.hired", p.FullName, Loc.T("role." + role)));
+                        Shell.Toast(Loc.T("setup.hired", p.FullName, Loc.T("role." + rl)));
                         Shell.Refresh();
                     }));
             }
-            Ui.Note(card, Loc.T("setup.staffNote", MathX.FormatMoney(cash)));
-            UiFactory.ButtonRow(card, 54, UiFactory.Act(Loc.T("setup.toStaff"), () => Shell.Show<StaffPage>()));
         }
 
-        private void Sponsors(RectTransform list, WorldState world, GameDatabase db, Team team)
+        private void Sponsors(RectTransform area, WorldState world, GameDatabase db, Team team)
         {
-            RectTransform left, right;
-            Ui.Columns(list, out left, out right);
-            var signed = Ui.Card(left, Loc.T("setup.sponsorsSigned"), team.Sponsors.Count.ToString());
+            var cols = Ui.Columns12(area, 5, 7);
+            var signed = Wp4Ui.ScrollIn(Ui.Tile(cols[0], Loc.T("setup.sponsorsSigned"), null, team.Sponsors.Count.ToString()), 2);
             foreach (var d in team.Sponsors)
                 Ui.Line(signed, d.Name, MathX.FormatMoney(d.PaymentPerSeason) + Theme.Dim("/" + Loc.T("unit.season")));
-            if (team.Sponsors.Count == 0) Ui.Note(signed, Loc.T("setup.noSponsors"));
+            if (team.Sponsors.Count == 0) Ui.Empty(signed, UiIcons.Sponsor, Loc.T("setup.noSponsors"));
 
-            var offersCard = Ui.Card(right, Loc.T("setup.sponsorOffers"));
             var offers = SponsorMarket.OffersFor(world, team);
+            var body = Ui.Tile(cols[1], Loc.T("setup.sponsorOffers"), null, offers.Count.ToString());
+            Ui.Ghost(Wp4Ui.BottomStrip(body, Ui.Grid.Hit), Loc.T("setup.toSponsors"), () => Shell.Show<SponsorsPage>());
+            var list = Wp4Ui.ScrollIn(Wp4Ui.Below(body, 0, Ui.Grid.Hit + 4), 6);
             foreach (var o in offers)
             {
                 var offer = o;
-                Ui.Item(offersCard, o.Name, Loc.T("setup.sponsorTerms", o.Seasons),
+                Ui.Item(list, o.Name, Loc.T("setup.sponsorTerms", o.Seasons),
                     MathX.FormatMoney(o.PaymentPerSeason) + Theme.Dim("/" + Loc.T("unit.season")),
-                    UiFactory.Primary(Loc.T("sponsor.accept"), () =>
+                    UiFactory.Act(Loc.T("sponsor.accept"), () =>
                     {
                         Shell.Toast(SponsorMarket.Accept(world, db, offer.Id).Message);
                         Shell.Refresh();
                     }));
             }
-            if (offers.Count == 0) Ui.Note(offersCard, Loc.T("setup.noOffers"));
-            UiFactory.ButtonRow(offersCard, 54, UiFactory.Act(Loc.T("setup.toSponsors"), () => Shell.Show<SponsorsPage>()));
+            if (offers.Count == 0) Ui.Empty(list, UiIcons.Sponsor, Loc.T("ux.setup.noOffers"));
         }
     }
 }
