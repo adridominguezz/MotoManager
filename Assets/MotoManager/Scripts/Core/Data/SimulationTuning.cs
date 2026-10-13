@@ -68,7 +68,7 @@ namespace MotoManager.Core.Data
         /// fuel use and failure risk per lap are scaled by the inverse, so a race ends with the same wear, fuel and
         /// risk as the full distance (the strategy stays the real one, only shorter).
         /// </summary>
-        public double RaceLengthFactor = 0.5;
+        public double RaceLengthFactor = 0.4;
 
         // --- Start
         public double JumpStartChance = 0.002;
