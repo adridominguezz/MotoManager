@@ -283,9 +283,9 @@ namespace MotoManager.App.UI.Screens
     internal static class Carousel
     {
         /// <summary>A 56×56 arrow centred 28 units in from the left or right edge of <paramref name="parent"/>; disabled without an action.</summary>
-        public static UnityEngine.UI.Button Arrow(RectTransform parent, bool right, Action onTap)
+        public static UnityEngine.UI.Button Arrow(RectTransform parent, bool right, Action onTap, Color? tint = null)
         {
-            var b = Ui.IconButton(parent, UiIcons.Back, onTap);
+            var b = Ui.IconButton(parent, UiIcons.Back, onTap, tint);
             var rt = (RectTransform)b.transform;
             rt.anchorMin = rt.anchorMax = new Vector2(right ? 1 : 0, 0.5f);
             rt.pivot = new Vector2(0.5f, 0.5f);
@@ -333,21 +333,23 @@ namespace MotoManager.App.UI.Screens
 
         /// <summary>
         /// A compact carousel filling <paramref name="area"/> (a control row): ‹ arrow, the label (tap to pick from the
-        /// whole list in a sheet), › arrow; on a faint control surface.
+        /// whole list in a sheet), › arrow; on a faint control surface, or filled with <paramref name="fill"/> (the
+        /// championship colour) with readable ink.
         /// </summary>
-        public static void Compact(RectTransform area, string label, Action prev, Action next, Action onLabel)
+        public static void Compact(RectTransform area, string label, Action prev, Action next, Action onLabel, Color? fill = null)
         {
-            var bg = UiFactory.Panel("Carousel", area, Theme.Alpha(Color.white, 0.04f));
+            var bg = UiFactory.Panel("Carousel", area, fill ?? Theme.Alpha(Color.white, 0.04f));
             UiFactory.Stretch(bg.rectTransform);
             UiFactory.Surface(bg);
             bg.raycastTarget = false;
-            Arrow(bg.rectTransform, false, prev);
-            Arrow(bg.rectTransform, true, next);
+            Color ink = fill.HasValue ? Theme.OnColor(fill.Value) : Theme.Text;
+            Arrow(bg.rectTransform, false, prev, ink);
+            Arrow(bg.rectTransform, true, next, ink);
             var hit = UiFactory.Panel("Label", bg.transform, new Color(1, 1, 1, 0f));
             UiFactory.Stretch(hit.rectTransform);
             hit.rectTransform.offsetMin = new Vector2(Ui.Grid.Hit, 0);
             hit.rectTransform.offsetMax = new Vector2(-Ui.Grid.Hit, 0);
-            var t = Ui.Label(hit.transform, Theme.Caps(label ?? ""), Theme.TextHeader, TextAnchor.MiddleCenter, Theme.Text, FontStyle.BoldAndItalic);
+            var t = Ui.Label(hit.transform, Theme.Caps(label ?? ""), Theme.TextHeader, TextAnchor.MiddleCenter, ink, FontStyle.BoldAndItalic);
             Ui.Fit(t, Theme.TextHeader);
             UiFactory.Stretch(t.rectTransform);
             t.raycastTarget = false;

@@ -178,18 +178,24 @@ de `Ui.IconButton` (56×56 de toque), girado 180° para `›`; una flecha sin de
 **Navegador de campeonatos (MM4 §1.7).** Recorre **todas las categorías simuladas** de la base de datos (orden
 pirámide → nivel: MotoGP, Moto2, Moto3, Rookies, WorldSBK, WorldSSP…), las gestione el jugador o no; las flechas dan la
 vuelta.
-- **Clasificaciones**: a la izquierda (4/12) la tarjeta del campeonato: borde con el color de la categoría, "n / N" en
-  la cabecera, nombre entre `‹ ›` con "pirámide · Categoría N (· Copa)" debajo, temporada, ronda corrida / total,
-  líder y la posición de tu equipo (o "No gestionas esta categoría"); debajo, la lista de todos los campeonatos para
-  saltar directamente (sustituye al selector anterior, que se quita). A la derecha (8/12) el segmentado PILOTOS /
-  EQUIPOS / FABRICANTES / EVOLUCIÓN y la tabla, como antes.
-- **Calendario**: la misma tarjeta. Cada entrada es una categoría con calendario: se listan solo las rondas que corre
-  esa categoría y el ganador es el de **su** carrera principal (antes: siempre la categoría reina del calendario).
-  Un calendario que no use ninguna categoría simulada se añade al final como entrada propia (sin pérdida respecto al
-  selector anterior). El texto "i" se actualiza (`ux.mm4b.calendarInfo`).
-- **Historial**: el selector de categoría se sustituye por un carrusel compacto `‹ MotoGP ›` en la misma celda; tocar
-  el nombre abre la lista completa en una hoja (la función del selector se conserva). Además, la fila de un campeón
-  abre la ficha de su equipo si el equipo sigue existiendo.
+- **Revisión tras feedback del usuario** ("veo duplicada esta información"): se quitó la tarjeta lateral del
+  campeonato (temporada, ronda, líder, tu equipo) y la lista "Todos los campeonatos", que repetían lo que ya dicen la
+  banda de la tabla, las flechas y la fila propia fijada. El navegador vive ahora **dentro de la banda de la tabla**
+  (`ChampNav.Navigate` sobre la banda de `Wp4Ui.Table`): "‹ MOTOGP · PILOTOS ›" a la izquierda y la ronda ("Ronda 2/22")
+  a la derecha; tocar el nombre abre una hoja pequeña con todos los campeonatos para saltar directamente (sustituye a
+  la lista). La banda usa el **color propio del campeonato** (`categories.json`: MotoGP rojo, Moto2 azul…) en lugar del
+  acento del equipo, con tinta elegida por contraste (`Theme.OnColor`); el subrayado de la pestaña activa usa el mismo
+  color (aclarado hasta 3:1 sobre el fondo). La tabla ocupa todo el ancho. No se muestra "No gestionas esta
+  categoría" (era duplicación). La fila del jugador sigue resaltada y fijada con el color de su equipo (identidad).
+- **Clasificaciones**: segmentado PILOTOS / EQUIPOS / FABRICANTES / EVOLUCIÓN arriba y la tabla con la banda
+  navegadora. En EVOLUCIÓN (y si la categoría aún no tiene clasificación) se pone una banda navegadora propia encima.
+- **Calendario**: la misma banda con `‹ ›`. Cada entrada es una categoría con calendario: se listan solo las rondas que
+  corre esa categoría y el ganador es el de **su** carrera principal (antes: siempre la categoría reina del
+  calendario). Un calendario que no use ninguna categoría simulada se añade al final como entrada propia (banda gris).
+  El texto "i" se actualiza (`ux.mm4b.calendarInfo`).
+- **Historial**: el selector de categoría se sustituye por un carrusel compacto `‹ MotoGP ›` en la misma celda,
+  relleno con el color del campeonato; tocar el nombre abre la lista completa en una hoja. Además, la fila de un
+  campeón abre la ficha de su equipo si el equipo sigue existiendo.
 
 **Ficha de equipo con carrusel (MM4 §1.6).** Hoja modal (`Ui.Sheet`, 86% de ancho), así se abre sin salir de la
 pantalla y sin tocar `ManagementShell`. Entradas: fila de la tabla EQUIPOS de Clasificaciones (antes abría la hoja de
