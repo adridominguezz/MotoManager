@@ -264,7 +264,7 @@
         "unfreezes": true
       }
     ],
-    "regulationReset": 0.5
+    "regulationReset": 0.4
   },
   "testing": {
     "privateTestDays": 0,
