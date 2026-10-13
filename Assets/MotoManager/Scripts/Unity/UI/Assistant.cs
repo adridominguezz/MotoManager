@@ -78,6 +78,7 @@ namespace MotoManager.App.UI
             UiFactory.Stretch(initial.rectTransform);
             var who = UiFactory.Label("Who", card.transform, Theme.Caps(Loc.T("assistant.role")) + "\n<b>" + Name + "</b>", Theme.FontSmall, TextAnchor.MiddleCenter, Color.white);
             who.supportRichText = true;
+            Ui.Fit(who, Theme.FontSmall);
             UiFactory.DropShadow(who, 0.4f, 1.5f);
             UiFactory.Place(who.rectTransform, 0.01f, 0.03f, 0.26f, 0.3f);
 
@@ -88,10 +89,12 @@ namespace MotoManager.App.UI
             UiFactory.Gradient(bubble, 1.04f, 0.96f);
             _text = UiFactory.Label("Text", bubble.transform, "", Theme.FontNormal - 2, TextAnchor.MiddleLeft, new Color32(16, 18, 22, 255));
             _text.supportRichText = true;
+            Ui.Fit(_text, Theme.FontNormal - 2);
             UiFactory.Place(_text.rectTransform, 0.05f, 0.05f, 0.95f, 0.95f);
 
             var tap = UiFactory.Label("Tap", root, Theme.Caps(Loc.T("assistant.tap")), Theme.FontNormal, TextAnchor.MiddleCenter, Theme.Timing);
             tap.fontStyle = FontStyle.BoldAndItalic;
+            Ui.Fit(tap, Theme.FontNormal);
             tap.gameObject.AddComponent<Outline>().effectColor = new Color(0, 0, 0, 0.6f);
             UiFactory.Place(tap.rectTransform, 0.3f, 0.01f, 0.7f, 0.075f);
             ShowCurrent();
