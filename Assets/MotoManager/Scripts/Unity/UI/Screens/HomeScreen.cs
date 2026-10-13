@@ -11,9 +11,10 @@ using UnityEngine.UI;
 namespace MotoManager.App.UI.Screens
 {
     /// <summary>
-    /// Home (UX spec §3.2): six tiles on one screen, no scrolling. Top row: the riders (6 columns), staff and bike
-    /// (3 each); bottom row: sponsors and finance (3 each) and the next race (6) carrying the screen's only primary
-    /// button. Each tile shows one key number and one status line, with a badge for the decisions waiting there; the
+    /// Home (UX spec §3.2, revised with the user): four tiles on one screen, no scrolling. On the left the riders as
+    /// the hero tile (number, rating, name, last race, championship) and the next race under it (race = the screen's
+    /// only primary, simulate GP and simulate season beside it); on the right staff and bike with big pictograms.
+    /// Sponsors and finance are left to their sections (cash is in the top bar). Tiles badge the decisions waiting; the
     /// decisions themselves are listed in the top bar's inbox (<see cref="ManagementShell.InboxSource"/>) and the news
     /// in the top bar's news sheet.
     /// </summary>
@@ -45,15 +46,14 @@ namespace MotoManager.App.UI.Screens
             // The inbox reads the decisions fresh each time it is drawn (the list changes as the player acts).
             Shell.InboxSource = Inbox;
 
-            var rows = Ui.Rows(content, 0.58f, 0.42f);
-            var top = Ui.Columns12(rows[0], 6, 3, 3);
-            var bottom = Ui.Columns12(rows[1], 3, 3, 6);
-            RidersTile(top[0], world, team, Count(todos, TileRiders));
-            StaffTile(top[1], world, team, Count(todos, TileStaff));
-            BikeTile(top[2], world, team, Count(todos, TileBike));
-            SponsorsTile(bottom[0], world, team, Count(todos, TileSponsors));
-            FinanceTile(bottom[1], world, team, Count(todos, TileFinance));
-            RaceTile(bottom[2], world, team);
+            // Left (8 columns): the riders as the hero tile, the next race under it. Right (4): staff and bike.
+            var cols = Ui.Columns12(content, 8, 4);
+            var left = Ui.Rows(cols[0], 0.62f, 0.38f);
+            var right = Ui.Rows(cols[1], 1, 1);
+            RidersTile(left[0], world, team, Count(todos, TileRiders));
+            RaceTile(left[1], world, team);
+            StaffTile(right[0], world, team, Count(todos, TileStaff));
+            BikeTile(right[1], world, team, Count(todos, TileBike));
         }
 
         private List<KeyValuePair<string, Action>> Inbox()
@@ -69,8 +69,8 @@ namespace MotoManager.App.UI.Screens
         // ------------------------------------------------------------------ tiles
 
         /// <summary>
-        /// The riders (at most three rows): number plate, SURNAME and rating; under the name the championship place and
-        /// points, or the injury. A free seat is a warning row that opens the market.
+        /// The hero tile: the riders side by side (at most three), each with the race number, the rating, the name,
+        /// the last race and the championship place with points (or the injury). A free seat opens the market.
         /// </summary>
         private void RidersTile(RectTransform area, WorldState world, Team team, int badge)
         {
@@ -80,32 +80,29 @@ namespace MotoManager.App.UI.Screens
             int free = Math.Max(0, ContractService.SeatsFreeNow(world, Game.Db, team));
             int seats = Math.Min(3, team.RiderIds.Count + free);
             if (seats == 0) return;
+            var spans = new int[seats];
+            for (int i = 0; i < seats; i++) spans[i] = 12 / seats;
+            var cols = Ui.Columns12(body, spans);
             for (int i = 0; i < seats; i++)
             {
-                var row = UiFactory.Rect("RiderRow", body);
-                UiFactory.Place(row, 0, 1 - (i + 1f) / seats, 1, 1 - (float)i / seats);
                 if (i > 0)
                 {
-                    var sep = UiFactory.Decor("Sep", row, new Color(1, 1, 1, 0.07f));
-                    sep.rectTransform.anchorMin = new Vector2(0, 1);
-                    sep.rectTransform.anchorMax = new Vector2(1, 1);
-                    sep.rectTransform.offsetMin = new Vector2(0, -1);
-                    sep.rectTransform.offsetMax = Vector2.zero;
+                    var sep = UiFactory.Decor("Sep", cols[i], new Color(1, 1, 1, 0.08f));
+                    sep.rectTransform.anchorMin = new Vector2(0, 0.04f);
+                    sep.rectTransform.anchorMax = new Vector2(0, 0.96f);
+                    sep.rectTransform.offsetMin = new Vector2(-7, 0);
+                    sep.rectTransform.offsetMax = new Vector2(-6, 0);
                 }
                 var r = i < team.RiderIds.Count ? world.GetRider(team.RiderIds[i]) : null;
-                if (r == null)
-                {
-                    FreeSeatRow(row);
-                    continue;
-                }
-                RiderLine(row, champ, r, seats);
+                if (r == null) FreeSeat(cols[i]);
+                else RiderPanel(cols[i], champ, r, seats);
             }
         }
 
-        private void FreeSeatRow(RectTransform row)
+        private void FreeSeat(RectTransform area)
         {
-            var hit = UiFactory.Panel("FreeSeat", row, Theme.Alpha(Theme.Warning, 0.08f));
-            UiFactory.Place(hit.rectTransform, 0, 0.12f, 1, 0.88f);
+            var hit = UiFactory.Panel("FreeSeat", area, Theme.Alpha(Theme.Warning, 0.08f));
+            UiFactory.Stretch(hit.rectTransform);
             UiFactory.SideStripe(hit.transform, Theme.Warning, 6, 0);
             var b = hit.gameObject.AddComponent<Button>();
             b.targetGraphic = hit;
@@ -114,45 +111,49 @@ namespace MotoManager.App.UI.Screens
                 GameAudio.ClickSound();
                 Shell.Show<MarketScreen>();
             });
-            var t = Ui.Label(hit.transform, Theme.Caps(Loc.T("hub.freeSeat")), Theme.TextHeader, TextAnchor.MiddleLeft, Theme.Warning, FontStyle.BoldAndItalic);
-            UiFactory.Stretch(t.rectTransform);
-            t.rectTransform.offsetMin = new Vector2(24, 0);
-            t.rectTransform.offsetMax = new Vector2(-48, 0);
-            var ch = UiIcons.Chevron(hit.transform, Theme.Warning);
-            ch.rectTransform.anchorMin = ch.rectTransform.anchorMax = new Vector2(1, 0.5f);
-            ch.rectTransform.sizeDelta = new Vector2(22, 22);
-            ch.rectTransform.anchoredPosition = new Vector2(-24, 0);
+            var icon = UiIcons.Icon(hit.transform, UiIcons.Person, Theme.Alpha(Theme.Warning, 0.5f));
+            icon.preserveAspect = true;
+            UiFactory.Place(icon.rectTransform, 0.2f, 0.42f, 0.8f, 0.92f);
+            var t = Ui.Label(hit.transform, Theme.Caps(Loc.T("hub.freeSeat")), Theme.TextTitle, TextAnchor.MiddleCenter, Theme.Warning, FontStyle.BoldAndItalic);
+            UiFactory.Place(t.rectTransform, 0, 0.2f, 1, 0.4f);
+            var go = Ui.Label(hit.transform, Theme.Caps(Loc.T("ux.riders.toMarket")), Theme.TextCaption, TextAnchor.MiddleCenter, Theme.TextDim, FontStyle.Bold);
+            UiFactory.Place(go.rectTransform, 0, 0.04f, 1, 0.2f);
         }
 
-        private static void RiderLine(RectTransform row, ChampionshipState champ, Rider r, int seats)
+        /// <summary>One rider: number and rating on top, the name, then two figures (last race, championship).</summary>
+        private static void RiderPanel(RectTransform area, ChampionshipState champ, Rider r, int seats)
         {
-            // Number plate: a dark slanted block with the race number.
-            var plate = UiFactory.Decor("Number", row, new Color(0, 0, 0, 0.45f));
+            float side = seats <= 2 ? 96 : 76;
+            var plate = UiFactory.Decor("Number", area, new Color(0, 0, 0, 0.45f));
             UiFactory.Slant(plate, 2.4f);
-            plate.rectTransform.anchorMin = plate.rectTransform.anchorMax = new Vector2(0, 0.5f);
-            plate.rectTransform.pivot = new Vector2(0, 0.5f);
-            plate.rectTransform.anchoredPosition = Vector2.zero;
-            plate.rectTransform.sizeDelta = new Vector2(76, 48);
-            var num = Ui.Label(plate.transform, r.Number > 0 ? r.Number.ToString() : "-", Theme.TextTitle, TextAnchor.MiddleCenter, Color.white, FontStyle.BoldAndItalic);
+            plate.rectTransform.anchorMin = plate.rectTransform.anchorMax = new Vector2(0, 1);
+            plate.rectTransform.pivot = new Vector2(0, 1);
+            plate.rectTransform.anchoredPosition = new Vector2(0, -4);
+            plate.rectTransform.sizeDelta = new Vector2(seats <= 2 ? 104 : 84, 56);
+            var num = Ui.Label(plate.transform, r.Number > 0 ? "#" + r.Number : "-", Theme.TextTitle, TextAnchor.MiddleCenter, Color.white, FontStyle.BoldAndItalic);
             UiFactory.Stretch(num.rectTransform);
 
-            float side = seats <= 2 ? 72 : 60;
-            var badge = Ui.RatingBadge(row, r.Attributes.Overall, null, side);
-            badge.rectTransform.anchorMin = badge.rectTransform.anchorMax = new Vector2(1, 0.5f);
-            badge.rectTransform.pivot = new Vector2(1, 0.5f);
-            badge.rectTransform.anchoredPosition = Vector2.zero;
+            var badge = Ui.RatingBadge(area, r.Attributes.Overall, Loc.T("rider.ratingTag"), side);
+            badge.rectTransform.anchorMin = badge.rectTransform.anchorMax = new Vector2(1, 1);
+            badge.rectTransform.pivot = new Vector2(1, 1);
+            badge.rectTransform.anchoredPosition = new Vector2(-4, 0);
 
-            var name = Ui.Label(row, Theme.Caps(r.LastName), Theme.TextTitle, TextAnchor.LowerLeft, Theme.Text, FontStyle.BoldAndItalic);
-            UiFactory.Place(name.rectTransform, 0, 0.5f, 1, 0.92f);
-            name.rectTransform.offsetMin = new Vector2(92, 0);
-            name.rectTransform.offsetMax = new Vector2(-side - 16, 0);
+            var first = Ui.Label(area, r.FirstName ?? "", Theme.TextBody, TextAnchor.LowerLeft, Theme.TextDim, FontStyle.Italic);
+            UiFactory.Place(first.rectTransform, 0, 0.5f, 1, 0.62f);
+            var name = Ui.Label(area, Theme.Caps(r.LastName), Theme.TextTitle + 8, TextAnchor.MiddleLeft, Theme.Text, FontStyle.BoldAndItalic);
+            UiFactory.DropShadow(name, 0.4f, 2);
+            UiFactory.Place(name.rectTransform, 0, 0.34f, 1, 0.5f);
 
+            var figures = UiFactory.Rect("Figures", area);
+            UiFactory.Place(figures, 0, 0, 1, 0.3f);
+            var halves = Ui.Columns12(figures, 6, 6);
+            Figure(halves[0], Loc.T("rider.stats.lastRace"), LastRace(champ, r.Id));
             if (r.InjuryRoundsOut > 0)
             {
-                var pill = Ui.Pill(row, Loc.T("home.injured", r.InjuryRoundsOut), Theme.Bad);
-                pill.rectTransform.anchorMin = pill.rectTransform.anchorMax = new Vector2(0, 0.3f);
+                var pill = Ui.Pill(halves[1], Loc.T("home.injured", r.InjuryRoundsOut), Theme.Bad);
+                pill.rectTransform.anchorMin = pill.rectTransform.anchorMax = new Vector2(0, 0.5f);
                 pill.rectTransform.pivot = new Vector2(0, 0.5f);
-                pill.rectTransform.anchoredPosition = new Vector2(92, 0);
+                pill.rectTransform.anchoredPosition = Vector2.zero;
                 return;
             }
             int pos = champ != null ? champ.RiderPosition(r.Id) : 0;
@@ -160,21 +161,60 @@ namespace MotoManager.App.UI.Screens
             if (champ != null)
                 foreach (var e in champ.SortedRiders())
                     if (e.Id == r.Id) pts = e.Points;
-            string line = (pos > 0 ? Theme.Pos(pos) + "  ·  " : "") + Loc.T("home.tile.points", pts.ToString("0"));
-            var sub = Ui.Label(row, Theme.Caps(line), Theme.TextCaption, TextAnchor.UpperLeft, Color.Lerp(Theme.TextDim, Color.white, 0.2f), FontStyle.Bold);
-            UiFactory.Place(sub.rectTransform, 0, 0.08f, 1, 0.48f);
-            sub.rectTransform.offsetMin = new Vector2(92, 0);
-            sub.rectTransform.offsetMax = new Vector2(-side - 16, 0);
+            Figure(halves[1], Loc.T("rider.stats.position"), Theme.Pos(pos) + "  " + Theme.Dim("<size=" + Theme.TextBody + ">" +
+                Theme.Caps(Loc.T("home.tile.points", pts.ToString("0"))) + "</size>"));
+        }
+
+        /// <summary>A caption over a value in timing yellow (one figure of a rider panel).</summary>
+        private static void Figure(RectTransform area, string caption, string value)
+        {
+            var c = Ui.Label(area, Theme.Caps(caption), Theme.TextCaption, TextAnchor.LowerLeft, Theme.TextDim, FontStyle.Bold);
+            UiFactory.Place(c.rectTransform, 0, 0.58f, 1, 1);
+            var v = Ui.Label(area, value, Theme.TextKey, TextAnchor.MiddleLeft, Theme.Timing, FontStyle.BoldAndItalic);
+            UiFactory.DropShadow(v, 0.4f, 2);
+            UiFactory.Place(v.rectTransform, 0, 0, 1, 0.6f);
+        }
+
+        /// <summary>The rider's result in the last race of the championship ("P4", "DNF" or "-").</summary>
+        private static string LastRace(ChampionshipState champ, string riderId)
+        {
+            if (champ == null) return "-";
+            string last = "-";
+            foreach (var wk in champ.Rounds)
+                foreach (var s in wk.Sessions)
+                {
+                    if (s.Type != SessionType.Race) continue;
+                    var e = s.Classification.Find(x => x.RiderId == riderId);
+                    if (e == null) continue;
+                    last = e.Status != ResultStatus.Finished ? Theme.BadText(Loc.T("result.DNF")) : Theme.Pos(e.Position);
+                }
+            return last;
+        }
+
+        /// <summary>A small tile with a big pictogram on the left, the key number on the right and one status line.</summary>
+        private static void IconTile(RectTransform area, string title, string icon, string value, Color? valueColor, string status, Action onTap, int badge)
+        {
+            var body = Ui.Tile(area, title, onTap, null, badge, Theme.Bad);
+            var img = UiIcons.Icon(body, icon, Theme.Alpha(Color.Lerp(Theme.TextDim, Color.white, 0.35f), 0.9f));
+            img.preserveAspect = true;
+            UiFactory.Place(img.rectTransform, 0, 0.24f, 0.48f, 1);
+            var v = Ui.Label(body, value, Theme.TextDisplay + 16, TextAnchor.MiddleCenter, valueColor ?? Theme.Timing, FontStyle.BoldAndItalic);
+            UiFactory.DropShadow(v, 0.4f, 2);
+            UiFactory.Place(v.rectTransform, 0.48f, 0.24f, 1, 1);
+            if (string.IsNullOrEmpty(status)) return;
+            var s = Ui.Label(body, Theme.Caps(status), Theme.TextCaption, TextAnchor.MiddleCenter, Theme.TextDim, FontStyle.Bold);
+            UiFactory.Place(s.rectTransform, 0, 0, 1, 0.22f);
         }
 
         private void StaffTile(RectTransform area, WorldState world, Team team, int badge)
         {
             int missing = MissingStaff(world, team);
-            Ui.StatTile(area, Loc.T("hub.staff"), team.StaffIds.Count.ToString(),
+            IconTile(area, Loc.T("hub.staff"), UiIcons.Team, team.StaffIds.Count.ToString(), null,
                 missing > 0 ? Theme.WarnText(Theme.Caps(Loc.T("hub.staffMissing", missing))) : Loc.T("hub.staffFull"),
-                () => Shell.Show<StaffPage>(), null, UiIcons.Team, badge);
+                () => Shell.Show<StaffPage>(), badge);
         }
 
+        /// <summary>The bike: the average component level (rating colour) and the R&amp;D projects running.</summary>
         private void BikeTile(RectTransform area, WorldState world, Team team, int badge)
         {
             var bike = world.GetBike(team.BikeId);
@@ -184,34 +224,16 @@ namespace MotoManager.App.UI.Screens
                 foreach (var kv in bike.Components) { sum += kv.Value; n++; }
             double avg = n > 0 ? sum / n : 0;
             int running = world.Projects.FindAll(p => p.TeamId == team.Id && p.Status == ProjectStatus.InProgress).Count;
-            Ui.StatTile(area, Loc.T("hub.bike"), n > 0 ? avg.ToString("0") : "-", Loc.T("hub.rnd", running, TeamCapabilities.ProjectCapacity(team)),
-                () => Shell.Show<BikeScreen>(), n > 0 ? Ui.RatingColor(avg) : (Color?)null, UiIcons.Bike, badge);
-        }
-
-        private void SponsorsTile(RectTransform area, WorldState world, Team team, int badge)
-        {
-            int deals = SponsorService.DealsIn(team, world.Season);
-            int slots = SponsorService.Slots(Game.Db, team, world.Season);
-            int offers = SponsorMarket.OffersFor(world, team).Count;
-            Ui.StatTile(area, Loc.T("hub.sponsors"), deals + "/" + slots,
-                offers > 0 ? Theme.TimingText(Theme.Caps(Loc.T("hub.offers", offers))) : Loc.T("hub.noOffers"),
-                () => Shell.Show<SponsorsPage>(), null, UiIcons.Sponsor, badge);
-        }
-
-        /// <summary>The money left in the season budget (the cash is already in the top bar).</summary>
-        private void FinanceTile(RectTransform area, WorldState world, Team team, int badge)
-        {
-            double left = team.SeasonBudget - Accounts.SpentThisSeason(world, team);
-            Ui.StatTile(area, Loc.T("hub.finance"), MathX.FormatMoney(left), Loc.T("ux.hub.budgetLeft"),
-                () => Shell.Show<FinanceScreen>(), left < 0 ? Theme.Bad : (Color?)null, UiIcons.Finance, badge);
+            IconTile(area, Loc.T("hub.bike"), UiIcons.Bike, n > 0 ? avg.ToString("0") : "-", n > 0 ? Ui.RatingColor(avg) : (Color?)null,
+                Loc.T("ux.hub.bikeLevel") + "  ·  " + Loc.T("hub.rnd", running, TeamCapabilities.ProjectCapacity(team)),
+                () => Shell.Show<BikeScreen>(), badge);
         }
 
         // ------------------------------------------------------------------ next race
 
         /// <summary>
-        /// The next race: round and date in the header, the Grand Prix name, the last result in one line and the
-        /// screen's primary button (race, simulate, or finish/close the season). The quick simulations sit behind
-        /// the "..." button.
+        /// The next race: round and date in the header, the Grand Prix name and the last result, then the three
+        /// buttons: race (the screen's primary), simulate the Grand Prix and simulate the season.
         /// </summary>
         private void RaceTile(RectTransform area, WorldState world, Team team)
         {
@@ -230,47 +252,34 @@ namespace MotoManager.App.UI.Screens
                 string right = Theme.Caps(Loc.T("home.round", done + 1, Game.RoundsInSeason(team.CategoryId)) + "  ·  " +
                                           next.Round.Date.ToString("d MMM", Loc.Culture));
                 body = Ui.Tile(area, Loc.T("ux.hub.nextRace"), null, right);
-                Wp2Ui.HeaderMore(body, MoreSheet);
             }
 
             string name = next != null ? Loc.Round(next.Round.Name) : Loc.T("home.seasonOverShort");
             var gp = Ui.Label(body, Theme.Caps(name), Theme.TextTitle, TextAnchor.MiddleLeft, Theme.Text, FontStyle.BoldAndItalic);
-            UiFactory.Place(gp.rectTransform, 0, 0.66f, 1, 1);
+            UiFactory.Place(gp.rectTransform, 0, 0.68f, 1, 1);
             if (!string.IsNullOrEmpty(Shell.LastResult))
             {
                 var last = Ui.Label(body, Theme.Dim(Theme.Caps(Loc.T("home.last")) + "  ") + FirstLine(Shell.LastResult), Theme.TextCaption,
                     TextAnchor.MiddleLeft, Theme.Text, FontStyle.Normal);
-                UiFactory.Place(last.rectTransform, 0, 0.46f, 1, 0.66f);
+                UiFactory.Place(last.rectTransform, 0, 0.48f, 1, 0.68f);
             }
 
-            var cta = Wp2Ui.BottomStrip(body, Ui.Grid.Cta);
+            var row = Wp2Ui.BottomStrip(body, Ui.Grid.Cta);
             string label = racing || next == null ? Shell.ContinueShort() : Loc.T("shell.short.simulate");
-            var b = Ui.PrimaryCTA(cta, label, racing || next == null ? (Action)Shell.Continue : Shell.SimulateEvent);
-            Wp2Ui.Chevron(b);
-        }
-
-        /// <summary>The "..." sheet of the race tile: the quick simulations and the last result in full.</summary>
-        private void MoreSheet()
-        {
-            Ui.Sheet(Loc.T("home.more"), list =>
+            Action go = racing || next == null ? (Action)Shell.Continue : Shell.SimulateEvent;
+            if (next == null)
             {
-                var l = (RectTransform)list;
-                Ui.Secondary(l, Loc.T("hub.simEvent"), () =>
-                {
-                    Ui.CloseSheet();
-                    Shell.SimulateEvent();
-                });
-                Ui.Secondary(l, Loc.T("home.simulateSeasonShort"), () =>
-                {
-                    Ui.CloseSheet();
-                    Shell.SimulateSeason();
-                });
-                if (!string.IsNullOrEmpty(Shell.LastResult))
-                {
-                    Ui.Section(list, Loc.T("home.last"));
-                    UiFactory.Paragraph(list, Shell.LastResult, Theme.TextBody);
-                }
-            }, null, null, 0.5f);
+                Wp2Ui.Chevron(Ui.PrimaryCTA(Ui.Columns12(row, 6)[0], label, go));
+                return;
+            }
+            var cols = Ui.Columns12(row, 3, 3, 6);
+            var simEvent = UiFactory.Rect("SimEvent", cols[0]);
+            UiFactory.Place(simEvent, 0, 0.06f, 1, 0.94f);
+            Ui.Secondary(simEvent, Loc.T("hub.simEvent"), Shell.SimulateEvent);
+            var simSeason = UiFactory.Rect("SimSeason", cols[1]);
+            UiFactory.Place(simSeason, 0, 0.06f, 1, 0.94f);
+            Ui.Secondary(simSeason, Loc.T("home.simulateSeasonShort"), Shell.SimulateSeason);
+            Wp2Ui.Chevron(Ui.PrimaryCTA(cols[2], label, go));
         }
 
         // ------------------------------------------------------------------ decisions

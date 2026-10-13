@@ -243,9 +243,9 @@ namespace MotoManager.App.UI.Screens
 
     /// <summary>
     /// The team's riders (UX spec §3.3–§3.5). The overview fills one screen: a card per rider on each side (hero with
-    /// the rating, the standout trait and the contract seasons left) and the key attributes compared in the middle,
+    /// the rating, the contract in one line, every attribute, the standout trait and a STATISTICS button) and the key attributes compared in the middle,
     /// with the bids, the pager and the way to the market under them. A tap on a rider opens the detail (profile with
-    /// the contract actions, attribute tiles and traits; the contract terms and every attribute in sheets); the season
+    /// every attribute and the contract line, the season figures with the way to the statistics, the traits and the contract actions); the season
     /// statistics, the bids and a negotiation each take the whole page with a back chevron.
     /// </summary>
     public class RidersPage : ScreenBase
@@ -254,6 +254,8 @@ namespace MotoManager.App.UI.Screens
         private NegotiationState _neg;
         private string _detail;
         private bool _stats;
+        /// <summary>The statistics were opened straight from the overview card: back returns there.</summary>
+        private bool _statsFromOverview;
         private bool _bids;
         private int _pair;
 
@@ -335,17 +337,44 @@ namespace MotoManager.App.UI.Screens
             Compare(cols[1], world, team, a, b, bids, seats.Count);
         }
 
-        /// <summary>One rider: hero, standout trait and contract seasons; the whole card opens the detail.</summary>
+        /// <summary>
+        /// One rider: hero, the contract in one line, every attribute, and at the bottom the standout trait beside the
+        /// way to the statistics. The rest of the card opens the detail.
+        /// </summary>
         private void RiderCard(RectTransform area, WorldState world, Team team, Rider r)
         {
             var rider = r;
             var body = Ui.Tile(area, Loc.T("rider.details"), () => Open(rider));
-            TeamCards.Hero(body, 0.56f, 1, r.Number > 0 ? "#" + r.Number : null, r.FirstName, r.LastName, Nation(r), r.Attributes.Overall, Loc.T("rider.ratingTag"));
+            TeamCards.Hero(body, 0.76f, 1, r.Number > 0 ? "#" + r.Number : null, r.FirstName, r.LastName, Nation(r), r.Attributes.Overall, Loc.T("rider.ratingTag"));
+            ContractLine(body, 0.7f, 0.755f, world, r);
+            var attrs = UiFactory.Rect("Attributes", body);
+            UiFactory.Place(attrs, 0, 0.235f, 1, 0.69f);
+            AttributeGrid(attrs, world, team.Id, r);
+
+            var bottom = UiFactory.Rect("Bottom", body);
+            UiFactory.Place(bottom, 0, 0, 1, 0.215f);
             string icon, title, line;
             Color color;
             Trait(world, team, r, out icon, out title, out line, out color);
-            TeamCards.Highlight(body, 0.29f, 0.53f, icon, title, line, color);
-            ContractBlock(body, 0, 0.26f, world, r);
+            TeamCards.Highlight(bottom, 0, 1, icon, title, line, color);
+            var trait = bottom.Find("Trait") as RectTransform;
+            if (trait != null)
+            {
+                trait.anchorMax = new Vector2(0.62f, 1);
+                trait.offsetMin = new Vector2(0, 4);
+                trait.offsetMax = new Vector2(-6, -4);
+            }
+            var stats = UiFactory.Rect("Stats", bottom);
+            UiFactory.Place(stats, 0.62f, 0, 1, 1);
+            stats.offsetMin = new Vector2(6, 6);
+            stats.offsetMax = new Vector2(0, -6);
+            Ui.SecondaryAccent(stats, Loc.T("rider.tab.stats"), () =>
+            {
+                _detail = rider.Id;
+                _stats = true;
+                _statsFromOverview = true;
+                Shell.Refresh();
+            });
         }
 
         private static string Nation(Rider r)
@@ -389,24 +418,20 @@ namespace MotoManager.App.UI.Screens
             color = Theme.Timing;
         }
 
-        /// <summary>"CONTRACT — N seasons left" and the segmented bar (warning colour when it ends this season).</summary>
-        private static RectTransform ContractBlock(RectTransform body, float y0, float y1, WorldState world, Rider r)
+        /// <summary>
+        /// The contract in one caption line: "CONTRACT UNTIL 2027 · €450K/SEASON", in the warning colour when it ends
+        /// this season, with the next contract in green when one is signed.
+        /// </summary>
+        private static Text ContractLine(RectTransform body, float y0, float y1, WorldState world, Rider r)
         {
-            var area = UiFactory.Rect("Contract", body);
-            UiFactory.Place(area, 0, y0, 1, y1);
-            int left = r.Contract != null ? Math.Max(0, r.Contract.EndSeason - world.Season + 1) : 0;
-            int total = r.Contract != null ? Math.Max(left, r.Contract.EndSeason - r.Contract.StartSeason + 1) : 1;
-            total = Mathf.Clamp(total, 1, 6);
-            bool ending = left <= 1 && r.FutureContract == null;
-            var cap = Ui.Label(area, Theme.Caps(Loc.T("rider.contractCap")), Theme.TextCaption, TextAnchor.MiddleLeft, Theme.TextDim, FontStyle.Bold);
-            UiFactory.Place(cap.rectTransform, 0, 0.5f, 0.4f, 1);
-            string seasons = r.FutureContract != null ? Theme.GoodText(Loc.T("terms.next", r.FutureContract.EndSeason))
-                : left == 1 ? Loc.T("rider.seasonLeft") : Loc.T("rider.seasonsLeft", left);
-            var val = Ui.Label(area, Theme.Caps(seasons), Theme.TextBody, TextAnchor.MiddleRight, ending ? Theme.Warning : Theme.Text, FontStyle.Bold);
-            UiFactory.Place(val.rectTransform, 0.4f, 0.5f, 1, 1);
-            var bar = Ui.Segments(area, total, Math.Min(left, total), ending ? Theme.Warning : Theme.Timing);
-            UiFactory.Place(bar, 0, 0.12f, 1, 0.36f);
-            return area;
+            bool ending = r.Contract != null && r.Contract.EndSeason <= world.Season && r.FutureContract == null;
+            string text = Loc.T("rider.contractCap") + "  " + (r.Contract != null
+                ? Loc.T("rider.untilLine", r.Contract.EndSeason, MathX.FormatMoney(r.Contract.SalaryPerSeason)) : "-");
+            if (r.FutureContract != null) text += "  " + Theme.GoodText(Loc.T("terms.next", r.FutureContract.EndSeason));
+            else if (ending) text += "  " + Loc.T("rider.expiring");
+            var t = Ui.Label(body, Theme.Caps(text), Theme.TextCaption, TextAnchor.MiddleLeft, ending ? Theme.Warning : Color.Lerp(Theme.TextDim, Color.white, 0.3f), FontStyle.Bold);
+            UiFactory.Place(t.rectTransform, 0, y0, 1, y1);
+            return t;
         }
 
         /// <summary>An empty seat: the warning and the way to the market (the primary of the page).</summary>
@@ -525,25 +550,23 @@ namespace MotoManager.App.UI.Screens
         // ------------------------------------------------------------------ detail
 
         /// <summary>
-        /// One rider without scrolling: on the left the profile (hero, age · morale · potential, the contract — a tap
-        /// shows every term —, the statistics link and the contract actions); on the right the six key attributes
-        /// as tiles (every attribute behind the "i") and the traits.
+        /// One rider without scrolling. Left: the profile (hero with nation, age, morale and potential; the contract in
+        /// one tappable line that opens every term; every attribute, the explanations behind "i"). Right: the season
+        /// (four figures and the big way to the statistics), the traits, and the contract actions at the bottom.
         /// </summary>
         private void Detail(RectTransform content, WorldState world, Team team, Rider r)
         {
             var rider = r;
             var cols = Ui.Columns12(content, 5, 7);
-            var body = Wp2Ui.BackTile(cols[0], Loc.T("rider.profileTitle"), CloseDetail);
-            TeamCards.Hero(body, 0.62f, 1, r.Number > 0 ? "#" + r.Number : null, r.FirstName, r.LastName, Nation(r), r.Attributes.Overall, Loc.T("rider.ratingTag"));
+            var body = Wp2Ui.BackTile(cols[0], Loc.T("rider.profileTitle"), CloseDetail, () => Wp2Ui.AttributesSheet(world, team.Id, rider));
+            string under = Nation(r) + (string.IsNullOrEmpty(Nation(r)) ? "" : "  ·  ") + Theme.Caps(Loc.T("rider.age", r.AgeOn(world.CurrentDate))) + "  ·  " +
+                           Theme.Caps(Loc.T("rider.morale")) + " " + Fmt.Rating(r.Morale) + "  ·  " +
+                           Theme.Caps(Loc.T("rider.potentialShort")) + " " + Fmt.Attr(world, team.Id, r, "Potential");
+            TeamCards.Hero(body, 0.72f, 1, r.Number > 0 ? "#" + r.Number : null, r.FirstName, r.LastName, under, r.Attributes.Overall, Loc.T("rider.ratingTag"));
 
-            string key = Loc.T("rider.age", r.AgeOn(world.CurrentDate)) + "  ·  " + Loc.T("rider.morale") + " " + Fmt.Rating(r.Morale) + "  ·  " +
-                         Loc.T("rider.potentialShort") + " " + Fmt.Attr(world, team.Id, r, "Potential");
-            var kl = Ui.Label(body, Theme.Caps(key), Theme.TextCaption, TextAnchor.MiddleLeft, Color.Lerp(Theme.TextDim, Color.white, 0.25f), FontStyle.Bold);
-            UiFactory.Place(kl.rectTransform, 0, 0.53f, 1, 0.61f);
-
-            // The contract block is a button: the sheet lists every term.
-            var hit = UiFactory.Panel("ContractButton", body, new Color(1, 1, 1, 0.04f));
-            UiFactory.Place(hit.rectTransform, 0, 0.29f, 1, 0.51f);
+            // The contract in one line; a tap shows every term.
+            var hit = UiFactory.Panel("ContractButton", body, new Color(1, 1, 1, 0.05f));
+            UiFactory.Place(hit.rectTransform, 0, 0.6f, 1, 0.7f);
             var hb = hit.gameObject.AddComponent<Button>();
             hb.targetGraphic = hit;
             hb.onClick.AddListener(() =>
@@ -551,39 +574,77 @@ namespace MotoManager.App.UI.Screens
                 GameAudio.ClickSound();
                 ContractSheet(world, rider);
             });
-            var block = ContractBlock((RectTransform)hit.transform, 0, 1, world, r);
-            block.offsetMin = new Vector2(12, 4);
-            block.offsetMax = new Vector2(-40, -4);
+            var line = ContractLine(hit.rectTransform, 0, 1, world, r);
+            line.rectTransform.offsetMin = new Vector2(12, 0);
+            line.rectTransform.offsetMax = new Vector2(-40, 0);
             var ch = UiIcons.Chevron(hit.transform, Theme.TextDim);
             ch.rectTransform.anchorMin = ch.rectTransform.anchorMax = new Vector2(1, 0.5f);
             ch.rectTransform.sizeDelta = new Vector2(22, 22);
             ch.rectTransform.anchoredPosition = new Vector2(-18, 0);
 
-            var stats = UiFactory.Rect("Stats", body);
-            UiFactory.Place(stats, 0.3f, 0.15f, 1, 0.27f);
-            Ui.Ghost(stats, Loc.T("ux.riders.seeStats"), () => { _stats = true; Shell.Refresh(); });
+            var attrs = UiFactory.Rect("Attributes", body);
+            UiFactory.Place(attrs, 0, 0, 1, 0.58f);
+            AttributeGrid(attrs, world, team.Id, r);
 
-            Actions(Wp2Ui.BottomStrip(body, Ui.Grid.Button), world, team, rider);
+            // Right: the season and the statistics, the traits, then the actions.
+            Actions(Wp2Ui.BottomStrip(cols[1], Ui.Grid.Cta), world, team, rider);
+            var rows = Ui.Rows(Wp2Ui.Above(cols[1], Ui.Grid.Cta + Ui.Grid.Gap), 1.1f, 0.9f);
+            Action stats = () => { _stats = true; _statsFromOverview = false; Shell.Refresh(); };
+            var season = Wp2Ui.ListIn(Ui.Tile(rows[0], Loc.T("rider.stats.season", world.Season), stats), 6);
+            SeasonKpis(season, world, team, r);
+            Wp2Ui.Chevron(Ui.SecondaryAccent(season, Loc.T("rider.tab.stats"), stats));
+            TraitsTile(rows[1], world, team, r);
+        }
 
-            // Right: the attribute tiles, then the traits.
-            var rows = Ui.Rows(cols[1], 0.6f, 0.4f);
-            var attrs = Ui.Tile(rows[0], Loc.T("rider.attributesTitle"), null, null, 0, null,
-                () => Wp2Ui.AttributesSheet(world, team.Id, rider));
-            var keys = MobileParts.KeyAttributes;
-            var lines = Ui.Rows(attrs, 1, 1);
-            for (int row = 0; row < 2; row++)
+        /// <summary>Championship place, points, wins and podiums of this season.</summary>
+        private static void SeasonKpis(Transform list, WorldState world, Team team, Rider r)
+        {
+            ChampionshipState champ;
+            world.Championships.TryGetValue(r.CategoryId ?? team.CategoryId, out champ);
+            StandingEntry st = null;
+            if (champ != null) champ.Riders.TryGetValue(r.Id, out st);
+            int pos = champ != null ? champ.RiderPosition(r.Id) : 0;
+            Ui.Kpis(list,
+                Ui.Kpi(Theme.Pos(pos), Loc.T("rider.stats.position")),
+                Ui.Kpi(st != null ? st.Points.ToString("0") : "0", Loc.T("rider.stats.points")),
+                Ui.Kpi(st != null ? st.Wins.ToString() : "0", Loc.T("rider.stats.wins")),
+                Ui.Kpi(st != null ? st.Podiums.ToString() : "0", Loc.T("rider.stats.podiums")));
+        }
+
+        /// <summary>
+        /// Every attribute as the team perceives it, in two columns filling <paramref name="area"/> (short name dim on
+        /// the left, the value in its rating colour on the right; ranges while the rider is not well known).
+        /// </summary>
+        private static void AttributeGrid(RectTransform area, WorldState world, string teamId, Rider r)
+        {
+            var names = RiderAttributes.Names;
+            int rows = (names.Length + 1) / 2;
+            for (int i = 0; i < rows; i++)
             {
-                var cells = Ui.Columns12(lines[row], 4, 4, 4);
-                for (int k = 0; k < 3; k++)
+                var row = UiFactory.Rect("AttrRow", area);
+                UiFactory.Place(row, 0, 1 - (i + 1f) / rows, 1, 1 - (float)i / rows);
+                if (i % 2 == 0)
                 {
-                    int idx = row * 3 + k;
-                    if (idx >= keys.Length) break;
-                    double v = Fmt.Estimate(world, team.Id, r, keys[idx]);
-                    Ui.StatTile(cells[k], Loc.T("attr." + keys[idx]), Fmt.Attr(world, team.Id, r, keys[idx]), null, null, Color.white, null, 0, null,
-                        Ui.RatingColor(v));
+                    var shade = UiFactory.Decor("Shade", row, new Color(1, 1, 1, 0.035f));
+                    UiFactory.Stretch(shade.rectTransform);
+                }
+                for (int k = 0; k < 2; k++)
+                {
+                    int idx = i + k * rows;
+                    if (idx >= names.Length) break;
+                    string n = names[idx];
+                    var cell = UiFactory.Rect("Cell", row);
+                    UiFactory.Place(cell, k * 0.5f, 0, (k + 1) * 0.5f, 1);
+                    cell.offsetMin = new Vector2(k == 0 ? 8 : 16, 0);
+                    cell.offsetMax = new Vector2(k == 0 ? -16 : -8, 0);
+                    var label = Ui.Label(cell, Loc.Or("ux.attr." + n, Loc.T("attr." + n)), Theme.TextCaption, TextAnchor.MiddleLeft,
+                        Color.Lerp(Theme.TextDim, Color.white, 0.2f));
+                    UiFactory.Place(label.rectTransform, 0, 0, 0.74f, 1);
+                    double v = Fmt.Estimate(world, teamId, r, n);
+                    var value = Ui.Label(cell, Fmt.Attr(world, teamId, r, n), Theme.TextBody, TextAnchor.MiddleRight, Ui.RatingColor(v), FontStyle.Bold);
+                    UiFactory.Place(value.rectTransform, 0.74f, 0, 1, 1);
                 }
             }
-            TraitsTile(rows[1], world, team, r);
         }
 
         /// <summary>The traits: at most two rows (injury first, then the riding styles); all of them in the sheet.</summary>
@@ -712,7 +773,13 @@ namespace MotoManager.App.UI.Screens
             var last = races.Count > 0 ? races[races.Count - 1] : (RaceDot?)null;
 
             // Four big numbers, the chart on the left, the season and the career on the right.
-            var top = Ui.Card(list, r.FullName, Theme.Caps(Loc.T("rider.stats.season", world.Season)), null, () => { _stats = false; Shell.Refresh(); });
+            var top = Ui.Card(list, r.FullName, Theme.Caps(Loc.T("rider.stats.season", world.Season)), null, () =>
+            {
+                if (_statsFromOverview) _detail = null;
+                _stats = false;
+                _statsFromOverview = false;
+                Shell.Refresh();
+            });
             Ui.Kpis(top,
                 Ui.Kpi(Theme.Pos(pos), Loc.T("rider.stats.position")),
                 Ui.Kpi(st != null ? st.Points.ToString("0") : "0", Loc.T("rider.stats.points")),
