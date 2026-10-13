@@ -167,3 +167,58 @@ principal) son inclinados; el `PrimaryCTA` dentro de las páginas sigue siendo c
 **Sin cambios:** rail de iconos, pestañas, AVISOS/NOTICIAS, menú, bloqueo durante simulaciones (los bloques nuevos
 son `Button` y se bloquean igual), historial y volver, y todas las acciones (simular evento/temporada, cerrar
 temporada, guardar…). Sin iconos nuevos; texto mínimo 18 (las etiquetas se ajustan con `Ui.Fit`).
+
+### Parte 2 — carruseles `‹ ›` de campeonatos, equipos y temporadas (hecho)
+
+Código: `Screens/InfoScreens.cs` (`StandingsScreen`, `CalendarScreen`, `HistoryScreen`, `ChampNav`), `Screens/TeamSheet.cs`
+(`TeamSheet`, `Carousel`) y una línea en `Screens/MarketScreen.cs` (entrada a la ficha). Textos nuevos:
+`Resources/Localization/ux_{es,en}/mm4b.json`. Sin iconos nuevos: las flechas son el pictograma `UiIcons.Back` dentro
+de `Ui.IconButton` (56×56 de toque), girado 180° para `›`; una flecha sin destino se ve atenuada y no responde.
+
+**Navegador de campeonatos (MM4 §1.7).** Recorre **todas las categorías simuladas** de la base de datos (orden
+pirámide → nivel: MotoGP, Moto2, Moto3, Rookies, WorldSBK, WorldSSP…), las gestione el jugador o no; las flechas dan la
+vuelta.
+- **Clasificaciones**: a la izquierda (4/12) la tarjeta del campeonato: borde con el color de la categoría, "n / N" en
+  la cabecera, nombre entre `‹ ›` con "pirámide · Categoría N (· Copa)" debajo, temporada, ronda corrida / total,
+  líder y la posición de tu equipo (o "No gestionas esta categoría"); debajo, la lista de todos los campeonatos para
+  saltar directamente (sustituye al selector anterior, que se quita). A la derecha (8/12) el segmentado PILOTOS /
+  EQUIPOS / FABRICANTES / EVOLUCIÓN y la tabla, como antes.
+- **Calendario**: la misma tarjeta. Cada entrada es una categoría con calendario: se listan solo las rondas que corre
+  esa categoría y el ganador es el de **su** carrera principal (antes: siempre la categoría reina del calendario).
+  Un calendario que no use ninguna categoría simulada se añade al final como entrada propia (sin pérdida respecto al
+  selector anterior). El texto "i" se actualiza (`ux.mm4b.calendarInfo`).
+- **Historial**: el selector de categoría se sustituye por un carrusel compacto `‹ MotoGP ›` en la misma celda; tocar
+  el nombre abre la lista completa en una hoja (la función del selector se conserva). Además, la fila de un campeón
+  abre la ficha de su equipo si el equipo sigue existiendo.
+
+**Ficha de equipo con carrusel (MM4 §1.6).** Hoja modal (`Ui.Sheet`, 86% de ancho), así se abre sin salir de la
+pantalla y sin tocar `ManagementShell`. Entradas: fila de la tabla EQUIPOS de Clasificaciones (antes abría la hoja de
+cifras, que ahora están dentro de la ficha), botón VER EQUIPO en la hoja de un piloto de la clasificación, VER EQUIPO
+en la situación de un piloto del mercado y la fila de un campeón en Historial.
+- Cabecera: nombre del equipo entre `‹ ›` (equipo anterior / siguiente de **la misma categoría**, en orden de la
+  clasificación de equipos y luego los no clasificados; da la vuelta), con "categoría · n / N (· Tu equipo)" y una
+  marca con el color del equipo. Pestañas de texto EQUIPO / HISTORIAL (se recuerdan al pasar de equipo).
+- EQUIPO: campeonato (temporada, posición P/N, puntos, victorias, podios, poles); moto (fabricante, modelo y año,
+  estructura oficial/satélite/independiente, **nivel de la moto** = media de los valores de rendimiento como en la
+  página Moto, país); pilotos (dorsal, nombre + nacionalidad, edad, nivel, posición en el campeonato).
+- HISTORIAL: temporadas terminadas del equipo, una a una con su propio `‹ ›` (‹ = más antigua, › = más reciente; sin
+  vuelta): posición P/N, puntos, victorias, podios, poles, título de equipos si lo ganó, campeón de pilotos de esa
+  temporada, y los pilotos que corrió ese año (posición, puntos, victorias); debajo la lista de todas las temporadas
+  para saltar a una.
+
+**Datos (solo reales) y límites documentados:**
+- Historial del equipo = `WorldState.ArchivedChampionships` (clasificación de equipos que se archiva al cerrar cada
+  temporada en `SeasonEndProcessor.RollOver`) + `world.Champions` (título de equipos) + `world.History`
+  (`SeasonHistory`, campeón) + `Rider.CareerHistory` (`SeasonRecord` con `TeamId`, también de pilotos retirados). La
+  temporada en curso no aparece en HISTORIAL (está en EQUIPO). En una partida nueva el historial está vacío y se
+  explica que se llena al cerrar temporadas.
+- `HistoryService` no guarda nada por equipo (solo campeones, récords, rivalidades y salón de la fama de pilotos); por
+  eso se usa el archivo de clasificaciones.
+- No existen en el mundo: la moto o el fabricante de un equipo en temporadas pasadas (el archivo no lo guarda), fotos
+  de pilotos, mánager/personal rival con historial, ni presupuesto de rivales: no se muestran. El "nivel" de los
+  pilotos es la estimación de habilidad de carrera que percibe tu equipo (`ScoutingService.Perceive`, igual que en el
+  mercado; exacto con tus pilotos), para no revelar atributos ocultos de rivales; se aclara bajo la tabla.
+- La ficha de manager/"EDITAR EQUIPO"/"REGLAS" de MM4 no se añaden (no hay sistema equivalente para rivales).
+
+**Sin cambios:** tablas de clasificación, fila propia fijada, EVOLUCIÓN, hojas de cifras de pilotos/fabricantes,
+vistas de Historial, cabecera y acción principal de la parte 1. Texto mínimo 18 (etiquetas con `Ui.Fit`).

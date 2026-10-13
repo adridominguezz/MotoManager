@@ -186,6 +186,7 @@ namespace MotoManager.App.UI.Screens
 
             var sit = Ui.Card(rightCol, Loc.T("ux.market.situation"));
             Ui.Line(sit, Loc.T("col.team"), t != null ? t.Name : Theme.GoodText(Loc.T("market.free")), true);
+            if (t != null) Ui.Ghost(UiFactory.Row(sit, Ui.Grid.Hit), Loc.T("ux.mm4b.viewTeam"), () => TeamSheet.Open(Game, t.Id));
             Ui.Line(sit, Loc.T("col.until"), r.Contract != null ? r.Contract.EndSeason.ToString() : "-");
             Ui.Line(sit, Loc.T("rider.style", "").TrimEnd(' ', ':'), Fmt.Styles(r));
             if (TransferMarket.NeedsToPay(world, Game.Db, team, r, TransferMarket.CategoryLevels(world, Game.Db)))

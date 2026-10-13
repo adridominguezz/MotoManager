@@ -8,10 +8,13 @@ using UnityEngine;
 namespace MotoManager.App.UI.Screens
 {
     /// <summary>
-    /// Standings (UX spec §3.17): one row of controls (table segmented + category picker), then a timing-tower list:
-    /// a band with the category and round, column captions (# | name | team | wins | points) and tall rows with big
-    /// bold text. The player's row is lit in the accent and pinned under the list whenever it is out of view. A row
-    /// opens a sheet with points, wins, podiums and poles. EVOLUCIÓN shows the points chart.
+    /// Standings (UX spec §3.17, MM4 §1.7): on the left the championship card (name, pyramid and tier, season, round,
+    /// leader, the player's place) with ‹ › over every simulated category, managed or not, and a list to jump to one; on
+    /// the right the table segmented, then a timing-tower list: a band with the category and round, column captions
+    /// (# | name | team | wins | points) and tall rows with big bold text. The player's row is lit in the accent and
+    /// pinned under the list whenever it is out of view. A rider or maker row opens a sheet with points, wins, podiums
+    /// and poles (a rider's has VER EQUIPO); a team row opens the team sheet (<see cref="TeamSheet"/>). EVOLUCIÓN shows
+    /// the points chart.
     /// </summary>
     public class StandingsScreen : ScreenBase
     {
@@ -26,20 +29,26 @@ namespace MotoManager.App.UI.Screens
             var world = Game.World;
             if (_category == null) _category = world.PlayerTeam != null ? world.PlayerTeam.CategoryId : "motogp";
 
-            var cats = new List<ChampionshipCategory>();
-            foreach (var c in Game.Db.CategoriesOrdered()) if (c.Simulated) cats.Add(c);
-            var labels = new List<string>();
-            int sel = 0;
-            for (int i = 0; i < cats.Count; i++)
+            // MM4 §1.7: the championship card with ‹ › over every simulated category on the left, the table on the right.
+            var cats = ChampNav.Categories(Game.Db);
+            if (cats.Count == 0)
             {
-                labels.Add(cats[i].ShortName);
-                if (cats[i].Id == _category) sel = i;
+                Ui.Empty(Wp4Ui.ListIn(content), UiIcons.Trophy, Loc.T("ux.standings.none"));
+                return;
             }
-            var top = Ui.Columns12(Wp4Ui.TopStrip(content, Ui.Grid.Hit), 9, 3);
-            Ui.Segmented(Wp4Ui.ListIn(top[0], 0), new[] { Loc.T("standings.riders"), Loc.T("standings.teams"), Loc.T("standings.makers"), Loc.T("standings.evolution") },
+            int sel = cats.FindIndex(c => c.Id == _category);
+            if (sel < 0)
+            {
+                sel = 0;
+                _category = cats[0].Id;
+            }
+            var cols = Ui.Columns12(content, 4, 8);
+            ChampNav.CategoryCard(cols[0], Game, cats, sel, i => { _category = cats[i].Id; Shell.Refresh(); });
+            var right = cols[1];
+            Ui.Segmented(Wp4Ui.ListIn(Wp4Ui.TopStrip(right, Ui.Grid.Hit), 0),
+                new[] { Loc.T("standings.riders"), Loc.T("standings.teams"), Loc.T("standings.makers"), Loc.T("standings.evolution") },
                 _table, i => { _table = i; Shell.Refresh(); });
-            Ui.Picker(top[1], Loc.T("ux.market.category"), labels, sel, i => { _category = cats[i].Id; Shell.Refresh(); });
-            var area = Wp4Ui.Below(content, Ui.Grid.Hit + Ui.Grid.Gap);
+            var area = Wp4Ui.Below(right, Ui.Grid.Hit + Ui.Grid.Gap);
 
             ChampionshipState champ;
             if (!world.Championships.TryGetValue(_category, out champ))
@@ -78,7 +87,8 @@ namespace MotoManager.App.UI.Screens
                     {
                         (i + 1).ToString(), name, team != null ? Theme.Dim(team.ShortName ?? team.Name) : "-", e.Wins.ToString(), "<b>" + e.Points.ToString("0") + "</b>"
                     };
-                    Action tap = () => EntrySheet(name, team != null ? team.Name : null, e);
+                    string teamId = team != null ? team.Id : null;
+                    Action tap = () => EntrySheet(name, team != null ? team.Name : null, e, teamId);
                     Wp4Ui.BigRow(table.List, widths, cells, i, mine, tap, RowHeight);
                     if (mine && firstMine < 0) { firstMine = i; pinned = cells; pinTap = tap; }
                 }
@@ -103,7 +113,9 @@ namespace MotoManager.App.UI.Screens
                     bool mine = _table == 1 ? e.Id == playerTeam : player != null && e.Id == player.ManufacturerId && player.CategoryId == _category;
                     var cells = new[] { (i + 1).ToString(), name, e.Wins.ToString(), "<b>" + e.Points.ToString("0") + "</b>" };
                     string n = name;
-                    Action tap = () => EntrySheet(n, null, e);
+                    string id = e.Id;
+                    // A team row opens the team sheet (‹ › over the category's teams, history); a maker row its figures.
+                    Action tap = _table == 1 ? (Action)(() => TeamSheet.Open(Game, id)) : () => EntrySheet(n, null, e, null);
                     Wp4Ui.BigRow(table.List, widths, cells, i, mine, tap, RowHeight);
                     if (mine && firstMine < 0) { firstMine = i; pinned = cells; pinTap = tap; }
                 }
@@ -113,9 +125,12 @@ namespace MotoManager.App.UI.Screens
             }
         }
 
-        /// <summary>The figures of one standings entry.</summary>
-        private static void EntrySheet(string name, string team, StandingEntry e)
+        /// <summary>The figures of one standings entry; for a rider with a team, VER EQUIPO opens the team sheet.</summary>
+        private void EntrySheet(string name, string team, StandingEntry e, string teamId)
         {
+            var game = Game;
+            UiAct? open = null;
+            if (teamId != null) open = UiFactory.Act(Loc.T("ux.mm4b.viewTeam"), () => TeamSheet.Open(game, teamId));
             Ui.Sheet(name, list =>
             {
                 if (!string.IsNullOrEmpty(team)) Ui.Line(list, Loc.T("col.team"), "<b>" + team + "</b>");
@@ -123,7 +138,7 @@ namespace MotoManager.App.UI.Screens
                 Ui.Line(list, Loc.T("col.wins"), e.Wins.ToString());
                 Ui.Line(list, Loc.T("col.podiums"), e.Podiums.ToString());
                 Ui.Line(list, Loc.T("col.poles"), e.Poles.ToString());
-            }, null, null, 0.46f);
+            }, null, open, 0.46f);
         }
 
         /// <summary>Points round by round: the top five and the player's riders.</summary>
@@ -172,73 +187,90 @@ namespace MotoManager.App.UI.Screens
     }
 
     /// <summary>
-    /// Calendar (UX spec §3.18): the championship (segmented, a picker beyond four), then a list: round block | date |
-    /// Grand Prix name with the circuit under it | winner. The next round is lit with a "PRÓXIMA" pill and scrolled
-    /// into view; past rounds are dimmed.
+    /// Calendar (UX spec §3.18, MM4 §1.7): the championship card on the left with ‹ › over every simulated category
+    /// (and any calendar no category uses) plus a list to jump to one, then a list: round block | date | Grand Prix name
+    /// with the circuit under it | winner of the chosen category. Only the rounds that category races are listed. The
+    /// next round is lit with a "PRÓXIMA" pill and scrolled into view; past rounds are dimmed.
     /// </summary>
     public class CalendarScreen : ScreenBase
     {
         public override string Title { get { return Loc.T("tab.calendar"); } }
-        private int _championship;
+        /// <summary>The navigator entry: a category id, or a calendar key for a calendar no simulated category uses.</summary>
+        private string _entry;
         private const float RowHeight = 72;
 
         public override void Build(RectTransform content)
         {
             var world = Game.World;
-            var keys = new List<string>(world.Calendars.Keys);
-            if (keys.Count == 0)
+            if (world.Calendars.Count == 0)
             {
                 Ui.Empty(Wp4Ui.ListIn(content), UiIcons.Flag, Loc.T("ux.calendar.none"));
                 return;
             }
-            var team = world.PlayerTeam;
-            keys.Sort((a, b) =>
-            {
-                int c = Owns(b, team).CompareTo(Owns(a, team));
-                return c != 0 ? c : string.CompareOrdinal(a, b);
-            });
-            var labels = new List<string>();
-            foreach (var k in keys) labels.Add(Game.Db.Championships.ContainsKey(k) ? Game.Db.Championships[k].Name : k);
-            _championship = Mathf.Clamp(_championship, 0, keys.Count - 1);
-            var strip = Wp4Ui.TopStrip(content, Ui.Grid.Hit);
-            if (keys.Count > 4)
-                Ui.Picker(Ui.Columns12(strip, 4)[0], Loc.T("ux.calendar.championship"), labels, _championship, i => { _championship = i; Shell.Refresh(); });
-            else
-                Ui.Segmented(Wp4Ui.ListIn(Ui.Columns12(strip, Mathf.Min(12, 3 * keys.Count))[0], 0), labels, _championship, i => { _championship = i; Shell.Refresh(); });
-            var area = Wp4Ui.Below(content, Ui.Grid.Hit + Ui.Grid.Gap);
+            // MM4 §1.7: one navigator entry per simulated category that has a calendar (its own rounds and winners),
+            // then any calendar no simulated category uses (its whole calendar, winners of its top category, as before).
+            var items = new List<ChampNav.Item>();
+            var used = new HashSet<string>();
+            foreach (var c in ChampNav.Categories(Game.Db))
+                if (c.CalendarGroup != null && world.Calendars.ContainsKey(c.CalendarGroup))
+                {
+                    items.Add(new ChampNav.Item { Cat = c, Key = c.CalendarGroup, Name = c.Name });
+                    used.Add(c.CalendarGroup);
+                }
+            var orphans = new List<string>(world.Calendars.Keys);
+            orphans.Sort(string.CompareOrdinal);
+            foreach (var k in orphans)
+                if (!used.Contains(k))
+                    items.Add(new ChampNav.Item { Key = k, Name = Game.Db.Championships.ContainsKey(k) ? Game.Db.Championships[k].Name : k });
+            if (_entry == null && world.PlayerTeam != null) _entry = world.PlayerTeam.CategoryId;
+            int sel = items.FindIndex(x => x.Id == _entry);
+            if (sel < 0) sel = 0;
+            _entry = items[sel].Id;
 
-            string key = keys[_championship];
+            var cols = Ui.Columns12(content, 4, 8);
+            ChampNav.Card(cols[0], Game, items, sel, i => { _entry = items[i].Id; Shell.Refresh(); });
+            var area = cols[1];
+
+            var item = items[sel];
+            string key = item.Key;
             var cal = world.Calendars[key];
             var champ = Game.Db.Championships.ContainsKey(key) ? Game.Db.Championships[key] : null;
             int next;
             world.NextRound.TryGetValue(key, out next);
-            var widths = new[] { 1f, 1.6f, 6f, 4f };
-            var table = Wp4Ui.Table(area, labels[_championship], Loc.T("home.round", Mathf.Min(next + 1, cal.Rounds.Count), cal.Rounds.Count), widths,
-                new[] { "R", Loc.T("col.date"), Loc.T("ux.calendar.event"), Loc.T("ux.calendar.winner") }, RowHeight, false,
-                Loc.T("tab.calendar"), Loc.T("ux.calendar.info"));
-            string topCat = champ != null && champ.Categories.Count > 0 ? champ.Categories[0] : null;
+            string cat = item.Cat != null ? item.Cat.Id : champ != null && champ.Categories.Count > 0 ? champ.Categories[0] : null;
+            // The rounds this category races (all of them for a calendar without a category); the next one is lit.
+            var rounds = new List<int>();
+            int nextRow = -1, done = 0;
             for (int i = 0; i < cal.Rounds.Count; i++)
             {
+                var rc = cal.Rounds[i].Categories;
+                if (item.Cat != null && rc != null && rc.Count > 0 && !rc.Contains(item.Cat.Id)) continue;
+                if (i < next) done++;
+                else if (nextRow < 0) nextRow = rounds.Count;
+                rounds.Add(i);
+            }
+            var widths = new[] { 1f, 1.6f, 6f, 4f };
+            var table = Wp4Ui.Table(area, item.Cat != null ? item.Cat.ShortName : item.Name, Loc.T("home.round", Mathf.Min(done + 1, rounds.Count), rounds.Count), widths,
+                new[] { "R", Loc.T("col.date"), Loc.T("ux.calendar.event"), Loc.T("ux.calendar.winner") }, RowHeight, false,
+                Loc.T("tab.calendar"), Loc.T("ux.mm4b.calendarInfo"));
+            for (int k = 0; k < rounds.Count; k++)
+            {
+                int i = rounds[k];
                 var r = cal.Rounds[i];
                 var circuit = Game.Db.GetCircuit(r.CircuitId);
                 bool past = i < next;
-                string winner = past ? Winner(world, topCat, r.Round) : "";
+                string winner = past ? Winner(world, cat, r.Round) : "";
                 string name = "<b>" + Theme.Caps(Loc.Round(r.Name)) + "</b>\n<size=" + Theme.TextCaption + ">" +
                               Theme.Dim(circuit != null ? circuit.Name ?? circuit.ShortName : r.CircuitId) + "</size>";
                 string date = Theme.Caps(r.Date.ToString("d MMM", Loc.Culture));
                 var row = Ui.ListRow(table.List, widths, new[] { r.Round.ToString(), past ? Theme.Dim(date) : date, name, past ? Theme.Dim(winner) : winner },
-                    i, i == next, null, RowHeight);
+                    k, k == nextRow, null, RowHeight);
                 foreach (var t in row.GetComponentsInChildren<UnityEngine.UI.Text>())
                     if (t.gameObject.name == "Cell2") t.lineSpacing = 0.95f;
-                if (i == next) Wp4Ui.CellPill(row, widths, 3, Loc.T("ux.calendar.next"), Theme.Timing);
+                if (k == nextRow) Wp4Ui.CellPill(row, widths, 3, Loc.T("ux.calendar.next"), Theme.Timing);
             }
-            Wp4Ui.ScrollTo(table, next);
-        }
-
-        private int Owns(string championshipId, Team team)
-        {
-            if (team == null || !Game.Db.Championships.ContainsKey(championshipId)) return 0;
-            return Game.Db.Championships[championshipId].Categories.Contains(team.CategoryId) ? 1 : 0;
+            if (rounds.Count == 0) Ui.Empty(table.List, UiIcons.Flag, Loc.T("ux.calendar.none"));
+            Wp4Ui.ScrollTo(table, nextRow < 0 ? rounds.Count - 1 : nextRow);
         }
 
         private static string Winner(WorldState world, string category, int round)
@@ -258,8 +290,9 @@ namespace MotoManager.App.UI.Screens
     }
 
     /// <summary>
-    /// History (UX spec §3.19): one control row (CAMPEONES | TEMPORADAS | RÉCORDS | SALÓN + category picker). Champions
-    /// and the Hall of Fame are lists; seasons a grid of compact cards (tap for the full season); records three cards.
+    /// History (UX spec §3.19): one control row (CAMPEONES | TEMPORADAS | RÉCORDS | SALÓN + the category carousel ‹ ›,
+    /// MM4 §1.7; its name opens the whole list). Champions and the Hall of Fame are lists (a champion opens his team's
+    /// sheet); seasons a grid of compact cards (tap for the full season); records three cards.
     /// </summary>
     public class HistoryScreen : ScreenBase
     {
@@ -280,14 +313,15 @@ namespace MotoManager.App.UI.Screens
                 _view, i => { _view = i; Shell.Refresh(); });
             if (_view != 3)
             {
-                var names = new List<string>();
-                int sel = 0;
-                for (int i = 0; i < cats.Count; i++)
-                {
-                    names.Add(cats[i].ShortName);
-                    if (cats[i].Id == _category) sel = i;
-                }
-                Ui.Picker(top[1], Loc.T("ux.market.category"), names, sel, i => { _category = cats[i].Id; Shell.Refresh(); });
+                // MM4 §1.7: ‹ › over every simulated category; the name opens the whole list (the old picker's job).
+                int sel = Mathf.Max(0, cats.FindIndex(c => c.Id == _category));
+                _category = cats[sel].Id;
+                int n = cats.Count;
+                Action<int> pick = i => { _category = cats[i].Id; Shell.Refresh(); };
+                Carousel.Compact(top[1], cats[sel].ShortName,
+                    n > 1 ? () => pick((sel - 1 + n) % n) : (Action)null,
+                    n > 1 ? () => pick((sel + 1) % n) : (Action)null,
+                    () => ChampNav.PickSheet(Game, ChampNav.Wrap(cats), sel, pick));
             }
             var area = Wp4Ui.Below(content, Ui.Grid.Hit + Ui.Grid.Gap);
             var cat = db.GetCategory(_category);
@@ -316,7 +350,11 @@ namespace MotoManager.App.UI.Screens
             {
                 var c = champs[i];
                 bool mine = world.PlayerTeamId != null && c.TeamId == world.PlayerTeamId;
-                Ui.ListRow(table.List, widths, new[] { c.Season.ToString(), c.RiderName, Theme.Dim(c.TeamName ?? ""), "<b>" + c.Points.ToString("0") + "</b>" }, k, mine, null, 64);
+                // A champion's row opens his team's sheet (with its history) while the team still exists.
+                string teamId = c.TeamId;
+                var game = Game;
+                Action tap = world.GetTeam(teamId) != null ? () => TeamSheet.Open(game, teamId) : (Action)null;
+                Ui.ListRow(table.List, widths, new[] { c.Season.ToString(), c.RiderName, Theme.Dim(c.TeamName ?? ""), "<b>" + c.Points.ToString("0") + "</b>" }, k, mine, tap, 64);
             }
         }
 
@@ -412,6 +450,141 @@ namespace MotoManager.App.UI.Screens
                     Ui.Line(l, Loc.T("ux.history.status"), e.Rider.IsRetired ? Loc.T("ux.history.retired") : Loc.T("ux.history.active"));
                 }, null, null, 0.46f), 64);
             }
+        }
+    }
+
+    /// <summary>
+    /// The championship navigator (MM4 §1.7, docs/MM4_REFERENCIA.md part 2) shared by standings, calendar and history:
+    /// every simulated category of the database in pyramid / tier order (managed by the player or not).
+    /// </summary>
+    internal static class ChampNav
+    {
+        /// <summary>A navigator entry: a category, or (calendar only) a calendar no simulated category uses.</summary>
+        public class Item
+        {
+            public ChampionshipCategory Cat;
+            public string Key;
+            public string Name;
+            public string Id { get { return Cat != null ? Cat.Id : "cal:" + Key; } }
+        }
+
+        public static List<ChampionshipCategory> Categories(GameDatabase db)
+        {
+            var cats = new List<ChampionshipCategory>();
+            foreach (var c in db.CategoriesOrdered()) if (c.Simulated) cats.Add(c);
+            return cats;
+        }
+
+        public static List<Item> Wrap(List<ChampionshipCategory> cats)
+        {
+            var items = new List<Item>();
+            foreach (var c in cats) items.Add(new Item { Cat = c, Key = c.CalendarGroup, Name = c.Name });
+            return items;
+        }
+
+        /// <summary>"Gran Premio · Categoría 2 (· Copa)".</summary>
+        public static string Sub(ChampionshipCategory cat)
+        {
+            return Loc.T("ux.mm4b.pyramid." + cat.Pyramid) + "  ·  " + Loc.T("ux.mm4b.tier", cat.Tier) + (cat.IsCup ? "  ·  " + Loc.T("ux.mm4b.cup") : "");
+        }
+
+        public static void CategoryCard(RectTransform area, GameController game, List<ChampionshipCategory> cats, int index, Action<int> select)
+        {
+            Card(area, game, Wrap(cats), index, select);
+        }
+
+        /// <summary>
+        /// The championship card filling <paramref name="area"/>: the category colour on its edge, "n / N" in the header,
+        /// the name between ‹ › (wrapping) with pyramid and tier under it, season, round, leader and the player's place
+        /// (or "not managed"), then every entry as a row to jump to.
+        /// </summary>
+        public static void Card(RectTransform area, GameController game, List<Item> items, int index, Action<int> select)
+        {
+            var world = game.World;
+            int n = items.Count;
+            var item = items[index];
+            var cat = item.Cat;
+            Color edge = cat != null ? UiFactory.ParseColor(cat.Color, Theme.Steel) : Theme.Steel;
+            var body = Ui.Tile(area, Loc.T("ux.mm4b.championship"), null, (index + 1) + " / " + n, 0, null, null, false, edge);
+            var list = Wp4Ui.ScrollIn(body, 8);
+            Action prev = n > 1 ? () => select((index - 1 + n) % n) : (Action)null;
+            Action next = n > 1 ? () => select((index + 1) % n) : (Action)null;
+            Carousel.Row(list, cat != null ? cat.Name : item.Name, cat != null ? Sub(cat) : null, prev, next, 88, edge);
+
+            if (cat != null)
+            {
+                ChampionshipState champ;
+                world.Championships.TryGetValue(cat.Id, out champ);
+                int done = champ != null ? champ.Rounds.Count : 0;
+                Ui.Line(list, Loc.T("col.season"), "<b>" + (champ != null ? champ.Season : world.Season) + "</b>");
+                Ui.Line(list, Loc.T("ux.mm4b.round"), "<b>" + done + "</b> / " + game.RoundsInSeason(cat.Id));
+                if (champ != null && done > 0)
+                {
+                    var riders = champ.SortedRiders();
+                    if (riders.Count > 0)
+                    {
+                        var r = world.GetRider(riders[0].Id);
+                        Ui.Line(list, Loc.T("ux.mm4b.leader"), "<b>" + (r != null ? r.ShortName : riders[0].Id) + "</b>  " + Theme.Dim(riders[0].Points.ToString("0")));
+                    }
+                }
+                var team = world.PlayerTeam;
+                if (team != null && team.CategoryId == cat.Id)
+                {
+                    int pos = 0;
+                    StandingEntry mine = null;
+                    if (champ != null && done > 0)
+                    {
+                        var teams = champ.SortedTeams();
+                        for (int i = 0; i < teams.Count; i++)
+                            if (teams[i].Id == team.Id) { pos = i + 1; mine = teams[i]; }
+                    }
+                    Ui.Line(list, Loc.T("ux.mm4b.yourTeam"), mine != null ? Theme.AccentText("<b>P" + pos + "</b>") + "  " + Theme.Dim(mine.Points.ToString("0")) : "-");
+                }
+                else Ui.Line(list, Loc.T("ux.mm4b.managed"), Theme.Dim(Loc.T("ux.mm4b.notManaged")));
+            }
+            else
+            {
+                CalendarDefinition cal;
+                if (world.Calendars.TryGetValue(item.Key ?? "", out cal))
+                {
+                    int next0;
+                    world.NextRound.TryGetValue(item.Key, out next0);
+                    Ui.Line(list, Loc.T("col.season"), "<b>" + cal.Season + "</b>");
+                    Ui.Line(list, Loc.T("ux.mm4b.round"), "<b>" + Mathf.Min(next0, cal.Rounds.Count) + "</b> / " + cal.Rounds.Count);
+                }
+            }
+
+            Ui.Section(list, Loc.T("ux.mm4b.all"));
+            var widths = new[] { 4f, 4f };
+            for (int i = 0; i < n; i++)
+            {
+                int k = i;
+                var c = items[i].Cat;
+                Wp4Ui.SelectRow(list, widths, new[]
+                {
+                    c != null ? c.ShortName : items[i].Name,
+                    Theme.Dim("<size=" + Theme.TextCaption + ">" + (c != null ? Loc.T("ux.mm4b.pyramid." + c.Pyramid) + " " + c.Tier : "") + "</size>")
+                }, i, i == index, () => select(k), Ui.Grid.Hit);
+            }
+        }
+
+        /// <summary>A sheet listing every entry (the chosen one lit); a row picks it.</summary>
+        public static void PickSheet(GameController game, List<Item> items, int index, Action<int> select)
+        {
+            Ui.Sheet(Loc.T("ux.mm4b.all"), list =>
+            {
+                var widths = new[] { 4f, 4f };
+                for (int i = 0; i < items.Count; i++)
+                {
+                    int k = i;
+                    var c = items[i].Cat;
+                    Wp4Ui.SelectRow(list, widths, new[] { c != null ? c.ShortName : items[i].Name, c != null ? Theme.Dim(Sub(c)) : "" }, i, i == index, () =>
+                    {
+                        Ui.CloseSheet();
+                        select(k);
+                    }, Ui.Grid.Hit);
+                }
+            }, null, null, 0.46f);
         }
     }
 }
