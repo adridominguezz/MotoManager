@@ -80,6 +80,12 @@ namespace MotoManager.App.UI
             var name = _name = RaceUi.Label(head, Theme.Caps(rider.Entry.Rider.ShortName), Theme.TextHeader, TextAnchor.MiddleLeft, Theme.Text, FontStyle.BoldAndItalic);
             UiFactory.Place(name.rectTransform, 0, 0, 0.76f, 1);
             name.rectTransform.offsetMin = new Vector2(76, 0);
+            // Long surnames shrink on one line instead of wrapping under the plate.
+            name.horizontalOverflow = HorizontalWrapMode.Wrap;
+            name.verticalOverflow = VerticalWrapMode.Truncate;
+            name.resizeTextForBestFit = true;
+            name.resizeTextMinSize = Theme.TextMin;
+            name.resizeTextMaxSize = Theme.TextHeader;
             _statusPill = UiFactory.Decor("Status", head, Theme.Warning);
             UiFactory.Slant(_statusPill, 3f);
             UiFactory.Place(_statusPill.rectTransform, 0.36f, 0.14f, 0.76f, 0.86f);
@@ -93,6 +99,7 @@ namespace MotoManager.App.UI
 
             // One small line: the gaps (thousandths) to the riders just ahead and behind.
             _gaps = Line(root, gapsBottom, headBottom, TextAnchor.MiddleLeft);
+            FitLine(_gaps);
 
             // Front and rear tyre in one row: "Del. M 82%" with a thin bar beside it (never under the text).
             var tyres = UiFactory.Rect("Tyres", root);
@@ -100,11 +107,17 @@ namespace MotoManager.App.UI
             _front = TyreGauge(tyres, 0, 0.49f, out _frontBar);
             _rear = TyreGauge(tyres, 0.51f, 1, out _rearBar);
 
-            // Last and best lap on the left; fuel on the right, only when it matters.
+            // Last and best lap across the whole line (shrinks to fit, never overlaps); fuel, only when it matters,
+            // on the right of the gaps line, which leaves room.
             _laps = Line(root, lapsBottom, tyresBottom, TextAnchor.MiddleLeft);
-            _laps.rectTransform.anchorMax = new Vector2(0.64f, tyresBottom);
-            _fuel = Line(root, lapsBottom, tyresBottom, TextAnchor.MiddleRight);
-            _fuel.rectTransform.anchorMin = new Vector2(0.64f, lapsBottom);
+            _laps.horizontalOverflow = HorizontalWrapMode.Wrap;
+            _laps.verticalOverflow = VerticalWrapMode.Truncate;
+            _laps.resizeTextForBestFit = true;
+            _laps.resizeTextMinSize = Theme.TextMin;
+            _laps.resizeTextMaxSize = Theme.TextCaption;
+            _fuel = Line(root, gapsBottom, headBottom, TextAnchor.MiddleRight);
+            _fuel.rectTransform.anchorMin = new Vector2(0.56f, gapsBottom);
+            FitLine(_fuel);
 
             // Orders: two cycling controls, then the engineer as a text button.
             float orderH = (lapsBottom - ordersBottom) / 2;
@@ -131,6 +144,16 @@ namespace MotoManager.App.UI
         }
 
         /// <summary>A one-line caption-size label filling a horizontal band of the card.</summary>
+        /// <summary>One line that shrinks (down to the minimum size) instead of spilling over its neighbour.</summary>
+        private static void FitLine(Text t)
+        {
+            t.horizontalOverflow = HorizontalWrapMode.Wrap;
+            t.verticalOverflow = VerticalWrapMode.Truncate;
+            t.resizeTextForBestFit = true;
+            t.resizeTextMinSize = Theme.TextMin;
+            t.resizeTextMaxSize = Theme.TextCaption;
+        }
+
         private static Text Line(RectTransform root, float y0, float y1, TextAnchor align)
         {
             var t = RaceUi.Label(root, "", Theme.TextCaption, align, Theme.Text);
@@ -201,11 +224,17 @@ namespace MotoManager.App.UI
             return new Cycle { Value = value, Mark = mark, Labels = labels };
         }
 
+        private static readonly Color CautiousColor = new Color32(90, 175, 245, 255);
+        private static readonly Color AggressiveColor = new Color32(255, 128, 48, 255);
+
         private static void SetCycle(Cycle c, int active, bool auto)
         {
             c.Value.text = Theme.Caps(c.Labels[Mathf.Clamp(active, 0, c.Labels.Length - 1)]);
-            c.Value.color = auto ? Theme.TextDim : Theme.Text;
-            c.Mark.color = auto ? Theme.Steel : Theme.Accent;
+            // Cautious (save / defend) in cool blue, aggressive (push / attack) in hot orange, normal in white;
+            // dimmed while the engineer decides.
+            Color tone = active == 0 ? CautiousColor : active == 2 ? AggressiveColor : Theme.Text;
+            c.Value.color = auto ? Color.Lerp(tone, Theme.TextDim, 0.55f) : tone;
+            c.Mark.color = auto ? Theme.Steel : active == 1 ? Theme.Accent : tone;
         }
 
         private void Send(RaceCommand command)
@@ -273,6 +302,7 @@ namespace MotoManager.App.UI
                            (delta >= 0 ? Theme.GoodText(delta.ToString("+0.0", Loc.Culture)) : Theme.BadText(delta.ToString("0.0", Loc.Culture)));
             }
             _fuel.text = fuel;
+            _gaps.rectTransform.anchorMax = new Vector2(fuel.Length > 0 ? 0.56f : 1f, _gaps.rectTransform.anchorMax.y);
 
             string last = r.LastLapTime > 0 ? MathX.FormatLapTime(r.LastLapTime) : "-";
             string best = r.BestLapTime < double.MaxValue ? MathX.FormatLapTime(r.BestLapTime) : "-";
