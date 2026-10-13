@@ -52,6 +52,8 @@ namespace MotoManager.Core.Race
         public double PitLaneLength;
         public double LongLapLossS;
         public int LongLapSegment = -1;
+        /// <summary>Real centre line when the layout was derived from <see cref="CircuitDefinition.Shape"/> (drawn as is).</summary>
+        public ShapeConverter.ShapePath Shape;
 
         private const double ReferenceTopSpeed = 95;
         private const double ReferenceLateralG = 1.4;
@@ -78,9 +80,14 @@ namespace MotoManager.Core.Race
         public static TrackModel Build(CircuitDefinition def)
         {
             string layout = def.Layout;
-            if (string.IsNullOrEmpty(layout) && def.Shape != null && def.Shape.Count > 10) layout = ShapeConverter.ToLayout(def);
+            ShapeConverter.ShapePath path = null;
+            if (string.IsNullOrEmpty(layout) && def.Shape != null && def.Shape.Count > 10)
+            {
+                path = new ShapeConverter.ShapePath();
+                layout = ShapeConverter.ToLayout(def, path);
+            }
             if (string.IsNullOrEmpty(layout)) throw new FormatException("empty layout");
-            var model = new TrackModel { CircuitId = def.Id, Definition = def, SectorCount = Math.Max(1, def.Sectors) };
+            var model = new TrackModel { CircuitId = def.Id, Definition = def, SectorCount = Math.Max(1, def.Sectors), Shape = path };
             var tokens = layout.Split(new[] { ' ', '\t', '\n', '\r', ',' }, StringSplitOptions.RemoveEmptyEntries);
             int corner = 0;
             foreach (var raw in tokens)
@@ -318,6 +325,73 @@ namespace MotoManager.Core.Race
             _track = track;
             Length = track.Length;
             int n = track.Segments.Count;
+
+            if (track.Shape != null && track.Shape.TokenStarts.Count == n && track.Shape.Points.Count > 16)
+            {
+                // Real centre line: draw it exactly and map every simulated segment onto its stretch of the line.
+                var pts = track.Shape.Points;
+                int m = pts.Count;
+                var cum = new double[m + 1];
+                for (int i = 0; i < m; i++)
+                {
+                    var a = pts[i];
+                    var b = pts[(i + 1) % m];
+                    cum[i + 1] = cum[i] + Math.Sqrt((b[0] - a[0]) * (b[0] - a[0]) + (b[1] - a[1]) * (b[1] - a[1]));
+                }
+                double lineLength = cum[m];
+                GeometricLength = lineLength;
+                _geoStart = new double[n];
+                _geoLength = new double[n];
+                for (int i = 0; i < n; i++)
+                {
+                    double idx = track.Shape.TokenStarts[i] / track.Shape.Spacing;
+                    int k0 = Math.Min(m - 1, (int)idx);
+                    _geoStart[i] = cum[k0] + (cum[k0 + 1] - cum[k0]) * (idx - k0);
+                }
+                _geoStart[0] = 0;
+                for (int i = 0; i < n; i++)
+                {
+                    double end = i + 1 < n ? _geoStart[i + 1] : lineLength;
+                    _geoLength[i] = Math.Max(0.01, end - _geoStart[i]);
+                }
+
+                int samples = Math.Max(16, (int)Math.Ceiling(lineLength / spacing));
+                Spacing = lineLength / samples;
+                X = new double[samples + 1];
+                Y = new double[samples + 1];
+                Heading = new double[samples + 1];
+                int node = 0;
+                for (int k = 0; k < samples; k++)
+                {
+                    double g = k * Spacing;
+                    while (node < m - 1 && cum[node + 1] < g) node++;
+                    var a = pts[node];
+                    var b = pts[(node + 1) % m];
+                    double f = (g - cum[node]) / Math.Max(1e-9, cum[node + 1] - cum[node]);
+                    X[k] = a[0] + (b[0] - a[0]) * f;
+                    Y[k] = a[1] + (b[1] - a[1]) * f;
+                }
+                X[samples] = X[0];
+                Y[samples] = Y[0];
+                double area = 0;
+                for (int k = 0; k < samples; k++)
+                {
+                    Heading[k] = Math.Atan2(Y[k + 1] - Y[k], X[k + 1] - X[k]);
+                    area += X[k] * Y[k + 1] - X[k + 1] * Y[k];
+                }
+                Heading[samples] = Heading[0];
+                Orientation = area >= 0 ? 1 : -1;
+                MinX = MinY = double.MaxValue;
+                MaxX = MaxY = double.MinValue;
+                for (int k = 0; k <= samples; k++)
+                {
+                    MinX = Math.Min(MinX, X[k]);
+                    MaxX = Math.Max(MaxX, X[k]);
+                    MinY = Math.Min(MinY, Y[k]);
+                    MaxY = Math.Max(MaxY, Y[k]);
+                }
+                return;
+            }
 
             double totalTurn = 0;
             foreach (var s in track.Segments) totalTurn += s.AngleDeg;

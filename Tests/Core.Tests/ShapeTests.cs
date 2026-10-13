@@ -50,6 +50,44 @@ namespace MotoManager.Tests
             return RaceSimulation.EstimateLap(cfg, new RaceEntry { Rider = rider, Bike = bike, SetupQuality = 0.6, FrontCompound = TireCompound.Medium, RearCompound = TireCompound.Medium });
         }
 
+        [Fact]
+        public void RealCentreLinesAreDrawnAsIsAndMatchTheOfficialLength()
+        {
+            int count = 0;
+            foreach (var c in TestData.Db.Circuits.Values.Where(x => string.IsNullOrEmpty(x.Layout) && x.Shape != null))
+            {
+                count++;
+                var track = TrackModel.Get(c);
+                var geo = new TrackGeometry(track);
+                Assert.NotNull(track.Shape);
+                // The drawing is the real line, closed by construction, and as long as the official lap (data sanity).
+                Assert.Equal(0, geo.ClosureError);
+                Assert.InRange(geo.GeometricLength / c.LengthM, 0.97, 1.03);
+                Assert.InRange(c.RadiusScale, 0.6, 1.7);
+                // Track limits flagged at the first and last corners; direction of travel as declared.
+                Assert.True(track.Segments.Count(s => s.TrackLimits) >= 2, c.Id);
+                Assert.Equal(c.Clockwise ? -1 : 1, geo.Orientation);
+                // Every corner's middle lies on a bend of the real line, turning the same way.
+                foreach (var s in track.Segments.Where(s => s.IsCorner && Math.Abs(s.AngleDeg) > 30))
+                {
+                    double turn = 0, x, y, h, prev;
+                    geo.Evaluate(s.Start, 0, out x, out y, out prev);
+                    for (double d = s.Start + 2; d < s.End; d += 2)
+                    {
+                        geo.Evaluate(d, 0, out x, out y, out h);
+                        double dh = h - prev;
+                        while (dh > Math.PI) dh -= 2 * Math.PI;
+                        while (dh < -Math.PI) dh += 2 * Math.PI;
+                        turn += dh;
+                        prev = h;
+                    }
+                    Assert.True(Math.Sign(turn) == Math.Sign(s.AngleDeg) && Math.Abs(turn * 180 / Math.PI) > Math.Abs(s.AngleDeg) * 0.5,
+                                c.Id + " corner " + s.CornerNumber + ": drawn " + (turn * 180 / Math.PI).ToString("0") + " vs " + s.AngleDeg.ToString("0"));
+                }
+            }
+            Assert.True(count >= 10, "real shapes: " + count);
+        }
+
         [Theory]
         [InlineData("mugello", false)]
         [InlineData("jerez", true)]

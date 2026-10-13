@@ -229,7 +229,11 @@ namespace MotoManager.Core.Race
             var p = new TrackProfile { Abrasiveness = track.Definition != null ? track.Definition.Abrasiveness : 0.5 };
             double straight = 0, slow = 0, fast = 0, run = 0;
             int corners = 0;
-            foreach (var s in track.Segments)
+            // Walk the lap from the first corner so the main straight counts as one run across the finish line.
+            int first = track.Segments.FindIndex(x => x.IsCorner);
+            var lap = new List<TrackSegment>();
+            for (int i = 0; i < track.Segments.Count; i++) lap.Add(track.Segments[(Math.Max(0, first) + i) % track.Segments.Count]);
+            foreach (var s in lap)
             {
                 if (!s.IsCorner)
                 {
@@ -256,7 +260,7 @@ namespace MotoManager.Core.Race
             double km = track.Length / 1000.0;
             double longStraights = 0;
             double acc = 0;
-            foreach (var s in track.Segments)
+            foreach (var s in lap)
             {
                 if (!s.IsCorner) { acc += s.Length; continue; }
                 if (acc > 300) longStraights += acc;
