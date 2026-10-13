@@ -8,6 +8,9 @@ Shader "MotoManager/VertexColorLit"
         _Tint ("Tint", Color) = (1,1,1,1)
         _LightDir ("Light direction", Vector) = (0.35, 0.85, 0.4, 0)
         _Ambient ("Ambient", Range(0,1)) = 0.55
+        // Depth bias for flat layers drawn on top of each other (track surfaces, paint): 0 for everything else.
+        _OffsetFactor ("Offset factor", Float) = 0
+        _OffsetUnits ("Offset units", Float) = 0
     }
     SubShader
     {
@@ -15,6 +18,7 @@ Shader "MotoManager/VertexColorLit"
         LOD 100
         Pass
         {
+            Offset [_OffsetFactor], [_OffsetUnits]
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag

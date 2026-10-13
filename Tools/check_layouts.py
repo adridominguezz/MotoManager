@@ -5,6 +5,9 @@ root = os.path.join(os.path.dirname(__file__), '..', 'Assets', 'MotoManager', 'R
 for path in sorted(glob.glob(os.path.join(root, '*.json'))):
     data = json.load(open(path))
     for c in (data if isinstance(data, list) else [data]):
+        if not c.get('layout'):
+            print(f"{c['id']:<16} real centre line ({len(c.get('shape', []))} points), layout derived in code")
+            continue
         corners = straights = turn = 0
         n = 0
         for tok in c['layout'].split():

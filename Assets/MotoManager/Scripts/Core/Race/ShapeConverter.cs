@@ -18,6 +18,8 @@ namespace MotoManager.Core.Race
         public const double StraightCurvature = 1.0 / 400.0;
         public const double SmoothingMeters = 14.0;
         public const double MinRunMeters = 12.0;
+        /// <summary>Bends that turn less than this are kinks taken flat out (on coarse lines they are mostly node noise).</summary>
+        public const double MinCornerDegrees = 8.0;
 
         /// <summary>Shape points in metres (lat/lon are projected around the shape's centre).</summary>
         public static List<double[]> ToMeters(CircuitDefinition def)
@@ -45,7 +47,22 @@ namespace MotoManager.Core.Race
             return new[] { (p[1] - lon0) * mPerLon, (p[0] - lat0) * mPerLat };
         }
 
+        /// <summary>The resampled real centre line and where each segment of the derived layout starts on it.</summary>
+        public class ShapePath
+        {
+            /// <summary>Points every <see cref="Spacing"/> metres along the closed line, the first one on the start line.</summary>
+            public List<double[]> Points;
+            public double Spacing;
+            /// <summary>Distance along <see cref="Points"/> where each layout token (segment) begins.</summary>
+            public List<double> TokenStarts;
+        }
+
         public static string ToLayout(CircuitDefinition def)
+        {
+            return ToLayout(def, null);
+        }
+
+        public static string ToLayout(CircuitDefinition def, ShapePath path)
         {
             var pts = ToMeters(def);
             // Drop a duplicated closing point.
@@ -82,7 +99,10 @@ namespace MotoManager.Core.Race
                 pts = rotated;
             }
 
-            var samples = Resample(pts, Spacing);
+            // Coarse centre lines (a node every 30-60 m, as in most published circuit files) turn every node into a
+            // sharp kink; a centripetal Catmull-Rom spline through the nodes spreads each bend over the neighbouring
+            // edges as on the real track. Dense lines (OSM, ~10 m) are barely changed.
+            var samples = Resample(Spline(pts, Spacing), Spacing);
             int n = samples.Count;
             var heading = new double[n];
             for (int i = 0; i < n; i++)
@@ -139,47 +159,119 @@ namespace MotoManager.Core.Race
                 }
             }
 
+            // The lap starts where the first run starts (a short run at the line may have been merged into the last one).
+            int origin = runs[0][1];
             var sb = new StringBuilder();
-            int cursor = 0;
+            var starts = new List<double>();
+            int firstCorner = -1, lastCorner = -1;
+            var tokens = new List<string>();
+            Action<string, double> emit = (token, start) =>
+            {
+                tokens.Add(token);
+                starts.Add(start);
+            };
             foreach (var run in runs)
             {
+                int cursor = run[1];
+                double begin = ((cursor - origin + n) % n) * Spacing;
                 double length = run[2] * Spacing;
                 if (run[0] == 0)
                 {
-                    sb.Append('S').Append(length.ToString("0", CultureInfo.InvariantCulture)).Append(' ');
+                    emit("S" + length.ToString("0", CultureInfo.InvariantCulture), begin);
+                    continue;
                 }
-                else
+                double sweep = 0;
+                for (int i = 0; i < run[2]; i++) sweep += curvature[(cursor + i) % n] * Spacing;
+                double deg = Math.Abs(sweep) * 180 / Math.PI;
+                if (deg < MinCornerDegrees)
                 {
-                    double sweep = 0;
-                    for (int i = 0; i < run[2]; i++) sweep += curvature[(cursor + i) % n] * Spacing;
-                    double deg = Math.Abs(sweep) * 180 / Math.PI;
-                    if (deg < 3)
-                    {
-                        sb.Append('S').Append(length.ToString("0", CultureInfo.InvariantCulture)).Append(' ');
-                    }
-                    else
-                    {
-                        // Radius from the tightest half of the corner (smoothing makes corners look wider than
-                        // they are); the sweep is kept, the spare length goes back to the straights.
-                        var values = new List<double>();
-                        for (int i = 0; i < run[2]; i++) values.Add(Math.Abs(sharp[(cursor + i) % n]));
-                        values.Sort();
-                        double tight = 0;
-                        int half = Math.Max(1, values.Count / 2);
-                        for (int i = values.Count - half; i < values.Count; i++) tight += values[i];
-                        tight /= half;
-                        double wide = length / Math.Abs(sweep);
-                        double radius = Math.Min(wide, Math.Sqrt(wide / Math.Max(tight, 1e-6)));
-                        double spare = Math.Max(0, length - radius * Math.Abs(sweep));
-                        if (spare >= 1) sb.Append('S').Append((spare / 2).ToString("0.#", CultureInfo.InvariantCulture)).Append(' ');
-                        sb.Append(sweep > 0 ? 'L' : 'R').Append(deg.ToString("0.#", CultureInfo.InvariantCulture)).Append('@')
-                          .Append(radius.ToString("0.#", CultureInfo.InvariantCulture)).Append(' ');
-                        if (spare >= 1) sb.Append('S').Append((spare / 2).ToString("0.#", CultureInfo.InvariantCulture)).Append(' ');
-                    }
+                    emit("S" + length.ToString("0", CultureInfo.InvariantCulture), begin);
+                    continue;
                 }
-                cursor += run[2];
+                // Radius from the tightest half of the corner (smoothing makes corners look wider than
+                // they are); the sweep is kept, the spare length goes back to the straights.
+                var values = new List<double>();
+                for (int i = 0; i < run[2]; i++) values.Add(Math.Abs(sharp[(cursor + i) % n]));
+                values.Sort();
+                double tight = 0;
+                int half = Math.Max(1, values.Count / 2);
+                for (int i = values.Count - half; i < values.Count; i++) tight += values[i];
+                tight /= half;
+                double wide = length / Math.Abs(sweep);
+                double radius = Math.Min(wide, Math.Sqrt(wide / Math.Max(tight, 1e-6)));
+                double spare = Math.Max(0, length - radius * Math.Abs(sweep));
+                // The arc sits where the run actually bends (curvature centroid), the spare length either side of it.
+                double wsum = 0, wpos = 0;
+                for (int i = 0; i < run[2]; i++)
+                {
+                    double w = Math.Abs(curvature[(cursor + i) % n]);
+                    wsum += w;
+                    wpos += w * (i + 0.5) * Spacing;
+                }
+                double arc = length - spare;
+                double before = wsum > 0 ? wpos / wsum - arc / 2 : spare / 2;
+                before = Math.Max(0, Math.Min(spare, before));
+                double after = spare - before;
+                if (before < 1) { after += before; before = 0; }
+                if (after < 1) { arc += after; after = 0; }
+                if (before > 0) emit("S" + before.ToString("0.#", CultureInfo.InvariantCulture), begin);
+                if (firstCorner < 0) firstCorner = tokens.Count;
+                lastCorner = tokens.Count;
+                emit((sweep > 0 ? "L" : "R") + deg.ToString("0.#", CultureInfo.InvariantCulture) + "@" + radius.ToString("0.#", CultureInfo.InvariantCulture),
+                     begin + before);
+                if (after > 0) emit("S" + after.ToString("0.#", CultureInfo.InvariantCulture), begin + before + arc);
             }
-            return sb.ToString().Trim();
+            // Track limits are policed at the first corner and at the last one onto the main straight, as on most circuits.
+            if (firstCorner >= 0) tokens[firstCorner] += ":tl";
+            if (lastCorner > firstCorner) tokens[lastCorner] += ":tl";
+            for (int i = 0; i < tokens.Count; i++) sb.Append(tokens[i]).Append(i + 1 < tokens.Count ? " " : "");
+
+            if (path != null)
+            {
+                // The centre line itself (from the start of the lap) and where every layout token begins on it.
+                path.Points = new List<double[]>(n);
+                for (int i = 0; i < n; i++) path.Points.Add(samples[(origin + i) % n]);
+                path.Spacing = Spacing;
+                path.TokenStarts = starts;
+            }
+            return sb.ToString();
+        }
+
+        /// <summary>Closed centripetal Catmull-Rom spline through the points, sampled about every <paramref name="step"/> metres.</summary>
+        public static List<double[]> Spline(List<double[]> pts, double step)
+        {
+            var result = new List<double[]>();
+            int n = pts.Count;
+            for (int i = 0; i < n; i++)
+            {
+                var p0 = pts[(i - 1 + n) % n];
+                var p1 = pts[i];
+                var p2 = pts[(i + 1) % n];
+                var p3 = pts[(i + 2) % n];
+                double len = Dist(p1, p2);
+                int count = Math.Max(1, (int)Math.Ceiling(len / step));
+                // Knot spacing sqrt(distance) (centripetal): no cusps or overshoot on uneven node spacing.
+                double t0 = 0;
+                double t1 = t0 + Math.Sqrt(Math.Max(1e-6, Dist(p0, p1)));
+                double t2 = t1 + Math.Sqrt(Math.Max(1e-6, len));
+                double t3 = t2 + Math.Sqrt(Math.Max(1e-6, Dist(p2, p3)));
+                for (int k = 0; k < count; k++)
+                {
+                    double t = t1 + (t2 - t1) * k / count;
+                    var r = new double[2];
+                    for (int d = 0; d < 2; d++)
+                    {
+                        double a1 = (t1 - t) / (t1 - t0) * p0[d] + (t - t0) / (t1 - t0) * p1[d];
+                        double a2 = (t2 - t) / (t2 - t1) * p1[d] + (t - t1) / (t2 - t1) * p2[d];
+                        double a3 = (t3 - t) / (t3 - t2) * p2[d] + (t - t2) / (t3 - t2) * p3[d];
+                        double b1 = (t2 - t) / (t2 - t0) * a1 + (t - t0) / (t2 - t0) * a2;
+                        double b2 = (t3 - t) / (t3 - t1) * a2 + (t - t1) / (t3 - t1) * a3;
+                        r[d] = (t2 - t) / (t2 - t1) * b1 + (t - t1) / (t2 - t1) * b2;
+                    }
+                    result.Add(r);
+                }
+            }
+            return result;
         }
 
         private static List<double[]> Resample(List<double[]> pts, double spacing)
