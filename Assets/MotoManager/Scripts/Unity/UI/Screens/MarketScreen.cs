@@ -9,8 +9,8 @@ namespace MotoManager.App.UI.Screens
 {
     /// <summary>
     /// The rider market across both pyramids (UX spec §3.16): one control row (category picker, filter segments, the
-    /// free seats with the rules behind "i", the pager), then a page of tappable rows (level, rider with at most one
-    /// tag, age, team and contract end, potential). A row opens the profile (scouting and the offer); a negotiation
+    /// free seats with the rules behind "i", the pager), then a page of tappable rows (rank, rider with at most one
+    /// tag, age, team and contract end, level, potential). A row opens the profile (scouting and the offer); a negotiation
     /// takes the whole page. Moves can happen at any time (now or for next season).
     /// </summary>
     public class MarketScreen : ScreenBase
@@ -27,7 +27,7 @@ namespace MotoManager.App.UI.Screens
         private const int PageSize = 7;
         private int _page;
 
-        private static readonly float[] Widths = { 1.1f, 4.6f, 1f, 3.2f, 1.4f };
+        private static readonly float[] Widths = { 0.9f, 4.4f, 0.9f, 3f, 1.2f, 1.4f };
 
         public override void Build(RectTransform content)
         {
@@ -63,9 +63,9 @@ namespace MotoManager.App.UI.Screens
             _page = Math.Max(0, Math.Min(_page, pages - 1));
             Controls(list, world, team, riders.Count, pages);
 
-            // The list: level (as the position block), rider, age, team and contract end, potential; the row opens the rider.
+            // The list: rank, rider, age, team and contract end, level, potential; the row opens the rider.
             var table = Ui.Stack(list);
-            Ui.ListCaptions(table, Widths, new[] { Loc.T("col.level"), Loc.T("col.rider"), Loc.T("col.age"), Loc.T("col.team"), Loc.T("col.potential") });
+            Ui.ListCaptions(table, Widths, new[] { "#", Loc.T("col.rider"), Loc.T("col.age"), Loc.T("col.team"), Loc.T("col.level"), Loc.T("col.potential") });
             var levels = TransferMarket.CategoryLevels(world, Game.Db);
             for (int i = _page * PageSize; i < riders.Count && i < (_page + 1) * PageSize; i++)
             {
@@ -82,8 +82,8 @@ namespace MotoManager.App.UI.Screens
                               (r.Contract != null ? "  " + Theme.Dim(r.Contract.EndSeason.ToString()) : "");
                 Ui.ListRow(table, Widths, new[]
                 {
-                    Fmt.Estimate(world, team.Id, r, "RaceSkill").ToString("0"), name, r.AgeOn(world.CurrentDate).ToString(), club,
-                    Fmt.Attr(world, team.Id, r, "Potential")
+                    (i + 1).ToString(), name, r.AgeOn(world.CurrentDate).ToString(), club,
+                    Fmt.Rating(Fmt.Estimate(world, team.Id, r, "RaceSkill")), Fmt.Attr(world, team.Id, r, "Potential")
                 }, i - _page * PageSize, false, () => { _rider = rider.Id; Shell.Refresh(); });
             }
             if (riders.Count == 0) Ui.Empty(list, UiIcons.Market, Loc.T("market.empty"));

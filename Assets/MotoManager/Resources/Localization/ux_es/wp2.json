@@ -27,5 +27,15 @@
   "ux.market.tagScouted": "Ojeado",
   "tut.home.2": "En Inicio, la baldosa <b>Próxima carrera</b> tiene el botón principal: te lleva a la carrera, simula un evento o cierra la temporada. Con <b>...</b> simulas sin verla.",
   "tut.home.3": "En <b>Avisos</b>, arriba, te iré dejando lo que necesita una decisión: ofertas, contratos que acaban, plazas libres… Cada aviso te lleva a su pantalla.",
-  "tut.home.4": "A la izquierda están las secciones: <b>Equipo</b>, <b>Moto</b>, <b>Finanzas</b>, <b>Mercado</b>, <b>Temporada</b> y <b>Mi carrera</b>. Arriba de cada una, las pestañas."
+  "tut.home.4": "A la izquierda están las secciones: <b>Equipo</b>, <b>Moto</b>, <b>Finanzas</b>, <b>Mercado</b>, <b>Temporada</b> y <b>Mi carrera</b>. Arriba de cada una, las pestañas.",
+  "ux.hub.bikeLevel": "Nivel medio",
+  "ux.attr.RaceSkill": "Ritmo",
+  "ux.attr.QualifyingSkill": "Clasificación",
+  "ux.attr.TireManagement": "Neumáticos",
+  "ux.attr.Overtaking": "Adelantar",
+  "ux.attr.Cornering": "Curvas",
+  "ux.attr.ThrottleControl": "Gas",
+  "ux.attr.RiskManagement": "Riesgo",
+  "ux.attr.TechnicalFeedback": "Info. técnica",
+  "ux.attr.Fitness": "Físico"
 }

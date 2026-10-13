@@ -27,5 +27,12 @@
   "ux.market.tagScouted": "Scouted",
   "tut.home.2": "On Home, the <b>Next race</b> tile holds the main button: it takes you to the race, simulates an event or closes the season. Use <b>...</b> to simulate without watching.",
   "tut.home.3": "Under <b>Inbox</b>, at the top, I'll leave whatever needs a decision: offers, contracts ending, free seats… Each item takes you to its screen.",
-  "tut.home.4": "On the left are the sections: <b>Team</b>, <b>Bike</b>, <b>Finance</b>, <b>Market</b>, <b>Season</b> and <b>My career</b>. Each has its tabs at the top."
+  "tut.home.4": "On the left are the sections: <b>Team</b>, <b>Bike</b>, <b>Finance</b>, <b>Market</b>, <b>Season</b> and <b>My career</b>. Each has its tabs at the top.",
+  "ux.hub.bikeLevel": "Average level",
+  "ux.attr.RaceSkill": "Race pace",
+  "ux.attr.TireManagement": "Tyres",
+  "ux.attr.ThrottleControl": "Throttle",
+  "ux.attr.RiskManagement": "Risk",
+  "ux.attr.TechnicalFeedback": "Feedback",
+  "ux.attr.WetSkill": "Wet"
 }
