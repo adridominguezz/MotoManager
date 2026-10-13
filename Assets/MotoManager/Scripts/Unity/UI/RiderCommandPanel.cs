@@ -247,7 +247,7 @@ namespace MotoManager.App.UI
         {
             switch (t.Condition)
             {
-                case TireCondition.Cold: return new Color32(143, 180, 212, 255);
+                case TireCondition.Cold: return Theme.Wet;
                 case TireCondition.Hot: return Theme.Warning;
                 case TireCondition.Overheated: return Theme.Bad;
                 case TireCondition.Worn: return new Color32(200, 120, 60, 255);

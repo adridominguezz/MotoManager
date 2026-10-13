@@ -210,8 +210,7 @@ namespace MotoManager.App.UI.Screens
         public static void ValueTile(Transform parent, float x0, float y0, float x1, float y1, string caption, string value, double level, Action onInfo)
         {
             var b = UiFactory.Button("ValueTile", parent, "", onInfo, Color.Lerp(Theme.Card, Theme.PanelLight, 0.35f), Theme.FontSmall);
-            b.image.sprite = null;
-            UiFactory.Gradient(b.image, 1.08f, 0.9f);
+            UiFactory.Surface(b.image);
             UiFactory.Place((RectTransform)b.transform, x0, y0, x1, y1, 4);
             b.interactable = onInfo != null;
             var colors = b.colors;

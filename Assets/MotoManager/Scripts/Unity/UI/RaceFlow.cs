@@ -175,9 +175,11 @@ namespace MotoManager.App.UI
         /// <summary>Full-screen dark backdrop of a race-flow panel.</summary>
         public static Image Backdrop(RectTransform root, float alpha = 1f)
         {
+            // Flat floor with the same faint dark-red glow as the management screens (one atmospheric element).
             var bg = UiFactory.Panel("Backdrop", root, Theme.Alpha(Theme.Background, alpha));
             UiFactory.Stretch(bg.rectTransform);
-            UiFactory.Gradient(bg, 1.12f, 0.88f);
+            bg.gameObject.AddComponent<RectMask2D>();
+            UiFactory.Glow(bg.transform, 0.32f, 1f, 1500, 0.16f * alpha);
             return bg;
         }
 
@@ -330,7 +332,7 @@ namespace MotoManager.App.UI
 
         public static Color WeatherColor(bool wet, double rain)
         {
-            return wet || rain > 0.5 ? (Color)new Color32(120, 178, 214, 255) : rain > 0.2 ? Theme.Info : Theme.Timing;
+            return wet || rain > 0.5 ? Theme.Wet : rain > 0.2 ? Theme.Info : Theme.Timing;
         }
 
         /// <summary>Rich-text colour tag for <paramref name="c"/>.</summary>

@@ -132,9 +132,9 @@ namespace MotoManager.App.UI
                 RaceUi.WeatherColor(wet, rain), FontStyle.BoldAndItalic);
             UiFactory.Place(word.rectTransform, 0, 0, 0.3f, 1);
             var chance = RaceUi.Label(body, "<b>" + (rain * 100).ToString("0") + "%</b> <size=" + Theme.TextCaption + ">" +
-                Theme.Dim(Theme.Caps(Loc.T("pre.rainShort"))) + "</size>", Theme.TextTitle, TextAnchor.MiddleLeft, Theme.Text);
+                Theme.Dim(Loc.T("pre.rainShort")) + "</size>", Theme.TextTitle, TextAnchor.MiddleLeft, Theme.Text);
             UiFactory.Place(chance.rectTransform, 0.3f, 0, 0.66f, 1);
-            var t = RaceUi.Label(body, Theme.Caps(Loc.T("ux.race.temps", model.AirTemp.ToString("0"), model.TrackTemp.ToString("0"))),
+            var t = RaceUi.Label(body, Loc.T("ux.race.temps", model.AirTemp.ToString("0"), model.TrackTemp.ToString("0")),
                 Theme.TextCaption, TextAnchor.MiddleRight, Theme.TextDim, FontStyle.Bold);
             UiFactory.Place(t.rectTransform, 0.66f, 0, 1, 1);
         }
@@ -209,7 +209,7 @@ namespace MotoManager.App.UI
             last.rectTransform.anchorMax = new Vector2(1, 0.6f);
             last.rectTransform.offsetMin = new Vector2(120, 0);
             last.rectTransform.offsetMax = new Vector2(-150, 0);
-            var gridCap = RaceUi.Label(head, Theme.Caps(Loc.T("post.k.grid")), Theme.TextCaption, TextAnchor.LowerCenter, Theme.TextDim, FontStyle.Bold);
+            var gridCap = RaceUi.Label(head, Loc.T("post.k.grid"), Theme.TextCaption, TextAnchor.LowerCenter, Theme.TextDim, FontStyle.Normal);
             gridCap.rectTransform.anchorMin = new Vector2(1, 0.62f);
             gridCap.rectTransform.anchorMax = new Vector2(1, 1);
             gridCap.rectTransform.pivot = new Vector2(1, 0.5f);
@@ -248,7 +248,7 @@ namespace MotoManager.App.UI
             foot.offsetMax = new Vector2(0, 44);
             string advice = RaceHud.CompoundLetter(adviceFront) + "/" + RaceHud.CompoundLetter(adviceRear);
             RaceUi.PillAt(foot, Loc.T("ux.race.engineer", advice), Theme.PanelLight, 0, Theme.Text);
-            var tip = RaceUi.Label(foot, Theme.Caps(Loc.T("ux.race.tapToChange")), Theme.TextCaption, TextAnchor.MiddleRight, Theme.TextDim, FontStyle.Bold);
+            var tip = RaceUi.Label(foot, Loc.T("ux.race.tapToChange"), Theme.TextCaption, TextAnchor.MiddleRight, Theme.TextDim, FontStyle.Normal);
             UiFactory.Place(tip.rectTransform, 0.45f, 0, 1, 1);
         }
 
@@ -257,9 +257,9 @@ namespace MotoManager.App.UI
             var slot = UiFactory.Button("Tyre " + label, area, "", () => OpenPicker(label, surname, rules, get, set, advice),
                 Color.Lerp(Theme.Background, Theme.Panel, 0.85f));
             UiFactory.Stretch((RectTransform)slot.transform);
-            slot.gameObject.AddComponent<Outline>().effectColor = new Color(1, 1, 1, 0.07f);
+            slot.gameObject.AddComponent<Outline>().effectColor = Theme.Edge;
             var st = (RectTransform)slot.transform;
-            var cap = RaceUi.Label(st, Theme.Caps(label), Theme.TextCaption, TextAnchor.UpperLeft, Theme.TextDim, FontStyle.Bold);
+            var cap = RaceUi.Label(st, label, Theme.TextCaption, TextAnchor.UpperLeft, Theme.TextDim, FontStyle.Normal);
             UiFactory.Stretch(cap.rectTransform);
             cap.rectTransform.offsetMin = new Vector2(16, 0);
             cap.rectTransform.offsetMax = new Vector2(-48, -10);
@@ -333,7 +333,7 @@ namespace MotoManager.App.UI
                         GameAudio.ClickSound();
                         pick();
                     });
-                    if (active) UiFactory.SideStripe(row, Theme.Accent, 6, 0);
+                    if (active) UiFactory.SideStripe(row, Theme.Accent, 4, 0);
                     var holder = UiFactory.Rect("Tyre", row);
                     holder.anchorMin = new Vector2(0, 0);
                     holder.anchorMax = new Vector2(0, 1);

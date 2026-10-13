@@ -43,7 +43,8 @@ namespace MotoManager.App.UI
             Ui.SheetHost = root;
             var bg = UiFactory.Panel("Background", root, Theme.Background);
             UiFactory.Stretch(bg.rectTransform);
-            UiFactory.Gradient(bg, 1.2f, 0.9f);
+            bg.gameObject.AddComponent<UnityEngine.UI.RectMask2D>();
+            UiFactory.Glow(bg.transform, 0.32f, 1f, 1500, 0.16f);
             var review = summary.PlayerReview;
             var world = game.World;
             var team = review != null ? world.GetTeam(review.TeamId) : null;

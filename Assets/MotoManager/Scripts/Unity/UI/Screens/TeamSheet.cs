@@ -355,9 +355,15 @@ namespace MotoManager.App.UI.Screens
             t.raycastTarget = false;
             if (onLabel != null)
             {
+                // The hit area is transparent, so the press dims the label (visible feedback).
                 var b = hit.gameObject.AddComponent<UnityEngine.UI.Button>();
-                b.targetGraphic = hit;
-                UiFactory.PressFeedback(b, hit.color);
+                b.targetGraphic = t;
+                var colors = b.colors;
+                colors.highlightedColor = Color.white;
+                colors.selectedColor = Color.white;
+                colors.pressedColor = new Color(0.6f, 0.6f, 0.6f, 1f);
+                colors.fadeDuration = 0.06f;
+                b.colors = colors;
                 b.onClick.AddListener(() =>
                 {
                     GameAudio.ClickSound();

@@ -101,11 +101,14 @@ namespace MotoManager.App.UI.Screens
 
         private void FreeSeat(RectTransform area)
         {
+            // A tinted rounded surface with a thin warning edge (no thick coloured left stripe).
             var hit = UiFactory.Panel("FreeSeat", area, Theme.Alpha(Theme.Warning, 0.08f));
             UiFactory.Stretch(hit.rectTransform);
-            UiFactory.SideStripe(hit.transform, Theme.Warning, 6, 0);
+            UiFactory.Surface(hit);
+            hit.gameObject.AddComponent<Outline>().effectColor = Theme.Alpha(Theme.Warning, 0.35f);
             var b = hit.gameObject.AddComponent<Button>();
             b.targetGraphic = hit;
+            UiFactory.PressFeedback(b, hit.color);
             b.onClick.AddListener(() =>
             {
                 GameAudio.ClickSound();
@@ -116,7 +119,7 @@ namespace MotoManager.App.UI.Screens
             UiFactory.Place(icon.rectTransform, 0.2f, 0.42f, 0.8f, 0.92f);
             var t = Ui.Label(hit.transform, Theme.Caps(Loc.T("hub.freeSeat")), Theme.TextTitle, TextAnchor.MiddleCenter, Theme.Warning, FontStyle.BoldAndItalic);
             UiFactory.Place(t.rectTransform, 0, 0.2f, 1, 0.4f);
-            var go = Ui.Label(hit.transform, Theme.Caps(Loc.T("ux.riders.toMarket")), Theme.TextCaption, TextAnchor.MiddleCenter, Theme.TextDim, FontStyle.Bold);
+            var go = Ui.Label(hit.transform, Loc.T("ux.riders.toMarket"), Theme.TextCaption, TextAnchor.MiddleCenter, Theme.TextDim, FontStyle.Normal);
             UiFactory.Place(go.rectTransform, 0, 0.04f, 1, 0.2f);
         }
 
@@ -130,7 +133,7 @@ namespace MotoManager.App.UI.Screens
             plate.rectTransform.pivot = new Vector2(0, 1);
             plate.rectTransform.anchoredPosition = new Vector2(0, -4);
             plate.rectTransform.sizeDelta = new Vector2(seats <= 2 ? 104 : 84, 56);
-            var num = Ui.Label(plate.transform, r.Number > 0 ? "#" + r.Number : "-", Theme.TextTitle, TextAnchor.MiddleCenter, Color.white, FontStyle.BoldAndItalic);
+            var num = Ui.Label(plate.transform, r.Number > 0 ? "#" + r.Number : "-", Theme.TextTitle, TextAnchor.MiddleCenter, Theme.Text, FontStyle.BoldAndItalic);
             UiFactory.Stretch(num.rectTransform);
 
             var badge = Ui.RatingBadge(area, r.Attributes.Overall, Loc.T("rider.ratingTag"), side);
@@ -167,7 +170,7 @@ namespace MotoManager.App.UI.Screens
         /// <summary>A caption over a value in timing yellow (one figure of a rider panel).</summary>
         private static void Figure(RectTransform area, string caption, string value)
         {
-            var c = Ui.Label(area, Theme.Caps(caption), Theme.TextCaption, TextAnchor.LowerLeft, Theme.TextDim, FontStyle.Bold);
+            var c = Ui.Label(area, caption, Theme.TextCaption, TextAnchor.LowerLeft, Theme.TextDim, FontStyle.Normal);
             UiFactory.Place(c.rectTransform, 0, 0.58f, 1, 1);
             var v = Ui.Label(area, value, Theme.TextKey, TextAnchor.MiddleLeft, Theme.Timing, FontStyle.BoldAndItalic);
             UiFactory.Place(v.rectTransform, 0, 0, 1, 0.6f);
@@ -199,7 +202,7 @@ namespace MotoManager.App.UI.Screens
             var v = Ui.Label(body, value, Theme.TextDisplay + 16, TextAnchor.MiddleCenter, valueColor ?? Theme.Timing, FontStyle.BoldAndItalic);
             UiFactory.Place(v.rectTransform, 0.48f, 0.24f, 1, 1);
             if (string.IsNullOrEmpty(status)) return;
-            var s = Ui.Label(body, Theme.Caps(status), Theme.TextCaption, TextAnchor.MiddleCenter, Theme.TextDim, FontStyle.Bold);
+            var s = Ui.Label(body, status, Theme.TextCaption, TextAnchor.MiddleCenter, Theme.TextDim, FontStyle.Normal);
             UiFactory.Place(s.rectTransform, 0, 0, 1, 0.22f);
         }
 
@@ -255,7 +258,7 @@ namespace MotoManager.App.UI.Screens
             UiFactory.Place(gp.rectTransform, 0, 0.68f, 1, 1);
             if (!string.IsNullOrEmpty(Shell.LastResult))
             {
-                var last = Ui.Label(body, Theme.Dim(Theme.Caps(Loc.T("home.last")) + "  ") + FirstLine(Shell.LastResult), Theme.TextCaption,
+                var last = Ui.Label(body, Theme.Dim(Loc.T("home.last") + "  ") + FirstLine(Shell.LastResult), Theme.TextCaption,
                     TextAnchor.MiddleLeft, Theme.Text, FontStyle.Normal);
                 UiFactory.Place(last.rectTransform, 0, 0.48f, 1, 0.68f);
             }
@@ -388,7 +391,7 @@ namespace MotoManager.App.UI.Screens
             }
             if (!string.IsNullOrEmpty(Shell.LastResult))
             {
-                var last = Ui.Label(body, Theme.Dim(Theme.Caps(Loc.T("home.last")) + "  ") + FirstLine(Shell.LastResult), Theme.TextCaption,
+                var last = Ui.Label(body, Theme.Dim(Loc.T("home.last") + "  ") + FirstLine(Shell.LastResult), Theme.TextCaption,
                     TextAnchor.MiddleLeft, Theme.Text, FontStyle.Normal);
                 UiFactory.Place(last.rectTransform, 0, 0.44f, 1, 0.62f);
             }

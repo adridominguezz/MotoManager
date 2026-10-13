@@ -176,7 +176,38 @@ No hover tint and no "selected" tint (touch-first; Unity otherwise keeps the las
 - **R&D tier choices** (incremental / new spec / experimental) are filter boxes: small radius, thin outline, team colour when selected.
 - **Race HUD timing tower** (TV-broadcast style, `RaceHud.BuildTower`): near-black compact panel with the small surface radius; header with the session in red caps over the big lap count ("VUELTA 6/6") in the display face; a "GAP" line (text toggle between hairlines) that switches leader / interval; dense 40-unit rows separated by hairlines: plain display position (leader in timing yellow), thin team-colour bar, rider code in bold caps ("J MAR"), rider number in a small team-colour square, gap/interval (OUT / DNF / PIT / CRASH as before), tyre letters, and a small purple "FL" tag on the fastest-lap holder. The player's riders keep the team-colour highlight and edge; tap to follow, scrolling and the gap preference are unchanged. Minimum text 18 holds (rows 40 high, text 18–22).
 
-## 4. Verification
+## 4. Revision 3 (full pass after MM4 parts 1–3)
+
+### Resumen (para el usuario)
+
+- Revisión completa con las tres guías (crítica → auditoría → pulido; checklist de diseño; contención). **Solo estilos**: no se ha movido ni añadido nada; la torre de carrera y las tarjetas de piloto se quedan como las aprobaste.
+- Las pantallas nuevas (cabecera MM4, navegador de campeonato, fichas de equipo, pasos del fin de semana, intro, balance del evento) **ya usaban el sistema** (un solo botón rojo por pantalla, pestañas de texto, radios pequeños, bloques de dato con barra roja, tablas con líneas finas). Se han corregido los restos que no encajaban:
+  - **Mayúsculas de más:** leyendas y textos secundarios en minúscula normal (lluvia, temperaturas, "Parrilla", "Toca para cambiar", "Tus pilotos", equipo bajo el piloto, leyendas del inicio); nombres de pilotos/equipos en tablas ya no en mayúsculas.
+  - **Decoración suelta:** fuera degradados de fondo y de superficie (fondo de carrera, revisión de temporada, tablas de fundación, baldosas de valor, asistente), fuera esquinas cortadas antiguas (chips, placas, barra de repetición, asistente) → radio pequeño del sistema. Fondos de carrera y de revisión con el mismo brillo rojo suave de la gestión.
+  - **Color con sentido:** en los pasos del fin de semana el "ahora" ya no usa el amarillo de cronometraje (que es para números clave): rojo = sesión actual, verde apagado = hecho. Azul de lluvia/neumático frío como token (`Theme.Wet`).
+  - **Estados:** el carrusel del campeonato ahora se nota al pulsar el título; la baldosa "plaza libre" deja la franja gruesa a la izquierda por un borde fino de aviso y tiene estado pulsado.
+  - **Chips de dato** (I+D: mejora/éxito) como bloque de dato: leyenda pequeña + número grande con barra fina del color del dato a la izquierda.
+
+### Audit (gstack checklist + impeccable critique/audit)
+
+| # | Sev | Area | Finding (before) | After |
+|---|---|---|---|---|
+| R3-1 | P2 | Typography | CAPS on captions and secondary text in the race flow and hub (rain caption, temps, "grid", "tap to change", "your riders", team under rider, tyre slot caption, hub captions/status/"last", qualifying row) — tracked-caps tell, weaker hierarchy vs titles. | Sentence case, regular weight, `TextDim` (as §2.2). Titles, header strips, buttons and tags keep CAPS. |
+| R3-2 | P2 | Typography | Full rider/team names in CAPS inside table bodies (event balance, event summary, qualifying classification): shouting body cells. | Names in their natural case; positions and figures carry the weight. |
+| R3-3 | P2 | Colour roles | Weekend stepper's current step: red tint + red bar + timing-yellow "now" text — two highlight colours in one cell; done steps triple-coded in green (bar, text, chevrons). | Red bar/tint = current (live/next role); "now" in light bold text; done = muted green bar + green word; chevrons neutral. |
+| R3-4 | P2 | Interaction | Championship carousel label: transparent hit area tinted on press → no visible feedback. | Press dims the label (same rule as text tabs/links). |
+| R3-5 | P2 | Decoration | Background gradients on race-flow backdrop and season review; surface gradients on founding tables, value tiles, assistant avatar/bubble/strip. | Flat surfaces; the race and review floors get the shell's faint red glow (one atmospheric element across the app). |
+| R3-6 | P2 | Shape | Legacy chamfers: bike stat chips and plates, replay bar, assistant avatar/bubble. | System surface radius; replay bar on chrome like the tower. |
+| R3-7 | P3 | Stat blocks | R&D "gain / success" chips: centred caps caption + figure with a bottom underline (reads as underlined text). | Stat-block look: dim sentence-case caption + big display figure, thin bar in the figure's colour at the left. |
+| R3-8 | P3 | Decoration | Hub "free seat" tile: 6-unit warning stripe on the left (border-left tell) and no press state. | Tinted surface with a thin warning edge; press feedback. Pre-race active tyre row stripe 6 → 4 (same as own-row edge). |
+| R3-9 | P3 | Tokens | Hard-coded wet blue (race weather word, cold tyres), outline 7% literal, assistant colours (bubble, ink), `Color.white` text on hub number plates. | `Theme.Wet`, `Theme.Edge`, `Theme.Plate`/`Theme.Ink`, `Theme.Text`. |
+| — | ✓ | Hierarchy | One primary per screen: the MM4 header action steps down to a dark block when the page has its own red CTA; race-flow panels have one red action block each. | Kept. |
+| — | ✓ | Touch / text | No text below 18 anywhere (scan of sizes, `resizeTextMinSize`, `<size>` tags); hit areas ≥ 56. | Kept. |
+| — | ✓ | New screens | Navigator band, team sheet carousels, stepper, intro, event balance use `Ui.Tile`/`Card`/`StatTile`/`Band`/`TableRow`, text tabs and the red action block. | Kept; MM4 slanted header blocks are a user decision (MM4 §1.2) and stay. |
+
+Unchanged on purpose: the race timing tower and the rider cards (approved), the boot and loading screens (the one place the brand gets a hero treatment), the team-colour hero band on the hub.
+
+## 5. Verification
 
 - `cd Tests/UnityCheck && dotnet build` → 0 errors.
 - `dotnet build --no-incremental -p:DefineConstants="UNITY_ANDROID%3BUNITY_2021_3_OR_NEWER"` → 0 errors.

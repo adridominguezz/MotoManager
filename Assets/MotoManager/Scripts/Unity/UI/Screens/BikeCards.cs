@@ -171,26 +171,31 @@ namespace MotoManager.App.UI.Screens
             return b;
         }
 
-        /// <summary>A dark recessed chip with a caps caption over a big coloured figure.</summary>
+        /// <summary>
+        /// A stat block on a dark recessed surface: a thin bar in the figure's colour at the left, a sentence-case dim
+        /// caption over the big figure in the display face.
+        /// </summary>
         public static void StatChip(Transform parent, float x0, float y0, float x1, float y1, string caption, string value, Color color)
         {
             var chip = UiFactory.Decor("Chip", parent, new Color(0, 0, 0, 0.42f));
-            UiFactory.Chamfer(chip, 2.4f);
+            UiFactory.Surface(chip);
             UiFactory.Place(chip.rectTransform, x0, y0, x1, y1, 4);
             var edge = UiFactory.Decor("Edge", chip.transform, color);
-            edge.rectTransform.anchorMin = new Vector2(0, 0);
-            edge.rectTransform.anchorMax = new Vector2(1, 0);
+            edge.rectTransform.anchorMin = new Vector2(0, 0.14f);
+            edge.rectTransform.anchorMax = new Vector2(0, 0.86f);
             edge.rectTransform.offsetMin = new Vector2(10, 0);
-            edge.rectTransform.offsetMax = new Vector2(-10, 4);
-            At(chip.transform, 0, 0.6f, 1, 0.98f, Theme.Caps(caption), Theme.TextMin, TextAnchor.MiddleCenter, Color.Lerp(Theme.TextDim, Color.white, 0.2f), FontStyle.Bold, 6);
-            var v = At(chip.transform, 0, 0.06f, 1, 0.64f, value, Theme.FontLarge, TextAnchor.MiddleCenter, color, FontStyle.BoldAndItalic, 6);
+            edge.rectTransform.offsetMax = new Vector2(13, 0);
+            var c = At(chip.transform, 0, 0.6f, 1, 0.98f, caption, Theme.TextMin, TextAnchor.MiddleLeft, Theme.TextDim, FontStyle.Normal, 6);
+            c.rectTransform.offsetMin = new Vector2(22, c.rectTransform.offsetMin.y);
+            var v = At(chip.transform, 0, 0.06f, 1, 0.64f, value, Theme.FontLarge, TextAnchor.MiddleLeft, color, FontStyle.BoldAndItalic, 6);
+            v.rectTransform.offsetMin = new Vector2(22, v.rectTransform.offsetMin.y);
         }
 
         /// <summary>A plain dark panel anchored in its parent (sections inside a row).</summary>
         public static Image Plate(Transform parent, float x0, float y0, float x1, float y1, float alpha = 0.32f, float inset = 5)
         {
             var p = UiFactory.Decor("Plate", parent, new Color(0, 0, 0, alpha));
-            UiFactory.Chamfer(p, 2f);
+            UiFactory.Surface(p);
             UiFactory.Place(p.rectTransform, x0, y0, x1, y1, inset);
             return p;
         }

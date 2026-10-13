@@ -337,7 +337,7 @@ namespace MotoManager.App.UI
                 bool mine = _d.Find(e.RiderId) != null;
                 var rider = world != null ? world.GetRider(e.RiderId) : null;
                 var team = world != null ? world.GetTeam(e.TeamId) : null;
-                string name = Theme.Caps(rider != null ? rider.FullName : e.RiderId);
+                string name = rider != null ? rider.FullName : e.RiderId;
                 string gap;
                 if (race) gap = e.Status != ResultStatus.Finished ? Theme.BadText(Theme.Caps(Loc.T("result." + e.Status))) : e.Position == 1 ? MathX.FormatLapTime(e.TotalTime) : MathX.FormatGap(e.GapToWinner);
                 else gap = e.BestLap > 0 && pole > 0 && e.BestLap > pole ? "+" + (e.BestLap - pole).ToString("0.000", Loc.Culture) : "";

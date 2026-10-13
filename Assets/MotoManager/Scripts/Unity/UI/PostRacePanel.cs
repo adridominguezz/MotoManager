@@ -222,7 +222,7 @@ namespace MotoManager.App.UI
             mine.offsetMax = new Vector2(0, 72);
             var bg = UiFactory.Decor("Bg", mine, Theme.Alpha(Theme.Tile, 0.9f));
             UiFactory.Stretch(bg.rectTransform);
-            var cap = RaceUi.Label(mine, Theme.Caps(Loc.T("ux.race.yourRiders")), Theme.TextCaption, TextAnchor.MiddleLeft, Theme.TextDim, FontStyle.Bold);
+            var cap = RaceUi.Label(mine, Loc.T("ux.race.yourRiders"), Theme.TextCaption, TextAnchor.MiddleLeft, Theme.TextDim, FontStyle.Normal);
             UiFactory.Place(cap.rectTransform, 0, 0, 0.18f, 1);
             cap.rectTransform.offsetMin = new Vector2(16, 0);
             int n = Mathf.Max(1, players.Count);
@@ -266,7 +266,7 @@ namespace MotoManager.App.UI
             var last = RaceUi.Label(body, Theme.Caps(r.Entry.Rider.LastName), Theme.TextTitle, TextAnchor.MiddleCenter, Theme.Text, FontStyle.BoldAndItalic);
             UiFactory.Place(last.rectTransform, 0, 0.18f, 1, 0.31f);
             string teamName = team != null ? team.ShortName ?? team.Name : "";
-            var tn = RaceUi.Label(body, Theme.Caps(teamName), Theme.TextCaption, TextAnchor.MiddleCenter, Theme.TextDim, FontStyle.Bold);
+            var tn = RaceUi.Label(body, teamName, Theme.TextCaption, TextAnchor.MiddleCenter, Theme.TextDim, FontStyle.Normal);
             UiFactory.Place(tn.rectTransform, 0, 0.1f, 1, 0.18f);
             string time = e.Status != ResultStatus.Finished ? Loc.Or("result." + e.Status, e.Status.ToString()) :
                 e.Position == 1 ? MathX.FormatLapTime(e.TotalTime) : MathX.FormatGap(e.GapToWinner);

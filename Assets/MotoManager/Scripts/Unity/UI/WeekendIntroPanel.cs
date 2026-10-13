@@ -123,9 +123,9 @@ namespace MotoManager.App.UI
                 RaceUi.WeatherColor(wet, rain), FontStyle.BoldAndItalic);
             UiFactory.Place(word.rectTransform, 0, 0, 0.32f, 1);
             var chance = RaceUi.Label(body, "<b>" + (rain * 100).ToString("0") + "%</b> <size=" + Theme.TextCaption + ">" +
-                Theme.Dim(Theme.Caps(Loc.T("pre.rainShort"))) + "</size>", Theme.TextTitle, TextAnchor.MiddleLeft, Theme.Text);
+                Theme.Dim(Loc.T("pre.rainShort")) + "</size>", Theme.TextTitle, TextAnchor.MiddleLeft, Theme.Text);
             UiFactory.Place(chance.rectTransform, 0.32f, 0, 0.66f, 1);
-            var t = RaceUi.Label(body, Theme.Caps(Loc.T("ux.race.temps", model.AirTemp.ToString("0"), model.TrackTemp.ToString("0"))),
+            var t = RaceUi.Label(body, Loc.T("ux.race.temps", model.AirTemp.ToString("0"), model.TrackTemp.ToString("0")),
                 Theme.TextCaption, TextAnchor.MiddleRight, Theme.TextDim, FontStyle.Bold);
             UiFactory.Place(t.rectTransform, 0.66f, 0, 1, 1);
         }

@@ -699,8 +699,8 @@ namespace MotoManager.App.UI
             if (_replayBar == null)
             {
                 // Bottom right: the replay label, a lap back / forward and the way back to the results.
-                var bar = UiFactory.Panel("Replay", _root, Theme.Alpha(Theme.Panel, 0.92f));
-                UiFactory.Chamfer(bar, 3f);
+                var bar = UiFactory.Panel("Replay", _root, Theme.Alpha(Theme.Chrome, 0.88f));
+                UiFactory.Surface(bar);
                 _replayBar = bar.rectTransform;
                 _replayBar.anchorMin = new Vector2(0.6f, 0);
                 _replayBar.anchorMax = new Vector2(0.995f, 0);

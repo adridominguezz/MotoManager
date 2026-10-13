@@ -502,7 +502,8 @@ namespace MotoManager.App.UI
             var bg = UiFactory.Panel("Table", area, Theme.Card);
             bg.raycastTarget = false;
             UiFactory.Stretch(bg.rectTransform);
-            UiFactory.Gradient(bg, 1.04f, 0.96f);
+            UiFactory.Surface(bg);
+            bg.gameObject.AddComponent<Outline>().effectColor = Theme.Edge;
             var head = ListIn(TopStrip(bg.rectTransform, 56 + 40), 0);
             var band = Ui.Band(head, title, right, 56);
             if (info != null && info.Length > 0) Ui.InfoButton(band, infoTitle ?? title, info);

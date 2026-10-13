@@ -115,7 +115,7 @@ namespace MotoManager.App.UI
                 string gap = i == 0 ? "" : t > 0 && pole > 0 ? "+" + (t - pole).ToString("0.000", Loc.Culture) : "";
                 var row = Ui.ListRow(list, w, new[]
                 {
-                    (i + 1).ToString(), Theme.Caps(e.Rider.FullName), t > 0 ? MathX.FormatLapTime(t) : "-", Theme.Dim(gap)
+                    (i + 1).ToString(), e.Rider.FullName, t > 0 ? MathX.FormatLapTime(t) : "-", Theme.Dim(gap)
                 }, i, e.IsPlayer, null, 56);
                 RaceUi.TeamBar(row, w, RaceUi.TeamColor(e.Team != null ? e.Team.Colors.Primary : null));
             }
@@ -154,7 +154,7 @@ namespace MotoManager.App.UI
             UiFactory.Place(line.rectTransform, 0, 0.18f, 1, 0.42f);
             line.rectTransform.offsetMin = new Vector2(196, 0);
             int row = (grid - 1) / 3 + 1;
-            var rowText = RaceUi.Label(body, Theme.Caps(Loc.T("quali.row", row)), Theme.TextCaption, TextAnchor.MiddleLeft, Theme.TextDim, FontStyle.Bold);
+            var rowText = RaceUi.Label(body, Loc.T("quali.row", row), Theme.TextCaption, TextAnchor.MiddleLeft, Theme.TextDim, FontStyle.Normal);
             UiFactory.Place(rowText.rectTransform, 0, 0, 1, 0.18f);
             rowText.rectTransform.offsetMin = new Vector2(196, 0);
         }

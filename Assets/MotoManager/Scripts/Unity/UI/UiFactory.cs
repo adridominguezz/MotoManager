@@ -160,6 +160,8 @@ namespace MotoManager.App.UI
         /// <summary>Fastest lap as text.</summary>
         public const string FastestHex = "#B266FF";
 
+        /// <summary>Wet / rain and cold-tyre blue (same value as <see cref="InfoHex"/>).</summary>
+        public static readonly Color Wet = new Color32(143, 180, 212, 255);
         /// <summary>Neutral informative tone (cool steel) for mid-range data.</summary>
         public static readonly Color Info = new Color32(150, 170, 195, 255);
         /// <summary>Hairline between rows and sections (white 7%).</summary>

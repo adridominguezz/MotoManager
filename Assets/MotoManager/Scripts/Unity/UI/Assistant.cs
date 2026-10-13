@@ -60,33 +60,28 @@ namespace MotoManager.App.UI
             strip.rectTransform.anchorMax = new Vector2(0.6f, 1);
             strip.rectTransform.offsetMin = new Vector2(0, -4);
             strip.rectTransform.offsetMax = Vector2.zero;
-            UiFactory.Gradient(strip, Color.white, new Color(1, 1, 1, 0), true);
 
             // Avatar: initial on a dark badge with an accent rim, name and role.
             var avatar = UiFactory.Panel("Avatar", card.transform, Theme.Background);
-            UiFactory.Chamfer(avatar, 2f);
+            UiFactory.Surface(avatar);
             UiFactory.Place(avatar.rectTransform, 0.03f, 0.3f, 0.24f, 0.92f);
             avatar.raycastTarget = false;
-            UiFactory.Gradient(avatar, 1.2f, 0.9f);
             var ring = avatar.gameObject.AddComponent<Outline>();
             ring.effectColor = Theme.Alpha(Theme.Accent, 0.85f);
             ring.effectDistance = new Vector2(2, -2);
             var initial = UiFactory.Label("Initial", avatar.transform, Name.Substring(0, 1), Theme.FontTitle, TextAnchor.MiddleCenter, Theme.Text);
             UiFactory.Style(initial, FontStyle.BoldAndItalic);
-            UiFactory.DropShadow(initial, 0.5f, 3);
             UiFactory.Stretch(initial.rectTransform);
-            var who = UiFactory.Label("Who", card.transform, Theme.Caps(Loc.T("assistant.role")) + "\n<b>" + Name + "</b>", Theme.FontSmall, TextAnchor.MiddleCenter, Color.white);
+            var who = UiFactory.Label("Who", card.transform, Theme.Dim(Loc.T("assistant.role")) + "\n<b>" + Name + "</b>", Theme.FontSmall, TextAnchor.MiddleCenter, Theme.Text);
             who.supportRichText = true;
             Ui.Fit(who, Theme.FontSmall);
-            UiFactory.DropShadow(who, 0.4f, 1.5f);
             UiFactory.Place(who.rectTransform, 0.01f, 0.03f, 0.26f, 0.3f);
 
-            var bubble = UiFactory.Panel("Bubble", card.transform, new Color32(232, 234, 238, 255));
-            UiFactory.Chamfer(bubble, 2f);
+            var bubble = UiFactory.Panel("Bubble", card.transform, Theme.Plate);
+            UiFactory.Surface(bubble);
             UiFactory.Place(bubble.rectTransform, 0.28f, 0.06f, 0.97f, 0.94f);
             bubble.raycastTarget = false;
-            UiFactory.Gradient(bubble, 1.04f, 0.96f);
-            _text = UiFactory.Label("Text", bubble.transform, "", Theme.FontNormal - 2, TextAnchor.MiddleLeft, new Color32(16, 18, 22, 255));
+            _text = UiFactory.Label("Text", bubble.transform, "", Theme.FontNormal - 2, TextAnchor.MiddleLeft, Theme.Ink);
             _text.supportRichText = true;
             Ui.Fit(_text, Theme.FontNormal - 2);
             UiFactory.Place(_text.rectTransform, 0.05f, 0.05f, 0.95f, 0.95f);

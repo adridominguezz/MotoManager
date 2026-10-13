@@ -174,7 +174,8 @@ namespace MotoManager.App.UI
                 var bg = UiFactory.Decor("Bg", cell, now ? Theme.Alpha(Theme.Race, 0.18f) : Theme.Alpha(Theme.Tile, done ? 0.9f : 0.55f));
                 UiFactory.Surface(bg);
                 UiFactory.Stretch(bg.rectTransform);
-                var bar = UiFactory.Decor("State", cell, done ? Theme.Good : now ? Theme.Race : Theme.Alpha(Theme.Steel, 0.45f));
+                // State bar: race red marks the current session (live / next); done sessions keep a muted green.
+                var bar = UiFactory.Decor("State", cell, done ? Theme.Alpha(Theme.Good, 0.55f) : now ? Theme.Race : Theme.Alpha(Theme.Steel, 0.45f));
                 bar.rectTransform.anchorMin = new Vector2(0, 1);
                 bar.rectTransform.anchorMax = new Vector2(1, 1);
                 bar.rectTransform.offsetMin = new Vector2(0, -4);
@@ -187,17 +188,17 @@ namespace MotoManager.App.UI
                 label.rectTransform.offsetMin = new Vector2(12, 0);
                 label.rectTransform.offsetMax = new Vector2(-8, 0);
                 string state = done ? Theme.GoodText(Loc.T("ux.mm4c.state.done")) :
-                    now ? "<b>" + Theme.TimingText(Loc.T("ux.mm4c.state.now")) + "</b>" : "";
+                    now ? "<b><color=#" + ColorUtility.ToHtmlStringRGB(Theme.Text) + ">" + Loc.T("ux.mm4c.state.now") + "</color></b>" : "";
                 string day = DayText(st.Day);
                 string caption = day + (state.Length > 0 ? (day.Length > 0 ? "  ·  " : "") + state : "");
-                var cap = Ui.Label(cell, caption, Theme.TextMin, TextAnchor.MiddleLeft, Theme.TextDim, FontStyle.Bold);
+                var cap = Ui.Label(cell, caption, Theme.TextMin, TextAnchor.MiddleLeft, Theme.TextDim, FontStyle.Normal);
                 UiFactory.Place(cap.rectTransform, 0, 0.04f, 1, 0.46f);
                 cap.rectTransform.offsetMin = new Vector2(12, 0);
                 cap.rectTransform.offsetMax = new Vector2(-8, 0);
 
                 if (i < n - 1)
                 {
-                    var ch = UiIcons.Chevron(area, done ? Theme.Good : Theme.TextDim);
+                    var ch = UiIcons.Chevron(area, Theme.Alpha(Theme.TextDim, 0.7f));
                     ch.rectTransform.anchorMin = ch.rectTransform.anchorMax = new Vector2((float)(i + 1) / n, 0.5f);
                     ch.rectTransform.sizeDelta = new Vector2(18, 18);
                     ch.rectTransform.anchoredPosition = Vector2.zero;

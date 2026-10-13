@@ -259,13 +259,13 @@ namespace MotoManager.App.UI
                 {
                     var rider = world.GetRider(e.Id);
                     team = rider != null && rider.TeamId != null ? world.GetTeam(rider.TeamId) : null;
-                    name = Theme.Caps(rider != null ? rider.FullName : e.Id) +
+                    name = (rider != null ? rider.FullName : e.Id) +
                            (team != null ? "  <size=" + Theme.TextMin + ">" + Theme.Dim(team.ShortName ?? team.Name) + "</size>" : "");
                 }
                 else
                 {
                     team = world.GetTeam(e.Id);
-                    name = Theme.Caps(team != null ? team.Name : e.Id);
+                    name = (team != null ? team.Name : e.Id);
                 }
                 int before;
                 string move = posBefore.TryGetValue(e.Id, out before) && before > 0 ? Theme.Signed(before - (i + 1)) : Theme.Dim("-");
