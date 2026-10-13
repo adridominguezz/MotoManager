@@ -55,13 +55,18 @@ namespace MotoManager.App.UI
             RaceUi.Backdrop(root);
             RectTransform cta;
             string sessionName = Loc.Or("session." + session.Name, session.Name);
-            RaceUi.TopBar(root, Loc.Round(w.Round.Name), sessionName + " · " + Loc.T("pre.laps", laps), 440, out cta);
-            Ui.PrimaryCTA(cta, Loc.T("ux.race.start"), StartRace);
+            RaceUi.TopBar(root, Loc.Round(w.Round.Name), sessionName + " · " + Loc.T("pre.laps", laps), RaceUi.ActionW, out cta);
+            // The one primary: the slanted block of the header (it starts the session, so it keeps its own label).
+            RaceUi.ActionBlock(cta, Loc.T("ux.race.start"), StartRace);
+            float top = RaceUi.BarH + 8;
+            var steps = WeekendStepper.Steps(w);
+            WeekendStepper.Strip(root, top, steps, WeekendStepper.StepOf(steps, w.SessionIndex));
+            top += WeekendStepper.Height + 12;
 
-            const float infoH = 140;
-            var info = RaceUi.Content(root, RaceUi.BarH + 12, 0);
+            const float infoH = 132;
+            var info = RaceUi.Content(root, top, 0);
             info.anchorMin = new Vector2(0, 1);
-            info.offsetMin = new Vector2(RaceUi.Pad, -RaceUi.BarH - 12 - infoH);
+            info.offsetMin = new Vector2(RaceUi.Pad, -top - infoH);
             var cols = Ui.Columns12(info, 7, 5);
             TrackTile(cols[0], w);
             WeatherTile(cols[1], model, wet, rain);
@@ -69,7 +74,7 @@ namespace MotoManager.App.UI
             // One big card per rider, side by side.
             var players = new List<RaceEntry>();
             foreach (var e in w.Entries) if (e.IsPlayer) players.Add(e);
-            var cards = RaceUi.Content(root, RaceUi.BarH + 12 + infoH + Ui.Grid.Gap, RaceUi.Pad);
+            var cards = RaceUi.Content(root, top + infoH + Ui.Grid.Gap, RaceUi.Pad);
             if (players.Count == 0) return;
             var spans = new int[players.Count];
             for (int i = 0; i < spans.Length; i++) spans[i] = 12 / Mathf.Max(1, players.Count);

@@ -222,3 +222,60 @@ en la situación de un piloto del mercado y la fila de un campeón en Historial.
 
 **Sin cambios:** tablas de clasificación, fila propia fijada, EVOLUCIÓN, hojas de cifras de pilotos/fabricantes,
 vistas de Historial, cabecera y acción principal de la parte 1. Texto mínimo 18 (etiquetas con `Ui.Fit`).
+
+### Parte 3 — flujo del fin de semana con stepper de sesiones (hecho)
+
+Código: `RaceFlow.cs` (secuencia + `RaceUi.ActionBlock`), `WeekendStepper.cs` (nuevo), `WeekendIntroPanel.cs` (nuevo),
+`EventBalancePanel.cs` (nuevo: `EventRecap`, `EventStandingsPanel`, `EventBalancePanel`), `QualifyingPanel.cs`,
+`PreRaceDialog.cs`, `PostRacePanel.cs`, `EventSummaryPanel.cs`. Textos nuevos: `Resources/Localization/ux_{es,en}/mm4c.json`.
+Sin cambios en el núcleo, `RaceHud`, `RiderCommandPanel`, `ManagementShell`, `UiFactory` ni `Components`.
+
+**Secuencia real (lineal, una acción principal CONTINUAR por pantalla):**
+1. **Intro del evento** (MM4 §1.5 pasos 1 y 3; `WeekendIntroPanel`): tras `BeginNextEvent` y antes de simular
+   entrenamientos/clasificación. Nombre del GP y categoría en la barra; stepper; "RONDA X DE Y" (rondas del calendario
+   que corre la categoría, como `GameController.RoundsInSeason`); circuito, ciudad · país (código del dato), longitud y
+   vueltas de la carrera principal; **trazado** dibujado con `TrackGeometry` (la misma geometría de la pista 3D, ~160
+   puntos en un `LineGraphic`, salida marcada en rojo); previsión de la carrera principal con el mismo modelo que la
+   previa (`WeatherModel.ForecastRainProbability` con la pericia del ingeniero de datos). El "i" del circuito lista las
+   sesiones reales de cada paso. No hay paso de patrocinador del evento (MM4 paso 2): MotoManager no tiene ese sistema.
+2. Entrenamientos y clasificación se simulan en segundo plano (como antes) → **resultado de clasificación** (stepper con
+   CLASIFICACIÓN como paso actual).
+3. Por cada sprint/carrera: **previa** (neumáticos, sin cambios) → carrera en vivo (`RaceHud` sin tocar) → **resultados**
+   (`PostRacePanel`: podio como primera pestaña, clasificación, diferencias, pilotos; repetición).
+4. Tras la última sesión, el resto del evento se completa en segundo plano y siguen **Clasificación del campeonato**
+   actualizada (toggle PILOTOS / EQUIPOS; posición, piloto + equipo o equipo, movimiento respecto a antes del evento,
+   puntos de esta ronda y total; tu equipo resaltado) y **Balance económico** (saldo, resultado de la ronda y del año en
+   bloques; desglose por concepto del libro mayor con columnas "Esta ronda" / "Año en curso", ingresos y gastos por
+   separado, positivos en verde y negativos en rojo, total). CONTINUAR vuelve a gestión.
+5. **Simulación rápida** (`SimulateEvent` del shell, sin tocarlo): el resumen del evento (`EventSummaryPanel`) muestra el
+   stepper completo y su CONTINUAR encadena las mismas dos pantallas de cierre (se reutilizan, no se duplican).
+
+**Stepper (`WeekendStepper`)**: se construye con la lista real de sesiones de `CategoryRules.Weekend` (no está fijado en
+código): sesiones consecutivas del mismo tipo forman un paso (Libres 1 + Entrenamientos; Q1 + Q2), cada sprint y cada
+carrera es un paso propio, el warm-up se integra en el paso que le sigue. Etiquetas: ENTRENAMIENTOS, CLASIFICACIÓN,
+SPRINT (solo si la categoría lo tiene), CARRERA; con dos o más carreras se usa el nombre real de la sesión ("Carrera 1",
+"Carrera 2"). Estados: hecho (barra verde y "Hecho"), actual (fondo rojo suave, barra roja, "Ahora" en amarillo de
+cronometraje), próximo (atenuado). Se muestra en la intro, el resultado de clasificación, la previa, los resultados de
+cada sesión de tu fin de semana, el resumen de la simulación rápida y las dos pantallas de cierre. El post-carrera lo
+recibe de `RaceFlow.ActiveWeekend` (sin cambiar la firma que usa `RaceHud`); fuera del flujo (p. ej. herramientas de
+depuración) no se dibuja.
+
+**Días de cada paso (decisión documentada):** las reglas no guardan el día de cada sesión, solo la fecha del calendario
+(día de carrera). Se derivan con el patrón viernes–domingo habitual: entrenamientos dos días antes, clasificación el día
+anterior, la última carrera el día de carrera; con dos o más carreras/sprints la primera es el día anterior (sprint de
+MotoGP, carrera 1 de WorldSBK) y el resto el día de carrera. Se explica en el "i" del circuito.
+
+**Balance (datos reales, solo lectura):** `EventRecap.Capture` (tras `BeginNextEvent`) guarda `Accounts.TotalsFor(org,
+temporada, equipo)` (P&L por concepto, los mismos totales que la página Finanzas), la caja y las clasificaciones;
+`Finish` (tras `CompleteEvent`) calcula "esta ronda" = totales después − antes y "año en curso" = totales después. Solo se
+listan conceptos con dinero esta temporada. El núcleo no tiene consulta por ronda: se calcula en la interfaz. Se incluye
+todo lo anotado durante el evento (premios, primas, patrocinio, tienda, viajes, reparaciones, sueldos que vencen...).
+
+**Acción principal:** `RaceUi.ActionBlock`, bloque rojo inclinado a toda la altura de la barra superior, a la derecha,
+igual que la acción de la cabecera de gestión (parte 1). Dice CONTINUAR en todas las pantallas salvo la previa, donde
+inicia la sesión y conserva su etiqueta "SALIR A PISTA" (equivale al "CARRERA" de MM4 antes de un evento). En
+resultados la REPETICIÓN pasa a la barra superior como secundario, junto al bloque; desaparecen las barras inferiores.
+
+**Sin cambios:** simulación, elección de neumáticos, clasificación, HUD de carrera, repetición, simulación rápida,
+resumen de temporada, sonidos (los botones siguen usando `UiFactory.Button`, que reproduce el clic). Sin iconos nuevos
+(chevron existente entre pasos); texto mínimo 18.

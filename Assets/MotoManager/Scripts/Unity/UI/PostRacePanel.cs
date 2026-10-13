@@ -36,8 +36,34 @@ namespace MotoManager.App.UI
         {
             Ui.CloseSheet();
             UiFactory.Clear(rt);
-            RectTransform none;
-            RaceUi.TopBar(rt, Loc.T("post.title", Txt(sim.Config.SessionName)), null, 0, out none);
+            // Top right: the replay (secondary) and the one way on, CONTINUAR, as the header's slanted block.
+            const float replayW = 260;
+            RectTransform slot;
+            RaceUi.TopBar(rt, Loc.T("post.title", Txt(sim.Config.SessionName)), null, RaceUi.ActionW + replayW + Ui.Grid.Gap, out slot);
+            var contArea = UiFactory.Rect("Continue", slot);
+            contArea.anchorMin = new Vector2(1, 0);
+            contArea.anchorMax = new Vector2(1, 1);
+            contArea.pivot = new Vector2(1, 0.5f);
+            contArea.offsetMin = new Vector2(-RaceUi.ActionW, 0);
+            contArea.offsetMax = Vector2.zero;
+            RaceUi.ActionBlock(contArea, Loc.T("post.continue"), () => onContinue());
+            var replayArea = UiFactory.Rect("Replay", slot);
+            replayArea.anchorMin = new Vector2(0, 0);
+            replayArea.anchorMax = new Vector2(0, 1);
+            replayArea.pivot = new Vector2(0, 0.5f);
+            replayArea.offsetMin = new Vector2(0, 8);
+            replayArea.offsetMax = new Vector2(replayW, -8);
+            Ui.Secondary(replayArea, Loc.T("post.replay"), () => onReplay());
+
+            // The weekend stepper when this is a session of the player's weekend (race flow).
+            float top = RaceUi.BarH + 8;
+            var weekend = RaceFlow.ActiveWeekend;
+            if (weekend != null && weekend.CurrentSession != null && weekend.CurrentSession.Name == sim.Config.SessionName)
+            {
+                var steps = WeekendStepper.Steps(weekend);
+                WeekendStepper.Strip(rt, top, steps, WeekendStepper.StepOf(steps, weekend.SessionIndex));
+                top += WeekendStepper.Height + 8;
+            }
 
             var players = new List<RiderRaceState>();
             foreach (var r in sim.Riders) if (r.Entry.IsPlayer) players.Add(r);
@@ -47,16 +73,16 @@ namespace MotoManager.App.UI
             else foreach (var r in players) labels.Add(r.Entry.Rider.ShortName);
             if (_tab >= labels.Count) _tab = 0;
 
-            var tabs = RaceUi.Content(rt, RaceUi.BarH + 8, 0);
+            var tabs = RaceUi.Content(rt, top, 0);
             tabs.anchorMin = new Vector2(0, 1);
-            tabs.offsetMin = new Vector2(RaceUi.Pad, -RaceUi.BarH - 8 - Ui.Grid.Hit);
+            tabs.offsetMin = new Vector2(RaceUi.Pad, -top - Ui.Grid.Hit);
             var tabList = tabs.gameObject.AddComponent<VerticalLayoutGroup>();
             tabList.childControlHeight = true;
             tabList.childControlWidth = true;
             tabList.childForceExpandWidth = true;
             Ui.Segmented(tabs, labels, _tab, i => { _tab = i; Render(sim, rt, onReplay, onContinue); });
 
-            var area = RaceUi.Content(rt, RaceUi.BarH + 8 + Ui.Grid.Hit + 8, RaceUi.BarH + 16);
+            var area = RaceUi.Content(rt, top + Ui.Grid.Hit + 8, RaceUi.Pad);
             var points = PointsTable(sim);
             switch (_tab)
             {
@@ -87,13 +113,6 @@ namespace MotoManager.App.UI
                     }
                     break;
             }
-
-            // Bottom right: the replay (secondary) and the one way on.
-            var bottom = RaceUi.BottomBar(rt);
-            var replayArea = RaceUi.RightSlot(bottom, 300, 380 + Ui.Grid.Gap, 4);
-            Ui.Secondary(replayArea, Loc.T("post.replay"), () => onReplay());
-            var contArea = RaceUi.RightSlot(bottom, 380, 0, 0);
-            Ui.PrimaryCTA(contArea, Loc.T("post.continue"), () => onContinue());
         }
 
         /// <summary>Series of the gap to the leader lap by lap (podium and the player's riders); null with too few laps.</summary>

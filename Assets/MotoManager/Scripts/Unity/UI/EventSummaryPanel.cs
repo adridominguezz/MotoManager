@@ -40,6 +40,10 @@ namespace MotoManager.App.UI
         public List<ChartSeries> Gaps;
         public int GapLaps;
         public double CashBefore, CashAfter;
+        /// <summary>Championship and ledger around the event, for the closing screens (standings, balance).</summary>
+        public EventRecap Recap;
+        /// <summary>The weekend's steps (stepper), all done once the digest is shown.</summary>
+        internal List<WeekendStep> Steps = new List<WeekendStep>();
 
         /// <summary>
         /// Runs the player's weekend session by session (same steps as a headless weekend), keeping each race
@@ -54,6 +58,8 @@ namespace MotoManager.App.UI
                 EventName = Loc.Round(w.Round.Name), CircuitName = w.Circuit != null ? w.Circuit.Name : "",
                 CategoryName = game.Db.GetCategory(w.CategoryId).Name, TeamName = team != null ? team.Name : ""
             };
+            d.Recap = EventRecap.Capture(game, w);
+            d.Steps = WeekendStepper.Steps(w);
             ChampionshipState champ;
             world.Championships.TryGetValue(w.CategoryId, out champ);
             if (team != null)
@@ -107,6 +113,7 @@ namespace MotoManager.App.UI
         {
             var world = game.World;
             var team = world.PlayerTeam;
+            if (Recap != null) Recap.Finish(game);
             ChampionshipState champ;
             world.Championships.TryGetValue(categoryId, out champ);
             if (team == null || champ == null) return;
@@ -161,25 +168,30 @@ namespace MotoManager.App.UI
         private void Build(RectTransform root)
         {
             RaceUi.Backdrop(root);
-            RectTransform none;
-            RaceUi.TopBar(root, Loc.T("summary.title", _d.EventName), _d.CategoryName + " · " + _d.CircuitName, 0, out none);
+            RectTransform cta;
+            RaceUi.TopBar(root, Loc.T("summary.title", _d.EventName), _d.CategoryName + " · " + _d.CircuitName, RaceUi.ActionW, out cta);
+            RaceUi.ActionBlock(cta, Loc.T("post.continue"), Close);
             foreach (var ss in _d.Sessions)
                 if (ss.Type != SessionType.Practice && ss.Type != SessionType.WarmUp) _sessions.Add(ss);
 
-            _tabs = RaceUi.Content(root, RaceUi.BarH + 8, 0);
-            _tabs.anchorMin = new Vector2(0, 1);
-            _tabs.offsetMin = new Vector2(RaceUi.Pad, -RaceUi.BarH - 8 - Ui.Grid.Hit);
+            // The whole weekend was simulated: every step done.
+            float top = RaceUi.BarH + 8;
+            WeekendStepper.Strip(root, top, _d.Steps, _d.Steps.Count);
+            top += WeekendStepper.Height + 8;
 
-            _area = RaceUi.Content(root, RaceUi.BarH + 8 + Ui.Grid.Hit + 8, RaceUi.BarH + 16);
-            var bottom = RaceUi.BottomBar(root);
-            Ui.PrimaryCTA(RaceUi.RightSlot(bottom, 380, 0, 0), Loc.T("post.continue"), Close);
+            _tabs = RaceUi.Content(root, top, 0);
+            _tabs.anchorMin = new Vector2(0, 1);
+            _tabs.offsetMin = new Vector2(RaceUi.Pad, -top - Ui.Grid.Hit);
+
+            _area = RaceUi.Content(root, top + Ui.Grid.Hit + 8, RaceUi.Pad);
             Render();
         }
 
+        /// <summary>CONTINUAR: the updated championship and the event balance (shared with the watched race), then back.</summary>
         private void Close()
         {
             Destroy(gameObject);
-            if (_done != null) _done();
+            EventRecap.ShowClosing(_d.Recap, _done);
         }
 
         /// <summary>Tab labels: the team, each session (not practice), the gaps chart.</summary>

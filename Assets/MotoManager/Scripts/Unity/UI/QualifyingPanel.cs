@@ -31,8 +31,13 @@ namespace MotoManager.App.UI
         {
             RaceUi.Backdrop(root);
             RectTransform cta;
-            RaceUi.TopBar(root, Loc.T("quali.title"), eventName, 400, out cta);
-            Ui.PrimaryCTA(cta, Loc.T("ux.race.toRace"), Continue);
+            RaceUi.TopBar(root, Loc.T("quali.title"), eventName, RaceUi.ActionW, out cta);
+            RaceUi.ActionBlock(cta, Loc.T("post.continue"), Continue);
+            // Where we are in the weekend: qualifying (its result) is the current step.
+            float top = RaceUi.BarH + 8;
+            var steps = WeekendStepper.Steps(weekend);
+            WeekendStepper.Strip(root, top, steps, WeekendStepper.QualifyingStep(steps, weekend.SessionIndex));
+            top += WeekendStepper.Height + 12;
 
             // Best qualifying lap of every rider (all qualifying sessions: Q1/Q2, Superpole...).
             var best = new Dictionary<string, double>();
@@ -51,7 +56,7 @@ namespace MotoManager.App.UI
             var order = weekend.QualifyingOrder;
             double pole = order.Count > 0 && best.ContainsKey(order[0]) ? best[order[0]] : 0;
 
-            var content = RaceUi.Content(root, RaceUi.BarH + 12, RaceUi.Pad);
+            var content = RaceUi.Content(root, top, RaceUi.Pad);
             var cols = Ui.Columns12(content, 5, 7);
 
             // Left: the player's riders, one big card each.
