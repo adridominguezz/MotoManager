@@ -100,6 +100,38 @@ out skel qt;
 2. Pulsa **Ejecutar** y comprueba en el mapa que aparecen los 17 circuitos (si alguno sale vacío, acerca el mapa a ese
    circuito, busca el trazado y ajusta su coordenada en la consulta). Es normal que salgan también pit lanes, karts y
    variantes de trazado: el importador elegirá el anillo cerrado que más se acerque a `lengthM`.
+   **Si sale "Dispatcher_Client::request_read_and_idx::timeout" (servidor ocupado):** no es un error de la consulta.
+   Haz dos cosas: (a) en overpass-turbo, *Ajustes → General → Servidor*, elige otro servidor (por ejemplo
+   `https://overpass.kumi.systems/api/` o `https://maps.mail.ru/osm/tools/overpass/api/`); (b) lanza la consulta en
+   **tres tandas** más pequeñas (las de abajo), exportando cada una a su archivo `osm_raceways_1.geojson`,
+   `osm_raceways_2.geojson` y `osm_raceways_3.geojson` en `Tools/circuits/`.
+
+   Tanda 1:
+   ```
+   [out:json][timeout:90];
+   ( way["highway"="raceway"](around:2000,14.9580,103.0850);  way["highway"="raceway"](around:2000,-16.7180,-49.1940);
+     way["highway"="raceway"](around:2000,36.7086,-6.0340);   way["highway"="raceway"](around:2000,47.9560,0.2080);
+     way["highway"="raceway"](around:2000,47.0130,18.2000);   way["highway"="raceway"](around:2000,49.2030,16.4450); );
+   out body; >; out skel qt;
+   ```
+   Tanda 2:
+   ```
+   [out:json][timeout:90];
+   ( way["highway"="raceway"](around:2000,52.9620,6.5240);    way["highway"="raceway"](around:2000,50.7915,12.6885);
+     way["highway"="raceway"](around:2000,41.0780,-0.2030);   way["highway"="raceway"](around:2000,43.9615,12.6840);
+     way["highway"="raceway"](around:2000,36.5330,140.2270);  way["highway"="raceway"](around:2000,-8.8960,116.3050); );
+   out body; >; out skel qt;
+   ```
+   Tanda 3:
+   ```
+   [out:json][timeout:90];
+   ( way["highway"="raceway"](around:2000,-38.5020,145.2340); way["highway"="raceway"](around:2000,39.4880,-0.6290);
+     way["highway"="raceway"](around:2000,50.5190,13.6070);   way["highway"="raceway"](around:2000,52.8300,-1.3800);
+     way["highway"="raceway"](around:2000,45.0760,10.3320); );
+   out body; >; out skel qt;
+   ```
+   Si una tanda también falla, prueba de nuevo pasados unos minutos o lanza los circuitos de uno en uno.
+
 3. **Exportar → GeoJSON** (descargar) y guarda el archivo en el repositorio como
    **`Tools/circuits/osm_raceways.geojson`** (crea la carpeta si no existe).
 4. Pide la importación (siguiente pasada): unir los tramos de cada circuito en un anillo, elegir el trazado de MotoGP/SBK,
