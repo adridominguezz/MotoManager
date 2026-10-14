@@ -41,11 +41,4 @@ namespace MotoManager.App.UI.Screens
         public override bool HiddenTab { get { return true; } }
         public override void Build(RectTransform content) { }
     }
-
-    /// <summary>The team: its history and statistics (home's details button).</summary>
-    public class TeamDetailPage : ScreenBase
-    {
-        public override string Title { get { return Loc.T("nav.team"); } }
-        public override void Build(RectTransform content) { }
-    }
 }
