@@ -46,6 +46,10 @@ namespace MotoManager.App.UI.Screens
         public string TitleKey;
         public readonly List<ScreenBase> Pages = new List<ScreenBase>();
         public int Current;
+        /// <summary>False for sections reached only from inside pages (finance from the budget, team details, standings...).</summary>
+        public bool InRail = true;
+        /// <summary>False when the section's pages are reached with buttons (hub page and its sub-pages), not tabs.</summary>
+        public bool Tabs = true;
     }
 
     /// <summary>
@@ -120,7 +124,12 @@ namespace MotoManager.App.UI.Screens
 
         private Section Add(string titleKey, params ScreenBase[] pages)
         {
-            var s = new Section { TitleKey = titleKey };
+            return Add(titleKey, true, true, pages);
+        }
+
+        private Section Add(string titleKey, bool inRail, bool tabs, params ScreenBase[] pages)
+        {
+            var s = new Section { TitleKey = titleKey, InRail = inRail, Tabs = tabs };
             foreach (var p in pages)
             {
                 p.Attach(this);
@@ -136,6 +145,8 @@ namespace MotoManager.App.UI.Screens
             switch (key)
             {
                 case "nav.home": return UiIcons.Home;
+                case "nav.riders": return UiIcons.Person;
+                case "nav.staff": return UiIcons.Team;
                 case "nav.team": return UiIcons.Team;
                 case "nav.bike": return UiIcons.Development;
                 case "nav.finance": return UiIcons.Finance;
@@ -196,15 +207,31 @@ namespace MotoManager.App.UI.Screens
             _toast.rectTransform.offsetMax = new Vector2(-16, -4);
             _toastBg.gameObject.SetActive(false);
 
+            // The rail (icons only): home, development, riders, staff and the manager's career. Each of the first
+            // four is a hub page whose sub-pages open with buttons (back returns to the hub).
             Add("nav.home", new HubScreen());
-            Add("nav.team", new RidersPage(), new StaffPage(), new ManagerPage());
-            Add("nav.bike", new BikeScreen(), new ProjectsPage(), new FacilitiesPage());
-            Add("nav.finance", new FinanceScreen(), new SponsorsPage(), new ShopScreen());
-            Add("nav.market", new MarketScreen());
-            Add("nav.competition", new StandingsScreen(), new CalendarScreen(), new HistoryScreen());
+            Add("nav.bike", true, false, new DevelopmentPage(), new ProjectsPage(), new FacilitiesPage());
+            Add("nav.riders", true, false, new RidersHubPage(), new RiderProfilePage(), new RidersPage());
+            Add("nav.staff", true, false, new StaffHubPage(), new StaffGroupPage(), new StaffPage());
             Add("nav.career", new CareerSummaryPage(), new CareerOffersPage(), new CareerOrgPage(), new TeamSetupPage(), new CareerFoundPage(), new LiveryEditorPage());
+            // Reached from inside pages: finance (the budget block), the team (home's details button), the
+            // championship (home's standings and calendar) and the market (the riders' and staff searches).
+            Add("nav.finance", false, true, new FinanceScreen(), new SponsorsPage(), new ShopScreen());
+            Add("nav.team", false, true, new TeamDetailPage(), new ManagerPage());
+            Add("nav.competition", false, true, new StandingsScreen(), new CalendarScreen(), new HistoryScreen());
+            Add("nav.market", false, true, new MarketScreen());
 
-            foreach (var s in _sections) BuildNavCell(nav, s);
+            foreach (var s in _sections)
+            {
+                if (s.InRail) BuildNavCell(nav, s);
+                else
+                {
+                    _navButtons.Add(null);
+                    _navLabels.Add(null);
+                    _navIcons.Add(null);
+                    _navBars.Add(null);
+                }
+            }
             Show(_sections[0]);
             if (TeamSetupPage.OpenOnStart)
             {
@@ -332,6 +359,7 @@ namespace MotoManager.App.UI.Screens
             var b = UiFactory.Button("Nav", nav, "", () =>
             {
                 _history.Clear();
+                section.Current = 0;
                 Show(section);
             }, Color.clear, Theme.TextMin);
             b.image.sprite = null;
@@ -339,25 +367,15 @@ namespace MotoManager.App.UI.Screens
             le.flexibleHeight = 1;
             le.minHeight = 80;
             _navButtons.Add(b.image);
+            // Icon only (no caption): a 60-unit pictogram centred in the cell.
             var icon = UiIcons.Icon(b.transform, IconOf(s.TitleKey), Theme.TextDim);
-            icon.rectTransform.anchorMin = icon.rectTransform.anchorMax = new Vector2(0.5f, 1);
-            icon.rectTransform.pivot = new Vector2(0.5f, 1);
-            icon.rectTransform.anchoredPosition = new Vector2(0, -6);
-            icon.rectTransform.sizeDelta = new Vector2(48, 48);
+            icon.rectTransform.anchorMin = icon.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            icon.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+            icon.rectTransform.anchoredPosition = Vector2.zero;
+            icon.rectTransform.sizeDelta = new Vector2(60, 60);
             _navIcons.Add(icon);
             var label = b.GetComponentInChildren<Text>();
-            label.text = Theme.Caps(Loc.Or("ux.rail." + s.TitleKey.Substring(4), Loc.T(s.TitleKey)));
-            label.alignment = TextAnchor.LowerCenter;
-            label.resizeTextForBestFit = false;
-            label.fontSize = Theme.TextMin;
-            label.lineSpacing = 0.85f;
-            label.verticalOverflow = VerticalWrapMode.Overflow;
-            var lrt = label.rectTransform;
-            lrt.anchorMin = new Vector2(0, 0);
-            lrt.anchorMax = new Vector2(1, 0);
-            lrt.pivot = new Vector2(0.5f, 0);
-            lrt.offsetMin = new Vector2(2, 6);
-            lrt.offsetMax = new Vector2(-2, 46);
+            label.text = "";
             _navLabels.Add(label);
             _navBars.Add(UiFactory.SideStripe(b.transform, Theme.Accent, 6, 0));
         }
@@ -369,9 +387,12 @@ namespace MotoManager.App.UI.Screens
             _section = section;
             var accent = Theme.SectionAccent(section.TitleKey);
             Theme.SetAccent(accent);
+            // A section outside the rail lights the rail entry it was opened from (or none).
+            var lit = section.InRail ? section : RailOwner();
             for (int i = 0; i < _sections.Count; i++)
             {
-                bool on = _sections[i] == section;
+                if (_navButtons[i] == null) continue;
+                bool on = _sections[i] == lit;
                 _navButtons[i].color = on ? Theme.PanelLight : Color.clear;
                 _navLabels[i].color = on ? Theme.Text : Color.Lerp(Theme.TextDim, Theme.Text, 0.1f);
                 UiFactory.Style(_navLabels[i], FontStyle.Bold);
@@ -382,6 +403,22 @@ namespace MotoManager.App.UI.Screens
             _headerLine.color = accent;
             for (int i = 0; i < _livery.Count; i++) _livery[i].color = Theme.Alpha(accent, i == 0 ? 0.05f : 0.08f);
             Refresh();
+        }
+
+        /// <summary>The rail section the current trip started from (the last rail section in the history), or null.</summary>
+        private Section RailOwner()
+        {
+            for (int i = _history.Count - 1; i >= 0; i--)
+                if (_history[i].Key.InRail) return _history[i].Key;
+            return null;
+        }
+
+        /// <summary>Straight to the home page (the header's INICIO block), forgetting the pages opened on the way.</summary>
+        public void Home()
+        {
+            _history.Clear();
+            _sections[0].Current = 0;
+            Show(_sections[0]);
         }
 
         /// <summary>Back to the page this one was opened from, or to the hub.</summary>
@@ -601,7 +638,7 @@ namespace MotoManager.App.UI.Screens
             var visible = new List<int>();
             for (int i = 0; i < _section.Pages.Count; i++)
                 if (!_section.Pages[i].HiddenTab) visible.Add(i);
-            bool tabs = visible.Count > 1;
+            bool tabs = _section.Tabs && visible.Count > 1;
             _tabs.gameObject.SetActive(tabs);
             if (tabs) BuildTabs(visible);
             _content.anchorMin = Vector2.zero;
@@ -648,32 +685,21 @@ namespace MotoManager.App.UI.Screens
         private void BuildTopBarContent(WorldState world, Team team)
         {
             bool hub = _section == _sections[0];
-            _back.gameObject.SetActive(!hub);
-            _header.text = Theme.Caps(hub ? (team != null ? team.Name : Loc.T("shell.noTeam")) : CurrentPage.Title);
-            _subHeader.text = Theme.Caps(world.CurrentDate.ToString("d MMM yyyy", Loc.Culture));
+            // Back only on sub-pages (opened from another page); the rail's hub pages need none.
+            bool sub = _history.Count > 0 || !_section.InRail || _section.Current != 0;
+            _back.gameObject.SetActive(sub);
+            // The team's name, always; the page and the date under it.
+            _header.text = Theme.Caps(team != null ? team.Name : Loc.T("shell.noTeam"));
+            _subHeader.text = Theme.Caps((hub ? "" : CurrentPage.Title + "  ·  ") + world.CurrentDate.ToString("d MMM yyyy", Loc.Culture));
 
             UiFactory.Clear(_right);
             BuildPills(world, team);
-            var inbox = InboxItems();
-            if (team != null || inbox.Count > 0)
-            {
-                var ib = TopIcon(Loc.T("ux.shell.inboxShort"), ShowInbox);
-                ib.gameObject.name = "Inbox";
-                if (inbox.Count > 0)
-                {
-                    var badge = Ui.Badge(ib.transform, inbox.Count, Theme.Bad);
-                    badge.rectTransform.anchorMin = badge.rectTransform.anchorMax = new Vector2(1, 1);
-                    badge.rectTransform.pivot = new Vector2(1, 1);
-                    badge.rectTransform.anchoredPosition = new Vector2(4, 2);
-                    badge.rectTransform.sizeDelta = new Vector2(34, 26);
-                }
-            }
-            var news = TopIcon(Loc.T("ux.shell.newsShort"), ShowNews);
-            news.gameObject.name = "News";
-            BuildAction(!PageHasPrimary());
+            // Home: the race action; any other page: the way home.
+            if (hub) BuildAction(!PageHasPrimary());
+            else BuildHomeAction();
             LayoutRebuilder.ForceRebuildLayoutImmediate(_right);
             float rightWidth = LayoutUtility.GetPreferredWidth(_right) + ActionWidth + 16;
-            _info.offsetMin = new Vector2(hub ? Gutter : BackWidth - 12 + Gutter, 0);
+            _info.offsetMin = new Vector2(sub ? BackWidth - 12 + Gutter : Gutter, 0);
             _info.offsetMax = new Vector2(-rightWidth - 16, 0);
         }
 
@@ -699,6 +725,24 @@ namespace MotoManager.App.UI.Screens
             ch.rectTransform.anchorMin = ch.rectTransform.anchorMax = new Vector2(1, 0.5f);
             ch.rectTransform.sizeDelta = new Vector2(22, 22);
             ch.rectTransform.anchoredPosition = new Vector2(-30, 0);
+        }
+
+        /// <summary>The header's INICIO block off the home page: a dark slanted block with the home pictogram.</summary>
+        private void BuildHomeAction()
+        {
+            UiFactory.Clear(_action);
+            var b = UiFactory.Button("Home", _action, Theme.Caps(Loc.T("nav.home")), Home, Theme.PanelLight, 28);
+            UiFactory.Slant(b.image, BlockSlant);
+            UiFactory.Stretch((RectTransform)b.transform);
+            var t = b.GetComponentInChildren<Text>();
+            t.color = Theme.Text;
+            Ui.Fit(t, 28);
+            t.rectTransform.offsetMin = new Vector2(84, 2);
+            t.rectTransform.offsetMax = new Vector2(-28, -2);
+            var icon = UiIcons.Icon(b.transform, UiIcons.Home, Theme.Text);
+            icon.rectTransform.anchorMin = icon.rectTransform.anchorMax = new Vector2(0, 0.5f);
+            icon.rectTransform.sizeDelta = new Vector2(36, 36);
+            icon.rectTransform.anchoredPosition = new Vector2(56, 0);
         }
 
         /// <summary>
@@ -757,18 +801,8 @@ namespace MotoManager.App.UI.Screens
                 if (me != null) Pill(Loc.T("ux.mm4.rep"), me.Reputation.ToString("0"), () => Show<ManagerPage>(), RepWidth);
                 return;
             }
-            ChampionshipState champ;
-            int pos = 0;
-            double pts = 0;
-            if (world.Championships.TryGetValue(team.CategoryId, out champ))
-            {
-                var table = champ.SortedTeams();
-                for (int i = 0; i < table.Count; i++)
-                    if (table[i].Id == team.Id) { pos = i + 1; pts = table[i].Points; }
-            }
-            Pill(Loc.T("home.tile.cash"), Theme.Money(Accounts.Cash(world, team)), () => Show<FinanceScreen>());
-            if (me != null) Pill(Loc.T("ux.mm4.rep"), me.Reputation.ToString("0"), () => Show<ManagerPage>(), RepWidth);
-            Pill(Loc.T("home.tile.championship"), Theme.Pos(pos) + " · " + Loc.T("home.tile.points", pts.ToString("0")), () => Show<StandingsScreen>());
+            // Only the budget: tapping it opens finance (sponsors and the shop are its tabs).
+            Pill(Loc.Or("ux.shell.budget", "Presupuesto"), Theme.Money(Accounts.Cash(world, team)), () => Show<FinanceScreen>(), PillWidth + 40);
         }
 
         private void Pill(string caption, string value, System.Action onTap, float width = PillWidth)
