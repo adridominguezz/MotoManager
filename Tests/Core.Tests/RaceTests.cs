@@ -293,8 +293,10 @@ namespace MotoManager.Tests
             while (!sim.IsFinished && sim.Time < 900)
             {
                 sim.Step();
+                // Teammates on the same slicks get the same call, so a crash of the first rider does not hide the warning.
                 if (sim.Tick % 25 == 0)
-                    foreach (var m in RaceEngineer.Advise(sim, player, 60)) seen.Add(m.Key.Split(':')[1]);
+                    foreach (var r in sim.Riders.Where(x => x.Entry.Team == player.Entry.Team))
+                        foreach (var m in RaceEngineer.Advise(sim, r, 60)) seen.Add(m.Key.Split(':')[1]);
             }
             _out.WriteLine(string.Join(", ", seen));
             Assert.Contains("wet", seen);

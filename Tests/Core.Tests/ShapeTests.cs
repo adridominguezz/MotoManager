@@ -88,14 +88,35 @@ namespace MotoManager.Tests
             Assert.True(count >= 10, "real shapes: " + count);
         }
 
+        // Every circuit has a real centre line: drawing it again (as lat/lon map nodes) must give an equivalent circuit.
         [Theory]
-        [InlineData("mugello", false)]
+        [InlineData("aragon", true)]
+        [InlineData("assen", true)]
+        [InlineData("balaton", true)]
+        [InlineData("brno", true)]
+        [InlineData("buriram", true)]
+        [InlineData("catalunya", true)]
+        [InlineData("cota", true)]
+        [InlineData("cremona", true)]
+        [InlineData("donington", true)]
+        [InlineData("estoril", true)]
+        [InlineData("goiania", true)]
         [InlineData("jerez", true)]
-        // Phillip Island's and Assen's hand-authored layouts miss closing by ~2.2 km, so their drawings must bend corners as well as
-        // straights (to keep the visual speed even) and cannot round-trip exactly; Valencia covers the lat/lon path.
-        [InlineData("valencia", true)]
+        [InlineData("lemans", true)]
+        [InlineData("lusail", true)]
+        [InlineData("magnycours", true)]
+        [InlineData("mandalika", true)]
+        [InlineData("misano", true)]
+        [InlineData("most", true)]
         [InlineData("motegi", true)]
-        [InlineData("catalunya", false)]
+        [InlineData("mugello", true)]
+        [InlineData("phillipisland", true)]
+        [InlineData("portimao", true)]
+        [InlineData("redbullring", true)]
+        [InlineData("sachsenring", true)]
+        [InlineData("sepang", true)]
+        [InlineData("silverstone", true)]
+        [InlineData("valencia", true)]
         public void ShapeRoundTripGivesEquivalentCircuit(string id, bool latLon)
         {
             var original = TestData.Db.Circuits[id];
@@ -107,7 +128,9 @@ namespace MotoManager.Tests
             double lapA = RefLap(original), lapB = RefLap(derived);
             _out.WriteLine($"{id}: corners {a.CornerCount} -> {b.CornerCount}, turn {turn:0}, closure {gb.ClosureError:0.0} m, lap {lapA:0.00} -> {lapB:0.00}");
             _out.WriteLine(ShapeConverter.ToLayout(derived));
-            Assert.InRange(Math.Abs(Math.Abs(turn) - 360), 0, 15);
+            // Real centre lines keep their gentle bends inside the straights, so the corners alone turn a bit less than 360.
+            Assert.InRange(Math.Abs(Math.Abs(turn) - 360), 0, 50);
+            Assert.InRange(b.CornerCount - a.CornerCount, -1, 1);
             Assert.True(gb.ClosureError < 0.04 * b.Length, "derived layout should close by itself: " + gb.ClosureError);
             Assert.InRange(lapB / lapA, 0.96, 1.04);
         }

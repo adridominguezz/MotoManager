@@ -17,7 +17,7 @@ coloca cada segmento simulado sobre su tramo real, así que las motos se inclina
 no tiene MotoGP): `dotnet run -c Release --project Tests/SimRunner -- calibrate motogp_2026 <id>` (ojo: reescribe el
 JSON con sangría; también vale ajustar el número a mano y comprobar con `laps`).
 
-## Circuitos con trazado real (10)
+## Circuitos con trazado de F1 (10)
 
 | id | circuito | fuente | puntos | longitud línea / oficial | radiusScale |
 |---|---|---|---|---|---|
@@ -63,18 +63,45 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## Cómo conseguir los 17 circuitos que faltan (OpenStreetMap)
+## Circuitos con trazado de OpenStreetMap (17)
 
-Siguen con `layout` aproximado: buriram, goiania, jerez, lemans, balaton, brno, assen, sachsenring, aragon, misano,
-motegi, mandalika, phillipisland, valencia, most, donington, cremona.
+Los 27 circuitos usan ya una línea real; ya no queda ningún `layout` escrito a mano en los datos (el DSL sigue
+funcionando para circuitos nuevos). Los 17 de abajo salen de OpenStreetMap: vías `highway=raceway` exportadas con
+overpass-turbo a `Tools/circuits/*.geojson` (datos en bruto, sin tocar). Vista de los 27 con la meta y el sentido de
+carrera en rojo: `docs/circuits_current.png`.
 
-Las consultas grandes por radio fallaban (servidor ocupado) o salían incompletas (p. ej. Cremona: parte del trazado no
-está etiquetada `highway=raceway` o queda fuera del radio). El método fiable es **un circuito cada vez, usando la vista
-del mapa** (`{{bbox}}`), con todas las etiquetas que OSM usa para trazados:
+| id | circuito | puntos | longitud línea / oficial | sentido | radiusScale |
+|---|---|---|---|---|---|
+| buriram | Chang International Circuit | 98 | 4570 / 4554 m | horario | 1.466 |
+| goiania | Autódromo Internacional Ayrton Senna | 94 | 3830 / 3835 m | horario | 1.059 |
+| jerez | Circuito de Jerez - Ángel Nieto | 133 | 4427 / 4423 m | horario | 1.135 |
+| lemans | Circuit Bugatti | 127 | 4166 / 4185 m | horario | 1.236 |
+| balaton | Balaton Park Circuit | 115 | 4078 / 4075 m | antihorario | 1.390 |
+| brno | Automotodrom Brno | 159 | 5404 / 5403 m | horario | 0.998 |
+| assen | TT Circuit Assen | 121 | 4538 / 4542 m | horario | 1.533 |
+| sachsenring | Sachsenring | 127 | 3650 / 3671 m | antihorario | 1.133 |
+| aragon | MotorLand Aragón | 140 | 5071 / 5077 m | antihorario | 1.201 |
+| misano | Misano World Circuit Marco Simoncelli | 110 | 4220 / 4226 m | horario | 1.535 |
+| motegi | Mobility Resort Motegi | 114 | 4814 / 4801 m | horario | 1.359 |
+| mandalika | Pertamina Mandalika Circuit | 106 | 4313 / 4301 m | horario | 1.403 |
+| phillipisland | Phillip Island Grand Prix Circuit | 151 | 4456 / 4448 m | antihorario | 0.814 |
+| valencia | Circuit Ricardo Tormo | 107 | 4001 / 4005 m | antihorario | 1.434 |
+| most | Autodrom Most | 127 | 4210 / 4212 m | horario | 1.281 |
+| donington | Donington Park (GP, con Melbourne Loop) | 110 | 3997 / 4023 m | horario | 1.334 |
+| cremona | Cremona Circuit | 105 | 3702 / 3754 m | antihorario | 1.385 |
 
-1. Abre https://overpass-turbo.eu. En *Ajustes → General → Servidor* elige `https://overpass.kumi.systems/api/`
-   (si falla, `https://maps.mail.ru/osm/tools/overpass/api/` o el de por defecto).
-2. Pega esta consulta una sola vez (se queda guardada):
+Cómo se importaron:
+
+- **Anillo:** se unen las vías por sus nodos compartidos (descartando pit lanes, karting, motocross y tierra) y se
+  elige el ciclo cerrado cuya longitud se acerca más a `lengthM`; se revisó cada uno a ojo frente a las variantes.
+- **Sentido:** el de las vías `oneway=yes` de OSM (van en sentido de carrera). Brno, Motegi y Valencia no lo tienen y
+  usan el del `layout` antiguo. En Goiânia, Balaton y Cremona OSM contradice al `layout` antiguo y manda OSM.
+- **Meta (`shapeStart`):** en la recta de boxes, a media pit lane cuando OSM la tiene; si no, por la secuencia de curvas
+  del `layout` antiguo o a mano en la recta principal. Las de Balaton, Most y Sachsenring son las menos seguras.
+- **Simplificación:** Douglas-Peucker a 0,6 m (94-159 puntos); `radiusScale` calibrado con `SimRunner calibrate`.
+
+Para añadir o rehacer un circuito: abre https://overpass-turbo.eu (servidor `https://overpass.kumi.systems/api/` si el
+de por defecto está ocupado), encuadra solo ese circuito y ejecuta:
 
 ```
 [out:json][timeout:60];
@@ -90,43 +117,13 @@ out body;
 out skel qt;
 ```
 
-3. Para cada circuito: escribe su nombre en el buscador del mapa (la lupa, arriba a la izquierda), encuadra el circuito
-   **entero** con un poco de margen (que no salga media ciudad: cuanto más pequeña la vista, más rápida la consulta),
-   pulsa **Ejecutar** y comprueba que el trazado sale completo, sin huecos. Luego *Exportar → GeoJSON → descargar* y
-   guárdalo como `Tools/circuits/<id>.geojson`:
+Exporta a GeoJSON en `Tools/circuits/` y repite los pasos de arriba.
 
-   | id | Buscar en el mapa |
-   |----|-------------------|
-   | buriram | Chang International Circuit, Buriram |
-   | goiania | Autódromo Internacional Ayrton Senna, Goiânia |
-   | jerez | Circuito de Jerez |
-   | lemans | Circuit Bugatti, Le Mans |
-   | balaton | Balaton Park Circuit |
-   | brno | Automotodrom Brno |
-   | assen | TT Circuit Assen |
-   | sachsenring | Sachsenring |
-   | aragon | MotorLand Aragón, Alcañiz |
-   | misano | Misano World Circuit |
-   | motegi | Twin Ring Motegi |
-   | mandalika | Mandalika International Street Circuit |
-   | phillipisland | Phillip Island Grand Prix Circuit |
-   | valencia | Circuit Ricardo Tormo, Cheste |
-   | most | Autodrom Most |
-   | donington | Donington Park |
-   | cremona | Cremona Circuit, San Martino del Lago |
+### Atribución (OpenStreetMap, ODbL)
 
-   Si aun así falta un tramo: acerca el mapa al hueco, pulsa sobre la carretera que se ve en el fondo y mira sus
-   etiquetas (o búscala en openstreetmap.org con *Consultar objetos*); si es otra etiqueta, añade una línea
-   `way["<clave>"="<valor>"]({{bbox}});` a la consulta. Si un circuito no hay forma de sacarlo completo, se queda con su
-   `layout` dibujado a mano (o pásame un GPX/KML del trazado).
-   No hace falta limpiar nada: pit lanes, karts y variantes de trazado los descarta el importador (elige el anillo
-   cerrado que más se acerque a `lengthM`).
-4. Pide la importación (siguiente pasada): unir los tramos de cada circuito en un anillo, elegir el trazado de MotoGP/SBK,
-   fijar `shapeStart` en la línea de meta y `clockwise`, quitar `layout`, calibrar `radiusScale` y revisar las vistas
-   previas, igual que con los 10 de arriba.
-
-Los datos de OpenStreetMap son © colaboradores de OpenStreetMap, licencia ODbL: al importarlos hay que añadir aquí esa
-atribución ("© OpenStreetMap contributors, ODbL 1.0", https://www.openstreetmap.org/copyright).
+Trazados de buriram, goiania, jerez, lemans, balaton, brno, assen, sachsenring, aragon, misano, motegi, mandalika,
+phillipisland, valencia, most, donington y cremona: © OpenStreetMap contributors, disponibles bajo la Open Database
+License (ODbL) 1.0, https://www.openstreetmap.org/copyright. Los créditos del juego deben incluir esta línea.
 
 ## Escenario de carrera
 
