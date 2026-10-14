@@ -68,72 +68,59 @@ SOFTWARE.
 Siguen con `layout` aproximado: buriram, goiania, jerez, lemans, balaton, brno, assen, sachsenring, aragon, misano,
 motegi, mandalika, phillipisland, valencia, most, donington, cremona.
 
-1. Abre https://overpass-turbo.eu, borra el ejemplo y pega esta consulta (busca las vías `highway=raceway` en un radio
-   de 3 km alrededor de cada circuito; cada bloque lleva el id del juego como comentario):
+Las consultas grandes por radio fallaban (servidor ocupado) o salían incompletas (p. ej. Cremona: parte del trazado no
+está etiquetada `highway=raceway` o queda fuera del radio). El método fiable es **un circuito cada vez, usando la vista
+del mapa** (`{{bbox}}`), con todas las etiquetas que OSM usa para trazados:
+
+1. Abre https://overpass-turbo.eu. En *Ajustes → General → Servidor* elige `https://overpass.kumi.systems/api/`
+   (si falla, `https://maps.mail.ru/osm/tools/overpass/api/` o el de por defecto).
+2. Pega esta consulta una sola vez (se queda guardada):
 
 ```
-[out:json][timeout:180];
+[out:json][timeout:60];
 (
-  way["highway"="raceway"](around:3000,14.9580,103.0850);   // buriram - Chang International Circuit
-  way["highway"="raceway"](around:3000,-16.7180,-49.1940);  // goiania - Autódromo Internacional Ayrton Senna
-  way["highway"="raceway"](around:3000,36.7086,-6.0340);    // jerez - Circuito de Jerez Ángel Nieto
-  way["highway"="raceway"](around:3000,47.9560,0.2080);     // lemans - Circuit Bugatti
-  way["highway"="raceway"](around:3000,47.0130,18.2000);    // balaton - Balaton Park Circuit
-  way["highway"="raceway"](around:3000,49.2030,16.4450);    // brno - Automotodrom Brno
-  way["highway"="raceway"](around:3000,52.9620,6.5240);     // assen - TT Circuit Assen
-  way["highway"="raceway"](around:3000,50.7915,12.6885);    // sachsenring
-  way["highway"="raceway"](around:3000,41.0780,-0.2030);    // aragon - MotorLand Aragón
-  way["highway"="raceway"](around:3000,43.9615,12.6840);    // misano - Misano World Circuit
-  way["highway"="raceway"](around:3000,36.5330,140.2270);   // motegi - Mobility Resort Motegi
-  way["highway"="raceway"](around:3000,-8.8960,116.3050);   // mandalika - Pertamina Mandalika Circuit
-  way["highway"="raceway"](around:3000,-38.5020,145.2340);  // phillipisland - Phillip Island Grand Prix Circuit
-  way["highway"="raceway"](around:3000,39.4880,-0.6290);    // valencia - Circuit Ricardo Tormo
-  way["highway"="raceway"](around:3000,50.5190,13.6070);    // most - Autodrom Most
-  way["highway"="raceway"](around:3000,52.8300,-1.3800);    // donington - Donington Park
-  way["highway"="raceway"](around:3000,45.0760,10.3320);    // cremona - Cremona Circuit
+  way["highway"="raceway"]({{bbox}});
+  way["area:highway"="raceway"]({{bbox}});
+  way["leisure"="track"]["sport"~"motor|motorcycle"]({{bbox}});
+  relation["type"="route"]["route"="raceway"]({{bbox}});
+  relation["type"="circuit"]({{bbox}});
 );
 out body;
 >;
 out skel qt;
 ```
 
-2. Pulsa **Ejecutar** y comprueba en el mapa que aparecen los 17 circuitos (si alguno sale vacío, acerca el mapa a ese
-   circuito, busca el trazado y ajusta su coordenada en la consulta). Es normal que salgan también pit lanes, karts y
-   variantes de trazado: el importador elegirá el anillo cerrado que más se acerque a `lengthM`.
-   **Si sale "Dispatcher_Client::request_read_and_idx::timeout" (servidor ocupado):** no es un error de la consulta.
-   Haz dos cosas: (a) en overpass-turbo, *Ajustes → General → Servidor*, elige otro servidor (por ejemplo
-   `https://overpass.kumi.systems/api/` o `https://maps.mail.ru/osm/tools/overpass/api/`); (b) lanza la consulta en
-   **tres tandas** más pequeñas (las de abajo), exportando cada una a su archivo `osm_raceways_1.geojson`,
-   `osm_raceways_2.geojson` y `osm_raceways_3.geojson` en `Tools/circuits/`.
+3. Para cada circuito: escribe su nombre en el buscador del mapa (la lupa, arriba a la izquierda), encuadra el circuito
+   **entero** con un poco de margen (que no salga media ciudad: cuanto más pequeña la vista, más rápida la consulta),
+   pulsa **Ejecutar** y comprueba que el trazado sale completo, sin huecos. Luego *Exportar → GeoJSON → descargar* y
+   guárdalo como `Tools/circuits/<id>.geojson`:
 
-   Tanda 1:
-   ```
-   [out:json][timeout:90];
-   ( way["highway"="raceway"](around:2000,14.9580,103.0850);  way["highway"="raceway"](around:2000,-16.7180,-49.1940);
-     way["highway"="raceway"](around:2000,36.7086,-6.0340);   way["highway"="raceway"](around:2000,47.9560,0.2080);
-     way["highway"="raceway"](around:2000,47.0130,18.2000);   way["highway"="raceway"](around:2000,49.2030,16.4450); );
-   out body; >; out skel qt;
-   ```
-   Tanda 2:
-   ```
-   [out:json][timeout:90];
-   ( way["highway"="raceway"](around:2000,52.9620,6.5240);    way["highway"="raceway"](around:2000,50.7915,12.6885);
-     way["highway"="raceway"](around:2000,41.0780,-0.2030);   way["highway"="raceway"](around:2000,43.9615,12.6840);
-     way["highway"="raceway"](around:2000,36.5330,140.2270);  way["highway"="raceway"](around:2000,-8.8960,116.3050); );
-   out body; >; out skel qt;
-   ```
-   Tanda 3:
-   ```
-   [out:json][timeout:90];
-   ( way["highway"="raceway"](around:2000,-38.5020,145.2340); way["highway"="raceway"](around:2000,39.4880,-0.6290);
-     way["highway"="raceway"](around:2000,50.5190,13.6070);   way["highway"="raceway"](around:2000,52.8300,-1.3800);
-     way["highway"="raceway"](around:2000,45.0760,10.3320); );
-   out body; >; out skel qt;
-   ```
-   Si una tanda también falla, prueba de nuevo pasados unos minutos o lanza los circuitos de uno en uno.
+   | id | Buscar en el mapa |
+   |----|-------------------|
+   | buriram | Chang International Circuit, Buriram |
+   | goiania | Autódromo Internacional Ayrton Senna, Goiânia |
+   | jerez | Circuito de Jerez |
+   | lemans | Circuit Bugatti, Le Mans |
+   | balaton | Balaton Park Circuit |
+   | brno | Automotodrom Brno |
+   | assen | TT Circuit Assen |
+   | sachsenring | Sachsenring |
+   | aragon | MotorLand Aragón, Alcañiz |
+   | misano | Misano World Circuit |
+   | motegi | Twin Ring Motegi |
+   | mandalika | Mandalika International Street Circuit |
+   | phillipisland | Phillip Island Grand Prix Circuit |
+   | valencia | Circuit Ricardo Tormo, Cheste |
+   | most | Autodrom Most |
+   | donington | Donington Park |
+   | cremona | Cremona Circuit, San Martino del Lago |
 
-3. **Exportar → GeoJSON** (descargar) y guarda el archivo en el repositorio como
-   **`Tools/circuits/osm_raceways.geojson`** (crea la carpeta si no existe).
+   Si aun así falta un tramo: acerca el mapa al hueco, pulsa sobre la carretera que se ve en el fondo y mira sus
+   etiquetas (o búscala en openstreetmap.org con *Consultar objetos*); si es otra etiqueta, añade una línea
+   `way["<clave>"="<valor>"]({{bbox}});` a la consulta. Si un circuito no hay forma de sacarlo completo, se queda con su
+   `layout` dibujado a mano (o pásame un GPX/KML del trazado).
+   No hace falta limpiar nada: pit lanes, karts y variantes de trazado los descarta el importador (elige el anillo
+   cerrado que más se acerque a `lengthM`).
 4. Pide la importación (siguiente pasada): unir los tramos de cada circuito en un anillo, elegir el trazado de MotoGP/SBK,
    fijar `shapeStart` en la línea de meta y `clockwise`, quitar `layout`, calibrar `radiusScale` y revisar las vistas
    previas, igual que con los 10 de arriba.
