@@ -1038,31 +1038,65 @@ namespace MotoManager.App.UI.Screens
             var replaces = StaffMarket.WouldReplace(world, team, role);
             if (replaces != null)
                 Ui.Alert(cands, Loc.T("staff.replaceShort", replaces.FullName, MathX.FormatMoney(StaffMarket.SeveranceCost(world, replaces))));
+            int shown = StaffActions.Candidates(cands, Shell, world, team, role, replaces != null ? 5 : 6, current);
+            if (shown == 0) Ui.Empty(cands, UiIcons.Person, Loc.T("staff.noCandidates"));
+        }
+
+        /// <summary>One holder: level, name and one line (rider, contract end, salary); a tap opens the actions.</summary>
+        private void Holder(Transform list, WorldState world, Team team, StaffMember s)
+        {
+            var member = s;
+            var rider = s.AssignedRiderId != null ? world.GetRider(s.AssignedRiderId) : null;
+            bool expiring = s.ContractEndSeason <= world.Season;
+            string until = Loc.T("staff.until", s.ContractEndSeason);
+            string detail = (rider != null ? Loc.T("staff.with", rider.LastName) + " · " : "") + (expiring ? Theme.WarnText(until) : until);
+            Ui.PersonRow(list, s.Skill, s.FullName, detail, MathX.FormatMoney(s.Salary) + "/" + Loc.T("staff.season"), () => StaffActions.HolderSheet(Shell, world, team, member));
+        }
+    }
+
+    /// <summary>
+    /// The staff actions shared by the staff pages (the full staff list and the restructured hub / group pages): the
+    /// candidate rows with their hire button, hiring (with the replace confirmation) and a holder's sheet (other
+    /// rider, release, renew). The business rules stay in <see cref="StaffMarket"/> / <see cref="StaffService"/>.
+    /// </summary>
+    internal static class StaffActions
+    {
+        /// <summary>
+        /// Up to <paramref name="max"/> candidates of a role as rows with a hire button (people already in the team
+        /// are left out by the market). <paramref name="current"/>: the role's best level now (negative: nobody).
+        /// Returns how many were shown.
+        /// </summary>
+        public static int Candidates(Transform list, ManagementShell shell, WorldState world, Team team, StaffRole role, int max, double current)
+        {
             int shown = 0;
-            foreach (var c in StaffMarket.Candidates(world, Game.Db, team, role))
+            foreach (var c in StaffMarket.Candidates(world, shell.Session.Game.Db, team, role))
             {
-                if (shown >= (replaces != null ? 5 : 6)) break;
+                if (shown >= max) break;
                 shown++;
                 var cand = c;
                 string detail = (string.IsNullOrEmpty(c.Nationality) ? "" : c.Nationality.ToUpperInvariant() + " · ") + Loc.T("staff.exp") + " " + c.Experience;
                 if (current >= 0 && c.Skill >= current + 0.5)
                     detail += "  " + Theme.GoodText("+" + (c.Skill - current).ToString("0") + " " + Loc.T("staff.vsCurrent"));
                 else if (current >= 0) detail += "  " + Loc.T("staff.noBetter");
-                Ui.PersonRow(cands, c.Skill, c.FullName, detail, MathX.FormatMoney(c.Salary) + "/" + Loc.T("staff.season"), null,
-                    UiFactory.Primary(Loc.T("staff.hireButton"), () => Hire(world, team, cand)));
+                Ui.PersonRow(list, c.Skill, c.FullName, detail, MathX.FormatMoney(c.Salary) + "/" + Loc.T("staff.season"), null,
+                    UiFactory.Primary(Loc.T("staff.hireButton"), () =>
+                    {
+                        Ui.CloseSheet();
+                        Hire(shell, world, team, cand);
+                    }));
             }
-            if (shown == 0) Ui.Empty(cands, UiIcons.Person, Loc.T("staff.noCandidates"));
+            return shown;
         }
 
         /// <summary>Hires a candidate; when that replaces someone, a sheet confirms it first (with the severance).</summary>
-        private void Hire(WorldState world, Team team, StaffMember cand)
+        public static void Hire(ManagementShell shell, WorldState world, Team team, StaffMember cand)
         {
             var who = StaffMarket.WouldReplace(world, team, cand.Role);
             Action hire = () =>
             {
                 StaffMarket.Hire(world, team, cand);
-                Shell.Toast(who != null ? Loc.T("staff.hiredReplacing", cand.FullName, who.FullName) : Loc.T("staff.hired", cand.FullName, Loc.T("role." + cand.Role)));
-                Shell.Refresh();
+                shell.Toast(who != null ? Loc.T("staff.hiredReplacing", cand.FullName, who.FullName) : Loc.T("staff.hired", cand.FullName, Loc.T("role." + cand.Role)));
+                shell.Refresh();
             };
             if (who == null)
             {
@@ -1077,19 +1111,12 @@ namespace MotoManager.App.UI.Screens
             }, UiFactory.Primary(Loc.T("staff.hireButton"), hire), UiFactory.Act(Loc.T("ux.common.close"), () => { }), 0.5f);
         }
 
-        /// <summary>One holder: level, name and one line (rider, contract end, salary); a tap opens the actions.</summary>
-        private void Holder(Transform list, WorldState world, Team team, StaffMember s)
-        {
-            var member = s;
-            var rider = s.AssignedRiderId != null ? world.GetRider(s.AssignedRiderId) : null;
-            bool expiring = s.ContractEndSeason <= world.Season;
-            string until = Loc.T("staff.until", s.ContractEndSeason);
-            string detail = (rider != null ? Loc.T("staff.with", rider.LastName) + " · " : "") + (expiring ? Theme.WarnText(until) : until);
-            Ui.PersonRow(list, s.Skill, s.FullName, detail, MathX.FormatMoney(s.Salary) + "/" + Loc.T("staff.season"), () => HolderSheet(world, team, member));
-        }
-
-        /// <summary>A holder's actions: other rider (when it applies), release (two taps) and renew (primary).</summary>
-        private void HolderSheet(WorldState world, Team team, StaffMember s)
+        /// <summary>
+        /// A holder's sheet: the level, salary, contract and experience (and, with <paramref name="full"/>, role,
+        /// country, age, reputation and what the role does), then other rider (when it applies), release (two taps)
+        /// and renew (primary).
+        /// </summary>
+        public static void HolderSheet(ManagementShell shell, WorldState world, Team team, StaffMember s, bool full = false)
         {
             var member = s;
             var rider = s.AssignedRiderId != null ? world.GetRider(s.AssignedRiderId) : null;
@@ -1097,11 +1124,23 @@ namespace MotoManager.App.UI.Screens
             Ui.Sheet(s.FullName, list =>
             {
                 var l = (RectTransform)list;
+                if (full) Ui.Line(list, Loc.T("staff.role"), Loc.T("role." + s.Role));
                 Ui.Line(list, Loc.T("staff.skill"), s.Skill.ToString("0"), true);
                 Ui.Line(list, Loc.T("staff.salary"), MathX.FormatMoney(s.Salary) + "/" + Loc.T("staff.season"));
                 Ui.Line(list, Loc.T("rider.until"), s.ContractEndSeason <= world.Season ? Theme.WarnText(s.ContractEndSeason.ToString()) : s.ContractEndSeason.ToString());
                 Ui.Line(list, Loc.T("staff.exp"), s.Experience.ToString());
+                if (full)
+                {
+                    if (!string.IsNullOrEmpty(s.Nationality)) Ui.Line(list, Loc.T("staff2.country"), s.Nationality.ToUpperInvariant());
+                    if (s.BirthYear > 0) Ui.Line(list, Loc.T("staff2.age"), Loc.T("staff2.years", world.Season - s.BirthYear));
+                    Ui.Line(list, Loc.T("staff2.reputation"), s.Reputation.ToString("0"));
+                }
                 if (rider != null) Ui.Line(list, Loc.T("tab.riders"), rider.FullName);
+                if (full)
+                {
+                    UiFactory.Paragraph(list, "<b>" + Loc.T("staff.whatFor") + "</b>  " + Loc.T("roleinfo." + s.Role), Theme.TextCaption);
+                    UiFactory.Paragraph(list, "<b>" + Loc.T("staff.impact") + "</b>  " + Loc.T("roleimpact." + s.Role), Theme.TextCaption);
+                }
                 if (StaffService.PerRider(s.Role) && team.RiderIds.Count > 1)
                     Ui.Secondary(l, Loc.T("staff.otherRider"), () =>
                     {
@@ -1111,23 +1150,23 @@ namespace MotoManager.App.UI.Screens
                         if (StaffService.Assign(world, team, member, next))
                         {
                             var r = world.GetRider(next);
-                            Shell.Toast(Loc.T("staff.assigned", member.FullName, r != null ? r.FullName : ""));
+                            shell.Toast(Loc.T("staff.assigned", member.FullName, r != null ? r.FullName : ""));
                         }
-                        Shell.Refresh();
+                        shell.Refresh();
                     });
                 Ui.Danger(l, Loc.T("staff.release", MathX.FormatMoney(severance)), Loc.T("staff.fireConfirm", MathX.FormatMoney(severance)), "staff.fire." + member.Id, () =>
                 {
                     Ui.CloseSheet();
                     StaffMarket.Fire(world, team, member.Id);
-                    Shell.Toast(Loc.T("staff.released", member.FullName, MathX.FormatMoney(severance)));
-                    Shell.Refresh();
+                    shell.Toast(Loc.T("staff.released", member.FullName, MathX.FormatMoney(severance)));
+                    shell.Refresh();
                 }, null);
             }, UiFactory.Primary(Loc.T("staff.renew"), () =>
             {
-                StaffMarket.Extend(world, Game.Db, team, member, 2);
-                Shell.Toast(Loc.T("staff.renewed", member.FullName, member.ContractEndSeason, MathX.FormatMoney(member.Salary)));
-                Shell.Refresh();
-            }), null, 0.5f);
+                StaffMarket.Extend(world, shell.Session.Game.Db, team, member, 2);
+                shell.Toast(Loc.T("staff.renewed", member.FullName, member.ContractEndSeason, MathX.FormatMoney(member.Salary)));
+                shell.Refresh();
+            }), null, full ? 0.6f : 0.5f);
         }
     }
 

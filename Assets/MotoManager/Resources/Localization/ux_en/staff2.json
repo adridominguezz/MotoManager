@@ -1,0 +1,23 @@
+{
+  "staff2.group.Engineers": "Engineers",
+  "staff2.group.Mechanics": "Mechanics",
+  "staff2.group.Strategists": "Strategists",
+  "staff2.groupInfo.Engineers": "They design and develop the bike: projects, electronics, aerodynamics and tyres.",
+  "staff2.groupInfo.Mechanics": "Each rider's box crew: the lead mechanic looks after reliability and the race engineer sets the bike up and makes the race calls.",
+  "staff2.groupInfo.Strategists": "They read the race and look after the people: data and forecasts, scouting, coaching, physio and marketing.",
+  "staff2.summary": "{0}/{1} positions · average level {2}",
+  "staff2.summaryEmpty": "{0}/{1} positions",
+  "staff2.allRoles": "All positions",
+  "staff2.find": "Find staff",
+  "staff2.details": "Details",
+  "staff2.vacant": "Vacant",
+  "staff2.years": "{0} yrs",
+  "staff2.age": "Age",
+  "staff2.country": "Country",
+  "staff2.reputation": "Reputation",
+  "staff2.experience": "Experience",
+  "staff2.rider": "Rider",
+  "staff2.contract": "Contract",
+  "staff2.endsNow": "Ends now",
+  "staff2.bestCandidate": "Best candidate"
+}
