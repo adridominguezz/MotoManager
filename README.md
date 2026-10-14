@@ -6,6 +6,12 @@ evoluciona durante décadas: MotoGP, Moto2, Moto3, Red Bull Rookies Cup, WorldSB
 
 El plan por fases está en [`docs/PLAN.md`](docs/PLAN.md).
 
+## Descargar y jugar
+
+Descarga el último `.apk` desde [**Releases**](https://github.com/adridominguezz/motomanager/releases/latest), ábrelo en
+el móvil Android (7.0 o superior) y permite *instalar apps de origen desconocido*. Uso personal y no comercial
+(ver [Licencia](#licencia-y-aviso-legal)). Cómo se publican las versiones: [`docs/RELEASES.md`](docs/RELEASES.md).
+
 ## Estructura
 
 ```
@@ -87,6 +93,7 @@ Ideas, errores y mejoras son bienvenidos: mira [`CONTRIBUTING.md`](CONTRIBUTING.
 bikes, development, strategy, finances) in a persistent world starting from the real 2026 season — MotoGP,
 Moto2, Moto3, Red Bull Rookies Cup, WorldSBK and WorldSSP. The simulation core is pure C# with tests
 (`dotnet test Tests/Core.Tests`); open the folder with Unity 2022.3 LTS and press Play on the `Main` scene.
+**Download** the latest Android APK from [Releases](https://github.com/adridominguezz/motomanager/releases/latest).
 
 - **Licence:** [PolyForm Noncommercial 1.0.0](LICENSE) — personal, non-commercial use only; **any commercial
   use is prohibited**.

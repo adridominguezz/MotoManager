@@ -124,8 +124,45 @@ namespace MotoManager.EditorTools
             Build("Builds/Android/MotoManager.aab");
         }
 
+        /// <summary>
+        /// The value after <paramref name="name"/> on the command line ("-mmVersion 0.2.0"), or null. The CI build
+        /// (.github/workflows/android.yml) passes the version and, when the repository has them, the signing key.
+        /// </summary>
+        private static string Arg(string name)
+        {
+            var args = System.Environment.GetCommandLineArgs();
+            for (int i = 0; i < args.Length - 1; i++)
+                if (args[i] == name && !string.IsNullOrEmpty(args[i + 1]) && !args[i + 1].StartsWith("-")) return args[i + 1];
+            return null;
+        }
+
+        /// <summary>
+        /// Version and signing from the command line: -mmVersion 0.2.0 -mmVersionCode 7, and -mmKeystore path
+        /// -mmKeystorePass ... -mmKeyAlias ... -mmKeyPass ... to sign with the project's own key (so every
+        /// downloaded APK installs over the previous one). Without a key Unity signs with its debug key.
+        /// </summary>
+        private static void ApplyCommandLine()
+        {
+            string version = Arg("-mmVersion");
+            if (version != null) PlayerSettings.bundleVersion = version.TrimStart('v');
+            int code;
+            if (int.TryParse(Arg("-mmVersionCode"), out code) && code > 0) PlayerSettings.Android.bundleVersionCode = code;
+            string keystore = Arg("-mmKeystore");
+            if (keystore != null && File.Exists(keystore))
+            {
+#if UNITY_2019_1_OR_NEWER
+                PlayerSettings.Android.useCustomKeystore = true;
+#endif
+                PlayerSettings.Android.keystoreName = Path.GetFullPath(keystore);
+                PlayerSettings.Android.keystorePass = Arg("-mmKeystorePass") ?? "";
+                PlayerSettings.Android.keyaliasName = Arg("-mmKeyAlias") ?? "";
+                PlayerSettings.Android.keyaliasPass = Arg("-mmKeyPass") ?? "";
+            }
+        }
+
         private static void Build(string path)
         {
+            ApplyCommandLine();
             Directory.CreateDirectory(Path.GetDirectoryName(path));
             var options = new BuildPlayerOptions
             {
