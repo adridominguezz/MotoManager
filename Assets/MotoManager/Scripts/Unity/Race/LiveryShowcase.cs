@@ -134,14 +134,17 @@ namespace MotoManager.App.Race
             var root = new GameObject(name).transform;
             root.SetParent(_turntable, false);
             Transform rider, legL, legR;
-            BikeVisual.BuildRig(root, livery, helmet, material, out rider, out legL, out legR);
+            BikeVisual.BuildRig(root, livery, helmet, material, out rider, out legL, out legR, true);
             return root;
         }
 
         private static void DestroyRig(Transform root)
         {
+            // The detailed model's meshes are shared (never destroyed); its showcase materials are per rig.
             foreach (var mf in root.GetComponentsInChildren<MeshFilter>(true))
-                if (mf.sharedMesh != null) Destroy(mf.sharedMesh);
+                if (mf.sharedMesh != null && !mf.sharedMesh.name.StartsWith(RealBike.MeshPrefix)) Destroy(mf.sharedMesh);
+            foreach (var mr in root.GetComponentsInChildren<MeshRenderer>(true))
+                if (mr.sharedMaterial != null && mr.sharedMaterial.name == RealBike.MeshPrefix + "Showcase") Destroy(mr.sharedMaterial);
             Destroy(root.gameObject);
         }
 
@@ -178,7 +181,9 @@ namespace MotoManager.App.Race
         {
             if (_stage == this) _stage = null;
             foreach (var mf in GetComponentsInChildren<MeshFilter>(true))
-                if (mf.sharedMesh != null) Destroy(mf.sharedMesh);
+                if (mf.sharedMesh != null && !mf.sharedMesh.name.StartsWith(RealBike.MeshPrefix)) Destroy(mf.sharedMesh);
+            foreach (var mr in GetComponentsInChildren<MeshRenderer>(true))
+                if (mr.sharedMaterial != null && mr.sharedMaterial.name == RealBike.MeshPrefix + "Showcase") Destroy(mr.sharedMaterial);
             if (_reflectionMaterial != null) Destroy(_reflectionMaterial);
             if (_camera != null) _camera.targetTexture = null;
             if (Texture != null)
