@@ -59,3 +59,39 @@ dotnet run -c Release --project Tests/SimRunner -- laps motogp_2026             
 El snapshot inicial usa pilotos, equipos, fabricantes, circuitos y calendarios reales de 2026. Los
 atributos de pilotos y motos son estimaciones para el juego. Cada fichero o registro lleva un campo
 `dataConfidence` que indica qué está verificado y qué es aproximado.
+
+## Colaborar
+
+Ideas, errores y mejoras son bienvenidos: mira [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+## Licencia y aviso legal
+
+- **Licencia:** [PolyForm Noncommercial 1.0.0](LICENSE). Puedes usar, estudiar, modificar y compartir el
+  proyecto **solo para fines personales y no comerciales**. **Queda prohibido cualquier uso comercial**
+  (venderlo, publicarlo en tiendas con ingresos, anuncios, compras dentro del juego, etc.).
+- **Proyecto de fans no oficial.** MotoManager no está afiliado, respaldado ni patrocinado por Dorna Sports,
+  MotoGP, WorldSBK, la FIM ni por ningún equipo, fabricante, piloto o patrocinador. Los nombres reales se
+  usan solo como referencia en un juego de uso personal; todas las marcas y nombres pertenecen a sus
+  respectivos propietarios. Si eres titular de algún derecho y quieres que se retire un contenido, abre un
+  *Issue* y se eliminará.
+- **Contenido de terceros** (con sus propias licencias, que se mantienen):
+  fuentes Russo One y Titillium Web (SIL Open Font License, `Assets/MotoManager/Resources/Fonts`);
+  trazados de circuitos de [bacinger/f1-circuits](https://github.com/bacinger/f1-circuits) (MIT) y de
+  OpenStreetMap (© colaboradores de OpenStreetMap, ODbL 1.0). Detalle en [`docs/CIRCUITS.md`](docs/CIRCUITS.md).
+
+---
+
+## English
+
+**MotoManager** is a motorcycle racing team manager for Android built with Unity: you run a team (riders,
+bikes, development, strategy, finances) in a persistent world starting from the real 2026 season — MotoGP,
+Moto2, Moto3, Red Bull Rookies Cup, WorldSBK and WorldSSP. The simulation core is pure C# with tests
+(`dotnet test Tests/Core.Tests`); open the folder with Unity 2022.3 LTS and press Play on the `Main` scene.
+
+- **Licence:** [PolyForm Noncommercial 1.0.0](LICENSE) — personal, non-commercial use only; **any commercial
+  use is prohibited**.
+- **Unofficial fan project**, not affiliated with or endorsed by Dorna Sports, MotoGP, WorldSBK, the FIM or any
+  team, manufacturer, rider or sponsor. All names and trademarks belong to their owners; rights holders can
+  open an Issue to request removal.
+- Contributions are welcome: see [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
