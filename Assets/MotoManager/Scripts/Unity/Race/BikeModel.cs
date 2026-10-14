@@ -34,7 +34,9 @@ namespace MotoManager.App.Race
     /// inside of the corner and push the inner knee out with transforms only (see <see cref="Pose"/>).
     /// Liveries: the fairing outline of every section is cut at the livery's boundaries (so stripes and splits are
     /// crisp hull edges) and painted per triangle from <see cref="StyleCount"/> templates in three colours; vertex
-    /// alpha carries the gloss for the MotoManager/BikeLit shader. About 5k triangles with the rider.
+    /// alpha carries the gloss for the MotoManager/BikeLit shader. About 6k triangles: 2k for the bike, where detail
+    /// that does not show at race distance is kept flat or left out, and 4k for the sculpted rider (smooth sweeps for
+    /// the limbs and helmet, a shaped hull for the torso, suit panels in the livery's colours).
     /// </summary>
     public static class BikeModel
     {
@@ -48,8 +50,8 @@ namespace MotoManager.App.Race
         private static readonly Vector3 HeelR = new Vector3(0.2f, 0.47f, -0.41f);
         private static readonly Vector3 ToeR = new Vector3(0.18f, 0.415f, -0.2f);
         private static readonly Vector3 ShoulderR = new Vector3(0.18f, 1.115f, 0.03f);
-        private static readonly Vector3 ElbowR = new Vector3(0.25f, 0.88f, 0.15f);
-        private static readonly Vector3 WristR = new Vector3(0.22f, 0.93f, 0.37f);
+        private static readonly Vector3 ElbowR = new Vector3(0.25f, 0.875f, 0.1f);
+        private static readonly Vector3 WristR = new Vector3(0.225f, 0.95f, 0.35f);
         private static readonly Vector3 HelmetCentre = new Vector3(0, 1.18f, 0.3f);
 
         // Fixed colours. Alpha is the gloss read by the bike shader (255 = lacquered paint, 0 = matte rubber).
@@ -88,15 +90,14 @@ namespace MotoManager.App.Race
             new[] { -0.04f, 0.155f, 0.975f, 0.11f, 0.22f, 0.25f, 0.2f, 0.15f, 0.02f },       // 9
             new[] { 0.08f, 0.15f, 1.0f, 0.11f, 0.24f, 0.28f, 0.215f, 0.15f, 0.02f },         // 10 side pods, tank hump
             new[] { 0.18f, 0.145f, 0.995f, 0.11f, 0.235f, 0.275f, 0.225f, 0.15f, 0.02f },    // 11
-            new[] { 0.24f, 0.145f, 0.985f, 0.11f, 0.225f, 0.27f, 0.23f, 0.15f, 0.02f },      // 12 side vents
-            new[] { 0.3f, 0.15f, 0.965f, 0.105f, 0.21f, 0.265f, 0.235f, 0.15f, 0.015f },     // 13
-            new[] { 0.37f, 0.18f, 0.94f, 0.1f, 0.2f, 0.26f, 0.24f, 0.15f, 0.015f },          // 14 belly pan front
-            new[] { 0.43f, 0.5f, 0.95f, 0.12f, 0.21f, 0.255f, 0.24f, 0.16f, 0.01f },         // 15 behind the front wheel
-            new[] { 0.5f, 0.6f, 1.0f, 0.12f, 0.2f, 0.245f, 0.235f, 0.165f, 0.01f },          // 16
-            new[] { 0.58f, 0.645f, 1.0f, 0.11f, 0.185f, 0.225f, 0.215f, 0.15f, 0.01f },      // 17 winglets
-            new[] { 0.67f, 0.675f, 0.935f, 0.09f, 0.145f, 0.175f, 0.17f, 0.12f, 0.005f },    // 18
-            new[] { 0.76f, 0.7f, 0.84f, 0.055f, 0.09f, 0.105f, 0.1f, 0.07f, 0f },            // 19
-            new[] { 0.84f, 0.72f, 0.775f, 0.02f, 0.03f, 0.035f, 0.03f, 0.02f, 0f }            // 20 nose tip (air intake)
+            new[] { 0.3f, 0.15f, 0.965f, 0.105f, 0.21f, 0.265f, 0.235f, 0.15f, 0.015f },     // 12 side vents
+            new[] { 0.37f, 0.18f, 0.94f, 0.1f, 0.2f, 0.26f, 0.24f, 0.15f, 0.015f },          // 13 belly pan front
+            new[] { 0.43f, 0.5f, 0.95f, 0.12f, 0.21f, 0.255f, 0.24f, 0.16f, 0.01f },         // 14 behind the front wheel
+            new[] { 0.5f, 0.6f, 1.0f, 0.12f, 0.2f, 0.245f, 0.235f, 0.165f, 0.01f },          // 15
+            new[] { 0.58f, 0.645f, 1.0f, 0.11f, 0.185f, 0.225f, 0.215f, 0.15f, 0.01f },      // 16 winglets
+            new[] { 0.67f, 0.675f, 0.935f, 0.09f, 0.145f, 0.175f, 0.17f, 0.12f, 0.005f },    // 17
+            new[] { 0.76f, 0.7f, 0.84f, 0.055f, 0.09f, 0.105f, 0.1f, 0.07f, 0f },            // 18
+            new[] { 0.84f, 0.72f, 0.775f, 0.02f, 0.03f, 0.035f, 0.03f, 0.02f, 0f }            // 19 nose tip (air intake)
         };
 
         // Screen rings, back -> front (same layout as the fairing).
@@ -204,8 +205,8 @@ namespace MotoManager.App.Race
         {
             float total = ArcOf(pts, pts.Length - 1);
             float width = Pinstripe;
-            below = 4;
-            above = 6;
+            below = 3;
+            above = 5;
             switch (style)
             {
                 case 0: c1 = Curve(z, SplitLow); break;
@@ -216,10 +217,10 @@ namespace MotoManager.App.Race
                 case 7:
                     c1 = ContourAt(pts, total - 0.095f);
                     width = 0.026f;
-                    below = 8;
+                    below = 6;
                     above = 2;
                     break;
-                default: c1 = 2.05f; below = 3; above = 7; break; // 4 blocks, 5 tank band: a low pinstripe over the belly
+                default: c1 = 2.05f; below = 2; above = 6; break; // 4 blocks, 5 tank band: a low pinstripe over the belly
             }
             c1 = Mathf.Clamp(c1, 0.6f, 6.6f);
             c2 = Mathf.Min(ContourAt(pts, ArcOf(pts, c1) + width), 6.95f);
@@ -299,7 +300,7 @@ namespace MotoManager.App.Race
             var screen = new MeshBuilder.Ring[ScreenRings.Length];
             for (int i = 0; i < ScreenRings.Length; i++)
                 screen[i] = new MeshBuilder.Ring(ScreenRings[i][0], ScreenShape(ScreenRings[i]), new[] { Screen, Screen, Screen, Screen, ScreenTop, ScreenTop });
-            b.Hull(screen, Screen, null);
+            b.Hull(screen, null, null);
 
             // Winglets on the nose sides (a swept main plane with an end plate), and the front mudguard, in the second colour.
             Color32 wing = style == 7 ? p : s;
@@ -309,13 +310,13 @@ namespace MotoManager.App.Race
                 b.Box(new Vector3(side * 0.283f, 0.79f, 0.59f), new Vector3(0.008f, 0.05f, 0.11f), wing, Quaternion.Euler(-8, 0, 0));
             }
             // Mudguard: short plates along an arc over the tyre (boxes, so the faces light correctly all round).
-            float plate = 0.345f * 124f * Mathf.Deg2Rad / 5f * 1.08f;
-            for (int k = 0; k < 5; k++)
+            float plate = 0.345f * 124f * Mathf.Deg2Rad / 4f * 1.08f;
+            for (int k = 0; k < 4; k++)
             {
-                float deg = Mathf.Lerp(-60f, 64f, (k + 0.5f) / 5f);
+                float deg = Mathf.Lerp(-60f, 64f, (k + 0.5f) / 4f);
                 float a = deg * Mathf.Deg2Rad;
                 var at = FrontAxle + new Vector3(0, Mathf.Cos(a), Mathf.Sin(a)) * 0.345f;
-                b.Box(at, new Vector3(0.14f - 0.012f * Mathf.Abs(k - 2), 0.014f, plate), s, Quaternion.Euler(deg, 0, 0));
+                b.Box(at, new Vector3(k == 0 || k == 3 ? 0.125f : 0.14f, 0.014f, plate), s, Quaternion.Euler(deg, 0, 0));
             }
 
             // Wheels: rounded tyres with lettered sidewalls, dark split-spoke rims, brake discs and gold calipers.
@@ -324,7 +325,6 @@ namespace MotoManager.App.Race
             for (int side = -1; side <= 1; side += 2)
             {
                 b.DiscX(FrontAxle + new Vector3(side * 0.07f, 0, 0), 0.115f, 0.165f, side, Steel, WheelSides);
-                b.DiscX(FrontAxle + new Vector3(side * 0.066f, 0, 0), 0.115f, 0.165f, -side, Steel, WheelSides);
                 b.Box(FrontAxle + new Vector3(side * 0.08f, 0.12f, -0.09f), new Vector3(0.03f, 0.11f, 0.05f), Gold, Quaternion.Euler(-38, 0, 0));
             }
             b.DiscX(RearAxle + new Vector3(-0.1f, 0, 0), 0.06f, 0.11f, -1, Steel, WheelSides);
@@ -336,20 +336,20 @@ namespace MotoManager.App.Race
             for (int side = -1; side <= 1; side += 2)
             {
                 var axle = FrontAxle + new Vector3(side * 0.1f, 0, 0);
-                b.Tube(axle - rake * 0.035f, axle + rake * 0.2f, 0.03f, 0.03f, Carbon, 8, true);
-                b.Tube(axle + rake * 0.19f, axle + rake * 0.42f, 0.026f, 0.026f, Gold, 8, false);
-                b.Tube(axle + rake * 0.41f, axle + rake * 0.66f, 0.031f, 0.031f, Dark, 6, true);
-                var clamp = axle + rake * 0.62f;
-                b.Tube(new Vector3(side * 0.09f, clamp.y, clamp.z), new Vector3(side * 0.3f, clamp.y - 0.025f, clamp.z - 0.035f), 0.012f, 0.012f, Metal, 5, true);
-                b.Tube(new Vector3(side * 0.2f, clamp.y - 0.016f, clamp.z - 0.022f), new Vector3(side * 0.31f, clamp.y - 0.026f, clamp.z - 0.037f), 0.02f, 0.02f, Dark, 6, true);
+                b.Tube(axle - rake * 0.035f, axle + rake * 0.2f, 0.03f, 0.03f, Carbon, 6, true);
+                b.Tube(axle + rake * 0.19f, axle + rake * 0.42f, 0.026f, 0.026f, Gold, 6, false);
+                b.Tube(axle + rake * 0.41f, axle + rake * 0.7f, 0.031f, 0.031f, Dark, 6, false);
+                var clamp = axle + rake * 0.67f;
+                b.Tube(new Vector3(side * 0.09f, clamp.y, clamp.z), new Vector3(side * 0.2f, clamp.y - 0.016f, clamp.z - 0.022f), 0.012f, 0.012f, Metal, 4, false);
+                b.Tube(new Vector3(side * 0.2f, clamp.y - 0.016f, clamp.z - 0.022f), new Vector3(side * 0.31f, clamp.y - 0.026f, clamp.z - 0.037f), 0.02f, 0.02f, Dark, 5, true);
                 b.Box(new Vector3(side * 0.25f, clamp.y - 0.005f, clamp.z + 0.06f), new Vector3(0.1f, 0.012f, 0.025f), Metal, Quaternion.Euler(0, side * 12, 0));
             }
-            var top = FrontAxle + rake * 0.62f;
+            var top = FrontAxle + rake * 0.67f;
             b.Box(new Vector3(0, top.y, top.z), new Vector3(0.24f, 0.03f, 0.07f), Metal, Quaternion.Euler(-24, 0, 0));
-            b.Tube(FrontAxle - new Vector3(0.13f, 0, 0), FrontAxle + new Vector3(0.13f, 0, 0), 0.02f, 0.02f, Metal, 6, true);
+            b.Tube(FrontAxle - new Vector3(0.13f, 0, 0), FrontAxle + new Vector3(0.13f, 0, 0), 0.02f, 0.02f, Metal, 4, false);
 
             // Carbon swingarm (deep at the pivot, tapering to the axle), rear axle, engine block and frame spars
-            // behind the side panels, the shock and the footpegs with their heel plates.
+            // behind the side panels, the shock and the footpegs.
             for (int side = -1; side <= 1; side += 2)
             {
                 b.Loft(new[]
@@ -359,20 +359,19 @@ namespace MotoManager.App.Race
                     new MeshBuilder.Section(-0.24f, 0.44f, 0.035f, 0.075f, Carbon)
                 }, 6, null, new Vector3(side * 0.115f, 0, 0));
                 var peg = new Vector3(side * 0.17f, 0.43f, -0.38f);
-                b.Tube(peg - new Vector3(side * 0.06f, 0, 0), peg + new Vector3(side * 0.04f, 0, 0), 0.012f, 0.012f, Metal, 5, true);
-                b.Box(new Vector3(side * 0.125f, 0.48f, -0.4f), new Vector3(0.012f, 0.13f, 0.12f), Metal, Quaternion.Euler(20, 0, 0));
+                b.Tube(peg - new Vector3(side * 0.06f, 0, 0), peg + new Vector3(side * 0.04f, 0, 0), 0.012f, 0.012f, Metal, 4, true);
             }
-            b.Tube(RearAxle - new Vector3(0.14f, 0, 0), RearAxle + new Vector3(0.14f, 0, 0), 0.02f, 0.02f, Metal, 6, true);
+            b.Tube(RearAxle - new Vector3(0.14f, 0, 0), RearAxle + new Vector3(0.14f, 0, 0), 0.02f, 0.02f, Metal, 4, false);
             b.Box(new Vector3(0, 0.46f, -0.2f), new Vector3(0.2f, 0.36f, 0.3f), Dark, Quaternion.Euler(-12, 0, 0));
-            b.Tube(new Vector3(0, 0.5f, -0.33f), new Vector3(0, 0.78f, -0.46f), 0.03f, 0.03f, Gold, 6, false);
+            b.Tube(new Vector3(0, 0.5f, -0.33f), new Vector3(0, 0.78f, -0.46f), 0.03f, 0.03f, Gold, 4, false);
 
             // Twin silencers under the tail unit, fed by a header pipe from under the engine.
             for (int side = -1; side <= 1; side += 2)
             {
                 var front = new Vector3(side * 0.12f, 0.69f, -0.5f);
-                b.Tube(front, new Vector3(side * 0.085f, 0.87f, -0.85f), 0.042f, 0.048f, Titanium, 8, true, Dark);
-                b.Tube(new Vector3(side * 0.07f, 0.24f, -0.06f), new Vector3(side * 0.11f, 0.3f, -0.3f), 0.03f, 0.03f, Titanium, 6, false);
-                b.Tube(new Vector3(side * 0.11f, 0.3f, -0.3f), front + new Vector3(0, 0, 0.02f), 0.03f, 0.036f, Titanium, 6, false);
+                b.Tube(front, new Vector3(side * 0.085f, 0.87f, -0.85f), 0.042f, 0.048f, Titanium, 7, true, Dark);
+                b.Tube(new Vector3(side * 0.07f, 0.24f, -0.06f), new Vector3(side * 0.11f, 0.3f, -0.3f), 0.03f, 0.03f, Titanium, 5, false);
+                b.Tube(new Vector3(side * 0.11f, 0.3f, -0.3f), front + new Vector3(0, 0, 0.02f), 0.03f, 0.036f, Titanium, 5, false);
             }
         }
 
@@ -449,14 +448,16 @@ namespace MotoManager.App.Race
             return best;
         }
 
-        /// <summary>A dark vent slot of height h and length l on the fairing side at (z, y), tilted forward by tilt degrees.</summary>
+        /// <summary>A dark vent slot (a flat panel) of height h and length l on the fairing side at (z, y), tilted forward by tilt degrees.</summary>
         private static void Vent(MeshBuilder b, int side, float z, float y, float h, float l, float tilt)
         {
             float x = SurfaceX(z, y);
             // Follow the surface: yaw from the hull's taper along Z, roll from its slope with height.
             float yaw = Mathf.Atan2(SurfaceX(z + 0.03f, y) - SurfaceX(z - 0.03f, y), 0.06f) * Mathf.Rad2Deg;
             float roll = Mathf.Atan2(SurfaceX(z, y + 0.03f) - SurfaceX(z, y - 0.03f), 0.06f) * Mathf.Rad2Deg;
-            b.Box(new Vector3(side * (x + 0.002f), y, z), new Vector3(0.008f, h, l), Dark, Quaternion.Euler(0, side * yaw, -side * roll) * Quaternion.Euler(tilt, 0, 0));
+            var rot = Quaternion.Euler(0, side * yaw, -side * roll) * Quaternion.Euler(tilt, 0, 0);
+            var n = rot * new Vector3(side, 0, 0);
+            b.Panel(new Vector3(side * x, y, z) + n * 0.003f, rot * new Vector3(0, h * 0.5f, 0), rot * new Vector3(0, 0, l * 0.5f), n, Dark);
         }
 
         /// <summary>Half outline of a screen section: flat bottom, widest a little above mid-height, narrower top.</summary>
@@ -472,21 +473,20 @@ namespace MotoManager.App.Race
 
         /// <summary>
         /// Tyre (sidewall with a dashed band of lettering, rounded shoulders, tread), the rim's flanges and barrel,
-        /// eight split spokes and the hub.
+        /// eight split spokes (flat panels) and the hub.
         /// </summary>
         private static void Wheel(MeshBuilder b, Vector3 c, float r, float w)
         {
             var profile = new[]
             {
-                new Vector2(0.7f * r, -0.36f * w), new Vector2(0.86f * r, -0.5f * w), new Vector2(0.97f * r, -0.4f * w),
-                new Vector2(r, -0.15f * w), new Vector2(r, 0.15f * w), new Vector2(0.97f * r, 0.4f * w),
-                new Vector2(0.86f * r, 0.5f * w), new Vector2(0.7f * r, 0.36f * w)
+                new Vector2(0.7f * r, -0.36f * w), new Vector2(0.88f * r, -0.5f * w), new Vector2(r, -0.2f * w),
+                new Vector2(r, 0.2f * w), new Vector2(0.88f * r, 0.5f * w), new Vector2(0.7f * r, 0.36f * w)
             };
-            b.Lathe(c, profile, new[] { Tyre, Tyre, Tyre, Tread, Tyre, Tyre, Tyre }, WheelSides, (band, seg) =>
+            b.Lathe(c, profile, new[] { Tyre, Tyre, Tread, Tyre, Tyre }, WheelSides, (band, seg) =>
             {
-                if (band != 0 && band != 6) return null;
+                if (band != 0 && band != 4) return null;
                 // Lettering: light dashes around the sidewall, the rest plain rubber.
-                return seg % 4 == 1 ? Lettering : Tyre;
+                return seg % 7 == 1 || seg % 7 == 4 ? Lettering : Tyre;
             });
             float rim = 0.6f * r;
             b.DiscX(c + new Vector3(0.35f * w, 0, 0), rim, 0.71f * r, 1, WheelFace, WheelSides);
@@ -498,12 +498,16 @@ namespace MotoManager.App.Race
                 float deg = k * 45f + (k % 2 == 0 ? -7f : 7f);
                 var d = new Vector3(0, Mathf.Sin(deg * Mathf.Deg2Rad), Mathf.Cos(deg * Mathf.Deg2Rad));
                 float r0 = 0.07f, r1 = rim + 0.005f;
-                b.Box(c + d * ((r0 + r1) * 0.5f), new Vector3(0.016f, 0.018f, r1 - r0), WheelFace, Quaternion.Euler(-deg, 0, 0));
+                // Flat spokes: one panel on each face (edges are invisible at race distance).
+                var mid = c + d * ((r0 + r1) * 0.5f);
+                var across = new Vector3(0, d.z, -d.y) * 0.009f;
+                for (int face = -1; face <= 1; face += 2)
+                    b.Panel(mid + new Vector3(face * 0.008f, 0, 0), d * ((r1 - r0) * 0.5f), across, new Vector3(face, 0, 0), WheelFace);
             }
-            b.Tube(c - new Vector3(0.3f * w, 0, 0), c + new Vector3(0.3f * w, 0, 0), 0.07f, 0.07f, WheelFace, 8, true, Metal);
+            b.Tube(c - new Vector3(0.3f * w, 0, 0), c + new Vector3(0.3f * w, 0, 0), 0.07f, 0.07f, WheelFace, 6, true, Metal);
         }
 
-        private const int WheelSides = 16;
+        private const int WheelSides = 14;
 
         private static Vector3 Mirror(Vector3 v, int side)
         {
@@ -522,53 +526,150 @@ namespace MotoManager.App.Race
             return new Color32(c.r, c.g, c.b, 90);
         }
 
+        // Torso rings, seat -> collar: z, bottom y, top y, crown, half widths (bottom, belly, waist, ribs, shoulder blades, top).
+        private static readonly float[][] Torso =
+        {
+            new[] { -0.49f, 0.93f, 1.0f, 0f, 0.03f, 0.06f, 0.075f, 0.075f, 0.065f, 0.04f },          // seat end
+            new[] { -0.465f, 0.88f, 1.05f, 0.005f, 0.06f, 0.12f, 0.145f, 0.15f, 0.135f, 0.08f },
+            new[] { -0.42f, 0.86f, 1.09f, 0.01f, 0.08f, 0.15f, 0.17f, 0.17f, 0.155f, 0.1f },         // hips on the seat
+            new[] { -0.34f, 0.855f, 1.135f, 0.01f, 0.09f, 0.16f, 0.18f, 0.18f, 0.165f, 0.11f },
+            new[] { -0.25f, 0.865f, 1.17f, 0.012f, 0.09f, 0.165f, 0.19f, 0.195f, 0.175f, 0.115f },  // waist
+            new[] { -0.15f, 0.895f, 1.2f, 0.015f, 0.09f, 0.17f, 0.2f, 0.205f, 0.185f, 0.12f },
+            new[] { -0.05f, 0.93f, 1.23f, 0.02f, 0.09f, 0.17f, 0.205f, 0.21f, 0.19f, 0.12f },        // ribs
+            new[] { 0.04f, 0.96f, 1.255f, 0.025f, 0.085f, 0.165f, 0.2f, 0.21f, 0.19f, 0.115f },      // shoulder blades, aero hump
+            new[] { 0.11f, 0.98f, 1.265f, 0.02f, 0.08f, 0.15f, 0.18f, 0.19f, 0.17f, 0.1f },
+            new[] { 0.17f, 1.0f, 1.24f, 0.01f, 0.065f, 0.12f, 0.14f, 0.145f, 0.13f, 0.08f },        // chest on the tank
+            new[] { 0.215f, 1.03f, 1.18f, 0.005f, 0.04f, 0.07f, 0.085f, 0.085f, 0.075f, 0.05f }     // collar
+        };
+
+        private const int TorsoBands = 20;
+
         /// <summary>
-        /// Rider torso, head and arms in the livery's leathers: body and forearms in the main colour, seat panel,
-        /// aero hump, shoulders and upper arms in the second colour, gloves in the accent; the helmet colour is given.
+        /// Rounded joint for a limb sweep: a quadratic Bezier from <paramref name="d"/> before the corner (along
+        /// <paramref name="inDir"/>) to d after it (along <paramref name="outDir"/>), so the sections never fold over on
+        /// the inside of the bend. Adds steps + 1 points, radii blending from r0 to r1.
+        /// </summary>
+        private static void Bend(List<Vector3> path, List<Vector2> radii, Vector3 corner, Vector3 inDir, Vector3 outDir, float d, Vector2 r0, Vector2 r1, int steps)
+        {
+            var p0 = corner - inDir * d;
+            var p2 = corner + outDir * d;
+            for (int k = 0; k <= steps; k++)
+            {
+                float u = (float)k / steps;
+                path.Add(p0 * ((1 - u) * (1 - u)) + corner * (2 * u * (1 - u)) + p2 * (u * u));
+                radii.Add(r0 + (r1 - r0) * u);
+            }
+        }
+
+        /// <summary>Half outline of a torso section (8 points, bottom centre to top centre, contour 0..7).</summary>
+        private static Vector2[] TorsoShape(float[] r)
+        {
+            float yb = r[1], yt = r[2], h = yt - yb;
+            return new[]
+            {
+                new Vector2(0, yb), new Vector2(r[4], yb), new Vector2(r[5], yb + 0.18f * h), new Vector2(r[6], yb + 0.42f * h),
+                new Vector2(r[7], yb + 0.66f * h), new Vector2(r[8], yb + 0.86f * h), new Vector2(r[9], yt), new Vector2(0, yt + r[3])
+            };
+        }
+
+        /// <summary>
+        /// Rider torso, head and arms in the livery's leathers, like a race suit: main colour over the back, shoulders
+        /// and upper arms, second colour on the flanks, elbows and forearms with an accent line along the panel edges,
+        /// dark gloves with accent knuckles. The helmet colour is given; its centre stripe is the livery's accent.
         /// </summary>
         public static void BuildRiderBody(MeshBuilder b, BikeLivery livery, Color32 helmet)
         {
             var o = -Seat;
             Color32 p = Leather(livery.Primary), s = Leather(livery.Secondary), t = Leather(livery.Tertiary);
-            // Torso: seat on the pad, back rising to the shoulders, chest flat on the tank.
+
+            // Torso: hips on the seat, back rising to the aero hump between the shoulder blades, chest on the tank.
+            var rings = new MeshBuilder.Ring[Torso.Length];
+            for (int i = 0; i < Torso.Length; i++)
+            {
+                var shape = TorsoShape(Torso[i]);
+                var half = new Vector2[TorsoBands + 1];
+                for (int k = 0; k <= TorsoBands; k++) half[k] = At(shape, 7f * k / TorsoBands) + new Vector2(0, o.y);
+                rings[i] = new MeshBuilder.Ring(Torso[i][0] + o.z, half, null);
+            }
+            b.Hull(rings, s, Dark, (ring, band, tri) =>
+            {
+                float z = Torso[ring][0];
+                if (z < -0.47f || band < 9) return s;                     // seat panel, flanks and belly
+                return band == 9 ? t : p;                                 // accent line along the flank panel, back
+            });
+            // Neck (balaclava) between the collar and the helmet.
             b.Loft(new[]
             {
-                new MeshBuilder.Section(-0.5f, 0.94f, 0.08f, 0.06f, s),
-                new MeshBuilder.Section(-0.45f, 0.965f, 0.15f, 0.1f, s),
-                new MeshBuilder.Section(-0.36f, 1.0f, 0.17f, 0.125f, p),
-                new MeshBuilder.Section(-0.22f, 1.05f, 0.18f, 0.135f, p),
-                new MeshBuilder.Section(-0.08f, 1.1f, 0.19f, 0.13f, p),
-                new MeshBuilder.Section(0.04f, 1.125f, 0.19f, 0.125f, p),
-                new MeshBuilder.Section(0.13f, 1.12f, 0.15f, 0.1f, p),
-                new MeshBuilder.Section(0.2f, 1.1f, 0.07f, 0.06f, Dark)
-            }, 12, null, o);
-            // Aero hump on the back of the leathers, peaking just behind the helmet.
-            b.Loft(new[]
-            {
-                new MeshBuilder.Section(-0.16f, 1.19f, 0.03f, 0.02f, s),
-                new MeshBuilder.Section(-0.04f, 1.225f, 0.085f, 0.05f, s),
-                new MeshBuilder.Section(0.07f, 1.245f, 0.075f, 0.055f, s),
-                new MeshBuilder.Section(0.15f, 1.21f, 0.035f, 0.03f, s)
+                new MeshBuilder.Section(0.17f, 1.12f, 0.055f, 0.05f, Dark),
+                new MeshBuilder.Section(0.25f, 1.09f, 0.05f, 0.045f, Dark)
             }, 8, null, o);
-            // Helmet: chin almost on the tank, visor facing forward, an aero spoiler on the back of the shell.
-            b.Sphere(HelmetCentre + o, new Vector3(0.13f, 0.135f, 0.155f), helmet, 7, 14, Visor);
+
+            // Helmet: an egg tilted forward and down (chin almost on the tank), visor on the front, accent centre stripe,
+            // and the aero spoiler on the back of the shell.
+            var axis = new Vector3(0, -0.6f, 0.8f);
+            var hPath = new List<Vector3>();
+            var hRadii = new List<Vector2>();
+            const int hn = 16;
+            for (int k = 0; k < hn; k++)
+            {
+                float u = -0.97f * Mathf.Cos(Mathf.PI * k / (hn - 1));
+                float r = Mathf.Sqrt(Mathf.Max(0.0f, 1 - u * u));
+                hPath.Add(HelmetCentre + axis * (0.175f * u) + o);
+                hRadii.Add(new Vector2(0.13f * r + 0.004f, 0.14f * r + 0.004f));
+            }
+            var stripe = new Color32(livery.Tertiary.r, livery.Tertiary.g, livery.Tertiary.b, helmet.a);
+            b.Sweep(hPath, hRadii, 18, (i, dir) =>
+            {
+                if (i >= hn / 2 - 1 && dir.z > 0.2f && dir.y > -0.25f && dir.y < 0.5f) return Visor;
+                if (Mathf.Abs(dir.x) < 0.16f && dir.y > 0.1f && i < hn - 3) return stripe;
+                return helmet;
+            }, Vector3.up);
             b.Loft(new[]
             {
-                new MeshBuilder.Section(0.13f, 1.255f, 0.015f, 0.012f, helmet),
-                new MeshBuilder.Section(0.18f, 1.3f, 0.07f, 0.025f, helmet),
-                new MeshBuilder.Section(0.25f, 1.315f, 0.05f, 0.012f, helmet)
-            }, 6, null, o);
+                new MeshBuilder.Section(0.12f, 1.22f, 0.015f, 0.012f, helmet),
+                new MeshBuilder.Section(0.17f, 1.29f, 0.065f, 0.022f, helmet),
+                new MeshBuilder.Section(0.23f, 1.325f, 0.05f, 0.012f, helmet)
+            }, 8, null, o);
+
             for (int side = -1; side <= 1; side += 2)
             {
                 var sh = Mirror(ShoulderR, side) + o;
                 var el = Mirror(ElbowR, side) + o;
                 var wr = Mirror(WristR, side) + o;
-                b.Sphere(sh, new Vector3(0.068f, 0.068f, 0.075f), s, 4, 8);
-                b.Tube(sh, el, 0.062f, 0.05f, s, 8, false);
-                b.Sphere(el, new Vector3(0.05f, 0.05f, 0.05f), s, 3, 8);
-                b.Tube(el, wr, 0.05f, 0.04f, p, 8, false);
-                // Glove wrapped round the grip.
-                b.Tube(wr - (wr - el).normalized * 0.015f, wr + new Vector3(side * 0.012f, -0.008f, 0.075f), 0.044f, 0.036f, t, 6);
+                var up = (el - sh).normalized;
+                var fore = (wr - el).normalized;
+                var outward = new Vector3(side, 0, 0);
+                // Arm: deltoid out of the torso, upper arm, a rounded elbow, forearm tapering into the glove's cuff.
+                var path = new List<Vector3> { sh - up * 0.06f, sh - up * 0.035f, sh, Vector3.Lerp(sh, el, 0.35f) };
+                var radii = new List<Vector2> { new Vector2(0.03f, 0.03f), new Vector2(0.064f, 0.062f), new Vector2(0.075f, 0.072f), new Vector2(0.066f, 0.062f) };
+                Bend(path, radii, el, up, fore, 0.085f, new Vector2(0.058f, 0.055f), new Vector2(0.052f, 0.047f), 4);
+                path.Add(Vector3.Lerp(el, wr, 0.6f)); radii.Add(new Vector2(0.046f, 0.042f));
+                path.Add(Vector3.Lerp(el, wr, 0.85f)); radii.Add(new Vector2(0.04f, 0.036f));
+                path.Add(wr); radii.Add(new Vector2(0.036f, 0.032f));
+                b.Sweep(path, radii, 16, (i, dir) =>
+                {
+                    float outer = Vector3.Dot(dir, outward);
+                    if (i < 2) return p;                                       // shoulder
+                    if (i < 5) return outer > 0.45f ? s : outer > 0.1f ? t : p;  // upper arm: outer panel with an accent edge
+                    if (i < 8) return s;                                       // elbow
+                    return dir.y > 0.75f ? t : s;                              // forearm with an accent line on top
+                }, Vector3.forward, true, false);
+                // Elbow slider on the outside of the elbow.
+                b.Sphere(el + new Vector3(side * 0.045f, -0.01f, -0.02f), new Vector3(0.018f, 0.035f, 0.038f), Dark, 3, 8);
+
+                // Glove: cuff, back of the hand on top of the grip, knuckles, fingers wrapped round the front and under.
+                var grip = new Vector3(side * 0.245f, 0.897f, 0.4f) + o;
+                var gPath = new[]
+                {
+                    wr - fore * 0.02f, wr + fore * 0.02f, grip + new Vector3(0, 0.04f, -0.005f), grip + new Vector3(0, 0.03f, 0.035f),
+                    grip + new Vector3(0, -0.005f, 0.045f), grip + new Vector3(0, -0.035f, 0.02f)
+                };
+                var gRadii = new[]
+                {
+                    new Vector2(0.04f, 0.035f), new Vector2(0.043f, 0.032f), new Vector2(0.046f, 0.028f), new Vector2(0.044f, 0.024f),
+                    new Vector2(0.041f, 0.02f), new Vector2(0.037f, 0.018f)
+                };
+                b.Sweep(gPath, gRadii, 10, (i, dir) => i == 2 && dir.y > 0.3f ? t : Dark, Vector3.up, false, true);
             }
         }
 
@@ -585,8 +686,9 @@ namespace MotoManager.App.Race
         }
 
         /// <summary>
-        /// One leg in the livery's leathers: thigh in the main colour, shin in the second one, accent knee armour with
-        /// the slider on its outside, and the boot (tall cuff in the main colour, toe slider) on the footpeg.
+        /// One leg in the livery's leathers, relative to its hip joint: thigh in the main colour with a second-colour
+        /// panel down its outside (accent edges), knee and shin in the second colour with the knee slider on the outside,
+        /// tall boot in the main colour, dark foot on the footpeg with a toe slider.
         /// </summary>
         public static void BuildLeg(MeshBuilder b, int side, BikeLivery livery)
         {
@@ -596,14 +698,42 @@ namespace MotoManager.App.Race
             var ankle = Mirror(AnkleR, side) - hip;
             var heel = Mirror(HeelR, side) - hip;
             var toe = Mirror(ToeR, side) - hip;
-            b.Tube(Vector3.zero, knee, 0.085f, 0.066f, p, 8, false);
-            b.Sphere(knee, new Vector3(0.068f, 0.068f, 0.072f), t, 4, 8);
-            b.Box(knee + new Vector3(side * 0.06f, -0.025f, 0.01f), new Vector3(0.025f, 0.055f, 0.1f), Dark, Quaternion.Euler(-30, 0, 0)); // knee slider
-            var shin = ankle - knee;
-            b.Tube(knee, ankle - shin.normalized * 0.12f, 0.064f, 0.048f, s, 8, false);
-            // Boot: tall cuff in the main colour up the shin, dark foot from heel to toe, toe slider on the outside.
-            b.Tube(ankle - shin.normalized * 0.13f, ankle + new Vector3(0, -0.01f, -0.02f), 0.05f, 0.053f, p, 8, false);
-            b.Tube(heel, toe, 0.055f, 0.036f, Dark, 8);
+            var thigh = knee.normalized;
+            var shin = (ankle - knee).normalized;
+            var outward = new Vector3(side, 0, 0);
+            var path = new List<Vector3> { thigh * -0.07f, thigh * -0.04f, Vector3.zero, knee * 0.3f, knee * 0.55f };
+            var radii = new List<Vector2> { new Vector2(0.04f, 0.04f), new Vector2(0.08f, 0.082f), new Vector2(0.09f, 0.09f), new Vector2(0.092f, 0.084f), new Vector2(0.083f, 0.076f) };
+            Bend(path, radii, knee, thigh, shin, 0.14f, new Vector2(0.074f, 0.068f), new Vector2(0.063f, 0.059f), 4);
+            float[] shinAt = { 0.45f, 0.62f, 0.75f, 0.9f, 1f };
+            Vector2[] shinR = { new Vector2(0.06f, 0.056f), new Vector2(0.055f, 0.052f), new Vector2(0.058f, 0.056f), new Vector2(0.054f, 0.052f), new Vector2(0.05f, 0.05f) };
+            for (int k = 0; k < shinAt.Length; k++)
+            {
+                path.Add(Vector3.Lerp(knee, ankle, shinAt[k]));
+                radii.Add(shinR[k]);
+            }
+            path.Add(ankle + new Vector3(0, -0.03f, 0));
+            radii.Add(new Vector2(0.048f, 0.048f));
+            b.Sweep(path, radii, 16, (i, dir) =>
+            {
+                float outer = Vector3.Dot(dir, outward);
+                if (i < 5) return outer > 0.45f ? s : outer > 0.1f ? t : p; // thigh: outer panel with accent edges
+                if (i < 12) return s;                                     // knee and shin
+                return p;                                                 // boot
+            }, Vector3.forward, true, false);
+            // Knee slider puck on the outside of the knee.
+            b.Sphere(knee + new Vector3(side * 0.066f, -0.01f, 0), new Vector3(0.018f, 0.045f, 0.05f), Dark, 4, 10);
+            // Foot: heel cup to toe, dark, with the toe slider on the outside.
+            var foot = new[]
+            {
+                heel + new Vector3(0, 0.005f, -0.02f), heel + new Vector3(0, -0.005f, 0.03f), Vector3.Lerp(heel, toe, 0.5f),
+                toe - (toe - heel).normalized * 0.03f, toe
+            };
+            var footR = new[]
+            {
+                new Vector2(0.04f, 0.05f), new Vector2(0.045f, 0.055f), new Vector2(0.045f, 0.045f), new Vector2(0.04f, 0.032f),
+                new Vector2(0.03f, 0.02f)
+            };
+            b.Sweep(foot, footR, 12, (i, dir) => Dark, Vector3.up);
             b.Box(toe + new Vector3(side * 0.03f, -0.005f, -0.03f), new Vector3(0.012f, 0.03f, 0.06f), Steel);
         }
 

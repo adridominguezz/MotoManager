@@ -447,6 +447,82 @@ namespace MotoManager.App.Race
             }
         }
 
+        /// <summary>
+        /// Smooth limb along a path (arms, legs, gloves, boots): an elliptical section of half axes radii[i] around each
+        /// path point, its frame carried along the path without twisting (the first frame's first axis is
+        /// cross(tangent, <paramref name="up"/>)). <paramref name="paint"/>(segment i, outward direction) colours the
+        /// quad between sections i and i + 1, so panels and stripes keep crisp edges; vertices are shared where the
+        /// colours agree. Caps close the ends unless the limb disappears into another part.
+        /// </summary>
+        public void Sweep(IList<Vector3> path, IList<Vector2> radii, int sides, System.Func<int, Vector3, Color32> paint, Vector3 up, bool capStart = true, bool capEnd = true)
+        {
+            int n = path.Count;
+            var t = new Vector3[n];
+            var u = new Vector3[n];
+            var v = new Vector3[n];
+            for (int i = 0; i < n; i++) t[i] = (path[Mathf.Min(n - 1, i + 1)] - path[Mathf.Max(0, i - 1)]).normalized;
+            u[0] = Vector3.Cross(t[0], up);
+            if (u[0].sqrMagnitude < 1e-8f) u[0] = Vector3.Cross(t[0], Vector3.right);
+            u[0] = u[0].normalized;
+            for (int i = 1; i < n; i++) u[i] = (u[i - 1] - t[i] * Vector3.Dot(u[i - 1], t[i])).normalized;
+            for (int i = 0; i < n; i++) v[i] = Vector3.Cross(t[i], u[i]);
+
+            var shared = new Dictionary<long, int>();
+            System.Func<int, int, Color32, int> at = (i, k, col) =>
+            {
+                k %= sides;
+                long key = ((long)(i * sides + k) << 32) | (uint)(col.r | col.g << 8 | col.b << 16 | col.a << 24);
+                int idx;
+                if (shared.TryGetValue(key, out idx)) return idx;
+                float a = Mathf.PI * 2 * k / sides;
+                float ca = Mathf.Cos(a), sa = Mathf.Sin(a);
+                var r = radii[i];
+                var p = path[i] + u[i] * (ca * r.x) + v[i] * (sa * r.y);
+                var nn = (u[i] * (ca / Mathf.Max(0.001f, r.x)) + v[i] * (sa / Mathf.Max(0.001f, r.y))).normalized;
+                idx = Vertex(p, nn, col);
+                shared[key] = idx;
+                return idx;
+            };
+            for (int i = 0; i + 1 < n; i++)
+                for (int k = 0; k < sides; k++)
+                {
+                    float am = Mathf.PI * 2 * (k + 0.5f) / sides;
+                    var dir = ((u[i] + u[i + 1]) * Mathf.Cos(am) + (v[i] + v[i + 1]) * Mathf.Sin(am)).normalized;
+                    var col = paint(i, dir);
+                    int a = at(i, k, col), b = at(i, k + 1, col), c = at(i + 1, k, col), d = at(i + 1, k + 1, col);
+                    _tris.Add(a); _tris.Add(b); _tris.Add(d);
+                    _tris.Add(a); _tris.Add(d); _tris.Add(c);
+                }
+            for (int end = 0; end < 2; end++)
+            {
+                if (end == 0 ? !capStart : !capEnd) continue;
+                int i = end == 0 ? 0 : n - 1;
+                var nn = end == 0 ? -t[0] : t[n - 1];
+                var col = paint(end == 0 ? 0 : n - 2, nn);
+                int centre = Vertex(path[i], nn, col);
+                int ring = _verts.Count;
+                for (int k = 0; k < sides; k++)
+                {
+                    float a = Mathf.PI * 2 * k / sides;
+                    Vertex(path[i] + u[i] * (Mathf.Cos(a) * radii[i].x) + v[i] * (Mathf.Sin(a) * radii[i].y), nn, col);
+                }
+                for (int k = 0; k < sides; k++)
+                {
+                    int a = ring + k, b = ring + (k + 1) % sides;
+                    if (end == 0) { _tris.Add(centre); _tris.Add(b); _tris.Add(a); }
+                    else { _tris.Add(centre); _tris.Add(a); _tris.Add(b); }
+                }
+            }
+        }
+
+        /// <summary>Flat quad facing <paramref name="normal"/>: centre plus/minus the two half-extent axes (vents, spokes, plates).</summary>
+        public void Panel(Vector3 center, Vector3 halfA, Vector3 halfB, Vector3 normal, Color32 color)
+        {
+            Vector3 a = center - halfA - halfB, b = center + halfA - halfB, c = center + halfA + halfB, d = center - halfA + halfB;
+            if (Vector3.Dot(Vector3.Cross(b - a, d - a), normal) < 0) Quad(a, d, c, b, color);
+            else Quad(a, b, c, d, color);
+        }
+
         /// <summary>Flat disc facing up (map markers).</summary>
         public void Disc(Vector3 center, float radius, Color32 color, int sides = 24)
         {
