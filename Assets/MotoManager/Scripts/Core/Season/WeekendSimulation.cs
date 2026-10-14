@@ -98,7 +98,7 @@ namespace MotoManager.Core.Season
             {
                 var bike = World.GetBike(team.BikeId);
                 var bikeClass = Db.GetBikeClass(bike != null ? bike.BikeClassId : Rules.BikeClassId);
-                var perf = bike != null ? BikePerformance.Compute(bike, bikeClass) : BikePerformance.Average();
+                var perf = TeamCapabilities.Performance(World, Db, team, bike, bikeClass);
                 foreach (var riderId in team.RiderIds)
                 {
                     var rider = World.GetRider(riderId);

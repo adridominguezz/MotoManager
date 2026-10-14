@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using MotoManager.Core.Data;
+using MotoManager.Core.Economy;
 using MotoManager.Core.Race;
 using MotoManager.Core.Season;
 using MotoManager.Core.World;
@@ -129,7 +130,7 @@ namespace MotoManager.App.UI.Screens
             Ui.Line(left, Loc.T("ux.mm4b.status"), Loc.T("ux.mm4b.status." + team.Status));
             var cls = bike != null ? game.Db.GetBikeClass(bike.BikeClassId) : null;
             if (bike != null && cls != null)
-                Ui.Line(left, Loc.T("ux.mm4b.bikeLevel"), Fmt.Rating(BikeScreen.PerformanceScore(BikePerformance.Compute(bike, cls))));
+                Ui.Line(left, Loc.T("ux.mm4b.bikeLevel"), Fmt.Rating(BikeScreen.PerformanceScore(TeamCapabilities.Performance(world, game.Db, team, bike, cls))));
             if (!string.IsNullOrEmpty(team.Country)) Ui.Line(left, Loc.T("ux.mm4b.country"), team.Country.ToUpperInvariant());
 
             // Riders: number, name + nationality, age, level (perceived by the player's team), standings position.

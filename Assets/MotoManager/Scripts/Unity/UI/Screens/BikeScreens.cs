@@ -252,7 +252,7 @@ namespace MotoManager.App.UI.Screens
             if (bike == null) return;
             var bikeClass = Game.Db.GetBikeClass(bike.BikeClassId);
             var maker = world.GetManufacturer(bike.ManufacturerId);
-            var perf = BikePerformance.Compute(bike, bikeClass);
+            var perf = TeamCapabilities.Performance(world, Game.Db, team, bike, bikeClass);
             var running = world.Projects.FindAll(p => p.TeamId == team.Id && p.Status == ProjectStatus.InProgress);
             var comps = Components(bike, bikeClass);
             bool twoRows = comps.Count > 6;
@@ -782,16 +782,17 @@ namespace MotoManager.App.UI.Screens
         }
     }
     /// <summary>
-    /// "Instalaciones" tab (UX spec §3.12): a 2×5 grid of tiles, one screen. Each tile keeps its level, pips, a
-    /// one-line effect and the upgrade price as a quiet pill; a tap opens a sheet with everything it does, the upkeep
-    /// the next level adds and the one "upgrade" button.
+    /// "Instalaciones" tab (UX spec §3.12): a 2×5 grid of tiles, one screen. Each tile keeps its level, pips, what it
+    /// improves in plain words, the headline effect of the next level ("+1,25 aerodinámica") and the upgrade price
+    /// as a quiet pill; a tap opens a sheet with everything it does, what it adds to the bike now, every effect and
+    /// the upkeep of the next level and the one "upgrade" button.
     /// </summary>
     public class FacilitiesPage : ScreenBase
     {
         public override string Title { get { return Loc.T("tab.facilities"); } }
 
         private const int PerRow = 5;
-        private const int MaxLevel = 5;
+        public const int MaxLevel = 5;
 
         public override void Build(RectTransform content)
         {
@@ -821,13 +822,17 @@ namespace MotoManager.App.UI.Screens
             int lvl = team.Facility(type);
             var target = type;
             var body = Ui.Tile(area, Loc.T("facility." + type), () => FacilitySheet(world, team, target));
-            ScreenKit.At(body, 0, 0.64f, 1, 1, "<size=" + Theme.TextCaption + ">" + Theme.Caps(Loc.T("bike.levelShort")) + " </size>" + lvl,
-                Theme.TextKey, TextAnchor.MiddleCenter, Theme.Timing, FontStyle.BoldAndItalic);
+            ScreenKit.At(body, 0, 0.76f, 1, 1, "<size=" + Theme.TextCaption + ">" + Theme.Caps(Loc.T("bike.levelShort")) + " </size>" + lvl,
+                Theme.TextTitle, TextAnchor.MiddleCenter, Theme.Timing, FontStyle.BoldAndItalic);
             var pips = UiFactory.Rect("Pips", body);
-            UiFactory.Place(pips, 0.1f, 0.5f, 0.9f, 0.6f);
+            UiFactory.Place(pips, 0.1f, 0.66f, 0.9f, 0.73f);
             Ui.Pips(pips, lvl, MaxLevel);
-            ScreenKit.At(body, 0, 0.2f, 1, 0.48f, Loc.T("facilitytip." + type), Theme.TextCaption, TextAnchor.MiddleCenter,
+            // What it improves in plain words, then the headline effect of the next level.
+            ScreenKit.At(body, 0, 0.38f, 1, 0.64f, Loc.T("dev2.fac.what." + type), Theme.TextCaption, TextAnchor.MiddleCenter,
                 Color.Lerp(Theme.TextDim, Color.white, 0.25f));
+            var next = NextEffects(world, Game.Db, team, type);
+            if (next.Count > 0)
+                ScreenKit.At(body, 0, 0.2f, 1, 0.37f, Theme.GoodText("<b>" + next[0] + "</b>"), Theme.TextCaption, TextAnchor.MiddleCenter, Theme.Text);
             var pillHost = UiFactory.Rect("Price", body);
             UiFactory.Place(pillHost, 0, 0, 1, 0.18f);
             Image pill;
@@ -877,10 +882,66 @@ namespace MotoManager.App.UI.Screens
                     Ui.Line(list, Loc.T("ux.fac.upkeep"), "+" + MathX.FormatMoney(upkeep));
                 }
                 else Ui.Line(list, Loc.T("facility.upgrade"), Theme.TimingText(Theme.Caps(Loc.T("facility.max"))));
-                UiFactory.Paragraph(list, "<b>" + Loc.T("facilitytip." + type) + "</b>", Theme.TextBody);
-                UiFactory.Paragraph(list, Theme.Dim(Loc.T("facility.effect") + ": ") + Loc.T("facilityinfo." + type), Theme.TextBody);
+                UiFactory.Paragraph(list, Theme.Dim(Loc.T("dev2.fac.improves") + ": ") + "<b>" + Loc.T("dev2.fac.what." + type) + "</b>", Theme.TextBody);
+                string now = CurrentBikeEffect(world, Game.Db, team, type);
+                if (now != null) UiFactory.Paragraph(list, Theme.Dim(Loc.T("dev2.fac.now") + ": ") + now, Theme.TextBody);
+                var next = NextEffects(world, Game.Db, team, type);
+                if (next.Count > 0)
+                    UiFactory.Paragraph(list, Theme.Dim(Loc.T("dev2.fac.next") + ": ") + Theme.GoodText("<b>" + string.Join(" · ", next.ToArray()) + "</b>"), Theme.TextBody);
+                UiFactory.Paragraph(list, Theme.Dim(Loc.T("facilitytip." + type)), Theme.TextCaption);
                 UiFactory.Paragraph(list, Theme.Dim(Loc.T("facility.note")), Theme.TextCaption);
             }, primary);
+        }
+
+        /// <summary>What the facility adds to the bike today ("+2,5 aerodinámica"); null when it lifts no component.</summary>
+        public static string CurrentBikeEffect(WorldState world, GameDatabase db, Team team, FacilityType type)
+        {
+            var bike = world.GetBike(team.BikeId);
+            var cls = bike != null ? db.GetBikeClass(bike.BikeClassId) : null;
+            var parts = new List<string>();
+            foreach (var c in TeamCapabilities.BikeComponentsOf(type, cls))
+            {
+                if (!DevelopmentService.ComponentAllowed(world, db, team, c)) continue;
+                parts.Add(DevelopmentPage.Points(TeamCapabilities.ComponentBonus(world, db, team, c)) + " " + Fmt.Component(c).ToLower(Loc.Culture));
+            }
+            return parts.Count > 0 ? string.Join(" · ", parts.ToArray()) : null;
+        }
+
+        /// <summary>
+        /// What the next level adds, in concrete figures, the most visible first ("+1,25 aerodinámica", "+3 de
+        /// calidad en sus proyectos"). Empty at the top level.
+        /// </summary>
+        public static List<string> NextEffects(WorldState world, GameDatabase db, Team team, FacilityType type)
+        {
+            var parts = new List<string>();
+            int lvl = team.Facility(type);
+            if (lvl >= MaxLevel) return parts;
+            var bike = world.GetBike(team.BikeId);
+            var cls = bike != null ? db.GetBikeClass(bike.BikeClassId) : null;
+            double step = TeamCapabilities.FacilityComponentBonus(lvl + 1) - TeamCapabilities.FacilityComponentBonus(lvl);
+            foreach (var c in TeamCapabilities.BikeComponentsOf(type, cls))
+                if (DevelopmentService.ComponentAllowed(world, db, team, c))
+                    parts.Add(DevelopmentPage.Points(step) + " " + Fmt.Component(c).ToLower(Loc.Culture));
+            switch (type)
+            {
+                case FacilityType.Factory:
+                    parts.Add(Loc.T(TeamCapabilities.ProjectCapacityAt(lvl + 1) > TeamCapabilities.ProjectCapacityAt(lvl) ? "dev2.next.slot" : "dev2.next.factory"));
+                    break;
+                case FacilityType.Dyno:
+                case FacilityType.WindTunnel:
+                case FacilityType.ElectronicsLab:
+                    parts.Add(Loc.T("dev2.next.quality"));
+                    break;
+                case FacilityType.ScoutingCenter:
+                    double before = TeamCapabilities.ScoutingRate(world, team, lvl);
+                    double after = TeamCapabilities.ScoutingRate(world, team, lvl + 1);
+                    parts.Add(Loc.T("dev2.next.ScoutingCenter", ((after / Math.Max(0.001, before) - 1) * 100).ToString("0")));
+                    break;
+                default:
+                    parts.Add(Loc.T("dev2.next." + type));
+                    break;
+            }
+            return parts;
         }
     }
 }

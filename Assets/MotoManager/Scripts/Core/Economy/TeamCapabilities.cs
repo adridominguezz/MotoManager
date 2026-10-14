@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using MotoManager.Core.Common;
 using MotoManager.Core.Data;
+using MotoManager.Core.Race;
 using MotoManager.Core.World;
 
 namespace MotoManager.Core.Economy
@@ -77,7 +79,13 @@ namespace MotoManager.Core.Economy
         /// <summary>How many projects the factory can run in parallel.</summary>
         public static int ProjectCapacity(Team team)
         {
-            return 1 + (team.Facility(FacilityType.Factory) + 1) / 2;
+            return ProjectCapacityAt(team.Facility(FacilityType.Factory));
+        }
+
+        /// <summary>Parallel projects with the factory at <paramref name="factoryLevel"/>.</summary>
+        public static int ProjectCapacityAt(int factoryLevel)
+        {
+            return 1 + (factoryLevel + 1) / 2;
         }
 
         /// <summary>Engineering quality behind a project (drives failure risk and results).</summary>
@@ -87,6 +95,76 @@ namespace MotoManager.Core.Economy
             double lead = engineerId != null && world.Staff.TryGetValue(engineerId, out s) ? s.Skill : Skill(world, team, SpecialistFor(component), 40);
             double td = Skill(world, team, StaffRole.TechnicalDirector, 40);
             return MathX.Clamp(lead * 0.6 + td * 0.25 + team.Facility(FacilityFor(component)) * 3, 10, 100);
+        }
+
+        // ------------------------------------------------------------------ the bike itself
+
+        /// <summary>Component points a bike gains per facility level above the first (see <see cref="BikeFacilityFor"/>).</summary>
+        public const double FacilityComponentBonusPerLevel = 1.25;
+
+        /// <summary>
+        /// Facility that directly lifts a bike component (better test benches, tunnel time and workshop finish
+        /// show on the bike itself, not only in the projects): Dyno → engine, wind tunnel → aerodynamics, electronics
+        /// lab → electronics, factory → chassis. Null for components no facility lifts.
+        /// </summary>
+        public static FacilityType? BikeFacilityFor(string component)
+        {
+            switch (component)
+            {
+                case "Engine":
+                case "ProductionEngine":
+                    return FacilityType.Dyno;
+                case "Aerodynamics":
+                    return FacilityType.WindTunnel;
+                case "Electronics":
+                    return FacilityType.ElectronicsLab;
+                case "Chassis":
+                    return FacilityType.Factory;
+                default:
+                    return null;
+            }
+        }
+
+        /// <summary>The components of a bike class a facility lifts directly (empty for facilities off the bike).</summary>
+        public static List<string> BikeComponentsOf(FacilityType facility, BikeClassDefinition bikeClass)
+        {
+            var res = new List<string>();
+            if (bikeClass == null) return res;
+            foreach (var c in bikeClass.Components)
+                if (BikeFacilityFor(c) == facility) res.Add(c);
+            return res;
+        }
+
+        /// <summary>Component points given by a facility at <paramref name="level"/> (level 1 gives nothing).</summary>
+        public static double FacilityComponentBonus(int level)
+        {
+            return Math.Max(0, level - 1) * FacilityComponentBonusPerLevel;
+        }
+
+        /// <summary>
+        /// Points a team's facilities add to one of its bike's components. Only components the regulations let the
+        /// team develop gain anything (a frozen engine or a spec part stays as it is).
+        /// </summary>
+        public static double ComponentBonus(WorldState world, GameDatabase db, Team team, string component)
+        {
+            if (team == null) return 0;
+            var facility = BikeFacilityFor(component);
+            if (!facility.HasValue) return 0;
+            if (world == null || db == null || !DevelopmentService.ComponentAllowed(world, db, team, component)) return 0;
+            return FacilityComponentBonus(team.Facility(facility.Value));
+        }
+
+        /// <summary>A component's level on track: the bike's own plus the facility bonus (0-100).</summary>
+        public static double EffectiveComponent(WorldState world, GameDatabase db, Team team, Motorcycle bike, string component)
+        {
+            return MathX.Clamp(bike.Component(component) + ComponentBonus(world, db, team, component), 0, 100);
+        }
+
+        /// <summary>Performance of a team's bike, facilities included (what the races and the screens use).</summary>
+        public static BikePerformance Performance(WorldState world, GameDatabase db, Team team, Motorcycle bike, BikeClassDefinition bikeClass)
+        {
+            if (bike == null) return BikePerformance.Average();
+            return BikePerformance.Compute(bike, bikeClass, c => ComponentBonus(world, db, team, c));
         }
 
         // ------------------------------------------------------------------ race weekend
@@ -177,7 +255,13 @@ namespace MotoManager.Core.Economy
         /// <summary>Knowledge gained per event about a scouted rider.</summary>
         public static double ScoutingRate(WorldState world, Team team)
         {
-            return 0.06 + Skill(world, team, StaffRole.Scout, 30) / 900.0 + team.Facility(FacilityType.ScoutingCenter) * 0.012;
+            return ScoutingRate(world, team, team.Facility(FacilityType.ScoutingCenter));
+        }
+
+        /// <summary>Scouting rate with the scouting centre at <paramref name="centreLevel"/> (what an upgrade would give).</summary>
+        public static double ScoutingRate(WorldState world, Team team, int centreLevel)
+        {
+            return 0.06 + Skill(world, team, StaffRole.Scout, 30) / 900.0 + centreLevel * 0.012;
         }
 
         // ------------------------------------------------------------------ commercial

@@ -31,6 +31,15 @@ namespace MotoManager.Core.Race
         /// </summary>
         public static BikePerformance Compute(Motorcycle bike, BikeClassDefinition bikeClass)
         {
+            return Compute(bike, bikeClass, null);
+        }
+
+        /// <summary>
+        /// As <see cref="Compute(Motorcycle, BikeClassDefinition)"/> with extra points per component (the team's
+        /// facilities, see <c>TeamCapabilities.ComponentBonus</c>); each component stays within 0-100.
+        /// </summary>
+        public static BikePerformance Compute(Motorcycle bike, BikeClassDefinition bikeClass, Func<string, double> componentBonus)
+        {
             var perf = new BikePerformance();
             foreach (PerfAttr attr in Enum.GetValues(typeof(PerfAttr)))
             {
@@ -41,7 +50,9 @@ namespace MotoManager.Core.Race
                     double sum = 0, wsum = 0;
                     foreach (var kv in weights)
                     {
-                        sum += bike.Component(kv.Key) * kv.Value;
+                        double level = bike.Component(kv.Key);
+                        if (componentBonus != null) level = MathX.Clamp(level + componentBonus(kv.Key), 0, 100);
+                        sum += level * kv.Value;
                         wsum += Math.Abs(kv.Value);
                     }
                     if (wsum > 0) value = sum / wsum;
