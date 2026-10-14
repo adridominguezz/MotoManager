@@ -11,19 +11,4 @@ namespace MotoManager.App.UI.Screens
         public override string Title { get { return Loc.T("nav.bike"); } }
         public override void Build(RectTransform content) { new BikeScreen().Attach(Shell); }
     }
-
-    /// <summary>Riders hub: one card per rider with a details button.</summary>
-    public class RidersHubPage : ScreenBase
-    {
-        public override string Title { get { return Loc.T("nav.riders"); } }
-        public override void Build(RectTransform content) { }
-    }
-
-    /// <summary>A rider's profile: header, then attributes / traits / contract / history.</summary>
-    public class RiderProfilePage : ScreenBase
-    {
-        public override string Title { get { return Loc.T("nav.riders"); } }
-        public override bool HiddenTab { get { return true; } }
-        public override void Build(RectTransform content) { }
-    }
 }

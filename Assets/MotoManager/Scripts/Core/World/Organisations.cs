@@ -236,6 +236,8 @@ namespace MotoManager.Core.World
         /// <summary>Category the team moves to at the end of the season (null = stays), and its bike supplier there.</summary>
         public string PendingCategoryId;
         public string PendingSupplierId;
+        /// <summary>The team's lead rider (null or empty, or a rider no longer in the team: equal status). See RiderStatusRules.</summary>
+        public string LeadRiderId;
 
         public int Facility(FacilityType type)
         {
