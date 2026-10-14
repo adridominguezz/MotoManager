@@ -1,0 +1,23 @@
+{
+  "staff2.group.Engineers": "Ingenieros",
+  "staff2.group.Mechanics": "Mecánicos",
+  "staff2.group.Strategists": "Estrategas",
+  "staff2.groupInfo.Engineers": "Diseñan y desarrollan la moto: proyectos, electrónica, aerodinámica y neumáticos.",
+  "staff2.groupInfo.Mechanics": "El equipo de box de cada piloto: el mecánico jefe cuida la fiabilidad y el ingeniero de pista prepara la moto y decide en carrera.",
+  "staff2.groupInfo.Strategists": "Leen la carrera y cuidan de las personas: datos y previsiones, ojeo de pilotos, entrenamiento, fisioterapia y marketing.",
+  "staff2.summary": "{0}/{1} puestos · nivel medio {2}",
+  "staff2.summaryEmpty": "{0}/{1} puestos",
+  "staff2.allRoles": "Todos los puestos",
+  "staff2.find": "Encontrar personal",
+  "staff2.details": "Detalles",
+  "staff2.vacant": "Vacante",
+  "staff2.years": "{0} años",
+  "staff2.age": "Edad",
+  "staff2.country": "País",
+  "staff2.reputation": "Reputación",
+  "staff2.experience": "Experiencia",
+  "staff2.rider": "Piloto",
+  "staff2.contract": "Contrato",
+  "staff2.endsNow": "Acaba ya",
+  "staff2.bestCandidate": "Mejor candidato"
+}

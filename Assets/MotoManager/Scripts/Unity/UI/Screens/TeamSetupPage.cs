@@ -162,7 +162,7 @@ namespace MotoManager.App.UI.Screens
             foreach (var role in missing) paras.Add("<b>" + Loc.T("role." + role) + "</b>   " + Loc.T("roleimpact." + role));
             var body = Ui.Tile(area, Loc.T("setup.staff"), null, Theme.Caps(missing.Count == 0 ? Loc.T("setup.staffDone") : Loc.T("setup.staffMissing", missing.Count)), 0, null,
                 Wp4Ui.Info(Loc.T("setup.staff"), paras.ToArray()));
-            Ui.Ghost(Wp4Ui.BottomStrip(body, Ui.Grid.Hit), Loc.T("setup.toStaff"), () => Shell.Show<StaffPage>());
+            Ui.Ghost(Wp4Ui.BottomStrip(body, Ui.Grid.Hit), Loc.T("setup.toStaff"), () => Shell.Show<StaffHubPage>());
             var list = Wp4Ui.ScrollIn(Wp4Ui.Below(body, 0, Ui.Grid.Hit + 4), 6);
             if (missing.Count == 0)
             {

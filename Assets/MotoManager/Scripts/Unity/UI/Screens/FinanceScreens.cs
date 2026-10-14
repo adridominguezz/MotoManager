@@ -172,7 +172,7 @@ namespace MotoManager.App.UI.Screens
                     Shell.Toast(Loc.T("finance.board." + res.Outcome, MathX.FormatMoney(res.Granted)), ok);
                     Shell.Refresh();
                 });
-                Ui.Secondary(list, Loc.T("finance.cutCosts"), () => Shell.Show<StaffPage>());
+                Ui.Secondary(list, Loc.T("finance.cutCosts"), () => Shell.Show<StaffHubPage>());
             }
             Ui.Ghost(ScreenKit.Bottom(actions, 0, Ui.Grid.Hit), Loc.T("ux.fin.detail"), () => DetailSheet(0));
         }
