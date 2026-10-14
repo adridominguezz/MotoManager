@@ -103,13 +103,15 @@ namespace MotoManager.App.UI.Screens
             bg.gameObject.AddComponent<RectMask2D>();
 
             // The number block in the team colour (no portraits: the race number is the face).
+            // The header itself wears the hero band (team colour, chevrons) behind everything.
+            var band = Cards.Hero(bg.transform, Theme.Accent, 0, 1);
+            band.color = Color.Lerp(Theme.Card, Theme.Accent, 0.22f);
             var hero = UiFactory.Decor("Hero", bg.transform, Theme.Accent);
             hero.rectTransform.anchorMin = new Vector2(0, 0);
             hero.rectTransform.anchorMax = new Vector2(0, 1);
             hero.rectTransform.pivot = new Vector2(0, 0.5f);
             hero.rectTransform.sizeDelta = new Vector2(TopHeight, 0);
             hero.rectTransform.anchoredPosition = Vector2.zero;
-            UiFactory.Gradient(hero, Theme.Alpha(Theme.Accent, 0.85f), Theme.Alpha(Theme.Accent, 0.25f));
             var big = Ui.Label(hero.transform, RiderFacts.Hero(r), Theme.TextDisplay, TextAnchor.MiddleCenter, Theme.Alpha(Color.white, 0.92f), FontStyle.BoldAndItalic);
             UiFactory.Stretch(big.rectTransform);
             big.rectTransform.offsetMin = new Vector2(12, 12);

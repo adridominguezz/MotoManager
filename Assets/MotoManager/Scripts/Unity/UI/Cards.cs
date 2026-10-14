@@ -22,9 +22,7 @@ namespace MotoManager.App.UI
         public static RectTransform Person(RectTransform area, Color team, string heroText, string first, string last,
             string country, double rating, string corner, string action, Action onAction, string secondIcon = null, Action onSecond = null)
         {
-            var card = UiFactory.Panel("PersonCard", area, Theme.Card);
-            UiFactory.Stretch(card.rectTransform);
-            card.gameObject.AddComponent<RectMask2D>();
+            var card = Frame("PersonCard", area);
             if (onAction != null)
             {
                 var tap = card.gameObject.AddComponent<Button>();
@@ -32,17 +30,8 @@ namespace MotoManager.App.UI
                 tap.onClick.AddListener(() => onAction());
             }
 
-            // Hero band: team colour fading to the card, two slanted translucent stripes, the big figure.
-            var hero = UiFactory.Decor("Hero", card.transform, team);
-            UiFactory.Place(hero.rectTransform, 0, 1 - HeroShare, 1, 1);
-            UiFactory.Gradient(hero, Theme.Alpha(team, 0.85f), Theme.Alpha(team, 0.25f));
-            for (int i = 0; i < 2; i++)
-            {
-                var s = UiFactory.Decor("Stripe", hero.transform, Theme.Alpha(Color.white, i == 0 ? 0.06f : 0.1f));
-                s.rectTransform.anchorMin = s.rectTransform.anchorMax = new Vector2(0.62f + i * 0.14f, 0.5f);
-                s.rectTransform.sizeDelta = new Vector2(i == 0 ? 70 : 22, 600);
-                s.rectTransform.localRotation = Quaternion.Euler(0, 0, -30);
-            }
+            // Hero band: the team colour over the card with big chevrons pointing right, the big figure.
+            var hero = Hero(card.transform, team, 1 - HeroShare, 1);
             if (!string.IsNullOrEmpty(heroText))
             {
                 var big = Ui.Label(hero.transform, heroText, Theme.TextDisplay, TextAnchor.MiddleCenter, Theme.Alpha(Color.white, 0.92f), FontStyle.BoldAndItalic);
@@ -164,18 +153,23 @@ namespace MotoManager.App.UI
             }
         }
 
-        /// <summary>Five stars right-aligned in <paramref name="area"/>, <paramref name="rating"/> 0-5 (halves dimmed).</summary>
+        /// <summary>Five stars across <paramref name="area"/>, <paramref name="rating"/> 0-5 (halves dimmed).</summary>
         public static void Stars(RectTransform area, double rating)
         {
             for (int i = 0; i < 5; i++)
             {
                 double fill = Math.Max(0, Math.Min(1, rating - i));
                 var c = fill >= 0.75 ? Theme.Timing : fill >= 0.25 ? Theme.Alpha(Theme.Timing, 0.55f) : Theme.Alpha(Color.white, 0.14f);
-                var star = UiIcons.Icon(area, UiIcons.Star, c);
-                star.rectTransform.anchorMin = star.rectTransform.anchorMax = new Vector2(1, 0.5f);
-                star.rectTransform.pivot = new Vector2(1, 0.5f);
+                // Each star in a fifth of the area (at most 28 units), so narrow cards shrink them instead of overlapping.
+                var cell = UiFactory.Rect("Star", area);
+                UiFactory.Place(cell, i / 5f, 0, (i + 1) / 5f, 1);
+                var star = UiIcons.Icon(cell, UiIcons.Star, c);
+                star.rectTransform.anchorMin = star.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
                 star.rectTransform.sizeDelta = new Vector2(28, 28);
-                star.rectTransform.anchoredPosition = new Vector2(-(4 - i) * 30, 0);
+                var fit = star.gameObject.AddComponent<AspectRatioFitter>();
+                fit.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
+                fit.aspectRatio = 1;
+                star.rectTransform.localScale = Vector3.one * 0.9f;
             }
         }
 
@@ -260,41 +254,125 @@ namespace MotoManager.App.UI
         }
 
         /// <summary>
-        /// A big section card (staff groups, development shortcuts): a pictogram, the title in CAPS, one line of
-        /// detail and a chevron; the whole card is the button.
+        /// A big section card (staff groups, development shortcuts), in the person cards' anatomy: a hero band with
+        /// chevrons and the pictogram, the title in CAPS on a dark band, the detail lines, and an accent action bar
+        /// at the bottom (<paramref name="action"/>, default "VER"). The whole card is the button.
         /// </summary>
-        public static Button Section(RectTransform area, string icon, string title, string detail, Action onTap, int badge = 0)
+        public static Button Section(RectTransform area, string icon, string title, string detail, Action onTap, int badge = 0, string action = null)
         {
-            var b = UiFactory.Button("SectionCard", area, "", onTap, Theme.Card, Theme.TextBody);
-            UiFactory.Stretch((RectTransform)b.transform);
-            var band = UiFactory.Decor("Band", b.transform, Theme.Accent);
-            band.rectTransform.anchorMin = new Vector2(0, 1);
-            band.rectTransform.anchorMax = new Vector2(1, 1);
-            band.rectTransform.offsetMin = new Vector2(0, -6);
-            band.rectTransform.offsetMax = Vector2.zero;
+            var card = Frame("SectionCard", area);
+            var b = card.gameObject.AddComponent<Button>();
+            b.targetGraphic = card;
+            b.onClick.AddListener(() =>
+            {
+                GameAudio.ClickSound();
+                onTap();
+            });
+            // Fixed heights from the bottom (action, detail lines, title band); the hero takes the rest.
+            int lines = string.IsNullOrEmpty(detail) ? 0 : detail.Split('\n').Length;
+            float actionTop = 12 + ActionHeight, detailH = lines > 0 ? lines * 34 + 12 : 0, titleH = 56;
+            float titleBottom = actionTop + 8 + detailH;
+            var hero = Hero(card.transform, Theme.Accent, 0, 1);
+            hero.rectTransform.offsetMin = new Vector2(0, titleBottom + titleH);
             if (UiIcons.Known(icon))
             {
-                var ic = UiIcons.Icon(b.transform, icon, Theme.Text);
-                ic.rectTransform.anchorMin = ic.rectTransform.anchorMax = new Vector2(0.5f, 0.66f);
-                ic.rectTransform.sizeDelta = new Vector2(96, 96);
+                var ic = UiIcons.Icon(hero.transform, icon, Theme.Text);
+                ic.rectTransform.anchorMin = new Vector2(0.5f, 0.12f);
+                ic.rectTransform.anchorMax = new Vector2(0.5f, 0.88f);
+                ic.rectTransform.sizeDelta = new Vector2(104, 0);
+                var fit = ic.gameObject.AddComponent<AspectRatioFitter>();
+                fit.aspectMode = AspectRatioFitter.AspectMode.HeightControlsWidth;
+                fit.aspectRatio = 1;
             }
-            var t = b.GetComponentInChildren<Text>();
-            t.text = "<b>" + Theme.Caps(title) + "</b>" + (string.IsNullOrEmpty(detail) ? "" : "\n<size=" + Theme.TextCaption + ">" + Theme.Dim(detail) + "</size>");
-            t.supportRichText = true;
-            t.alignment = TextAnchor.UpperCenter;
-            UiFactory.Place(t.rectTransform, 0, 0.06f, 1, 0.42f);
-            t.rectTransform.offsetMin = new Vector2(12, 0);
-            t.rectTransform.offsetMax = new Vector2(-12, 0);
-            Ui.Fit(t, Theme.TextHeader);
+            var band = UiFactory.Panel("Title", card.transform, Theme.Panel);
+            band.raycastTarget = false;
+            var brt = band.rectTransform;
+            brt.anchorMin = new Vector2(0, 0);
+            brt.anchorMax = new Vector2(1, 0);
+            brt.pivot = new Vector2(0.5f, 0);
+            brt.offsetMin = new Vector2(0, titleBottom);
+            brt.offsetMax = new Vector2(0, titleBottom + titleH);
+            var t = Ui.Label(band.transform, Theme.Caps(title), Theme.TextTitle, TextAnchor.MiddleLeft, Theme.Text, FontStyle.BoldAndItalic);
+            UiFactory.Stretch(t.rectTransform);
+            t.rectTransform.offsetMin = new Vector2(20, 0);
+            t.rectTransform.offsetMax = new Vector2(-20, 0);
+            Ui.Fit(t, Theme.TextTitle);
+            if (lines > 0)
+            {
+                var d = Ui.Label(card.transform, detail, Theme.TextBody, TextAnchor.MiddleLeft, Theme.Text, FontStyle.Bold);
+                d.supportRichText = true;
+                var drt = d.rectTransform;
+                drt.anchorMin = new Vector2(0, 0);
+                drt.anchorMax = new Vector2(1, 0);
+                drt.pivot = new Vector2(0.5f, 0);
+                drt.offsetMin = new Vector2(20, actionTop + 8);
+                drt.offsetMax = new Vector2(-20, actionTop + 8 + detailH);
+                Ui.Fit(d, Theme.TextBody);
+            }
+            var go = UiFactory.Panel("Action", card.transform, Theme.Accent);
+            go.raycastTarget = false;
+            var grt = go.rectTransform;
+            grt.anchorMin = new Vector2(0, 0);
+            grt.anchorMax = new Vector2(1, 0);
+            grt.pivot = new Vector2(0.5f, 0);
+            grt.offsetMin = new Vector2(16, 12);
+            grt.offsetMax = new Vector2(-16, 12 + ActionHeight);
+            var gl = Ui.Label(go.transform, Theme.Caps(action ?? Loc.T("ux.cards.open")), Theme.TextHeader, TextAnchor.MiddleCenter, Theme.OnAccent, FontStyle.Bold);
+            UiFactory.Stretch(gl.rectTransform);
+            Ui.Fit(gl, Theme.TextHeader);
             if (badge > 0)
             {
-                var bd = Ui.Badge(b.transform, badge, Theme.Bad);
+                var bd = Ui.Badge(card.transform, badge, Theme.Bad);
                 bd.rectTransform.anchorMin = bd.rectTransform.anchorMax = new Vector2(1, 1);
                 bd.rectTransform.pivot = new Vector2(1, 1);
-                bd.rectTransform.anchoredPosition = new Vector2(-12, -16);
-                bd.rectTransform.sizeDelta = new Vector2(34, 26);
+                bd.rectTransform.anchoredPosition = new Vector2(-12, -12);
             }
             return b;
+        }
+
+        /// <summary>The card body: a flat card fill with a 1-unit edge and a soft drop shadow, clipping its content.</summary>
+        private static Image Frame(string name, RectTransform area)
+        {
+            var card = UiFactory.Panel(name, area, Theme.Card);
+            UiFactory.Stretch(card.rectTransform);
+            card.gameObject.AddComponent<RectMask2D>();
+            card.gameObject.AddComponent<Outline>().effectColor = Theme.Edge;
+            UiFactory.DropShadow(card, 0.45f, 4);
+            return card;
+        }
+
+        /// <summary>
+        /// The hero band of a card between <paramref name="yMin"/> and <paramref name="yMax"/>: the colour toned down
+        /// over the card, three big chevrons pointing right in the same colour (the reference's arrow pattern) and a
+        /// 4-unit colour rule at its base.
+        /// </summary>
+        public static Image Hero(Transform card, Color color, float yMin, float yMax)
+        {
+            var hero = UiFactory.Decor("Hero", card, Color.Lerp(Theme.Card, color, 0.42f));
+            UiFactory.Place(hero.rectTransform, 0, yMin, 1, yMax);
+            hero.gameObject.AddComponent<RectMask2D>();
+            for (int i = 0; i < 3; i++) Chevron(hero.transform, Theme.Alpha(Color.Lerp(color, Color.white, 0.15f), 0.16f + i * 0.06f), 0.18f + i * 0.3f);
+            var rule = UiFactory.Decor("Rule", hero.transform, color);
+            rule.rectTransform.anchorMin = new Vector2(0, 0);
+            rule.rectTransform.anchorMax = new Vector2(1, 0);
+            rule.rectTransform.offsetMin = Vector2.zero;
+            rule.rectTransform.offsetMax = new Vector2(0, 4);
+            return hero;
+        }
+
+        /// <summary>A big ">" made of two thick bars, centred at <paramref name="x"/> across the band's full height.</summary>
+        private static void Chevron(Transform band, Color color, float x)
+        {
+            for (int k = 0; k < 2; k++)
+            {
+                var bar = UiFactory.Decor("Chevron", band, color);
+                bar.rectTransform.anchorMin = new Vector2(x, k == 0 ? 0.5f : 0f);
+                bar.rectTransform.anchorMax = new Vector2(x, k == 0 ? 1f : 0.5f);
+                bar.rectTransform.pivot = new Vector2(0.5f, k == 0 ? 0 : 1);
+                bar.rectTransform.anchoredPosition = new Vector2(0, 0);
+                bar.rectTransform.sizeDelta = new Vector2(56, 60);
+                bar.rectTransform.localRotation = Quaternion.Euler(0, 0, k == 0 ? 40 : -40);
+            }
         }
 
         /// <summary>A wide secondary button centred at the bottom of a page ("Encontrar nuevos ...").</summary>
@@ -311,7 +389,6 @@ namespace MotoManager.App.UI
                 bd.rectTransform.anchorMin = bd.rectTransform.anchorMax = new Vector2(1, 0.5f);
                 bd.rectTransform.pivot = new Vector2(1, 0.5f);
                 bd.rectTransform.anchoredPosition = new Vector2(-16, 0);
-                bd.rectTransform.sizeDelta = new Vector2(40, 32);
             }
             return b;
         }

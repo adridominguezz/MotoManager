@@ -19,5 +19,10 @@
   "staff2.rider": "Rider",
   "staff2.contract": "Contract",
   "staff2.endsNow": "Ends now",
-  "staff2.bestCandidate": "Best candidate"
+  "staff2.bestCandidate": "Best candidate",
+  "staff2.seePositions": "See positions",
+  "staff2.line.positions": "Positions",
+  "staff2.line.level": "Average level",
+  "staff2.line.problems": "Vacant {0} · Contracts ending {1}",
+  "staff2.line.ok": "All covered"
 }

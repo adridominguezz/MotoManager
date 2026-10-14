@@ -21,5 +21,8 @@
   "ux.team2.col.points": "Puntos",
   "ux.team2.col.wins": "Vict.",
   "ux.team2.col.podiums": "Podios",
-  "ux.team2.col.riders": "Pilotos"
+  "ux.team2.col.riders": "Pilotos",
+  "ux.race2.simulate": "Simular carrera",
+  "ux.race2.simulateSeason": "Simular resto de temporada",
+  "ux.cards.open": "Ver"
 }

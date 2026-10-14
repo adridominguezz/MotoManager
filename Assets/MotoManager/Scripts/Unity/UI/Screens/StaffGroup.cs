@@ -10,8 +10,8 @@ using UnityEngine.UI;
 namespace MotoManager.App.UI.Screens
 {
     /// <summary>
-    /// One staff group (<see cref="Selected"/>): a person card per position (three side by side, scrolling sideways
-    /// when there are more). A held position shows the holder (role initials in the hero band, name, country, age,
+    /// One staff group (<see cref="Selected"/>): a person card per position, all on screen (one row of up to six, two
+    /// rows beyond). A held position shows the holder (role initials in the hero band, name, country, age,
     /// stars from the level, then level, experience, rider or reputation, salary and contract end) with DETALLES,
     /// which opens the full sheet (renew, release, other rider). A vacant one shows its coverage, the candidates and
     /// CONTRATAR, which opens the candidates of that role. At the bottom ENCONTRAR PERSONAL opens the candidates of
@@ -22,7 +22,7 @@ namespace MotoManager.App.UI.Screens
         /// <summary>The group shown (set by the hub before opening the page).</summary>
         public static StaffGroup Selected = StaffGroup.Engineers;
 
-        private const int Visible = 3;
+        private const int Visible = 3, MaxPerRow = 6;
 
         public override string Title { get { return StaffGroups.Name(Selected); } }
         public override bool HiddenTab { get { return true; } }
@@ -52,48 +52,24 @@ namespace MotoManager.App.UI.Screens
             UiFactory.Place(find, 0.2f, 0, 0.8f, 1);
             Cards.Find(find, Loc.T("staff2.find"), () => Market(world, team, roles, StaffGroups.Name(group)), available);
 
-            // The cards: three across; more scroll sideways.
+            // Every position on screen at once: one row of up to six cards, two rows beyond that.
             var area = Wp2Ui.Above(content, Ui.Grid.Cta + Ui.Grid.Gap * 2, Ui.Grid.Header + Ui.Grid.Gap);
-            var holder = positions.Count > Visible ? Strip(area, positions.Count) : area;
+            int rows = positions.Count > MaxPerRow ? 2 : 1;
+            int perRow = Mathf.Max(Visible, Mathf.CeilToInt(positions.Count / (float)rows));
             for (int i = 0; i < positions.Count; i++)
             {
-                var cell = UiFactory.Rect("Position", holder);
-                if (positions.Count > Visible) UiFactory.Place(cell, (float)i / positions.Count, 0, (float)(i + 1) / positions.Count, 1);
-                else
-                {
-                    // Fewer than three: same width as with three, centred.
-                    float left = 0.5f - positions.Count / (2f * Visible);
-                    UiFactory.Place(cell, left + (float)i / Visible, 0, left + (float)(i + 1) / Visible, 1);
-                }
-                cell.offsetMin = new Vector2(Ui.Grid.Gap / 2, 0);
-                cell.offsetMax = new Vector2(-Ui.Grid.Gap / 2, 0);
+                int row = i / perRow, col = i % perRow;
+                int inRow = Mathf.Min(perRow, positions.Count - row * perRow);
+                // A short row is centred at the full rows' card width.
+                float left = 0.5f - inRow / (2f * perRow);
+                var cell = UiFactory.Rect("Position", area);
+                UiFactory.Place(cell, left + (float)col / perRow, 1 - (float)(row + 1) / rows, left + (float)(col + 1) / perRow, 1 - (float)row / rows);
+                cell.offsetMin = new Vector2(Ui.Grid.Gap / 2, row < rows - 1 ? Ui.Grid.Gap / 2 : 0);
+                cell.offsetMax = new Vector2(-Ui.Grid.Gap / 2, row > 0 ? -Ui.Grid.Gap / 2 : 0);
                 var p = positions[i];
                 if (p.Holder != null) HeldCard(cell, world, team, p);
                 else VacantCard(cell, world, team, p, ceiling);
             }
-        }
-
-        /// <summary>A sideways scroll in <paramref name="area"/> whose content is <paramref name="count"/> thirds wide.</summary>
-        private static RectTransform Strip(RectTransform area, int count)
-        {
-            var bg = UiFactory.Panel("Cards", area, Color.clear);
-            UiFactory.Stretch(bg.rectTransform);
-            var scroll = bg.gameObject.AddComponent<ScrollRect>();
-            scroll.vertical = false;
-            scroll.horizontal = true;
-            scroll.movementType = ScrollRect.MovementType.Clamped;
-            scroll.scrollSensitivity = 30;
-            var viewport = UiFactory.Rect("Viewport", bg.transform);
-            UiFactory.Stretch(viewport);
-            viewport.gameObject.AddComponent<RectMask2D>();
-            var strip = UiFactory.Rect("Content", viewport);
-            strip.anchorMin = new Vector2(0, 0);
-            strip.anchorMax = new Vector2((float)count / Visible, 1);
-            strip.pivot = new Vector2(0, 0.5f);
-            strip.offsetMin = strip.offsetMax = Vector2.zero;
-            scroll.viewport = viewport;
-            scroll.content = strip;
-            return strip;
         }
 
         /// <summary>Role caption over the hero band ("MECÁNICO JEFE · SURNAME" for a rider's crew).</summary>

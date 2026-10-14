@@ -115,7 +115,7 @@ namespace MotoManager.App.UI.Screens
 
         /// <summary>
         /// The next race: round of the season in the header, the circuit's line on the left, the country, Grand Prix
-        /// and date on the right, the two simulations at the bottom. The tile opens the calendar.
+        /// and date on the right, the last result at the bottom. The tile opens the calendar; simulating the race is offered once CARRERA is pressed.
         /// </summary>
         private void RaceTile(RectTransform area, WorldState world, Team team)
         {
@@ -135,12 +135,12 @@ namespace MotoManager.App.UI.Screens
             var circuit = Game.Db.GetCircuit(next.Round.CircuitId);
 
             var map = UiFactory.Rect("Map", body);
-            UiFactory.Place(map, 0, 0.26f, 0.46f, 1);
+            UiFactory.Place(map, 0, 0.12f, 0.46f, 1);
             map.offsetMax = new Vector2(-12, -4);
             CircuitOutline.Draw(map, circuit, Theme.Text, 5);
 
             var info = UiFactory.Rect("Info", body);
-            UiFactory.Place(info, 0.48f, 0.26f, 1, 1);
+            UiFactory.Place(info, 0.48f, 0.12f, 1, 1);
             if (circuit != null && !string.IsNullOrEmpty(circuit.Country))
             {
                 var chip = Ui.Pill(info, circuit.Country.ToUpperInvariant(), Theme.PanelLight, Theme.Text);
@@ -160,14 +160,10 @@ namespace MotoManager.App.UI.Screens
             {
                 var last = Ui.Label(body, Theme.Dim(Loc.T("home.last") + "  ") + FirstLine(Shell.LastResult), Theme.TextMin,
                     TextAnchor.MiddleLeft, Theme.Text, FontStyle.Normal);
-                UiFactory.Place(last.rectTransform, 0, 0.17f, 1, 0.27f);
+                UiFactory.Place(last.rectTransform, 0, 0, 1, 0.12f);
                 Ui.Fit(last, Theme.TextMin);
             }
 
-            var row = Wp2Ui.BottomStrip(body, Ui.Grid.Button);
-            var cols = Ui.Columns12(row, 6, 6);
-            Ui.Secondary(cols[0], Loc.T("hub.simEvent"), Shell.SimulateEvent);
-            Ui.Secondary(cols[1], Loc.T("home.simulateSeasonShort"), Shell.SimulateSeason);
         }
 
         /// <summary>

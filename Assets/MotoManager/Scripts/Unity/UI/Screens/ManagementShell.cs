@@ -474,6 +474,16 @@ namespace MotoManager.App.UI.Screens
                     dot.rectTransform.sizeDelta = new Vector2(12, 12);
                     dot.rectTransform.anchoredPosition = new Vector2(18, 0);
                 }
+                // Simulating the rest of the season lives here (the race itself is simulated from the race intro).
+                if (Session.Game.World.PlayerTeam != null && NextOwnEvent() != null)
+                {
+                    var simRow = UiFactory.Row(list, Ui.Grid.Button);
+                    Ui.Secondary(simRow, Loc.T("ux.race2.simulateSeason"), () =>
+                    {
+                        Ui.CloseSheet();
+                        SimulateSeason();
+                    });
+                }
                 // Music and sound: on = accent outline, off = plain.
                 var audioRow = UiFactory.Row(list, Ui.Grid.Button);
                 var audio = Ui.Columns12(audioRow, 6, 6);

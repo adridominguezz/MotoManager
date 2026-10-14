@@ -18,12 +18,18 @@ namespace MotoManager.App.UI
     public class WeekendIntroPanel : MonoBehaviour
     {
         private Action _onContinue;
+        private Action _onSimulate;
 
-        public static void Show(WeekendSimulation weekend, EventRecap recap, Action onContinue)
+        /// <summary>
+        /// <paramref name="onSimulate"/> (optional): simulate the whole event without watching it; the panel then shows
+        /// a dark SIMULAR CARRERA block beside CONTINUAR.
+        /// </summary>
+        public static void Show(WeekendSimulation weekend, EventRecap recap, Action onContinue, Action onSimulate = null)
         {
             var canvas = UiFactory.CreateCanvas("WeekendIntro", 20);
             var p = canvas.gameObject.AddComponent<WeekendIntroPanel>();
             p._onContinue = onContinue;
+            p._onSimulate = onSimulate;
             var root = UiFactory.SafeRoot(canvas, Theme.Background);
             RaceUi.HostSheets(canvas.gameObject, root);
             p.Build(root, weekend, recap);
@@ -44,8 +50,21 @@ namespace MotoManager.App.UI
 
             RaceUi.Backdrop(root);
             RectTransform cta;
-            RaceUi.TopBar(root, Loc.Round(w.Round.Name), catName, RaceUi.ActionW, out cta);
-            RaceUi.ActionBlock(cta, Loc.T("post.continue"), Continue);
+            RaceUi.TopBar(root, Loc.Round(w.Round.Name), catName, RaceUi.ActionW * (_onSimulate != null ? 2 : 1), out cta);
+            if (_onSimulate != null)
+            {
+                // Simulate (dark, secondary) on the left half, continue (race red, the primary) on the right half.
+                var sim = UiFactory.Rect("Simulate", cta);
+                UiFactory.Place(sim, 0, 0, 0.5f, 1);
+                var b = RaceUi.ActionBlock(sim, Loc.T("ux.race2.simulate"), Simulate);
+                b.image.color = Theme.PanelLight;
+                foreach (var t in b.GetComponentsInChildren<Text>()) t.color = Theme.Text;
+                foreach (var img in b.GetComponentsInChildren<Image>()) if (img != b.image) img.color = Theme.Text;
+                var go = UiFactory.Rect("Continue", cta);
+                UiFactory.Place(go, 0.5f, 0, 1, 1);
+                RaceUi.ActionBlock(go, Loc.T("post.continue"), Continue);
+            }
+            else RaceUi.ActionBlock(cta, Loc.T("post.continue"), Continue);
             float top = RaceUi.BarH + 8;
             var steps = WeekendStepper.Steps(w);
             WeekendStepper.Strip(root, top, steps, WeekendStepper.StepOf(steps, w.SessionIndex));
@@ -169,6 +188,12 @@ namespace MotoManager.App.UI
             start.rectTransform.sizeDelta = new Vector2(18, 18);
             start.rectTransform.anchoredPosition = Vector2.zero;
             UiFactory.Surface(start);
+        }
+
+        private void Simulate()
+        {
+            Destroy(gameObject);
+            if (_onSimulate != null) _onSimulate();
         }
 
         private void Continue()

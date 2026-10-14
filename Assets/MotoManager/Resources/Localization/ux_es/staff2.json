@@ -19,5 +19,10 @@
   "staff2.rider": "Piloto",
   "staff2.contract": "Contrato",
   "staff2.endsNow": "Acaba ya",
-  "staff2.bestCandidate": "Mejor candidato"
+  "staff2.bestCandidate": "Mejor candidato",
+  "staff2.seePositions": "Ver puestos",
+  "staff2.line.positions": "Puestos",
+  "staff2.line.level": "Nivel medio",
+  "staff2.line.problems": "Vacantes {0} · Contratos que acaban {1}",
+  "staff2.line.ok": "Todo cubierto"
 }

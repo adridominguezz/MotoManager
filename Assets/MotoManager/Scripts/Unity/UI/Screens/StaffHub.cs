@@ -199,30 +199,34 @@ namespace MotoManager.App.UI.Screens
                 var positions = StaffGroups.Positions(world, Game.Db, team, group);
                 int vacant, ending;
                 int problems = StaffGroups.Problems(world, positions, out vacant, out ending);
-                Cards.Section(cols[i], StaffGroups.Icon(group), StaffGroups.Name(group), Summary(positions), () =>
+                Cards.Section(cols[i], StaffGroups.Icon(group), StaffGroups.Name(group), Summary(world, positions), () =>
                 {
                     StaffGroupPage.Selected = group;
                     Shell.Show<StaffGroupPage>();
-                }, problems);
+                }, problems, Loc.T("staff2.seePositions"));
             }
         }
 
-        /// <summary>"4/5 puestos · nivel medio 62": held / shown positions (standard or held) and the holders' average.</summary>
-        private static string Summary(List<StaffGroups.Position> positions)
+        /// <summary>
+        /// Three lines: positions held of all the group's positions, the holders' average level (rating colour) and
+        /// the problems (vacant standard positions, contracts ending this season).
+        /// </summary>
+        private static string Summary(WorldState world, List<StaffGroups.Position> positions)
         {
-            int held = 0, total = 0;
+            int held = 0;
             double sum = 0;
             foreach (var p in positions)
             {
-                if (p.Holder != null)
-                {
-                    held++;
-                    sum += p.Holder.Skill;
-                }
-                if (p.Holder != null || p.Required) total++;
+                if (p.Holder == null) continue;
+                held++;
+                sum += p.Holder.Skill;
             }
-            if (held == 0) return Loc.T("staff2.summaryEmpty", held, total);
-            return Loc.T("staff2.summary", held, total, (sum / held).ToString("0"));
+            int vacant, ending;
+            StaffGroups.Problems(world, positions, out vacant, out ending);
+            string level = held > 0 ? "<color=#" + ColorUtility.ToHtmlStringRGB(Ui.RatingColor(sum / held)) + ">" + (sum / held).ToString("0") + "</color>" : "-";
+            return Theme.Dim(Loc.T("staff2.line.positions")) + "  " + held + "/" + positions.Count + "\n" +
+                   Theme.Dim(Loc.T("staff2.line.level")) + "  " + level + "\n" +
+                   (vacant + ending > 0 ? Theme.WarnText(Loc.T("staff2.line.problems", vacant, ending)) : Theme.Dim(Loc.T("staff2.line.ok")));
         }
     }
 }

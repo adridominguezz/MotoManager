@@ -60,7 +60,34 @@ namespace MotoManager.App.UI
             }
             if (_menuToHide != null) _menuToHide.SetActive(false);
             ActiveWeekend = weekend;
-            WeekendIntroPanel.Show(weekend, _recap, () => _session.Run(Loc.T("ux.mm4c.busyPractice"), AdvanceToNextRace, ShowNextRaceOrFinish));
+            WeekendIntroPanel.Show(weekend, _recap, () => _session.Run(Loc.T("ux.mm4c.busyPractice"), AdvanceToNextRace, ShowNextRaceOrFinish),
+                SimulateEvent);
+        }
+
+        /// <summary>
+        /// SIMULAR CARRERA on the intro: the whole event runs without watching it (the team's weekend recorded session
+        /// by session), then the event summary and back to management.
+        /// </summary>
+        private void SimulateEvent()
+        {
+            var game = _session.Game;
+            var ev = _event;
+            var w = ev.PlayerWeekend;
+            EventDigest digest = null;
+            _session.Run(Loc.T("busy.event"), () =>
+            {
+                w.HeadlessTimeStep = true;
+                digest = EventDigest.Run(game, w);
+                game.CompleteEvent(ev);
+                digest.Finish(game, w.CategoryId);
+            }, () =>
+            {
+                ActiveWeekend = null;
+                _session.Save();
+                if (_menuToHide != null) _menuToHide.SetActive(true);
+                _onDone(Loc.T("home.simulated", Loc.Round(ev.Plan.Round.Name)));
+                EventSummaryPanel.Show(digest, () => _onDone(Loc.T("home.simulated", Loc.Round(ev.Plan.Round.Name))));
+            });
         }
 
         /// <summary>Worker thread: runs practice/qualifying/warm-up of the player's weekend until a race is due.</summary>
