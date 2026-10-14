@@ -650,6 +650,25 @@ namespace MotoManager.App.UI.Screens
         /// <summary>The traits: at most two rows (injury first, then the riding styles); all of them in the sheet.</summary>
         private void TraitsTile(RectTransform area, WorldState world, Team team, Rider r)
         {
+            var items = TraitItems(world, team, r);
+            var paragraphs = new List<string>();
+            foreach (var it in items) paragraphs.Add("<b>" + Theme.Caps(it.Key[1]) + "</b>\n" + it.Key[2]);
+            var body = Ui.Tile(area, Loc.T("rider.traits"), null, items.Count > 2 ? "+" + (items.Count - 2) : null, 0, null,
+                Wp2Ui.Info(Loc.T("rider.traits"), paragraphs.ToArray()));
+            int shown = Math.Min(2, items.Count);
+            for (int i = 0; i < shown; i++)
+            {
+                float y1 = 1 - (float)i / 2, y0 = 1 - (i + 1f) / 2;
+                TeamCards.Highlight(body, y0, y1, items[i].Key[0], items[i].Key[1], items[i].Key[2], items[i].Value);
+            }
+        }
+
+        /// <summary>
+        /// The rider's traits as { icon, title, what it does } with their colour: the injury first, then the riding
+        /// styles; without any, the standout key attribute.
+        /// </summary>
+        internal static List<KeyValuePair<string[], Color>> TraitItems(WorldState world, Team team, Rider r)
+        {
             var items = new List<KeyValuePair<string[], Color>>();
             if (r.InjuryRoundsOut > 0)
                 items.Add(new KeyValuePair<string[], Color>(new[] { UiIcons.Person, Loc.T("rider.injuredTitle"), Loc.T("home.injured", r.InjuryRoundsOut) }, Theme.Bad));
@@ -665,42 +684,40 @@ namespace MotoManager.App.UI.Screens
                 Trait(world, team, r, out icon, out title, out text, out color);
                 items.Add(new KeyValuePair<string[], Color>(new[] { icon, title, text }, color));
             }
-            var paragraphs = new List<string>();
-            foreach (var it in items) paragraphs.Add("<b>" + Theme.Caps(it.Key[1]) + "</b>\n" + it.Key[2]);
-            var body = Ui.Tile(area, Loc.T("rider.traits"), null, items.Count > 2 ? "+" + (items.Count - 2) : null, 0, null,
-                Wp2Ui.Info(Loc.T("rider.traits"), paragraphs.ToArray()));
-            int shown = Math.Min(2, items.Count);
-            for (int i = 0; i < shown; i++)
-            {
-                float y1 = 1 - (float)i / 2, y0 = 1 - (i + 1f) / 2;
-                TeamCards.Highlight(body, y0, y1, items[i].Key[0], items[i].Key[1], items[i].Key[2], items[i].Value);
-            }
+            return items;
         }
 
         /// <summary>The contract sheet: every figure as label / value rows and the terms in one sentence.</summary>
         private void ContractSheet(WorldState world, Rider r)
         {
+            Ui.Sheet(Loc.T("rider.contractCap") + " · " + r.FullName, list => ContractLines(list, world, Game.Db, r));
+        }
+
+        /// <summary>
+        /// Every figure of the rider's contract as label / value lines and the terms in one sentence (sheet, profile);
+        /// <paramref name="more"/> adds lines before the sentence.
+        /// </summary>
+        internal static void ContractLines(Transform list, WorldState world, GameDatabase db, Rider r, Action<Transform> more = null)
+        {
             var c = r.Contract;
-            Ui.Sheet(Loc.T("rider.contractCap") + " · " + r.FullName, list =>
+            Ui.Line(list, Loc.T("staff.salary"), c != null ? MathX.FormatMoney(c.SalaryPerSeason) : "-", true);
+            Ui.Line(list, Loc.T("rider.until"), c != null ? c.EndSeason.ToString() : "-", true);
+            if (c != null)
             {
-                Ui.Line(list, Loc.T("staff.salary"), c != null ? MathX.FormatMoney(c.SalaryPerSeason) : "-", true);
-                Ui.Line(list, Loc.T("rider.until"), c != null ? c.EndSeason.ToString() : "-", true);
-                if (c != null)
-                {
-                    double win = c.RaceBonusFor(1);
-                    if (win > 0) Ui.Line(list, Loc.T("rider.winBonus"), MathX.FormatMoney(win));
-                    if (c.PointBonus > 0) Ui.Line(list, Loc.T("rider.pointBonus"), MathX.FormatMoney(c.PointBonus));
-                    var release = c.Clause(ClauseType.ReleaseClause);
-                    Ui.Line(list, Loc.T("rider.releaseClause"), release != null ? MathX.FormatMoney(release.Amount) : Theme.Dim(Loc.T("rider.none")));
-                    var option = c.Clause(ClauseType.TeamOption);
-                    if (option != null) Ui.Line(list, Loc.T("terms.option"), option.Exercised ? Theme.GoodText(Loc.T("terms.optionExercised")) : Loc.T("rider.optionAvailable"));
-                    if (c.RiderFunding > 0) Ui.Line(list, Loc.T("rider.funding"), MathX.FormatMoney(c.RiderFunding));
-                    Ui.Line(list, Loc.T("rider.terminationCost"), MathX.FormatMoney(Contracts.TerminationCost(world, Game.Db, r)));
-                }
-                if (r.FutureContract != null)
-                    Ui.Line(list, Loc.T("rider.nextContract"), Theme.GoodText(Loc.T("rider.untilLine", r.FutureContract.EndSeason, MathX.FormatMoney(r.FutureContract.SalaryPerSeason))));
-                UiFactory.Paragraph(list, Theme.Dim(NegotiationPanel.Terms(c)), Theme.TextCaption);
-            });
+                double win = c.RaceBonusFor(1);
+                if (win > 0) Ui.Line(list, Loc.T("rider.winBonus"), MathX.FormatMoney(win));
+                if (c.PointBonus > 0) Ui.Line(list, Loc.T("rider.pointBonus"), MathX.FormatMoney(c.PointBonus));
+                var release = c.Clause(ClauseType.ReleaseClause);
+                Ui.Line(list, Loc.T("rider.releaseClause"), release != null ? MathX.FormatMoney(release.Amount) : Theme.Dim(Loc.T("rider.none")));
+                var option = c.Clause(ClauseType.TeamOption);
+                if (option != null) Ui.Line(list, Loc.T("terms.option"), option.Exercised ? Theme.GoodText(Loc.T("terms.optionExercised")) : Loc.T("rider.optionAvailable"));
+                if (c.RiderFunding > 0) Ui.Line(list, Loc.T("rider.funding"), MathX.FormatMoney(c.RiderFunding));
+                Ui.Line(list, Loc.T("rider.terminationCost"), MathX.FormatMoney(Contracts.TerminationCost(world, db, r)));
+            }
+            if (r.FutureContract != null)
+                Ui.Line(list, Loc.T("rider.nextContract"), Theme.GoodText(Loc.T("rider.untilLine", r.FutureContract.EndSeason, MathX.FormatMoney(r.FutureContract.SalaryPerSeason))));
+            if (more != null) more(list);
+            UiFactory.Paragraph(list, Theme.Dim(NegotiationPanel.Terms(c)), Theme.TextCaption);
         }
 
         /// <summary>
