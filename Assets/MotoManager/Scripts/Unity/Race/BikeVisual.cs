@@ -5,7 +5,7 @@ using UnityEngine;
 namespace MotoManager.App.Race
 {
     /// <summary>
-    /// Bike + rider in team colours (the detailed model, <see cref="RealBike"/>, or the low-poly GP bike, <see cref="BikeModel"/>), or a coloured dot when the camera
+    /// Bike + rider in team colours (low-poly GP bike, see <see cref="BikeModel"/>), or a coloured dot when the camera
     /// is far away. Purely visual: it reads the rider's simulated state and turns it into position on the racing line,
     /// heading, lean, pitch, hanging-off and crash poses. Riders out of the race slide off and disappear.
     /// </summary>
@@ -89,24 +89,8 @@ namespace MotoManager.App.Race
         /// legs pivoting at the hips, so poses only move transforms (<see cref="BikeModel.Pose"/>). Used by the race and
         /// by the livery showcase.
         /// </summary>
-        public static void BuildRig(Transform parent, BikeLivery livery, Color32 helmet, Material material, out Transform rider, out Transform legL, out Transform legR,
-            bool detailed = false)
+        public static void BuildRig(Transform parent, BikeLivery livery, Color32 helmet, Material material, out Transform rider, out Transform legL, out Transform legR)
         {
-            if (RealBike.Available)
-            {
-                // The detailed model (bike and rider in one mesh, see RealBike): the rider and leg transforms stay as
-                // empty pivots so the poses run unchanged; the livery's colours repaint the baked texture.
-                var mat = RealBike.MaterialFor(livery, detailed, material == BikeMaterial ? null : material);
-                RealBike.Build(parent, detailed, mat);
-                rider = new GameObject("Rider").transform;
-                rider.SetParent(parent, false);
-                rider.localPosition = BikeModel.Seat;
-                legL = new GameObject("LegL").transform;
-                legL.SetParent(rider, false);
-                legR = new GameObject("LegR").transform;
-                legR.SetParent(rider, false);
-                return;
-            }
             var bike = new MeshBuilder();
             BikeModel.BuildBike(bike, livery);
             bike.ToObject("BikeMesh", parent, material);
